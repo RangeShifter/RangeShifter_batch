@@ -13,5 +13,12 @@
 #define BATCH 1
 #define VCL 0
 
+#define RS_RCPP 0
+#define R_CMD 0
+
+#define RS_CONTAIN 0
+#define SEASONAL 0
+#define RS_EMBARCADERO 0
+
 //---------------------------------------------------------------------------
 #endif

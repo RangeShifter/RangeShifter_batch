@@ -32,12 +32,12 @@ Last updated: 6 January 2020 by Steve Palmer
 #include <stdlib.h>
 using namespace std;
 
-#include "Parameters.h"
-#include "Landscape.h"
-#include "Species.h"
-#include "SubCommunity.h"
-#include "BatchMode.h"
-#include "RandomCheck.h"
+#include "../Common/RScore/Parameters.h"
+#include "../Common/RScore/Landscape.h"
+#include "../Common/RScore/Species.h"
+#include "../Common/RScore/SubCommunity.h"
+#include "../Common/BatchMode.h"
+#include "../Common/RScore/RandomCheck.h"
 
 const string Int2Str(const int x)
 {
