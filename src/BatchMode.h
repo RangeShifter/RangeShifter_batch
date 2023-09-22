@@ -47,10 +47,10 @@ Last updated: 26 October 2021 by Steve Palmer
 #include <algorithm>
 using namespace std;
 
-#include "../Common/RScore/Parameters.h"
-#include "../Common/RScore/Landscape.h"
-#include "../Common/RScore/Species.h"
-#include "../Common/RScore/Model.h"
+#include "./RScore/Parameters.h"
+#include "./RScore/Landscape.h"
+#include "./RScore/Species.h"
+#include "./RScore/Model.h"
 
 struct batchfiles {
 	bool ok;
