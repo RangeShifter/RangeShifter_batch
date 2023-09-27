@@ -31,6 +31,12 @@
 #define LINUX_CLUSTER 1
 #define RSWIN64 1
 
+#define RANDOMCHECK 0
+
 #define BATCH 1
+
+#define RS_CONTAIN 0
+#define SEASONAL 0
+
 //---------------------------------------------------------------------------
 #endif
