@@ -12,6 +12,6 @@ jobs:
 
       - name: run
         run: |
-          cd ./input_test/example
+          cd ./run_on_gha/rs_test_project
           ../../rs.exe
           
