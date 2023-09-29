@@ -1,0 +1,29 @@
+Checking Control file C:\Users\s02tp3\RS_Example4\Inputs\CONTROL.txt
+
+Checking ParameterFile C:\Users\s02tp3\RS_Example4\Inputs\ParameterFile_ex4.txt
+ParameterFile OK: total no. of simulations = 2
+
+Checking LandFile C:\Users\s02tp3\RS_Example4\Inputs\LandFile_ex4.txt
+LandscapeFile headers OK: C:\Users\s02tp3\RS_Example4\Inputs\landscape_10m_batch.txt
+PatchFile headers OK: C:\Users\s02tp3\RS_Example4\Inputs\woodland_1ha_patchIDs.txt
+SpDistFile headers OK: C:\Users\s02tp3\RS_Example4\Inputs\patch30.txt
+LandFile OK: total no. of landscapes = 1
+
+Checking StageStructFile C:\Users\s02tp3\RS_Example4\Inputs\StageStructFile_ex4.txt
+Checking TransMatrixFile C:\Users\s02tp3\RS_Example4\Inputs\TransitionMatrix_ex4A.txt
+TransMatrixFile OK
+StageStructFile OK: total no. of simulations = 2
+
+Checking EmigrationFile C:\Users\s02tp3\RS_Example4\Inputs\EmigrationFile_ex4.txt
+EmigrationFile OK: total no. of simulations = 2
+
+Checking TransferFile C:\Users\s02tp3\RS_Example4\Inputs\TransferFile_ex4.txt
+Checking SMS format file for LandType = 0
+TransferFile OK: total no. of simulations = 2
+
+Checking SettlementFile C:\Users\s02tp3\RS_Example4\Inputs\SettlementFile_ex4.txt
+SettlementFile OK: total no. of simulations = 2
+
+
+Checking InitialisationFile C:\Users\s02tp3\RS_Example4\Inputs\InitialisationFile_ex4.txt
+InitialisationFile OK: total no. of simulations = 2
