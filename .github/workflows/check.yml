@@ -9,3 +9,9 @@ jobs:
 
       - name: build
         run: g++ -o rs.exe ./src/*.cpp ./src/RScore/*.cpp
+
+      - name: run
+        run: |
+          cd ./input_test/example
+          ../../rs.exe
+          
