@@ -1,0 +1,2 @@
+LandNum	Nhabitats	LandscapeFile	PatchFile	CostMapFile	DynLandFile	SpDistFile
+37	7	landscape_10m_batch.txt	woodland_1ha_patchIDs.txt	NULL	NULL	patch30.txt
