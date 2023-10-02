@@ -1,5 +1,3 @@
-.gitignore
-#README.md
 
 # CodeLite
 /.build-debug/
@@ -58,3 +56,9 @@ Bacup*/
 .vs/
 *.sln
 *.vcxproj*
+
+# Ignore test project outputs, except anchors
+run_on_gha/rs_test_project/Outputs/
+!run_on_gha/rs_test_project/Outputs/anchor.txt
+run_on_gha/rs_test_project/OutputMaps/
+!run_on_gha/rs_test_project/OutputMaps/anchor.txt
