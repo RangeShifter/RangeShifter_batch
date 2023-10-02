@@ -125,7 +125,7 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 
 //int i,t0,t1,Nruns;
-int i,t0,t1;
+int t0,t1;
 int nSimuls = 0, nLandscapes = 0; // no. of simulations and landscapes in batch
 
 t0 = (int)time(0);
@@ -241,9 +241,8 @@ if (errorfolder) {
 	cout << "***** Working directory must contain Inputs, Outputs and Output_Maps folders"
 		<< endl << endl;
 	cout << "*****" << endl;
-	cout << "***** Simulation ABORTED - enter any number to terminate program" << endl;
+	cout << "***** Simulation ABORTED" << endl;
 	cout << "*****" << endl;
-	cin >> i;
 	return 666;
 }
 
@@ -334,9 +333,8 @@ DEBUGLOG.close();
 DEBUGLOG.clear();
 
 cout << "*****" << endl;
-cout << "***** Simulation completed - enter any number to terminate program" << endl;
+cout << "***** Simulation completed" << endl;
 cout << "*****" << endl;
-cin >> i;
 
 return 0;
 */
@@ -423,9 +421,8 @@ t1 = (int)time(0);
 cout << endl << "***** Elapsed time " << t1-t0 << " seconds" << endl << endl;
 
 cout << "*****" << endl;
-cout << "***** Simulation completed - enter any number to terminate program" << endl;
+cout << "***** Simulation completed." << endl;
 cout << "*****" << endl;
-cin >> i;
 
 return 0;
 }
