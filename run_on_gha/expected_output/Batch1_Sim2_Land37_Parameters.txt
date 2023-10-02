@@ -19,7 +19,7 @@ AVAILABLE:   min.X 0 min.Y 0  max.X 978 max.Y 618
 
 SPECIES DISTRIBUTION LOADED: 	yes
 RESOLUTION (m)	10
-FILE NAME:  (see batch file) ./Inputs\LandFile_ex4.txt
+FILE NAME:  (see batch file) ./Inputs/LandFile_ex4.txt
 
 ENVIRONMENTAL GRADIENT:	 no
 ENVIRONMENTAL STOCHASTICITY:	no
