@@ -12,9 +12,6 @@ jobs:
 
       - name: run
         run: |
-          pwd
           cd ./run_on_gha/rs_test_project
-          pwd
           ./rs.exe
-          q
           
