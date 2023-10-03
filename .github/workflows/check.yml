@@ -17,7 +17,9 @@ jobs:
 
       - name: check_output
         run: |
-          cd ./run_on_gha/rs_test_project
+          cd ./run_on_gha/rs_test_project 
+          rm Outputs/DebugLog.txt
           bash check_output.bash
+        # DebugLog contains addresses, changes every run
 
           

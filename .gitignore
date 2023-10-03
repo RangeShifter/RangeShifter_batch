@@ -59,6 +59,6 @@ Bacup*/
 
 # Ignore test project outputs, except anchors
 run_on_gha/rs_test_project/Outputs/
-!run_on_gha/rs_test_project/Outputs/anchor.txt
+!run_on_gha/rs_test_project/Outputs/git_anchor.txt
 run_on_gha/rs_test_project/OutputMaps/
-!run_on_gha/rs_test_project/OutputMaps/anchor.txt
+!run_on_gha/rs_test_project/OutputMaps/git_anchor.txt
