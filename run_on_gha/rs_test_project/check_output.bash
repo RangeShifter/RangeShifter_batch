@@ -2,13 +2,12 @@
 
 # Check that Rangeshifter outputs in Debug mode match pre-set expectations
 
-#TODO: check that seed in BatchLog.csv matches expectation, else don't bother with the rest
 #TODO: this script can probably be made more concise
 
 any_diff=0
 rm Outputs/DebugLog.txt # contains addresses so cannot match set expectation
 
-for filename in Outputs/*.txt; do
+for filename in Outputs/*; do
 if  [ $filename != "Outputs/anchor.txt" ]
 then
 	matching_expectation="../expected_output/${filename#Outputs/}"

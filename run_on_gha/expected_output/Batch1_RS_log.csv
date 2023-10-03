@@ -1,0 +1,8 @@
+Event,Number,Reps,Years,Time
+WARNING,***** RSDEBUG mode is active *****,,,
+RANDOM SEED,666,,,
+Landscape,37,,,2
+Simulation,1,2,100,3
+Simulation,2,2,100,2
+
+Batch,,,,7
