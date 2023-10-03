@@ -16,6 +16,8 @@ jobs:
           ./rs.exe
 
       - name: check_output
-        run: bash check_output.bash
+        run: |
+          cd ./run_on_gha/rs_test_project
+          bash check_output.bash
 
           
