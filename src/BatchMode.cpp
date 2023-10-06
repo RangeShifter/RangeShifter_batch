@@ -5001,8 +5001,8 @@ case 0: // negative exponential dispersal kernel
 			else {
 				transFile >> k.meanDist1; k.meanDist2 = k.meanDist1; k.probKern1 = 1.0;
 				for (int i = 0; i < 8; i++) transFile >> tttt;
-			pSpecies->setKernTraits(stage,0,k,paramsLand.resol);
 			}
+			pSpecies->setKernTraits(stage,0,k,paramsLand.resol);
 			break;
 
 		case 3: // sex- & stage-dependent
@@ -5014,8 +5014,8 @@ case 0: // negative exponential dispersal kernel
 			else {
 				transFile >> k.meanDist1; k.meanDist2 = k.meanDist1; k.probKern1 = 1.0;
 				for (int i = 0; i < 8; i++) transFile >> tttt;
-			pSpecies->setKernTraits(stage,sex,k,paramsLand.resol);
 			}
+			pSpecies->setKernTraits(stage,sex,k,paramsLand.resol);
 			break;
 		} // end of switch (sexkernels)
 
