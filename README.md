@@ -1,4 +1,4 @@
-# RangeShifter Batch Mode <img src="RS_logo.png" align="right" height = 100/>
+# RangeShifter Batch Mode <img src="doc/RS_logo.png" align="right" height = 100/>
 C++ code for the RangeShifter v2 batch mode application
 
 [RangeShifter](https://rangeshifter.github.io/)
