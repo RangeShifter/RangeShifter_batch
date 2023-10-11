@@ -1,5 +1,3 @@
-.gitignore
-#README.md
 
 # CodeLite
 /.build-debug/
@@ -12,27 +10,9 @@ compile_commands.json
 Makefile
 .build-release/
 build-Release/
-*.txt
 *.project
 *.workspace
 *.mk
-*.txt
-
-#-----
-
-# Embarcadero junk
-*.ilc
-*.ild
-*.ilf
-*.ils
-*.map
-*.pdi
-*.tds
-*.#0?
-*.~*
-*.local
-*.res
-*.stat
 
 # Prerequisites
 *.d
@@ -67,19 +47,18 @@ build-Release/
 *.out
 *.app
 
-# Test input and output files
-Debug/
-Release/
-Inputs/
-Outputs/
-Output_Maps/
-
 # Documentation
 *.wbk
 Backup*/
 Bacup*/
 
-# Visual Studio files
-.vs/*
+# Visual Studio
+.vs/
 *.sln
-*vcxproj*
+*.vcxproj*
+
+# Ignore test project outputs, except anchors
+run_on_gha/rs_test_project/Outputs/*
+!run_on_gha/rs_test_project/Outputs/git_anchor.txt
+run_on_gha/rs_test_project/OutputMaps/*
+!run_on_gha/rs_test_project/OutputMaps/git_anchor.txt
