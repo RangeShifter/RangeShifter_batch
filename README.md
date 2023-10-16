@@ -16,17 +16,36 @@ processes. Due to its modular structure, the level of detail in genetics, demogr
 dispersal processes can be easily adapted to different research questions and 
 available data.
 
-## Building RangeShifter
-RangeShifter can be built in Windows or Linux. To build the programm you need to set the operating system in the file Version.h.
-
-For Windows: set #define LINUX_CLUSTER 0
-
-For Linux: set #define LINUX_CLUSTER 1
+This repo contains the source code for the Batch Mode interface of RangeShifter.
+In Batch Mode, RangeShifter can be run from the command line (e.g., `./rangeshifter.exe`) within a project directory containing a set of input files.
+This allows the user to run large batches of simulations with different parameters, which would need to be specified individually in the GUI version.
+The Batch Mode also enables running RangeShifter on machines with a non-interactive interface, for example a high-performance cluster.
 
 ## Usage
 
-Please refer to our [website](https://rangeshifter.github.io/) for more information about the RangeShifter platform and to the RangeShifter User Manual which can be found here: https://github.com/RangeShifter/RangeShifter-software-and-documentation
+RangeShifter can be built in Windows or Linux. To build the programm you need to set the operating system in the file Version.h.
 
+For Windows: set #define LINUX_CLUSTER 0
+For Linux: set #define LINUX_CLUSTER 1
+
+Then, one can build RangeShifter e.g. with the GNU compiler:
+
+```bash
+g++ -o rs.exe ./src/*.cpp ./src/RScore/*.cpp
+```
+
+For instructions on how to setup the project directory and input files, please refer to section 3.3 of the [User Manual](https://raw.githubusercontent.com/RangeShifter/RangeShifter-software-and-documentation/master/RangeShifter_v2.0_UserManual.pdf), and to the [documentation repository](https://github.com/RangeShifter/RangeShifter-software-and-documentation) for examples.
+
+## Contributing
+
+Have you spotted a typo, discovered a bug you could fix or would like to propose a new feature? 
+We welcome contributions! Please refer to our [contributing guidelines](https://github.com/RangeShifter/RangeShifter_batch_dev/contributing.md) for how to proceed.
+
+## See also
+
+- Compiled software and documentation
+- [RScore](https://github.com/RangeShifter/RScore), source for RangeShifter's core code
+- [RangeShiftR-pkg](https://github.com/RangeShifter/RangeShiftR-pkg), source for the R interface
 
 ## References
 
