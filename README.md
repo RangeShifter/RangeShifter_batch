@@ -23,6 +23,7 @@ The Batch Mode also enables running RangeShifter on machines with a non-interact
 
 ## Usage
 
+The compiled software can be found in the [Software and Documentation](https://github.com/RangeShifter/RangeShifter-software-and-documentation) repo.
 RangeShifter can be built in Windows or Linux. To build the programm you need to set the operating system in the file Version.h.
 
 For Windows: set #define LINUX_CLUSTER 0
@@ -43,7 +44,7 @@ We welcome contributions! Please refer to our [contributing guidelines](https://
 
 ## See also
 
-- Compiled software and documentation
+- [Compiled software and documentation](https://github.com/RangeShifter/RangeShifter-software-and-documentation)
 - [RScore](https://github.com/RangeShifter/RScore), source for RangeShifter's core code
 - [RangeShiftR-pkg](https://github.com/RangeShifter/RangeShiftR-pkg), source for the R interface
 
