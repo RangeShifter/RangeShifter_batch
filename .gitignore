@@ -2,6 +2,7 @@
 # CodeLite
 /.build-debug/
 /build-Debug/
+/build/
 /Debug/
 /Release/
 RNG_test/
