@@ -70,7 +70,6 @@ using namespace std;
 #include <direct.h>
 #endif
 
-
 const string Int2Str(const int x)
 {
 	ostringstream o;
