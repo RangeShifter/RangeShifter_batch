@@ -115,10 +115,6 @@ DEBUGLOG << endl << "RunModel(): starting simulation=" << sim.simulation << " re
 #endif
 #if RS_RCPP && !R_CMD
 		Rcpp::Rcout << endl << "starting replicate " << rep << endl;
-#else
-#if BATCH
-		cout << endl << "starting replicate " << rep << endl;
-#endif
 #endif
 
 	MemoLine(("Running replicate " + Int2Str(rep) + "...").c_str());
@@ -152,17 +148,10 @@ DEBUGLOG << endl << "RunModel(): generating new landscape ..." << endl;
 DEBUGLOG << "RunModel(): finished resetting landscape" << endl << endl;
 #endif
 		pLandscape->generatePatches();
-//#if VCL
 		if (v.viewLand || sim.saveMaps) {
 			pLandscape->setLandMap();
 			pLandscape->drawLandscape(rep,0,ppLand.landNum);
 		}
-//#endif
-//#if BATCH
-//		if (sim.saveMaps) {
-//			pLandscape->drawLandscape(rep,0,ppLand.landNum);
-//		}
-//#endif
 #if RSDEBUG
 DEBUGLOG << endl << "RunModel(): finished generating patches" << endl;
 #endif
@@ -312,13 +301,6 @@ DEBUGLOG << "RunModel(): completed updating carrying capacity" << endl;
 #if RSDEBUG
 DEBUGLOG << "RunModel(): completed initialisation, rep=" << rep
 	<< " pSpecies=" << pSpecies << endl;
-#endif
-#if BATCH
-#if RS_RCPP && !R_CMD
-	Rcpp::Rcout << "RunModel(): completed initialisation " << endl;
-#else
-	cout << "RunModel(): completed initialisation " << endl;
-#endif
 #endif
 
 	// open a new individuals file for each replicate
@@ -708,14 +690,6 @@ DEBUGLOG << "RunModel(): yr=" << yr << " completed Age_increment and final survi
 	} // end of the years loop
 
 	// Final output and popn. visualisation
-#if BATCH
-	if (sim.saveMaps && yr%sim.mapInt == 0) {
-		if (updateland) {
-			pLandscape->drawLandscape(rep,landIx,ppLand.landNum);
-		}
-		pComm->draw(rep,yr,0,ppLand.landNum);
-	}
-#endif
 		// produce final summary output
 		if (v.viewPop || v.viewTraits || sim.outOccup
 		|| 	sim.outTraitsCells || sim.outTraitsRows || sim.saveMaps)

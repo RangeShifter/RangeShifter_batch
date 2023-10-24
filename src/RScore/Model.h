@@ -133,9 +133,6 @@ extern string genfilename;	// see FormGenetics.cpp (VCL) OR Main.cpp (batch)
 extern RSrandom *pRandom;
 
 // these functions to have different version for GUI and batch applications ...
-#if BATCH
-extern void MemoLine(string);
-#endif
 void GUIsetLandScale(
 	int,	// landscape image height (pixels)
 	int		// landscape image width  (pixels)

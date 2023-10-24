@@ -52,7 +52,7 @@ RSrandom::RSrandom()
 #endif
 #endif // RSDEBUG
 
-#if BATCH && RSDEBUG
+#if RSDEBUG
     DEBUGLOG << "RSrandom::RSrandom(): RS_random_seed=" << RS_random_seed << endl;
 #endif // RSDEBUG
 
