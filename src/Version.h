@@ -26,11 +26,5 @@
 #ifndef VersionH
 #define VersionH
 
-#define RSDEBUG 1
-
-#define LINUX_CLUSTER 1
-#define RSWIN64 1
-
-#define BATCH 1
 //---------------------------------------------------------------------------
 #endif
