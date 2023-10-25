@@ -2,8 +2,8 @@ RangeShifter 2.0  - 64 bit implementation
 ================    =====================
 
 BATCH MODE 	yes
-REPLICATES 	2
-YEARS 	100
+REPLICATES 	1
+YEARS 	10
 REPRODUCTIVE SEASONS / YEAR	1
 PATCH-BASED MODEL
 No. PATCHES 	50
@@ -115,7 +115,6 @@ min Y: 0 max Y: 0
 
 OUTPUTS:
 Range - every 1 year
-Occupancy - every 1 year
 Populations - every 1 year
 SAVE MAPS: no
 SAVE TRAITS MAPS: no

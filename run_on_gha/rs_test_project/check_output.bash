@@ -23,6 +23,8 @@ for filename in Outputs/[^\(DebugLog.txt\)\(git_anchor.txt\)]*.txt; do # ignore 
 	fi
 done
 
+rm tmp_diff.txt
+
 if [ $any_diff -eq 1 ]
 then
 	exit 1 # check fails
