@@ -896,6 +896,12 @@ if (!is_directory(outputmaps)) errorfolder = true;
 return errorfolder;
 }
 
+// Drop working dir prefix if exists for Windows-Unix output consistency
+string drop_wd_prefix(const string& str)
+{
+	return regex_replace(str, regex("\\./"), "");
+}
+
 //---------------------------------------------------------------------------
 //For outputs and population visualisations pre-reproduction
 void PreReproductionOutput(Landscape *pLand,Community *pComm,int rep,int yr,int gen)
@@ -1084,16 +1090,16 @@ else {
 		outPar << "COSTS FILE: " << name_costfile << endl;
 	}
 #else
-	if (sim.batchMode) outPar << " (see batch file) " << landFile << endl;
+	if (sim.batchMode) outPar << " (see batch file) " << drop_wd_prefix(landFile) << endl;
 	else {
-		outPar << habmapname << endl;
+		outPar << drop_wd_prefix(habmapname) << endl;
 		if (ppLand.rasterType == 1) { // habitat % cover - list additional layers
 			for (int i = 0; i < ppLand.nHab-1; i++) {
 				outPar  << "           "<< hfnames[i] << endl;
 			}
 		}
 		if (ppLand.patchModel) {
-			outPar << "PATCH FILE: " << patchmapname << endl;
+			outPar << "PATCH FILE: " << drop_wd_prefix(patchmapname) << endl;
 		}
 	}
 #endif
@@ -1110,12 +1116,12 @@ if (!ppLand.generated && ppLand.dynamic) {
 	for (int i = 0; i < nchanges; i++) {
 		chg = pLandscape->getLandChange(i);
 		outPar << "Change no. " << chg.chgnum << " in year " << chg.chgyear << endl;
-		outPar << "Landscape: " << chg.habfile << endl;
+		outPar << "Landscape: " << drop_wd_prefix(chg.habfile) << endl;
 		if (ppLand.patchModel) {
-			outPar << "Patches  : " << chg.pchfile << endl;
+			outPar << "Patches  : " << drop_wd_prefix(chg.pchfile) << endl;
 		}
 		if (chg.costfile != "none" && chg.costfile != "NULL") {
-			outPar << "Costs    : " << chg.costfile << endl;			
+			outPar << "Costs    : " << drop_wd_prefix(chg.costfile) << endl;
 		}
 //		outPar << "Change no. " << chg.chgnum << " in year " << chg.chgyear
 //			<< " habitat map: " << chg.habfile << endl;
@@ -1130,9 +1136,9 @@ if (ppLand.spDist)
 	outPar << "RESOLUTION (m)\t" << ppLand.spResol << endl;
 	outPar << "FILE NAME: ";
 #if !RS_RCPP
-	if (sim.batchMode) outPar << " (see batch file) " << landFile << endl;
+	if (sim.batchMode) outPar << " (see batch file) " << drop_wd_prefix(landFile) << endl;
 	else {
-		outPar << distnmapname << endl;
+		outPar << drop_wd_prefix(distnmapname) << endl;
 	}
 #else
 	outPar << name_sp_dist << endl;
@@ -1612,7 +1618,7 @@ if (trfr.moveModel) {
 		if (trfr.costMap) {
 			outPar << "SMS\tcosts from imported cost map" << endl;
 #if !RS_RCPP
-			outPar << "FILE NAME: " << costmapname << endl;
+			outPar << "FILE NAME: " << drop_wd_prefix(costmapname) << endl;
 #endif
 		}
 		else {
@@ -2012,7 +2018,7 @@ if (emig.indVar || trfr.indVar || sett.indVar || d.neutralMarkers)
 		if (!d.trait1Chromosome) {
 			traitAllele allele;
 			outPar << "TRAIT MAPPING:" << endl;
-			outPar << "Architecture file:     " << genfilename << endl;
+			outPar << "Architecture file:     " << drop_wd_prefix(genfilename) << endl;
 			int ntraitmaps = pSpecies->getNTraitMaps();
 			outPar << "No. of traits defined: " << ntraitmaps << endl;
 			for (int i = 0; i < ntraitmaps; i++) {
@@ -2083,7 +2089,7 @@ case 1:
 	}
 	break;
 case 2:
-	outPar << "From initial individuals file: " << paramsSim->getDir(1) + init.indsFile << endl;
+	outPar << "From initial individuals file: " << drop_wd_prefix(paramsSim->getDir(1) + init.indsFile) << endl;
 	break;
 case 3:
 	outPar << "From file" << endl;

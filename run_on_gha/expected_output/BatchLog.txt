@@ -1,29 +1,29 @@
-Checking Control file ./Inputs/CONTROL.txt
+Checking Control file Inputs/CONTROL.txt
 
-Checking ParameterFile ./Inputs/ParameterFile_ex4.txt
+Checking ParameterFile Inputs/ParameterFile_ex4.txt
 ParameterFile OK: total no. of simulations = 1
 
-Checking LandFile ./Inputs/LandFile_ex4.txt
-LandscapeFile headers OK: ./Inputs/landscape_10m_batch.txt
-PatchFile headers OK: ./Inputs/woodland_1ha_patchIDs.txt
-SpDistFile headers OK: ./Inputs/patch30.txt
+Checking LandFile Inputs/LandFile_ex4.txt
+LandscapeFile headers OK: Inputs/landscape_10m_batch.txt
+PatchFile headers OK: Inputs/woodland_1ha_patchIDs.txt
+SpDistFile headers OK: Inputs/patch30.txt
 LandFile OK: total no. of landscapes = 1
 
-Checking StageStructFile ./Inputs/StageStructFile_ex4.txt
-Checking TransMatrixFile ./Inputs/TransitionMatrix_ex4A.txt
+Checking StageStructFile Inputs/StageStructFile_ex4.txt
+Checking TransMatrixFile Inputs/TransitionMatrix_ex4A.txt
 TransMatrixFile OK
 StageStructFile OK: total no. of simulations = 1
 
-Checking EmigrationFile ./Inputs/EmigrationFile_ex4.txt
+Checking EmigrationFile Inputs/EmigrationFile_ex4.txt
 EmigrationFile OK: total no. of simulations = 1
 
-Checking TransferFile ./Inputs/TransferFile_ex4.txt
+Checking TransferFile Inputs/TransferFile_ex4.txt
 Checking SMS format file for LandType = 0
 TransferFile OK: total no. of simulations = 1
 
-Checking SettlementFile ./Inputs/SettlementFile_ex4.txt
+Checking SettlementFile Inputs/SettlementFile_ex4.txt
 SettlementFile OK: total no. of simulations = 1
 
 
-Checking InitialisationFile ./Inputs/InitialisationFile_ex4.txt
+Checking InitialisationFile Inputs/InitialisationFile_ex4.txt
 InitialisationFile OK: total no. of simulations = 1

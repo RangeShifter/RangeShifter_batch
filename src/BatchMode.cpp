@@ -120,7 +120,7 @@ if (!controlfile.is_open()) {
 	return b;
 }
 else {
-	batchlog << "Checking Control file " << ctrlfile << endl;
+	batchlog << "Checking Control file " << drop_wd_prefix(ctrlfile) << endl;
 }
 
 // Check fixed model parameters
@@ -307,7 +307,7 @@ if (controlFormatError || errors > 0) { // terminate batch error checking
 controlfile >> paramname >> filename;
 if (paramname == "ParameterFile" && !controlFormatError) {
 	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << fname << endl;
+	batchlog << endl << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
 	bParamFile.open(fname.c_str());
 	if (bParamFile.is_open()) {
 		b.nSimuls = ParseParameterFile();
@@ -343,7 +343,7 @@ bParamFile.clear();
 controlfile >> paramname >> filename;
 if (paramname == "LandFile" && !controlFormatError) {
 	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << fname << endl;
+	batchlog << endl << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
 	bLandFile.open(fname.c_str());
 	if (bLandFile.is_open()) {
 		lines = ParseLandFile(landtype,indir);
@@ -365,43 +365,6 @@ if (paramname == "LandFile" && !controlFormatError) {
 }
 else controlFormatError = true; // wrong control file format
 
-/*
-#if SEASONAL
-// Check seasonal file
-controlfile >> paramname >> filename;
-if (paramname == "SeasonFile" && !controlFormatError) {
-	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << fname << endl;
-	bSeasonFile.open(fname.c_str());
-	if (bSeasonFile.is_open()) {
-		lines = ParseSeasonFile(indir);
-		if (lines < 0) {
-			b.ok = false;
-			if (lines < -111)
-				batchlog << "*** Format error in " << paramname << endl;
-		}
-		else {
-			if (lines == b.nseasons) {
-				FileOK(paramname,lines,3);    
-				b.seasonFile = fname;
-			}
-			else {
-				b.ok = false;
-				batchlog << "*** No. of seasons in " << filename
-					<< " does not match no. in Control file" << endl;
-			}
-		}
-		bSeasonFile.close();
-	}
-	else {
-		OpenError(paramname,fname); b.ok = false;
-	}
-	bSeasonFile.clear();
-}
-else controlFormatError = true; // wrong control file format
-#endif
-*/
-
 // Check stage structure file if required file
 controlfile >> paramname >> filename;
 batchlog << endl;
@@ -416,7 +379,7 @@ if (paramname == "StageStructFile" && !controlFormatError) {
 	else { // filename is not NULL
 		if (stagestruct) { // check file only if it is required
 			fname = indir + filename;
-			batchlog << "Checking " << paramname << " " << fname << endl;
+			batchlog << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
 			bStageStructFile.open(fname.c_str());
 			if (bStageStructFile.is_open()) {
 				nSimuls = ParseStageFile(indir);
@@ -452,7 +415,7 @@ else controlFormatError = true; // wrong control file format
 controlfile >> paramname >> filename;
 if (paramname == "EmigrationFile" && !controlFormatError) {
 	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << fname << endl;
+	batchlog << endl << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
 	bEmigrationFile.open(fname.c_str());
 	if (bEmigrationFile.is_open()) {
 		nSimuls = ParseEmigFile();
@@ -479,7 +442,7 @@ else controlFormatError = true; // wrong control file format
 controlfile >> paramname >> filename;
 if (paramname == "TransferFile" && !controlFormatError) {
 	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << fname << endl;
+	batchlog << endl << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
 	bTransferFile.open(fname.c_str());
 	if (bTransferFile.is_open()) {
 		nSimuls = ParseTransferFile(indir);
@@ -506,7 +469,7 @@ else controlFormatError = true; // wrong control file format
 controlfile >> paramname >> filename;
 if (paramname == "SettlementFile" && !controlFormatError) {
 	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << fname << endl;
+	batchlog << endl << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
 	bSettlementFile.open(fname.c_str());
 	if (bSettlementFile.is_open()) {
 		nSimuls = ParseSettleFile();
@@ -540,7 +503,7 @@ if (paramname == "GeneticsFile" && !controlFormatError) {
 	}
 	else { // filename is not NULL
 		fname = indir + filename;
-		batchlog << "Checking " << paramname << " " << fname << endl;
+		batchlog << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
 		bGeneticsFile.open(fname.c_str());
 		if (bGeneticsFile.is_open()) {
 			nSimuls = ParseGeneticsFile(indir);
@@ -568,7 +531,7 @@ else controlFormatError = true; // wrong control file format
 controlfile >> paramname >> filename;
 if (paramname == "InitialisationFile" && !controlFormatError) {
 	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << fname << endl;
+	batchlog << endl << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
 	bInitFile.open(fname.c_str());
 	if (bInitFile.is_open()) {
 		nSimuls = ParseInitFile(indir);
@@ -1124,7 +1087,7 @@ if (landtype == 0 || landtype == 2) { // real landscape
 		bLandFile >> intext;
 		if (intext != "NULL") { // landscape is dynamic
 			fname = indir + intext;
-			batchlog << "Checking " << ftype << " " << fname << endl;
+			batchlog << "Checking " << ftype << " " << drop_wd_prefix(fname) << endl;
 			bDynLandFile.open(fname.c_str());
 			if (bDynLandFile.is_open()) {
 				int something = ParseDynamicFile(indir,name_costfile);
@@ -1591,7 +1554,7 @@ while (inint != -98765) {
 		}
 		else {
 			fname = indir + filename;
-			batchlog << "Checking " << ftype2 << " " << fname << endl;
+			batchlog << "Checking " << ftype2 << " " << drop_wd_prefix(fname) << endl;
 			bTransMatrix.open(fname.c_str());
 			if (bTransMatrix.is_open()) {
 				err = ParseTransitionFile(stages,sexesDem);
@@ -1642,7 +1605,7 @@ while (inint != -98765) {
 		}
 		if (checkfile) {
 			fname = indir + filename;
-			batchlog << "Checking " << ftype2 << " " << fname << endl;
+			batchlog << "Checking " << ftype2 << " " << drop_wd_prefix(fname) << endl;
 			bStageWeightsFile.open(fname.c_str());
 			if (bStageWeightsFile.is_open()) {
 				err = ParseWeightsFile(ftype2);
@@ -1695,7 +1658,7 @@ while (inint != -98765) {
 		}
 		if (checkfile) {
 			fname = indir + filename;
-			batchlog << "Checking " << ftype2 << " " << fname << endl;
+			batchlog << "Checking " << ftype2 << " " << drop_wd_prefix(fname) << endl;
 			bStageWeightsFile.open(fname.c_str());
 			if (bStageWeightsFile.is_open()) {
 				err = ParseWeightsFile(ftype2);
@@ -1748,7 +1711,7 @@ while (inint != -98765) {
 		}
 		if (checkfile) {
 			fname = indir + filename;
-			batchlog << "Checking " << ftype2 << " " << fname << endl;
+			batchlog << "Checking " << ftype2 << " " << drop_wd_prefix(fname) << endl;
 			bStageWeightsFile.open(fname.c_str());
 			if (bStageWeightsFile.is_open()) {
 				err = ParseWeightsFile(ftype2);
@@ -3028,7 +2991,7 @@ while (simul != -98765) {
 			}
 			if (checkfile) {
 				fname = indir + filename;
-				batchlog << "Checking " << ftype << " " << fname << endl;
+				batchlog << "Checking " << ftype << " " << drop_wd_prefix(fname) << endl;
 				bArchFile.open(fname.c_str());
 				if (bArchFile.is_open()) {
 					err = ParseArchFile();
@@ -3390,7 +3353,7 @@ while (simul != -98765) {
 			}
 			if (checkfile) {
 				fname = indir + filename;
-				batchlog << "Checking " << ftype2 << " " << fname << endl;
+				batchlog << "Checking " << ftype2 << " " << drop_wd_prefix(fname) << endl;
 				bInitIndsFile.open(fname.c_str());
 				if (bInitIndsFile.is_open()) {
 					err = ParseInitIndsFile();
