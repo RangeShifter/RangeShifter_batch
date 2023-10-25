@@ -973,10 +973,10 @@ if (landtype == 0 || landtype == 2) { // real landscape
 		landraster = CheckRasterFile(fname);
 		if (landraster.ok) {
 			if (landraster.cellsize == resolution)
-				batchlog << ftype << " headers OK: " << fname << endl;
+				batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
 			else {
 				errors++;
-				batchlog << msgresol0 << ftype << " " << fname
+				batchlog << msgresol0 << ftype << " " << drop_wd_prefix(fname)
 						<< msgresol1 << endl;
 			}
 		}
@@ -1008,16 +1008,16 @@ if (landtype == 0 || landtype == 2) { // real landscape
 						&&  patchraster.cellsize == landraster.cellsize
 						&&  (int)patchraster.xllcorner == (int)landraster.xllcorner
 						&&  (int)patchraster.yllcorner == (int)landraster.yllcorner) {
-							batchlog << ftype << " headers OK: " << fname << endl;
+							batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
 						}
 						else {
-							batchlog << msghdrs0 << ftype << " " << fname
+							batchlog << msghdrs0 << ftype << " " << drop_wd_prefix(fname)
 								<< msghdrs1 << endl;
 							errors++;
 						}
 					}
 					else {
-						batchlog << msgresol0 << ftype << " " << fname
+						batchlog << msgresol0 << ftype << " " << drop_wd_prefix(fname)
 							<< msgresol1 << endl;
 						errors++;
 					}
@@ -1054,16 +1054,16 @@ if (landtype == 0 || landtype == 2) { // real landscape
 						&&  costraster.cellsize == landraster.cellsize
 						&&  (int)costraster.xllcorner == (int)landraster.xllcorner
 						&&  (int)costraster.yllcorner == (int)landraster.yllcorner) {
-							batchlog << ftype << " headers OK: " << fname << endl;
+							batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
 						}
 						else {
-							batchlog << msghdrs0 << ftype << " " << fname
+							batchlog << msghdrs0 << ftype << " " << drop_wd_prefix(fname)
 								<< msghdrs1 << endl;
 							errors++;
 						}
 					}
 					else {
-						batchlog << msgresol0 << ftype << " " << fname
+						batchlog << msgresol0 << ftype << " " << drop_wd_prefix(fname)
 							<< msgresol1 << endl;
 						errors++;
 					}
@@ -1130,7 +1130,7 @@ if (landtype == 0 || landtype == 2) { // real landscape
 								// check origins match
 								if ((int)spdistraster.xllcorner == (int)landraster.xllcorner
 								&&  (int)spdistraster.yllcorner == (int)landraster.yllcorner) {
-									batchlog << ftype << " headers OK: " << fname << endl;
+									batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
 								}
 								else {
 									batchlog << "*** Origin co-ordinates of " << ftype
@@ -1143,7 +1143,7 @@ if (landtype == 0 || landtype == 2) { // real landscape
 							// check origins match
 							if ((int)spdistraster.xllcorner == (int)landraster.xllcorner
 							&&  (int)spdistraster.yllcorner == (int)landraster.yllcorner) {
-								batchlog << ftype << " headers OK: " << fname << endl;
+								batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
 							}
 							else {
 								batchlog << "*** Origin co-ordinates of " << ftype
@@ -1153,7 +1153,7 @@ if (landtype == 0 || landtype == 2) { // real landscape
 						}
 					}
 					else {
-						batchlog << "*** Resolution of " << ftype << " " << fname
+						batchlog << "*** Resolution of " << ftype << " " << drop_wd_prefix(fname)
 							<< " does not match DistResolution in Control file" << endl;
 						errors++;
 					}
@@ -1345,16 +1345,16 @@ while (change != -98765) {
 			&&  landchgraster.cellsize == landraster.cellsize
 			&&  (int)landchgraster.xllcorner == (int)landraster.xllcorner
 			&&  (int)landchgraster.yllcorner == (int)landraster.yllcorner) {
-				batchlog << ftype << " headers OK: " << fname << endl;
+				batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
 			}
 			else {
-				batchlog << msghdrs0 << ftype << " " << fname
+				batchlog << msghdrs0 << ftype << " " << drop_wd_prefix(fname)
 					<< msghdrs1 << endl;
 				errors++;
 			}
 		else {
 			errors++;
-			batchlog << msgresol0 << ftype << " " << fname << msgresol1 << endl;
+			batchlog << msgresol0 << ftype << " " << drop_wd_prefix(fname) << msgresol1 << endl;
 		}
 	}
 	else {
@@ -1385,16 +1385,16 @@ while (change != -98765) {
 					&&  patchchgraster.cellsize == landraster.cellsize
 					&&  (int)patchchgraster.xllcorner == (int)landraster.xllcorner
 					&&  (int)patchchgraster.yllcorner == (int)landraster.yllcorner) {
-						batchlog << ftype << " headers OK: " << fname << endl;
+						batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
 					}
 					else {
-						batchlog << msghdrs0 << ftype << " " << fname
+						batchlog << msghdrs0 << ftype << " " << drop_wd_prefix(fname)
 							<< msghdrs1 << endl;
 						errors++;
 					}
 				}
 				else {
-					batchlog << msgresol0 << ftype << " " << fname
+					batchlog << msgresol0 << ftype << " " << drop_wd_prefix(fname)
 						<< msgresol1 << endl;
 					errors++;
 				}
@@ -1433,16 +1433,16 @@ while (change != -98765) {
 					&&  costchgraster.cellsize == landraster.cellsize
 					&&  (int)costchgraster.xllcorner == (int)landraster.xllcorner
 					&&  (int)costchgraster.yllcorner == (int)landraster.yllcorner) {
-						batchlog << ftype << " headers OK: " << fname << endl;
+						batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
 					}
 					else {
-						batchlog << msghdrs0 << ftype << " " << fname
+						batchlog << msghdrs0 << ftype << " " << drop_wd_prefix(fname)
 							<< msghdrs1 << endl;
 						errors++;
 					}
 				}
 				else {
-					batchlog << msgresol0 << ftype << " " << fname
+					batchlog << msgresol0 << ftype << " " << drop_wd_prefix(fname)
 						<< msgresol1 << endl;
 					errors++;
 				}
