@@ -1315,22 +1315,6 @@ if (dem.stageStruct){
 			outPar << endl;
 		}
 	}
-#if VCL
-	else {
-
-	// NOTE: TO PREVENT COMPILING FOR BATCH MODE, THIS CODE NEEDS TO BE INCLUDED IN COMPILER
-	// CONDITIONAL BLOCK  AS SHOWN
-
-//	outPar << "Row count: " << frmSpecies->transMatrix->RowCount << endl;
-//	outPar << "Col count: " << frmSpecies->transMatrix->ColCount << endl;
-		for (int i = 1; i < frmSpecies->transMatrix->RowCount; i++) {
-			for (int j = 1; j < frmSpecies->transMatrix->ColCount; j++) {
-				outPar << frmSpecies->transMatrix->Cells[j][i].ToDouble() << "\t";
-			}
-			outPar << endl;
-		}
-	}
-#endif
 	outPar << endl;
 #endif
 */
