@@ -5,18 +5,21 @@ jobs:
   check:
     strategy:
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        os: [windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
 
       - name: build
-        run: g++ -o ./run_on_gha/rs_test_project/rs.exe ./src/*.cpp ./src/RScore/*.cpp -DRSDEBUG -DLINUX_CLUSTER -DRSWIN64
+        run: |
+          mkdir build
+          cd build
+          cmake ../
+          cmake --build .
 
       - name: run
         run: |
-          cd ./run_on_gha/rs_test_project
-          ./rs.exe
+          build/Debug/Rangeshifter.exe run_on_gha/rs_test_project/
 
       - name: check_output
         run: |
