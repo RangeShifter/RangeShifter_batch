@@ -2,8 +2,6 @@
 
 # Check that Rangeshifter outputs in Debug mode match pre-set expectations
 
-echo "$OSTYPE"
-
 # First check RNGs match, otherwise don't bother going further
 seed_this_run=$(grep -o "RANDOM SEED,[[:digit:]]*," Outputs/Batch1_RS_log.csv | grep -o [[:digit:]]*)
 seed_expected=$(grep -o "RANDOM SEED,[[:digit:]]*," ../expected_output/Batch1_RS_log.csv | grep -o [[:digit:]]*)
@@ -13,11 +11,13 @@ then
 	exit 1 # check fails
 fi
 
+# MacOS number generation differs from Ubuntu and Windows so different set of expectations
+if [ $OSTYPE == "darwin21" ]; then osdir=macos ; else osdir=windows_ubuntu ; fi
+
 # Iteratively compare all output files with corresponding expectations
 any_diff=0
 for filename in Outputs/[^\(git_anchor.txt\)]*.txt; do # ignore anchor
-	# if [ $OS -eq "windows-latest" ]; then; else; fi;
-	matching_expectation="../expected_output/${filename#Outputs/}"
+	matching_expectation="../expected_output/${osdir}/${filename#Outputs/}"
 	if ! diff $filename $matching_expectation > tmp_diff.txt
 	then
 		echo "$filename differs from expectation:"
