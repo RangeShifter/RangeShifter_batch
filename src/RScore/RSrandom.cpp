@@ -52,7 +52,7 @@ RSrandom::RSrandom()
 #endif
 #endif // RSDEBUG
 
-#if BATCH && RSDEBUG
+#if RSDEBUG
     DEBUGLOG << "RSrandom::RSrandom(): RS_random_seed=" << RS_random_seed << endl;
 #endif // RSDEBUG
 
@@ -140,20 +140,20 @@ int RSrandom::Poisson(double mean)
 			std::random_device device;
 			random_seed[2] = device();
 			#endif
-			#if BATCH && RSDEBUG
+			#if RSDEBUG
 				DEBUGLOG << "RSrandom::RSrandom(): Generated random seed = ";
 			#endif
 		}
 		else{
 			// fixed seed
 			random_seed[2] = seed;
-			#if BATCH && RSDEBUG
+			#if RSDEBUG
 				DEBUGLOG << "RSrandom::RSrandom(): Use fixed seed = ";
 			#endif
 		}
 
 		RS_random_seed = random_seed[2];
-		#if BATCH && RSDEBUG
+		#if RSDEBUG
 			DEBUGLOG << RS_random_seed << endl;
 		#endif
 

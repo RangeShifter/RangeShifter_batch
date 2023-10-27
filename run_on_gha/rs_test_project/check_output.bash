@@ -11,10 +11,13 @@ then
 	exit 1 # check fails
 fi
 
+# MacOS number generation differs from Ubuntu and Windows so different set of expectations
+if [ $OSTYPE == "darwin21" ]; then osdir=macos ; else osdir=windows_ubuntu ; fi
+
 # Iteratively compare all output files with corresponding expectations
 any_diff=0
-for filename in Outputs/[^\(DebugLog.txt\)\(git_anchor.txt\)]*.txt; do # ignore DebugLog (bc if addresses) and anchor
-	matching_expectation="../expected_output/${filename#Outputs/}"
+for filename in Outputs/[^\(git_anchor.txt\)]*.txt; do # ignore anchor
+	matching_expectation="../expected_output/${osdir}/${filename#Outputs/}"
 	if ! diff $filename $matching_expectation > tmp_diff.txt
 	then
 		echo "$filename differs from expectation:"
@@ -22,6 +25,8 @@ for filename in Outputs/[^\(DebugLog.txt\)\(git_anchor.txt\)]*.txt; do # ignore 
 		any_diff=1
 	fi
 done
+
+rm tmp_diff.txt
 
 if [ $any_diff -eq 1 ]
 then

@@ -433,12 +433,6 @@ void Population::reproduction(const float localK,const float envval,const int re
 int ninds = (int)inds.size();
 #if RSDEBUG
 //DEBUGLOG << "Population::reproduction(): this=" << this
-//#if BUTTERFLYDISP
-//	<< " option=" << option
-//#endif // BUTTERFLYDISP 
-//#if RS_CONTAIN
-//	<< " hab=" << hab
-//#endif // RS_CONTAIN 
 //	<< " ninds=" << ninds
 //	<< endl;
 #endif // RSDEBUG 
@@ -464,12 +458,6 @@ if (dem.repType == 0) nsexes = 1; else nsexes = 2;
 
 #if RSDEBUG
 //DEBUGLOG << "Population::reproduction(): this=" << this
-//#if RS_CONTAIN
-//	<< " hab=" << hab
-//#else
-//	<< " pSpecies=" << pSpecies
-//	<< " localK=" << localK << " envval=" << envval << " resol=" << resol
-//#endif // RS_CONTAIN 
 //	<< " sstruct.nStages=" << sstruct.nStages << " nsexes=" << nsexes << " ninds=" << ninds
 //	<< endl;
 #endif
@@ -576,15 +564,11 @@ else { // non-structured - set fecundity for adult females only
 	}
 	// apply density dependence
 	if (localK > 0.0) {
-//#if GOBYMODEL
-//		ddeffect[1] = (float)ninds/localK;
-//#else
 		if (dem.repType == 1 || dem.repType == 2) { // sexual model
 			// apply factor of 2 (as in manual, eqn. 6)
 			fec[1][0] *= 2.0;
 		}
 		fec[1][0] /= (1.0f + fabs(dem.lambda-1.0f)*pow(((float)ninds/localK),dem.bc));
-//#endif
 	}
 #if RSDEBUG
 //DEBUGLOG << "Population::reproduction(): dem.lambda=" << dem.lambda << " ninds=" << ninds

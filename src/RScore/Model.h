@@ -48,6 +48,7 @@ Last updated: 26 October 2021 by Steve Palmer
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <regex>
 
 #if RS_RCPP
 #include "../Version.h"
@@ -84,6 +85,10 @@ int RunModel(
 );
 #endif // RS_RCPP && !R_CMD
 bool CheckDirectory(void);
+
+// Drop working dir prefix if exists for Windows-Unix output consistency
+string drop_wd_prefix(const string&);
+
 void PreReproductionOutput(
 	Landscape*,	// pointer to Landscape
 	Community*, // pointer to Community
@@ -91,6 +96,7 @@ void PreReproductionOutput(
 	int,				// year
 	int					// generation
 );
+
 void RangePopOutput(
 	Community*, // pointer to Community
 	int,				// replicate
@@ -133,9 +139,6 @@ extern string genfilename;	// see FormGenetics.cpp (VCL) OR Main.cpp (batch)
 extern RSrandom *pRandom;
 
 // these functions to have different version for GUI and batch applications ...
-#if BATCH
-extern void MemoLine(string);
-#endif
 void GUIsetLandScale(
 	int,	// landscape image height (pixels)
 	int		// landscape image width  (pixels)

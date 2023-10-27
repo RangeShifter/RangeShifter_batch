@@ -115,10 +115,6 @@ DEBUGLOG << endl << "RunModel(): starting simulation=" << sim.simulation << " re
 #endif
 #if RS_RCPP && !R_CMD
 		Rcpp::Rcout << endl << "starting replicate " << rep << endl;
-#else
-#if BATCH
-		cout << endl << "starting replicate " << rep << endl;
-#endif
 #endif
 
 	MemoLine(("Running replicate " + Int2Str(rep) + "...").c_str());
@@ -152,17 +148,10 @@ DEBUGLOG << endl << "RunModel(): generating new landscape ..." << endl;
 DEBUGLOG << "RunModel(): finished resetting landscape" << endl << endl;
 #endif
 		pLandscape->generatePatches();
-//#if VCL
 		if (v.viewLand || sim.saveMaps) {
 			pLandscape->setLandMap();
 			pLandscape->drawLandscape(rep,0,ppLand.landNum);
 		}
-//#endif
-//#if BATCH
-//		if (sim.saveMaps) {
-//			pLandscape->drawLandscape(rep,0,ppLand.landNum);
-//		}
-//#endif
 #if RSDEBUG
 DEBUGLOG << endl << "RunModel(): finished generating patches" << endl;
 #endif
@@ -312,13 +301,6 @@ DEBUGLOG << "RunModel(): completed updating carrying capacity" << endl;
 #if RSDEBUG
 DEBUGLOG << "RunModel(): completed initialisation, rep=" << rep
 	<< " pSpecies=" << pSpecies << endl;
-#endif
-#if BATCH
-#if RS_RCPP && !R_CMD
-	Rcpp::Rcout << "RunModel(): completed initialisation " << endl;
-#else
-	cout << "RunModel(): completed initialisation " << endl;
-#endif
 #endif
 
 	// open a new individuals file for each replicate
@@ -708,14 +690,6 @@ DEBUGLOG << "RunModel(): yr=" << yr << " completed Age_increment and final survi
 	} // end of the years loop
 
 	// Final output and popn. visualisation
-#if BATCH
-	if (sim.saveMaps && yr%sim.mapInt == 0) {
-		if (updateland) {
-			pLandscape->drawLandscape(rep,landIx,ppLand.landNum);
-		}
-		pComm->draw(rep,yr,0,ppLand.landNum);
-	}
-#endif
 		// produce final summary output
 		if (v.viewPop || v.viewTraits || sim.outOccup
 		|| 	sim.outTraitsCells || sim.outTraitsRows || sim.saveMaps)
@@ -922,6 +896,12 @@ if (!is_directory(outputmaps)) errorfolder = true;
 return errorfolder;
 }
 
+// Drop working dir prefix if exists for Windows-Unix output consistency
+string drop_wd_prefix(const string& str)
+{
+	return regex_replace(str, regex("\\./"), "");
+}
+
 //---------------------------------------------------------------------------
 //For outputs and population visualisations pre-reproduction
 void PreReproductionOutput(Landscape *pLand,Community *pComm,int rep,int yr,int gen)
@@ -1110,16 +1090,16 @@ else {
 		outPar << "COSTS FILE: " << name_costfile << endl;
 	}
 #else
-	if (sim.batchMode) outPar << " (see batch file) " << landFile << endl;
+	if (sim.batchMode) outPar << " (see batch file) " << drop_wd_prefix(landFile) << endl;
 	else {
-		outPar << habmapname << endl;
+		outPar << drop_wd_prefix(habmapname) << endl;
 		if (ppLand.rasterType == 1) { // habitat % cover - list additional layers
 			for (int i = 0; i < ppLand.nHab-1; i++) {
 				outPar  << "           "<< hfnames[i] << endl;
 			}
 		}
 		if (ppLand.patchModel) {
-			outPar << "PATCH FILE: " << patchmapname << endl;
+			outPar << "PATCH FILE: " << drop_wd_prefix(patchmapname) << endl;
 		}
 	}
 #endif
@@ -1136,12 +1116,12 @@ if (!ppLand.generated && ppLand.dynamic) {
 	for (int i = 0; i < nchanges; i++) {
 		chg = pLandscape->getLandChange(i);
 		outPar << "Change no. " << chg.chgnum << " in year " << chg.chgyear << endl;
-		outPar << "Landscape: " << chg.habfile << endl;
+		outPar << "Landscape: " << drop_wd_prefix(chg.habfile) << endl;
 		if (ppLand.patchModel) {
-			outPar << "Patches  : " << chg.pchfile << endl;
+			outPar << "Patches  : " << drop_wd_prefix(chg.pchfile) << endl;
 		}
 		if (chg.costfile != "none" && chg.costfile != "NULL") {
-			outPar << "Costs    : " << chg.costfile << endl;			
+			outPar << "Costs    : " << drop_wd_prefix(chg.costfile) << endl;
 		}
 //		outPar << "Change no. " << chg.chgnum << " in year " << chg.chgyear
 //			<< " habitat map: " << chg.habfile << endl;
@@ -1156,9 +1136,9 @@ if (ppLand.spDist)
 	outPar << "RESOLUTION (m)\t" << ppLand.spResol << endl;
 	outPar << "FILE NAME: ";
 #if !RS_RCPP
-	if (sim.batchMode) outPar << " (see batch file) " << landFile << endl;
+	if (sim.batchMode) outPar << " (see batch file) " << drop_wd_prefix(landFile) << endl;
 	else {
-		outPar << distnmapname << endl;
+		outPar << drop_wd_prefix(distnmapname) << endl;
 	}
 #else
 	outPar << name_sp_dist << endl;
@@ -1341,22 +1321,6 @@ if (dem.stageStruct){
 			outPar << endl;
 		}
 	}
-#if VCL
-	else {
-
-	// NOTE: TO PREVENT COMPILING FOR BATCH MODE, THIS CODE NEEDS TO BE INCLUDED IN COMPILER
-	// CONDITIONAL BLOCK  AS SHOWN
-
-//	outPar << "Row count: " << frmSpecies->transMatrix->RowCount << endl;
-//	outPar << "Col count: " << frmSpecies->transMatrix->ColCount << endl;
-		for (int i = 1; i < frmSpecies->transMatrix->RowCount; i++) {
-			for (int j = 1; j < frmSpecies->transMatrix->ColCount; j++) {
-				outPar << frmSpecies->transMatrix->Cells[j][i].ToDouble() << "\t";
-			}
-			outPar << endl;
-		}
-	}
-#endif
 	outPar << endl;
 #endif
 */
@@ -1654,7 +1618,7 @@ if (trfr.moveModel) {
 		if (trfr.costMap) {
 			outPar << "SMS\tcosts from imported cost map" << endl;
 #if !RS_RCPP
-			outPar << "FILE NAME: " << costmapname << endl;
+			outPar << "FILE NAME: " << drop_wd_prefix(costmapname) << endl;
 #endif
 		}
 		else {
@@ -2054,7 +2018,7 @@ if (emig.indVar || trfr.indVar || sett.indVar || d.neutralMarkers)
 		if (!d.trait1Chromosome) {
 			traitAllele allele;
 			outPar << "TRAIT MAPPING:" << endl;
-			outPar << "Architecture file:     " << genfilename << endl;
+			outPar << "Architecture file:     " << drop_wd_prefix(genfilename) << endl;
 			int ntraitmaps = pSpecies->getNTraitMaps();
 			outPar << "No. of traits defined: " << ntraitmaps << endl;
 			for (int i = 0; i < ntraitmaps; i++) {
@@ -2125,7 +2089,7 @@ case 1:
 	}
 	break;
 case 2:
-	outPar << "From initial individuals file: " << paramsSim->getDir(1) + init.indsFile << endl;
+	outPar << "From initial individuals file: " << drop_wd_prefix(paramsSim->getDir(1) + init.indsFile) << endl;
 	break;
 case 3:
 	outPar << "From file" << endl;

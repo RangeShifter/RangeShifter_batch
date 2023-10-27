@@ -2,8 +2,8 @@ RangeShifter 2.0  - 64 bit implementation
 ================    =====================
 
 BATCH MODE 	yes
-REPLICATES 	2
-YEARS 	100
+REPLICATES 	1
+YEARS 	10
 REPRODUCTIVE SEASONS / YEAR	1
 PATCH-BASED MODEL
 No. PATCHES 	50
@@ -11,7 +11,7 @@ BOUNDARIES 	reflective
 
 LANDSCAPE:	imported map
 TYPE: 	habitat codes
-FILE NAME:  (see batch file) ./Inputs/LandFile_ex4.txt
+FILE NAME:  (see batch file) Inputs/LandFile_ex4.txt
 No. HABITATS:	7
 RESOLUTION (m): 	10
 DIMENSIONS:  X 979  Y 619
@@ -19,7 +19,7 @@ AVAILABLE:   min.X 0 min.Y 0  max.X 978 max.Y 618
 
 SPECIES DISTRIBUTION LOADED: 	yes
 RESOLUTION (m)	10
-FILE NAME:  (see batch file) ./Inputs/LandFile_ex4.txt
+FILE NAME:  (see batch file) Inputs/LandFile_ex4.txt
 
 ENVIRONMENTAL GRADIENT:	 no
 ENVIRONMENTAL STOCHASTICITY:	no
@@ -94,12 +94,8 @@ constant 0.01
 DISPERSAL - SETTLEMENT:
 MIN. No. OF STEPS:	 0
 MAX. No. OF STEPS:	 not applied
-SEX-DEPENDENT:   yes
+SEX-DEPENDENT:   no
 STAGE-DEPENDENT: no
-FEMALES:
-SETTLE IF: find a suitable cell/patch (not the natal one)
-MAX. No. OF STEPS/YEAR:	 not applied
-MALES:
 SETTLE IF: find a suitable cell/patch + mating requirements
 MAX. No. OF STEPS/YEAR:	 not applied
 
@@ -119,7 +115,6 @@ min Y: 0 max Y: 0
 
 OUTPUTS:
 Range - every 1 year
-Occupancy - every 1 year
 Populations - every 1 year
 SAVE MAPS: no
 SAVE TRAITS MAPS: no

@@ -2568,11 +2568,6 @@ simView v = paramsSim->getViews();
 
 int maxcost = 0;
 
-#if RSDEBUG
-#if BATCH
-//DEBUGLOG << "Landscape::readCosts(): fname=" << fname << endl;
-#endif
-#endif
  // open cost file
 #if !RS_RCPP || RSWIN64
 	costs.open(fname.c_str());
@@ -2639,13 +2634,7 @@ for (int y = maxYcost - 1; y > -1; y--){
 		}
 #endif
 		if ( hc < 1 && hc != NODATACost ) {
-#if RSDEBUG
-#if BATCH
-//		DEBUGLOG << "Landscape::readCosts(): x=" << x << " y=" << y 
-//			<< " fcost=" << fcost << " hc=" << hc
-//			<< endl;
-#endif
-#endif
+
 #if RS_RCPP && !R_CMD
 			Rcpp::Rcout << "Cost map my only contain values of 1 or higher, but found " << fcost << "." << endl;
 #endif

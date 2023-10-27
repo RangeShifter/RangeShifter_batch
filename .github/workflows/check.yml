@@ -3,12 +3,15 @@ on: push
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
 
       - name: build
-        run: g++ -o ./run_on_gha/rs_test_project/rs.exe ./src/*.cpp ./src/RScore/*.cpp
+        run: g++ -o ./run_on_gha/rs_test_project/rs.exe ./src/*.cpp ./src/RScore/*.cpp -DRSDEBUG -DLINUX_CLUSTER -DRSWIN64
 
       - name: run
         run: |
