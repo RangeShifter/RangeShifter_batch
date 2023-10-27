@@ -14,7 +14,7 @@ add_subdirectory(src/RScore)
 add_executable(RangeShifter src/main.cpp src/BatchMode.cpp)
 
 # pass config definitions to compiler
-target_compile_definitions(RangeShifter PRIVATE "RSDEBUG" "LINUX_CLUSTER" "RSWIN64" "BATCH")
+target_compile_definitions(RangeShifter PRIVATE "RSDEBUG" "RSWIN64" "BATCH")
 
 # link RScore to the executable as a library
 target_link_libraries(RangeShifter PUBLIC RScore)
