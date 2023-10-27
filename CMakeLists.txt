@@ -16,6 +16,13 @@ add_executable(RangeShifter src/main.cpp src/BatchMode.cpp)
 # pass config definitions to compiler
 target_compile_definitions(RangeShifter PRIVATE "RSDEBUG" "RSWIN64" "BATCH")
 
+# enable LINUX_CLUSTER macro on Linux + macOS
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+	target_compile_definitions(RangeShifter PRIVATE "RSDEBUG" "RSWIN64" "BATCH" "LINUX_CLUSTER")
+else() # Windows
+	target_compile_definitions(RangeShifter PRIVATE "RSDEBUG" "RSWIN64" "BATCH")
+endif()
+
 # link RScore to the executable as a library
 target_link_libraries(RangeShifter PUBLIC RScore)
 
