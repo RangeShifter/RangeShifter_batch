@@ -5,7 +5,7 @@ add_library(RScore Species.cpp Cell.cpp Community.cpp FractalGenerator.cpp Genom
 
 # pass config definitions to compiler
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-	target_compile_definitions(RangeShifter PRIVATE "RSDEBUG" "RSWIN64" "BATCH" "LINUX_CLUSTER")
+	target_compile_definitions(RScore PRIVATE "RSDEBUG" "RSWIN64" "BATCH" "LINUX_CLUSTER")
 else() # Windows
-	target_compile_definitions(RangeShifter PRIVATE "RSDEBUG" "RSWIN64" "BATCH")
+	target_compile_definitions(RScore PRIVATE "RSDEBUG" "RSWIN64" "BATCH")
 endif()
