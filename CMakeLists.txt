@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # add RScore to source search path
-add_subdirectory(../src/RScore)
+add_subdirectory(src/RScore)
 
 # add the executable
 add_executable(RangeShifter ../src/main.cpp ../src/BatchMode.cpp)
