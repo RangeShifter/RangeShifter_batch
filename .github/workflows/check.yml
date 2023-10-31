@@ -11,6 +11,9 @@ jobs:
           - os: windows-latest
             node: 16
             npm: 6
+          - os: ubuntu-latest
+            node: 16
+            npm: 6
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/setup-node@v3
