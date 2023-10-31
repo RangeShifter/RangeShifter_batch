@@ -13,6 +13,10 @@ add_subdirectory(src/RScore)
 # add the executable
 add_executable(RangeShifter src/Main.cpp src/BatchMode.cpp)
 
+# set executable name and path explicitly so constant across platforms
+set_target_properties(RangeShifter PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set_target_properties(RangeShifter PROPERTIES OUTPUT_NAME "RangeShifter.exe")
+
 # enable LINUX_CLUSTER macro on Linux + macOS
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	target_compile_definitions(RangeShifter PRIVATE "RSDEBUG" "RSWIN64" "BATCH" "LINUX_CLUSTER")

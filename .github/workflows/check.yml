@@ -18,8 +18,7 @@ jobs:
           cmake --build .
 
       - name: run
-        run: |
-          build/Debug/Rangeshifter.exe run_on_gha/rs_test_project/
+        run: build/Rangeshifter.exe run_on_gha/rs_test_project/
 
       - name: check_output
         run: |
