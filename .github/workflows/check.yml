@@ -27,9 +27,9 @@ jobs:
       - name: run
         run: ${{ matrix.path_to_exe }} run_on_gha/rs_test_project/
 
-     # - name: check_output
-     #   run: |
-     #    cd ./run_on_gha/rs_test_project 
-     #     rm Outputs/DebugLog.txt
-     #     bash check_output.bash
+      - name: check_output
+        run: |
+         cd ./run_on_gha/rs_test_project 
+          rm Outputs/DebugLog.txt
+          bash check_output.bash
         # DebugLog contains addresses, changes every run
