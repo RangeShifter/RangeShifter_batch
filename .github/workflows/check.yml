@@ -2,36 +2,20 @@ name: check
 on: push
 
 jobs:
-  check:
+  example_matrix:
     strategy:
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
-	include:
-	  - os: windows-latest
-   	    path_to_exe: ./build/Debug/RangeShifter.exe
-	  - os: ubuntu-latest
-	    path_to_exe: ./build/RangeShifter
-	  - os: macos-latest
-	    path_to_exe: ./build/RangeShifter
+        os: [windows-latest, ubuntu-latest]
+        node: [14, 16]
+        include:
+          - os: windows-latest
+            node: 16
+            npm: 6
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
-
-      - name: build
-        run: |
-          mkdir build
-          cd build
-          cmake ../
-          cmake --build .
-          
-      - name: run
-        run: ${{ matrix.path_to_exe }} run_on_gha/rs_test_project/
-
-     # - name: check_output
-     #   run: |
-     #    cd ./run_on_gha/rs_test_project 
-     #     rm Outputs/DebugLog.txt
-     #     bash check_output.bash
-        # DebugLog contains addresses, changes every run
-
-          
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+      - if: ${{ matrix.npm }}
+        run: npm install -g npm@${{ matrix.npm }}
+      - run: npm --version
