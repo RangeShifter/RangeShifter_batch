@@ -10,10 +10,10 @@ jobs:
         include:
           - os: windows-latest
             node: 16
-            npm: 6
+            npm: ./build/Debug/RangeShifter.exe
           - os: ubuntu-latest
             node: 16
-            npm: 6
+            npm: ./build/RangeShifter
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/setup-node@v3
