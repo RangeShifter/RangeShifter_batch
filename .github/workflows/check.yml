@@ -5,14 +5,13 @@ jobs:
   example_matrix:
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest]
-        node: [14, 16]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         include:
           - os: windows-latest
-            node: 16
             npm: ./build/Debug/RangeShifter.exe
           - os: ubuntu-latest
-            node: 16
+            npm: ./build/RangeShifter
+          - os: macos-latest
             npm: ./build/RangeShifter
     runs-on: ${{ matrix.os }}
     steps:
