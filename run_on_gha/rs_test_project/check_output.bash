@@ -16,13 +16,18 @@ fi
 
 # Iteratively compare all output files with corresponding expectations
 any_diff=0
-for filename in Outputs/[^\(BatchLog.txt\)\(DebugLog.txt\)\(git_anchor.txt\)]*.txt; do # ignore anchor
-	matching_expectation="../expected_output/${osdir}/${filename#Outputs/}"
-	if ! diff $filename $matching_expectation  -I '^FILE NAME' > tmp_diff.txt
-	then
-		echo "$filename differs from expectation:"
-		cat tmp_diff.txt
-		any_diff=1
+for filename in Outputs/*.txt; do
+	# Ignore anchor; Batch and Debug logs are uninteresting to compare
+	if [ $filename != Outputs/git_anchor.txt ] && [ $filename != Outputs/BatchLog.txt ] && [ $filename != Outputs/DebugLog.txt ]
+	then 
+		matching_expectation="../expected_output/${osdir}/${filename#Outputs/}"
+		# Ignore input filenames in Parameters which vary with OS
+		if ! diff $filename $matching_expectation  -I '^FILE NAME' > tmp_diff.txt
+		then
+			echo "$filename differs from expectation:"
+			cat tmp_diff.txt
+			any_diff=1
+		fi
 	fi
 done
 
