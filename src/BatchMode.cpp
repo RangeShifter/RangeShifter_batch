@@ -120,7 +120,7 @@ if (!controlfile.is_open()) {
 	return b;
 }
 else {
-	batchlog << "Checking Control file " << drop_wd_prefix(ctrlfile) << endl;
+	batchlog << "Checking Control file " << ctrlfile << endl;
 }
 
 // Check fixed model parameters
@@ -307,7 +307,7 @@ if (controlFormatError || errors > 0) { // terminate batch error checking
 controlfile >> paramname >> filename;
 if (paramname == "ParameterFile" && !controlFormatError) {
 	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
+	batchlog << endl << "Checking " << paramname << " " << fname << endl;
 	bParamFile.open(fname.c_str());
 	if (bParamFile.is_open()) {
 		b.nSimuls = ParseParameterFile();
@@ -343,7 +343,7 @@ bParamFile.clear();
 controlfile >> paramname >> filename;
 if (paramname == "LandFile" && !controlFormatError) {
 	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
+	batchlog << endl << "Checking " << paramname << " " << fname << endl;
 	bLandFile.open(fname.c_str());
 	if (bLandFile.is_open()) {
 		lines = ParseLandFile(landtype,indir);
@@ -379,7 +379,7 @@ if (paramname == "StageStructFile" && !controlFormatError) {
 	else { // filename is not NULL
 		if (stagestruct) { // check file only if it is required
 			fname = indir + filename;
-			batchlog << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
+			batchlog << "Checking " << paramname << " " << fname << endl;
 			bStageStructFile.open(fname.c_str());
 			if (bStageStructFile.is_open()) {
 				nSimuls = ParseStageFile(indir);
@@ -415,7 +415,7 @@ else controlFormatError = true; // wrong control file format
 controlfile >> paramname >> filename;
 if (paramname == "EmigrationFile" && !controlFormatError) {
 	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
+	batchlog << endl << "Checking " << paramname << " " << fname << endl;
 	bEmigrationFile.open(fname.c_str());
 	if (bEmigrationFile.is_open()) {
 		nSimuls = ParseEmigFile();
@@ -442,7 +442,7 @@ else controlFormatError = true; // wrong control file format
 controlfile >> paramname >> filename;
 if (paramname == "TransferFile" && !controlFormatError) {
 	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
+	batchlog << endl << "Checking " << paramname << " " << fname << endl;
 	bTransferFile.open(fname.c_str());
 	if (bTransferFile.is_open()) {
 		nSimuls = ParseTransferFile(indir);
@@ -469,7 +469,7 @@ else controlFormatError = true; // wrong control file format
 controlfile >> paramname >> filename;
 if (paramname == "SettlementFile" && !controlFormatError) {
 	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
+	batchlog << endl << "Checking " << paramname << " " << fname << endl;
 	bSettlementFile.open(fname.c_str());
 	if (bSettlementFile.is_open()) {
 		nSimuls = ParseSettleFile();
@@ -503,7 +503,7 @@ if (paramname == "GeneticsFile" && !controlFormatError) {
 	}
 	else { // filename is not NULL
 		fname = indir + filename;
-		batchlog << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
+		batchlog << "Checking " << paramname << " " << fname << endl;
 		bGeneticsFile.open(fname.c_str());
 		if (bGeneticsFile.is_open()) {
 			nSimuls = ParseGeneticsFile(indir);
@@ -531,7 +531,7 @@ else controlFormatError = true; // wrong control file format
 controlfile >> paramname >> filename;
 if (paramname == "InitialisationFile" && !controlFormatError) {
 	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << drop_wd_prefix(fname) << endl;
+	batchlog << endl << "Checking " << paramname << " " << fname << endl;
 	bInitFile.open(fname.c_str());
 	if (bInitFile.is_open()) {
 		nSimuls = ParseInitFile(indir);
@@ -973,10 +973,10 @@ if (landtype == 0 || landtype == 2) { // real landscape
 		landraster = CheckRasterFile(fname);
 		if (landraster.ok) {
 			if (landraster.cellsize == resolution)
-				batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
+				batchlog << ftype << " headers OK: " << fname << endl;
 			else {
 				errors++;
-				batchlog << msgresol0 << ftype << " " << drop_wd_prefix(fname)
+				batchlog << msgresol0 << ftype << " " << fname
 						<< msgresol1 << endl;
 			}
 		}
@@ -1008,16 +1008,16 @@ if (landtype == 0 || landtype == 2) { // real landscape
 						&&  patchraster.cellsize == landraster.cellsize
 						&&  (int)patchraster.xllcorner == (int)landraster.xllcorner
 						&&  (int)patchraster.yllcorner == (int)landraster.yllcorner) {
-							batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
+							batchlog << ftype << " headers OK: " << fname << endl;
 						}
 						else {
-							batchlog << msghdrs0 << ftype << " " << drop_wd_prefix(fname)
+							batchlog << msghdrs0 << ftype << " " << fname
 								<< msghdrs1 << endl;
 							errors++;
 						}
 					}
 					else {
-						batchlog << msgresol0 << ftype << " " << drop_wd_prefix(fname)
+						batchlog << msgresol0 << ftype << " " << fname
 							<< msgresol1 << endl;
 						errors++;
 					}
@@ -1054,16 +1054,16 @@ if (landtype == 0 || landtype == 2) { // real landscape
 						&&  costraster.cellsize == landraster.cellsize
 						&&  (int)costraster.xllcorner == (int)landraster.xllcorner
 						&&  (int)costraster.yllcorner == (int)landraster.yllcorner) {
-							batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
+							batchlog << ftype << " headers OK: " << fname << endl;
 						}
 						else {
-							batchlog << msghdrs0 << ftype << " " << drop_wd_prefix(fname)
+							batchlog << msghdrs0 << ftype << " " << fname
 								<< msghdrs1 << endl;
 							errors++;
 						}
 					}
 					else {
-						batchlog << msgresol0 << ftype << " " << drop_wd_prefix(fname)
+						batchlog << msgresol0 << ftype << " " << fname
 							<< msgresol1 << endl;
 						errors++;
 					}
@@ -1087,7 +1087,7 @@ if (landtype == 0 || landtype == 2) { // real landscape
 		bLandFile >> intext;
 		if (intext != "NULL") { // landscape is dynamic
 			fname = indir + intext;
-			batchlog << "Checking " << ftype << " " << drop_wd_prefix(fname) << endl;
+			batchlog << "Checking " << ftype << " " << fname << endl;
 			bDynLandFile.open(fname.c_str());
 			if (bDynLandFile.is_open()) {
 				int something = ParseDynamicFile(indir,name_costfile);
@@ -1130,7 +1130,7 @@ if (landtype == 0 || landtype == 2) { // real landscape
 								// check origins match
 								if ((int)spdistraster.xllcorner == (int)landraster.xllcorner
 								&&  (int)spdistraster.yllcorner == (int)landraster.yllcorner) {
-									batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
+									batchlog << ftype << " headers OK: " << fname << endl;
 								}
 								else {
 									batchlog << "*** Origin co-ordinates of " << ftype
@@ -1143,7 +1143,7 @@ if (landtype == 0 || landtype == 2) { // real landscape
 							// check origins match
 							if ((int)spdistraster.xllcorner == (int)landraster.xllcorner
 							&&  (int)spdistraster.yllcorner == (int)landraster.yllcorner) {
-								batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
+								batchlog << ftype << " headers OK: " << fname << endl;
 							}
 							else {
 								batchlog << "*** Origin co-ordinates of " << ftype
@@ -1153,7 +1153,7 @@ if (landtype == 0 || landtype == 2) { // real landscape
 						}
 					}
 					else {
-						batchlog << "*** Resolution of " << ftype << " " << drop_wd_prefix(fname)
+						batchlog << "*** Resolution of " << ftype << " " << fname
 							<< " does not match DistResolution in Control file" << endl;
 						errors++;
 					}
@@ -1345,16 +1345,16 @@ while (change != -98765) {
 			&&  landchgraster.cellsize == landraster.cellsize
 			&&  (int)landchgraster.xllcorner == (int)landraster.xllcorner
 			&&  (int)landchgraster.yllcorner == (int)landraster.yllcorner) {
-				batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
+				batchlog << ftype << " headers OK: " << fname << endl;
 			}
 			else {
-				batchlog << msghdrs0 << ftype << " " << drop_wd_prefix(fname)
+				batchlog << msghdrs0 << ftype << " " << fname
 					<< msghdrs1 << endl;
 				errors++;
 			}
 		else {
 			errors++;
-			batchlog << msgresol0 << ftype << " " << drop_wd_prefix(fname) << msgresol1 << endl;
+			batchlog << msgresol0 << ftype << " " << fname << msgresol1 << endl;
 		}
 	}
 	else {
@@ -1385,16 +1385,16 @@ while (change != -98765) {
 					&&  patchchgraster.cellsize == landraster.cellsize
 					&&  (int)patchchgraster.xllcorner == (int)landraster.xllcorner
 					&&  (int)patchchgraster.yllcorner == (int)landraster.yllcorner) {
-						batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
+						batchlog << ftype << " headers OK: " << fname << endl;
 					}
 					else {
-						batchlog << msghdrs0 << ftype << " " << drop_wd_prefix(fname)
+						batchlog << msghdrs0 << ftype << " " << fname
 							<< msghdrs1 << endl;
 						errors++;
 					}
 				}
 				else {
-					batchlog << msgresol0 << ftype << " " << drop_wd_prefix(fname)
+					batchlog << msgresol0 << ftype << " " << fname
 						<< msgresol1 << endl;
 					errors++;
 				}
@@ -1433,16 +1433,16 @@ while (change != -98765) {
 					&&  costchgraster.cellsize == landraster.cellsize
 					&&  (int)costchgraster.xllcorner == (int)landraster.xllcorner
 					&&  (int)costchgraster.yllcorner == (int)landraster.yllcorner) {
-						batchlog << ftype << " headers OK: " << drop_wd_prefix(fname) << endl;
+						batchlog << ftype << " headers OK: " << fname << endl;
 					}
 					else {
-						batchlog << msghdrs0 << ftype << " " << drop_wd_prefix(fname)
+						batchlog << msghdrs0 << ftype << " " << fname
 							<< msghdrs1 << endl;
 						errors++;
 					}
 				}
 				else {
-					batchlog << msgresol0 << ftype << " " << drop_wd_prefix(fname)
+					batchlog << msgresol0 << ftype << " " << fname
 						<< msgresol1 << endl;
 					errors++;
 				}
@@ -1554,7 +1554,7 @@ while (inint != -98765) {
 		}
 		else {
 			fname = indir + filename;
-			batchlog << "Checking " << ftype2 << " " << drop_wd_prefix(fname) << endl;
+			batchlog << "Checking " << ftype2 << " " << fname << endl;
 			bTransMatrix.open(fname.c_str());
 			if (bTransMatrix.is_open()) {
 				err = ParseTransitionFile(stages,sexesDem);
@@ -1605,7 +1605,7 @@ while (inint != -98765) {
 		}
 		if (checkfile) {
 			fname = indir + filename;
-			batchlog << "Checking " << ftype2 << " " << drop_wd_prefix(fname) << endl;
+			batchlog << "Checking " << ftype2 << " " << fname << endl;
 			bStageWeightsFile.open(fname.c_str());
 			if (bStageWeightsFile.is_open()) {
 				err = ParseWeightsFile(ftype2);
@@ -1658,7 +1658,7 @@ while (inint != -98765) {
 		}
 		if (checkfile) {
 			fname = indir + filename;
-			batchlog << "Checking " << ftype2 << " " << drop_wd_prefix(fname) << endl;
+			batchlog << "Checking " << ftype2 << " " << fname << endl;
 			bStageWeightsFile.open(fname.c_str());
 			if (bStageWeightsFile.is_open()) {
 				err = ParseWeightsFile(ftype2);
@@ -1711,7 +1711,7 @@ while (inint != -98765) {
 		}
 		if (checkfile) {
 			fname = indir + filename;
-			batchlog << "Checking " << ftype2 << " " << drop_wd_prefix(fname) << endl;
+			batchlog << "Checking " << ftype2 << " " << fname << endl;
 			bStageWeightsFile.open(fname.c_str());
 			if (bStageWeightsFile.is_open()) {
 				err = ParseWeightsFile(ftype2);
@@ -2991,7 +2991,7 @@ while (simul != -98765) {
 			}
 			if (checkfile) {
 				fname = indir + filename;
-				batchlog << "Checking " << ftype << " " << drop_wd_prefix(fname) << endl;
+				batchlog << "Checking " << ftype << " " << fname << endl;
 				bArchFile.open(fname.c_str());
 				if (bArchFile.is_open()) {
 					err = ParseArchFile();
@@ -3353,7 +3353,7 @@ while (simul != -98765) {
 			}
 			if (checkfile) {
 				fname = indir + filename;
-				batchlog << "Checking " << ftype2 << " " << drop_wd_prefix(fname) << endl;
+				batchlog << "Checking " << ftype2 << " " << fname << endl;
 				bInitIndsFile.open(fname.c_str());
 				if (bInitIndsFile.is_open()) {
 					err = ParseInitIndsFile();
