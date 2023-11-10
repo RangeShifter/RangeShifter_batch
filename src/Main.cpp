@@ -50,6 +50,7 @@ Last updated: 14 January 2021 by Anne-Kathleen Malchow, Potsdam University
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
+#include <cassert>
 
 using namespace std;
 
@@ -95,7 +96,11 @@ void MemoLine(string msg) {
 void DebugGUI(string msg) {
 // dummy function for batch version
 }
-#endif
+
+void run_unit_tests() {
+	// call tests here
+}
+#endif // RSDEBUG
 
 string habmapname,patchmapname,distnmapname;	// req'd for compilation, but not used
 string costmapname,genfilename;					 			// ditto
@@ -123,11 +128,18 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 {
 
-
 #if RSDEBUG
 	cout << "RangeShifter Debug Mode" << endl;
 #else
 	cout << "RangeShifter Release Mode" << endl;
+#endif
+
+#if RSDEBUG
+	assert(0.1 > 0.0); // assert does run correctly
+	run_unit_tests();
+#else
+	// assert does not run in Release mode
+	assert(1 == 2);
 #endif
 
 //int i,t0,t1,Nruns;
