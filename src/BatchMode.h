@@ -187,8 +187,8 @@ extern paramInit *paramsInit;
 extern paramSim *paramsSim;
 
 extern Species *pSpecies;
-extern string costmapname;	// see FormMove.cpp (VCL) OR Main.cpp (batch)
-extern string genfilename;	// see FormGenetics.cpp (VCL) OR Main.cpp (batch)
+extern string costmapname;
+extern string genfilename;
 extern int RS_random_seed;
 
 //---------------------------------------------------------------------------

@@ -365,43 +365,6 @@ if (paramname == "LandFile" && !controlFormatError) {
 }
 else controlFormatError = true; // wrong control file format
 
-/*
-#if SEASONAL
-// Check seasonal file
-controlfile >> paramname >> filename;
-if (paramname == "SeasonFile" && !controlFormatError) {
-	fname = indir + filename;
-	batchlog << endl << "Checking " << paramname << " " << fname << endl;
-	bSeasonFile.open(fname.c_str());
-	if (bSeasonFile.is_open()) {
-		lines = ParseSeasonFile(indir);
-		if (lines < 0) {
-			b.ok = false;
-			if (lines < -111)
-				batchlog << "*** Format error in " << paramname << endl;
-		}
-		else {
-			if (lines == b.nseasons) {
-				FileOK(paramname,lines,3);    
-				b.seasonFile = fname;
-			}
-			else {
-				b.ok = false;
-				batchlog << "*** No. of seasons in " << filename
-					<< " does not match no. in Control file" << endl;
-			}
-		}
-		bSeasonFile.close();
-	}
-	else {
-		OpenError(paramname,fname); b.ok = false;
-	}
-	bSeasonFile.clear();
-}
-else controlFormatError = true; // wrong control file format
-#endif
-*/
-
 // Check stage structure file if required file
 controlfile >> paramname >> filename;
 batchlog << endl;

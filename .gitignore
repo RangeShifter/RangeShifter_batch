@@ -2,6 +2,7 @@
 # CodeLite
 /.build-debug/
 /build-Debug/
+/build/
 /Debug/
 /Release/
 RNG_test/
@@ -56,6 +57,8 @@ Bacup*/
 .vs/
 *.sln
 *.vcxproj*
+out/
+x64/
 
 # Ignore test project outputs, except anchors
 run_on_gha/rs_test_project/Outputs/*

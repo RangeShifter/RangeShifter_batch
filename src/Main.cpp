@@ -70,7 +70,6 @@ using namespace std;
 #include <direct.h>
 #endif
 
-
 const string Int2Str(const int x)
 {
 	ostringstream o;
@@ -167,34 +166,6 @@ else {
 	cname  = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
 }
 #else
-#if RS_EMBARCADERO 
-if (_argc > 1) {
-	// full path name of directory passed as a parameter
-	paramsSim->setDir(_argv[1]);
-	if (_argc > 2) {
-		// control file name also passed as a parameter
-		cname  = paramsSim->getDir(0) + "Inputs\\" + _argv[2];
-	}
-	else {
-		// default name is CONTROL.txt
-		cname  = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
-	}
-}
-else {
-	// use current directory - get name from first (automatic) parameter
-	string nameS = _argv[0];
-	string path  = _argv[0];
-	unsigned int loc = nameS.find("\\",0);
-	while(loc < 999999) {
-		nameS = nameS.substr(loc+1);
-		loc = nameS.find("\\",0);
-	}
-	path = path.substr(0,path.length()-nameS.length());
-	paramsSim->setDir(path);
-	// control file name is forced to be CONTROL.txt
-	cname  = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
-}
-#else 
 if (__argc > 1) {
 	// full path name of directory passed as a parameter
 	paramsSim->setDir(__argv[1]);
@@ -226,7 +197,6 @@ else {
 	// control file name is forced to be CONTROL.txt
 	cname = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
 }
-#endif
 #endif
 #if RSDEBUG
 cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
