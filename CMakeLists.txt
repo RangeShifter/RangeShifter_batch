@@ -13,11 +13,16 @@ add_subdirectory(src/RScore)
 # add the executable
 add_executable(RangeShifter src/Main.cpp src/BatchMode.cpp)
 
-target_compile_definitions(RangeShifter PRIVATE RSDEBUG RSWIN64)
+target_compile_definitions(RangeShifter PRIVATE RSWIN64)
 
 # enable LINUX_CLUSTER macro on Linux + macOS
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-	add_compile_definitions("LINUX_CLUSTER")
+	add_compile_definitions(LINUX_CLUSTER)
+endif()
+
+# Debug Mode by default, unless "release" is passed i.e. `cmake -Drelease=`
+if(NOT DEFINED release)
+	add_compile_definitions(RSDEBUG)
 endif()
 
 # link RScore to the executable as a library

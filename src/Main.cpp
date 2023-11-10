@@ -123,6 +123,13 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 {
 
+
+#if RSDEBUG
+	cout << "RangeShifter Debug Mode" << endl;
+#else
+	cout << "RangeShifter Release Mode" << endl;
+#endif
+
 //int i,t0,t1,Nruns;
 int t0,t1;
 int nSimuls = 0, nLandscapes = 0; // no. of simulations and landscapes in batch
