@@ -589,7 +589,6 @@ int errors = 0;
 int Kerrors = 0;
 string filetype = "ParameterFile";
 
-//batchlog << "ParseParametersFile(): starting " << endl;
 // Parse header line;
 bParamFile >> header; if (header != "Simulation" ) errors++;
 bParamFile >> header; if (header != "Replicates" ) errors++;
@@ -712,7 +711,6 @@ while (inint != -98765) {
 			BatchError(filetype,line,0," ");
 			batchlog << "EnvStoch must be 0, 1 or 2 for cell-based model" << endl;
 			errors++;
-//			envstoch = 0; // to prevent checking of subsequent fields
 		}
 	}
 	else { // patch-based model
@@ -720,7 +718,6 @@ while (inint != -98765) {
 			BatchError(filetype,line,0," ");
 			batchlog << "EnvStoch must be 0 or 1 for patch-based model" << endl;
 			errors++;
-//			envstoch = 0; // to prevent checking of subsequent fields
 		}
 	}
 	bParamFile >> stochtype;
@@ -912,17 +909,13 @@ int j,inint,line;
 float infloat;
 rasterdata patchraster,spdistraster,costraster;
 int errors = 0;
-//int Kerrors = 0;
 int totlines = 0;
-//bool errorshown = false;
 vector <int> landlist;
 string filetype = "LandFile";
 
-//batchlog << "ParseLandFile(): starting " << endl;
 if (landtype == 0 || landtype == 2) { // real landscape
 	// Parse header line;
 	bLandFile >> header; if (header != "LandNum" ) errors++;
-//	batchlog << "ParseLandFile(): header = " << header << endl;
 	bLandFile >> header; if (header != "Nhabitats" ) errors++;
 	bLandFile >> header; if (header != "LandscapeFile" ) errors++;
 	bLandFile >> header; if (header != "PatchFile" ) errors++;
@@ -939,7 +932,6 @@ if (landtype == 0 || landtype == 2) { // real landscape
 	inint = -98765;
 	bLandFile >> inint;
 	while (inint != -98765) {
-//		 batchlog << "ParseLandFile(): Landscape no. = " << inint << endl;
 		if (inint < 1) {
 			BatchError(filetype,line,11,"LandNum"); errors++;
 		}
@@ -950,8 +942,6 @@ if (landtype == 0 || landtype == 2) { // real landscape
 					BatchError(filetype,line,666,"LandNum"); j = (int)landlist.size() + 1; errors++;
 				}
 			}
-//		batchlog << "ParseLandFile(): Adding landscape no. " << inint
-//			<< " to landscape list" << endl;
 			landlist.push_back(inint);
 		}
 		bLandFile >> inint;
@@ -1172,7 +1162,6 @@ if (landtype == 0 || landtype == 2) { // real landscape
 		// read first field on next line
 		inint = -98765;
 		bLandFile >> inint;
-//		batchlog << "ParseLandFile(): first item of next line = " << inint << endl;
 	} // end of while loop
 	landlist.clear();
 } // end of real landscape
@@ -1205,8 +1194,6 @@ else {
 					BatchError(filetype,line,666,"LandNum"); j = (int)landlist.size() + 1; errors++;
 				}
 			}
-//		batchlog << "ParseLandFile(): Adding landscape no. " << inint
-//			<< " to landscape list" << endl;
 			landlist.push_back(inint);
 			bLandFile >> fractal;
 			if (fractal < 0 || fractal > 1) {
@@ -1335,7 +1322,6 @@ while (change != -98765) {
 	// check landscape filename
 	ftype = "LandChangeFile";
 	bDynLandFile >> intext;
-//batchlog << "***** indir=" << indir << " intext=" << intext << endl;
 	fname = indir + intext;
 	landchgraster = CheckRasterFile(fname);
 	if (landchgraster.ok) {
@@ -1542,8 +1528,6 @@ while (inint != -98765) {
 	checkfile = true;
 	for (i = 0; i < (int)transfiles.size(); i++) {
 		if (filename == transfiles[i]) { // file has already been checked
-//			batchlog << "*** line = " << line << " i = " << i << " filename = " << filename
-//				<< " transfiles[i] = " << transfiles[i] << endl;
 			checkfile = false;
 		}
 	}
@@ -1761,7 +1745,6 @@ int ParseTransitionFile(short nstages,short nsexesDem)
 {
 string header,hhh;
 int i,j,stage,sex,line,minage;
-//int prevminage;
 float infloat;
 int errors = 0;
 string filetype = "TransMatrixFile";
@@ -1776,8 +1759,6 @@ for (i = 0; i < nstages; i++) {
 			if (j == 0) hhh = Int2Str(i) + "m"; else hhh = Int2Str(i) + "f";
 		}
 		if (header != hhh) errors++;
-//		batchlog << "i = " << i << " j = " << j << " hhh = " << hhh << " header = " << header
-//			<< " errors = " << errors << endl;
 	}
 }
 bTransMatrix >> header; if (header != "MinAge" ) errors++;
@@ -1812,15 +1793,12 @@ if (totfecundity <= 0.0) {
 	BatchError(filetype,line,10,"Total fecundity"); errors++;
 }
 bTransMatrix >> minage;
-//prevminage = minage;
-//				batchlog << "MINAGE = " << minage << endl;
 if (minage != 0) {
 	BatchError(filetype,line,0," ");
 	batchlog << "MinAge must be zero for juvenile stage" << endl; errors++;
 }
 
 // one row for each stage/sex combination
-//				batchlog << "HEADER = " << header << endl;
 for (stage = 1; stage < nstages; stage++) {
 	for (sex = 0; sex < nsexesDem; sex++) {
 		line++;
@@ -1837,15 +1815,12 @@ for (stage = 1; stage < nstages; stage++) {
 		for (i = 0; i < nstages; i++) {
 			for (j = 0; j < nsexesDem; j++) {
 				bTransMatrix >> infloat;
-//				batchlog << "TRANS PROB = " << infloat << endl;
 				if (infloat < 0.0 || infloat > 1) {
 					BatchError(filetype,line,20,"Transition probability"); errors++;
 				}
 			}
 		}
-//		 prevminage = minage;
 		 bTransMatrix >> minage;
-//				batchlog << "MINAGE = " << minage << endl;
 		if (stage == 1 && minage != 0) {
 			BatchError(filetype,line,0," ");
 			batchlog << "MinAge must be zero for stage 1" << endl; errors++;
@@ -1854,14 +1829,6 @@ for (stage = 1; stage < nstages; stage++) {
 			if (minage < 0) {
 				BatchError(filetype,line,19,"MinAge"); errors++;
 			}
-			// SCFP 30/9/13 - IDEALLY OUGHT TO TEST THAT MINAGE IS NO LESS THAN PREVIOUS MINAGE
-			// BUT WOULD NEED TO BE PREV MINAGE FOR THE SAME SEX
-			// HOWEVER, IT IS NOT CRITICAL, AS A MINAGE OF LESS THAN PREVIOUS CANNOT CAUSE ANY
-			// PROBLEM, AS PREVIOUS MINAGE GETS APPLIED EARLIER
-//			if (minage < prevminage) {
-//				BatchError(filetype,line,0," ");
-//				batchlog << "MinAge may not be less than MinAge of previous stage" << endl; errors++;
-//			}
 		}
 	}
 }
@@ -2044,20 +2011,7 @@ while (simul != -98765) {
 	bEmigrationFile >> ep >> d0 >> alpha >> beta >> epMean >> epSD >> d0Mean >> d0SD;
 	bEmigrationFile >> alphaMean >> alphaSD >> betaMean >> betaSD;
 	bEmigrationFile >> epScale >> d0Scale >> alphaScale >> betaScale;
-#if RSDEBUG
-//DEBUGLOG << "ParseEmigFile(): simul=" << simul
-//	<< " reqdsimlines=" << current.reqdsimlines
-//	<< " line=" << line << " stage=" << stage << " sex=" << sex
-//	<< " densdep=" << densdep << " indvar=" << indvar
-//	<< " ep=" << ep << " d0=" << d0 << " alpha=" << alpha << " beta=" << beta
-//	<< " epMean=" << epMean << " epSD=" << epSD
-//	<< " d0Mean=" << d0Mean << " d0SD=" << d0SD
-//	<< " alphaMean=" << alphaMean << " alphaSD=" << alphaSD
-//	<< " betaMean=" << betaMean << " betaSD=" << betaSD
-//	<< " epScale=" << epScale << " d0Scale=" << d0Scale
-//	<< " alphaScale=" << alphaScale << " betaScale=" << betaScale
-//	<< endl;
-#endif
+
 	if (current.newsimul) {
 		// record scaling factors from first line of the simulation
 		epScale0 = epScale; d0Scale0 = d0Scale;
@@ -2543,7 +2497,6 @@ while (simul != -98765) {
 		switch (landtype) {
 		
 		case 0: { // raster map with unique habitat codes
-//			batchlog << "for LandType = 0" << endl;
 			for (i = 0; i < maxNhab; i++) {
 				bTransferFile >> morthab;
 				if (smtype == 1) 
@@ -2567,12 +2520,10 @@ while (simul != -98765) {
 		} // end of raster map with unique habitat codes
 		
 		case 2: { // raster map with habitat quality
-//			batchlog << "for LandType = 2" << endl;
 			break;
 		} // end of raster map with habitat quality
 		
 		case 9: { // artificial landscape
-//			batchlog << "for LandType = 9" << endl;
 			bTransferFile >> morthab >> mortmatrix;
 			bTransferFile >> costhab >> costmatrix;
 			if (smtype) { // validate habitat-dependent mortality
@@ -2820,18 +2771,6 @@ while (simul != -98765) {
 		bSettlementFile >> s0 >> alphaS >> betaS;
 		bSettlementFile >> s0mean >> s0sd >> alphaSmean >> alphaSsd
 			>> betaSmean >> betaSsd >> s0scale >> alphaSscale >> betaSscale;
-#if RSDEBUG
-//DEBUGLOG << "ParseSettleFile(): simul=" << simul
-//	<< " reqdsimlines=" << current.reqdsimlines
-//	<< " line=" << line << " stage=" << stage << " sex=" << sex
-//	<< " densdep=" << densdep << " indvar=" << indvar << " findmate=" << findmate
-//	<< " s0=" << s0 << " alphaS=" << alphaS << " betaS=" << betaS
-//	<< " s0mean=" << s0mean << " s0sd=" << s0sd
-//	<< " alphaSmean=" << alphaSmean << " alphaSsd=" << alphaSsd
-//	<< " betaSmean=" << betaSmean << " betaSsd=" << betaSsd
-//	<< " s0scale=" << s0scale << " alphaSscale=" << alphaSscale << " betaSscale=" << betaSscale
-//	<< endl;
-#endif
 		if (current.newsimul) {
 			// record scaling factors from first line of the simulation
 			s0scale0 = s0scale;
@@ -2840,12 +2779,8 @@ while (simul != -98765) {
 	
 		if (densdep == 1) {
 			if (indvar == 1) {
-//				if (stage == 0 && sex == 0) 
 				if (stage == 0)
 				{
-#if RSDEBUG
-//DEBUGLOG << "ParseSettleFile(): validating initial trait parameters" << endl;
-#endif
 					if (s0mean <= 0.0 || s0mean > 1.0) {
 						BatchError(filetype,line,20,"S0Mean"); errors++;
 					}
@@ -2881,9 +2816,6 @@ while (simul != -98765) {
 				}
 			}
 			else { // no individual variation
-#if RSDEBUG
-//DEBUGLOG << "ParseSettleFile(): validating s0 only" << endl;
-#endif
 				if (s0 <= 0.0 || s0 > 1.0) {
 					BatchError(filetype,line,20,"S0"); errors++;
 				}
@@ -3086,9 +3018,6 @@ if (locerrors) {
 	BatchError(filetype,-999,11,"NLoci");
 	return -111;
 }
-//if (formatError) batchlog << "formatError is TRUE" << endl;
-//else batchlog << "formatError is FALSE" << endl;
-
 // check unspecified no. of traits
 fileNtraits = 0;
 int traitnum,prevtrait,chrom,locus;
@@ -3098,30 +3027,24 @@ bool lociError = false;
 bool chromError = false;
 bool locusError = false;
 paramname = "XXXyyyZZZ";
-//batchlog << "paramname=" << paramname << endl;
 bArchFile >> paramname;
-//batchlog << "paramname=" << paramname << endl;
 while (paramname != "XXXyyyZZZ") {
 	bArchFile >> traitnum;
-//	batchlog << "traitnum=" << traitnum << endl;
 	if (paramname != "Trait") formatError = true;
 	if (traitnum == (prevtrait+1)) prevtrait = traitnum;
 	else traitError = true;
 	bArchFile >> paramname >> nloci;
-//	batchlog << "paramname=" << paramname << " nloci=" << nloci << endl;
 	if (paramname != "NLoci") formatError = true;
 	if (nloci < 1) lociError = true;
 	for (int i = 0; i < nloci; i++) {
 		chrom = locus = -999999;
 		bArchFile >> chrom >> locus;
-//		batchlog << "chrom=" << chrom << " locus=" << locus << endl;
 		if (chrom == -999999 || locus == -999999) {
 			BatchError(filetype,-999,0," "); errors++;
 			batchlog << "Too few loci listed for trait " << traitnum << endl;
 		}
 		else {
 			if (chrom >= 0 && chrom < nchromosomes) {
-//				batchlog << "chromsize[" << chrom << "]=" << chromsize[chrom] << endl;
 				if (locus < 0 || locus >= chromsize[chrom]) locusError = true;
 			}
 			else chromError = true;
@@ -3130,9 +3053,7 @@ while (paramname != "XXXyyyZZZ") {
 	fileNtraits++;
 	paramname = "XXXyyyZZZ";
 	bArchFile >> paramname;
-//	batchlog << "paramname=" << paramname << " (end of loop)" << endl;
 }
-//batchlog << "paramname=" << paramname << " (after loop)" << endl;
 
 if (traitError) {
 	BatchError(filetype,-999,0," "); errors++;
@@ -3149,9 +3070,6 @@ if (locusError) {
 	BatchError(filetype,-999,0," "); errors++;
 	batchlog << "Locus no. must not exceed no. of loci on specified chromosome " << endl;
 }
-//if (formatError) batchlog << "formatError is TRUE" << endl;
-//else batchlog << "formatError is FALSE" << endl;
-
 if (formatError || errors > 0) { // terminate batch error checking
 	if (formatError) ArchFormatError();
 	return -111;
@@ -3286,15 +3204,9 @@ while (simul != -98765) {
 
 	bInitFile >> minX >> maxX >> minY >> maxY >> nCells >> nSpCells;
 	if (seedtype == 0) {
-//		if (minX < 0) {
-//			BatchError(filetype,line,19,"minX"); errors++;
-//		}
 		if (maxX < minX) {
 			BatchError(filetype,line,2,"maxX","minX"); errors++;
 		}
-//		if (minY < 0) {
-//			BatchError(filetype,line,19,"minY"); errors++;
-//		}
 		if (maxY < minY) {
 			BatchError(filetype,line,2,"maxY","minY"); errors++;
 		}
@@ -3645,25 +3557,6 @@ return current;
 
 }
 
-//---------------------------------------------------------------------------
-
-/* TEMPLATE PARSING FUNCTION
-int ParseXXXXXXXXFile(void)
-{
-string header;
-int errors = 0;
-int simuls = 0;
-
- >> header; if (header != "" ) errors++;
-
-if (errors > 0) return -111;
-else return simuls;
-
-}
-*/
-
-//---------------------------------------------------------------------------
-
 // Functions to handle and report error conditions
 
 void BatchError(string filename, int line, int option, string fieldname)
@@ -3799,7 +3692,6 @@ void CtrlFormatError(void)
 {
 cout << "Format error in Control file" << endl;
 batchlog << endl << "***" << endl << "*** Format error in Control file:"
-//	<< " case-sensitive parameter and file names must match the specification exactly"
 	<< msgcase << " and file names" << msgmatch
 	<< endl
 	<< "***" << endl;
@@ -3807,8 +3699,6 @@ batchlog << endl << "***" << endl << "*** Format error in Control file:"
 
 void ArchFormatError(void)
 {
-//batchlog << "*** Format error in ArchFile: case-sensitive parameter names "
-//	<< "must match the specification exactly" << endl;
 batchlog << "*** Format error in ArchFile:" << msgcase << msgmatch << endl;
 }
 
@@ -3851,8 +3741,6 @@ case 2:
 default:
 	batchlog << "PROBLEMS = ";
 }
-//if (option == 0) batchlog << "simulations = ";
-//else batchlog << "landscapes = ";
 batchlog << n << endl;
 }
 
@@ -3882,7 +3770,6 @@ if (option == 0) { // open file and read header line
 		int nheaders;
 		if (landtype == 9) nheaders = 9; // artificial landscape
 		else { // imported raster map
-//			nheaders = 6;
 			nheaders = 7;
 		}
 		for (int i = 0; i < nheaders; i++) landfile >> header;
@@ -3926,9 +3813,6 @@ DEBUGLOG << "ReadLandFile(): artificial: "  << endl;
 			return -902;
 		}
 	}
-	// SCFP 26/9/13 - min and max habitat percentages need to be set for all types of
-	// fractal landscape (including discrete), as they are passed to the fractal generator
-	// NOTE that will not have been checked for a discrete landscape
 	if (ppGenLand.fractal && !ppGenLand.continuous) { ppGenLand.minPct = 1; ppGenLand.maxPct = 100; }
 	if (ppGenLand.continuous) ppLand.nHab = 2;		
 	else ppLand.nHab = 1;
@@ -3943,7 +3827,6 @@ DEBUGLOG << "ReadLandFile(): ppLand.landNum=" << ppLand.landNum
 }
 else { // imported raster map
 	string dummy; // no longer necessary to read no. of habitats from landFile
-//	landfile >> ppGenLand.landNum >> ppLand.nHab >> name_landscape >> name_patch >> name_sp_dist;
 	landfile >> ppLand.landNum >> dummy >> name_landscape >> name_patch;
 	landfile >> name_costfile >> name_dynland >> name_sp_dist;
 	if (landtype == 2) ppLand.nHab = 1; // habitat quality landscape has one habitat class
@@ -3961,10 +3844,7 @@ DEBUGLOG << "ReadLandFile(): ppLand.landNum=" << ppLand.landNum
 pLandscape->setLandParams(ppLand,sim.batchMode);
 pLandscape->setGenLandParams(ppGenLand);
 
-//simParams sim = paramsSim->getSim();
-
 #if RSDEBUG
-//DEBUGLOG << "ReadLandFile(): NHab=" << ppLand.nHab << endl;
 DEBUGLOG << "ReadLandFile(): ppLand.landNum=" << ppLand.landNum << endl;
 #endif
 
@@ -3978,7 +3858,6 @@ DEBUGLOG << "ReadDynLandFile(): pLandscape=" << pLandscape
 	<< " name_dynland=" << name_dynland
 	<< endl;
 #endif
-//int change,year;
 string landchangefile,patchchangefile,costchangefile;
 int change,imported;
 int nchanges = 0;
@@ -4003,7 +3882,6 @@ dynlandfile >> change; // first change number
 while (change != -98765) {
 	chg.chgnum = change;                   
 	dynlandfile >> chg.chgyear >> landchangefile >> patchchangefile >> costchangefile;
-//	dynlandfile >> chg.chgyear >> chg.habfile >> chg.pchfile;
 	chg.habfile = paramsSim->getDir(1) + landchangefile;
 	chg.pchfile = paramsSim->getDir(1) + patchchangefile;
 	if (costchangefile == "NULL") chg.costfile = "none";
@@ -4060,9 +3938,7 @@ return 0;
 int ReadParameters(int option, Landscape *pLandscape)
 {
 #if RSDEBUG
-DEBUGLOG << endl << "ReadParameters(): option=" << option
-//	<< " parameters=" << parameters
-	<< endl;
+DEBUGLOG << endl << "ReadParameters(): option=" << option << endl;
 #endif
 int iiii,jjjj;
 int error = 0;
@@ -4104,7 +3980,6 @@ parameters >> sim.simulation >> sim.reps >> sim.years;
 parameters >> iiii;
 if (iiii == 1) sim.absorbing = true; else sim.absorbing = false;
 #if RSDEBUG
-//DEBUGLOG << "ReadParameters(): paramsSim=" << paramsSim << endl;
 DEBUGLOG << "ReadParameters(): simulation=" << sim.simulation
 	<< " reps=" << sim.reps << " years=" << sim.years << endl;
 #endif
@@ -4138,9 +4013,6 @@ if (env.inK) {
 	pSpecies->setMinMax(minKK,maxKK);
 }
 else pSpecies->setMinMax(minR,maxR);
-#if RSDEBUG
-//DEBUGLOG << "ReadParameters(): minR=" << env.minR << " maxR=" << env.maxR << endl;
-#endif
 parameters >> iiii;
 if (iiii == 1) env.localExt = true; else env.localExt = false;
 if (paramsLand.patchModel && env.localExt) error = 102;
@@ -4220,7 +4092,6 @@ parameters >> iiii;
 if (iiii == 0) sim.saveVisits = false;
 else sim.saveVisits = true;
 parameters >> iiii;
-//sim.saveInitMap = false;
 if (iiii == 0) sim.drawLoaded = false; else sim.drawLoaded = true;
 
 paramsSim->setSim(sim);
@@ -4303,24 +4174,16 @@ return 0;
 //---------------------------------------------------------------------------
 int ReadTransitionMatrix(short nstages,short nsexesDem,short hab,short season)  
 {
-//#if RS_CONTAIN
-//int hab = 0; // TEMPORARY set suitable habitat to 0
-//#endif // RS_CONTAIN 
 int ii;
 int minAge;
 float ss,dd; 
 string header;
 demogrParams dem = pSpecies->getDemogr();
-//stageParams sstruct = pSpecies->getStage();
 
 // read header line
-//for (int i = 0; i < (sstruct.nStages*nsexesDem)+2; i++)
 for (int i = 0; i < (nstages*nsexesDem)+2; i++)
 {
 	tmfile >> header;
-#if RSDEBUG
-//DEBUGLOG << "Read_TransitionMatrix(): i= << i << " header=" << header << endl;
-#endif
 }
 
 if (matrix != NULL) {
@@ -4330,41 +4193,29 @@ if (matrix != NULL) {
 }
 
 if (dem.repType != 2) { // asexual or implicit sexual model
-#if RSDEBUG
-//DEBUGLOG << "Read_TransitionMatrix(): asexual model, sstruct.nStages = " << sstruct.nStages << endl;
-#endif
+
 	// create a temporary matrix
 	matrix = new float *[nstages];
 	matrixsize = nstages;
 	for (int i = 0; i < nstages; i++)
 		matrix[i] = new float [nstages];
 
-//	for (int i = 0; i < sstruct.nStages; i++) 
 	for (int i = 0; i < nstages; i++)
 	{ // i = row; j = coloumn
 		tmfile >> header;
-#if RSDEBUG
-//DEBUGLOG << "Read_TransitionMatrix(): i=" << i << " header=" << header << endl;
-#endif
-//		for (int j = 0; j < sstruct.nStages; j++) 
+
 		for (int j = 0; j < nstages; j++)
 		{
 			tmfile >> matrix[j][i];
-#if RSDEBUG
-//DEBUGLOG << "Read_TransitionMatrix(): j=" << j << " matrix[j][i]=" << matrix[j][i] << endl;
-#endif
 		}
 		tmfile >> minAge; pSpecies->setMinAge(i,0,minAge);
 	}
 
-//	for (int j = 1; j < sstruct.nStages; j++)
 	for (int j = 1; j < nstages; j++)
 		pSpecies->setFec(j,0,matrix[j][0]);
-//	for (int j = 0; j < sstruct.nStages; j++) 
 	for (int j = 0; j < nstages; j++)
 	{
 		ss = 0.0; dd = 0.0;
-//		for (int i = 0; i < sstruct.nStages; i++) 
 		for (int i = 0; i < nstages; i++)
 		{
 			if (i == j) ss = matrix[j][i];
@@ -4378,28 +4229,15 @@ if (dem.repType != 2) { // asexual or implicit sexual model
 	}
 }
 else { // complex sexual model
-#if RSDEBUG
-//DEBUGLOG << "Read_TransitionMatrix(): complex sexual model, sstruct.nStages = "
-//	<< sstruct.nStages << endl;
-#endif
 	// create a temporary matrix
-//	matrix = new float *[sstruct.nStages*2];
-//	matrixsize = sstruct.nStages*2;
-//	for (int j = 0; j < sstruct.nStages*2; j++)
-//		matrix[j] = new float [sstruct.nStages*2-1];
 	matrix = new float *[nstages*2];
 	matrixsize = nstages*2;
 	for (int j = 0; j < nstages*2; j++)
 		matrix[j] = new float [nstages*2-1];
 
-//	for (int i = 0; i < sstruct.nStages*2-1; i++) 
 	for (int i = 0; i < nstages*2-1; i++)
 	{ // i = row; j = coloumn
 		tmfile >> header;
-#if RSDEBUG
-//DEBUGLOG << "Read_TransitionMatrix{}: i = " << i << " header = " << header << endl;
-#endif
-//		for (int j = 0; j < sstruct.nStages*2; j++) tmfile >> matrix[j][i];
 		for (int j = 0; j < nstages*2; j++) tmfile >> matrix[j][i];
 		if (i == 0) {
 			tmfile >> minAge; pSpecies->setMinAge(i,0,minAge); pSpecies->setMinAge(i,1,minAge);
@@ -4410,19 +4248,8 @@ else { // complex sexual model
 			else 		 pSpecies->setMinAge(i/2,0,minAge);			// even lines - females
 		}
 	}
-#if RSDEBUG
-//	DEBUGLOG << endl;
-//for (int ii = 0; ii < sstruct.nStages*2-1; ii++) { // row (0 = juvs, 1,2 = stage 1)
-//	for (int jj = 0; jj < sstruct.nStages*2; jj++) { // column (m f m f)
-//		DEBUGLOG << matrix[jj][ii] << " " ;   // matrix[column][row]
-//	}
-//	DEBUGLOG << endl;
-//}
-//	DEBUGLOG << endl;
-#endif
 
 	ii = 1;
-//	for (int j = 2; j < sstruct.nStages*2; j++) 
 	for (int j = 2; j < nstages*2; j++)
 	{
 		if (j%2 == 0)
@@ -4446,12 +4273,10 @@ else { // complex sexual model
 		pSpecies->setDev(0,0,0.0);
 	// survival and development of stages 1+
 	ii = 1;
-//	for (int j = 2; j < sstruct.nStages*2; j++) 
 	for (int j = 2; j < nstages*2; j++)
 	{
 		ss = 0.0; dd = 0.0;
 		if (j%2 == 0){ // males
-//			for (int i = 0; i < sstruct.nStages*2-1; i++) 
 			for (int i = 0; i < nstages*2-1; i++)
 			{
 				if (j == i+1) ss = matrix[j][i];
@@ -4464,7 +4289,6 @@ else { // complex sexual model
 				pSpecies->setDev(ii,1,0.0);
 		}
 		else{ // females
-//			for (int i = 0; i < sstruct.nStages*2; i++) 
 			for (int i = 0; i < nstages*2; i++) 
 			{
 				if (j == i+1) ss = matrix[j][i];
@@ -4478,8 +4302,6 @@ else { // complex sexual model
 			ii++;
 		}
 	}
-//	for (int j = 0; j < sstruct.nStages*2; j++) delete[] matrix[j];
-//	delete[] matrix;
 }
 
 #if RSDEBUG
@@ -4614,11 +4436,6 @@ emigParams eparams;
 if (sstruct.nStages == 0) Nlines = sexesDisp;
 else Nlines = sstruct.nStages * sexesDisp;
 
-#if RSDEBUG
-//DEBUGLOG << "ReadEmigration(): Nlines = " << Nlines << " dem.stageStruct = " << dem.stageStruct
-//	<< " sstruct.nStages = " << sstruct.nStages << " sexesDisp = " << sexesDisp << endl;
-#endif
-
 for (int line = 0; line < Nlines; line++) {
 
 	emigFile >> simulation >> iiii >> ffff >> jjjj >> kkkk >> llll >> emigstage;
@@ -4643,35 +4460,14 @@ for (int line = 0; line < Nlines; line++) {
 		pSpecies->setEmig(emig);
 	}
 
-#if RSDEBUG
-//DEBUGLOG << "ReadEmigration(): Nlines=" << Nlines
-//	<< " emig.densDep=" << emig.densDep
-//	<< " emig.stgDep=" << emig.stgDep
-//	<< " emig.sexDep=" << emig.sexDep
-//	<< " emig.indVar=" << emig.indVar
-//	<< endl;
-#endif
 	if (simulation != firstsimul) { // serious problem
 		error = 300;
 	}
 	emigFile >> stage >> sex;
 
 // ERROR MESSAGES SHOULD NEVER BE ACTIVATED ---------------------------------
-#if RSDEBUG
-//DEBUGLOG << "ReadEmigration(): line = " << line
-//	<< " dem.stageStruct = " << dem.stageStruct
-//	<< " emig.stgDep = " << emig.stgDep << endl;
-#endif
-if (dem.repType == 0) {
-	if (emig.sexDep) error = 301;
-}
-if (dem.stageStruct) {
-//	if (emig.indVar) error = 302;
-}
-else {
-//	cout << endl << "***** pSpecies = " << pSpecies << endl << endl;
-	if (emig.stgDep) error = 303;
-}
+if (dem.repType == 0 && emig.sexDep) error = 301;
+if (emig.stgDep && !dem.stageStruct) error = 303;
 //---------------------------------------------------------------------------
 
 	emigFile >> ep >> d0 >> alpha >> beta >> epMean >> epSD >> d0Mean >> d0SD;
@@ -4732,9 +4528,7 @@ else {
 				etraits.d0 = ep; etraits.alpha = etraits.beta = 0.0;
 			}
 			pSpecies->setEmigTraits(0,0,etraits);
-#if RSDEBUG
-//DEBUGLOG << "ReadEmigration(): case 0: emigP = " << ep << endl;
-#endif
+
 			if (emig.densDep) {
 				eparams.d0Mean = d0Mean; eparams.d0SD = d0SD;
 				eparams.alphaMean = alphaMean; eparams.alphaSD = alphaSD;
@@ -4805,7 +4599,6 @@ DEBUGLOG << endl;
 		else
 			pSpecies->createHabCostMort(paramsLand.nHabMax);
 		if (trfr.moveType == 1) { // SMS
-//			int standardcols = 25;
 			int standardcols = 23;
 			if (paramsLand.generated) {
 				nheaders = standardcols + 6; // artificial landscape
@@ -4897,7 +4690,6 @@ case 0: // negative exponential dispersal kernel
 			if (sexKernels == 1 || sexKernels == 3) error = 401;
 		}
 		if (dem.stageStruct) {
-//			if (trfr.indVar) error = 402;
 		}
 		else{
 			if (sexKernels == 2 || sexKernels == 3) error = 403;
@@ -4914,7 +4706,6 @@ case 0: // negative exponential dispersal kernel
 				transFile >> kparams.dist1Mean >> kparams.dist1SD
 					>> kparams.dist2Mean >> kparams.dist2SD
 					>> kparams.PKern1Mean >> kparams.PKern1SD;
-//				MAXDist = kparams.maxDist1;
 				pSpecies->setKernParams(0,0,kparams,(double)paramsLand.resol);
 			}
 			else {
@@ -4983,8 +4774,6 @@ case 0: // negative exponential dispersal kernel
 		} // end of switch (sexkernels)
 
 		if (trfr.indVar) {
-//			if (!trfr.indVar) error = 411;
-//			if (dem.stageStruct) error = 412;
 			if (stage == 0 && sex == 0) {
 				transFile >> scale.dist1Scale >> scale.dist2Scale >> scale.PKern1Scale;
 				pSpecies->setTrfrScales(scale);
@@ -5046,10 +4835,6 @@ DEBUGLOG << "ReadTransfer(): SMtype=" << trfr.habMort << " SMconst=" << move.ste
 				{
 					transFile >> tttt;
 					pSpecies->setHabMort(i,tttt);
-#if RSDEBUG
-//DEBUGLOG << "ReadTransfer(): nHabMax = " << paramsLand.nHabMax
-//	<< " i = " << i << " mortality = " << tttt << endl;
-#endif
 				}
 			}
 			else { // constant step mortality
@@ -5177,9 +4962,6 @@ return error;
 }
 
 //---------------------------------------------------------------------------
-// NOTE that stage- and sex-dependent settlement parameters are set for
-// ALL stage/sex combinations, even if the species has stage- and/or
-// sex-independent settlement rules
 int ReadSettlement(int option)
 {
 
@@ -5196,11 +4978,6 @@ settleTraits settleDD;
 settParams sparams;
 int sexSettle = 0,settType = 0,densdep,indvar,findmate;
 
-#if RSDEBUG
-//DEBUGLOG << "ReadSettlement(): option=" << option << " transfer=" << transfer 
-//	<< " trfr.moveModel=" << trfr.moveModel << endl;
-#endif
-
 if (option == 0) { // open file and read header line
 	settFile.open(settleFile.c_str());
 	string header;
@@ -5209,9 +4986,6 @@ if (option == 0) { // open file and read header line
 	else nheaders = 7;
 	for (int i = 0; i < nheaders; i++) {
 		settFile >> header;
-#if RSDEBUG
-//DEBUGLOG << "ReadSettlement(): i=" << i << " header=" << header << endl;
-#endif
 	}
 	return 0;
 }
@@ -5837,8 +5611,6 @@ DEBUGLOG << "RunBatch(): landtype=" << landtype << " maxNhab=" << maxNhab << end
 
 t0 = (int)time(0);
 
-//int batch_line = 0;
-
 string name = paramsSim->getDir(2) + "Batch" + Int2Str(sim.batchNum) + "_RS_log.csv";
 if (rsLog.is_open()) {
 	rsLog.close(); rsLog.clear();
@@ -5966,7 +5738,6 @@ DEBUGLOG << "RunBatch(): j=" << j
 		// species distribution
 															 
 		if (paramsLand.spDist) { // read initial species distribution
-			// WILL NEED TO BE CHANGED FOR MULTIPLE SPECIES ...
 			string distname = paramsSim->getDir(1) + name_sp_dist;
 			landcode = pLandscape->newDistribution(pSpecies,distname);
 			if (landcode == 0) {
@@ -6000,11 +5771,6 @@ DEBUGLOG << "RunBatch(): j=" << j
 			cout << endl << "Error opening ParameterFile - aborting batch run" << endl;
 			return;
 		}
-#if RSDEBUG
-//bool pppp = parameters.is_open();
-//DEBUGLOG << "RunBatch(): parameterFile = " << parameterFile
-//	<< " parameters.open() = " << pppp << endl;
-#endif
 		if (stagestruct) {
 			ReadStageStructure(0);
 		}
@@ -6095,11 +5861,6 @@ DEBUGLOG << endl << "RunBatch(): i=" << i
 				OutParameters(pLandscape);
 
 				RunModel(pLandscape,i);
-#if RSDEBUG
-//DEBUGLOG << endl << "RunBatch(): real landscape, i = " << i
-//	<< " simulation = " << sim.simulation << " landFile = " << landFile
-//	<< endl;
-#endif
 
 				t01 = (int)time(0);
 				rsLog << msgsim << sim.simulation << "," << sim.reps
@@ -6119,7 +5880,6 @@ DEBUGLOG << endl << "RunBatch(): i=" << i
 		if (geneticsFile != "NULL") ReadGenetics(9);
 		ReadInitialisation(9,pLandscape);
 
-//		if (landtype != 9) 
 		if (pLandscape != NULL) 
 		{
 			delete pLandscape; pLandscape = NULL;
