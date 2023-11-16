@@ -33,80 +33,75 @@ int Individual::indCounter = 0;
 Individual::Individual(Cell *pCell,Patch *pPatch,short stg,short a,short repInt,
 	float probmale,bool movt,short moveType)
 {
-indId = indCounter;
-indCounter++; // unique identifier for each individual
-#if RSDEBUG
-//DEBUGLOG << "Individual::Individual(): indId=" << indId
-//	<< " stg=" << stg << " a=" << a << " probmale=" << probmale
-//	<< endl;
-#endif
+	indId = indCounter;
+	indCounter++; // unique identifier for each individual
 
-stage = stg;
-if (probmale <= 0.0) sex = 0;
-else sex = pRandom->Bernoulli(probmale);
-age = a;
-status = 0;
+	stage = stg;
+	if (probmale <= 0.0) sex = 0;
+	else sex = pRandom->Bernoulli(probmale);
+	age = a;
+	status = 0;
 
-if (sex == 0 && repInt > 0) { // set no. of fallow seasons for female
-	fallow = pRandom->IRandom(0,repInt);
-}
-else fallow = 9999;
-isDeveloping = false;
-pPrevCell = pCurrCell = pCell;
-pNatalPatch = pPatch;
-if (movt) {
-	locn loc = pCell->getLocn();
-	path = new pathData;
-	path->year = 0; path->total = 0; path->out = 0;
-	path->pSettPatch = 0; path->settleStatus = 0;
-//	path->leftNatalPatch = false;
+	if (sex == 0 && repInt > 0) { // set no. of fallow seasons for female
+		fallow = pRandom->IRandom(0, repInt);
+	}
+	else fallow = 9999;
+	isDeveloping = false;
+	pPrevCell = pCurrCell = pCell;
+	pNatalPatch = pPatch;
+	if (movt) {
+		locn loc = pCell->getLocn();
+		path = new pathData;
+		path->year = 0; path->total = 0; path->out = 0;
+		path->pSettPatch = 0; path->settleStatus = 0;
+		//	path->leftNatalPatch = false;
 #if RS_RCPP
-	path->pathoutput = 1;
+		path->pathoutput = 1;
 #endif
-	if (moveType == 1) { // SMS
-		// set up location data for SMS
-		smsData = new smsdata;
-		smsData->dp = smsData->gb = smsData->alphaDB = 1.0;
-		smsData->betaDB = 1; 
-		smsData->prev.x = loc.x; smsData->prev.y = loc.y; // previous location
-		smsData->goal.x = loc.x; smsData->goal.y = loc.y; // goal location - initialised for dispersal bias
+		if (moveType == 1) { // SMS
+			// set up location data for SMS
+			smsData = new smsdata;
+			smsData->dp = smsData->gb = smsData->alphaDB = 1.0;
+			smsData->betaDB = 1;
+			smsData->prev.x = loc.x; smsData->prev.y = loc.y; // previous location
+			smsData->goal.x = loc.x; smsData->goal.y = loc.y; // goal location - initialised for dispersal bias
+		}
+		else smsData = 0;
+		if (moveType == 2) { // CRW
+			// set up continuous co-ordinates etc. for CRW movement
+			crw = new crwParams;
+			crw->xc = ((float)pRandom->Random() * 0.999f) + (float)loc.x;
+			crw->yc = (float)(pRandom->Random() * 0.999f) + (float)loc.y;
+			crw->prevdrn = (float)(pRandom->Random() * 2.0 * PI);
+			crw->stepL = crw->rho = 0.0;
+		}
+		else crw = 0;
 	}
-	else smsData = 0;
-	if (moveType == 2) { // CRW
-		// set up continuous co-ordinates etc. for CRW movement
-		crw = new crwParams;
-		crw->xc = ((float)pRandom->Random()*0.999f) + (float)loc.x;
-		crw->yc = (float)(pRandom->Random()*0.999f) + (float)loc.y;
-		crw->prevdrn = (float)(pRandom->Random()*2.0 * PI);
-		crw->stepL = crw->rho = 0.0;
+	else {
+		path = 0; crw = 0; smsData = 0;
 	}
-	else crw = 0;
-}
-else {
-	path = 0; crw = 0; smsData = 0;
-}
-emigtraits = 0;
-kerntraits = 0;
-setttraits = 0;
-pGenome = 0;
+	emigtraits = 0;
+	kerntraits = 0;
+	setttraits = 0;
+	pGenome = 0;
 #if RSDEBUG
-//locn currloc = pCurrCell->getLocn();
-//DEBUGLOG << "Individual::Individual(): indId=" << indId
-//	<< " x=" << currloc.x << " y=" << currloc.y
-////	<< " smsData=" << smsData << " dp=" << smsData->dp
-//	<< endl;
+	//locn currloc = pCurrCell->getLocn();
+	//DEBUGLOG << "Individual::Individual(): indId=" << indId
+	//	<< " x=" << currloc.x << " y=" << currloc.y
+	////	<< " smsData=" << smsData << " dp=" << smsData->dp
+	//	<< endl;
 #endif
 }
 
 Individual::~Individual(void) {
-if (path != 0) delete path;
-if (crw != 0) delete crw;
-if (smsData != 0) delete smsData;
-if (emigtraits != 0) delete emigtraits;
-if (kerntraits != 0) delete kerntraits;
-if (setttraits != 0) delete setttraits;
+	if (path != 0) delete path;
+	if (crw != 0) delete crw;
+	if (smsData != 0) delete smsData;
+	if (emigtraits != 0) delete emigtraits;
+	if (kerntraits != 0) delete kerntraits;
+	if (setttraits != 0) delete setttraits;
 
-if (pGenome != 0) delete pGenome;
+	if (pGenome != 0) delete pGenome;
 
 }
 

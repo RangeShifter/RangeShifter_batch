@@ -99,6 +99,7 @@ void DebugGUI(string msg) {
 
 void run_unit_tests() {
 	cout << "******* Unit test output *******" << endl;
+	testRSrandom();
 	testIndividual();
 	cout << endl << "************************" << endl;
 }

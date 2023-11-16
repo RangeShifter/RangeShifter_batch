@@ -94,6 +94,7 @@ int RSrandom::IRandom(int min, int max)
 
 int RSrandom::Bernoulli(double p)
 {
+	if (p < 0) throw runtime_error("Bernoulli's probability parameter cannot be negative.\n");
     return Random() < p;
 }
 
@@ -190,6 +191,7 @@ int RSrandom::Poisson(double mean)
 	}
 
 	int RSrandom::Bernoulli(double p) {
+		if (p < 0) throw runtime_error("Bernoulli's probability parameter cannot be negative.\n");
 		return Random() < p;
 	}
 
@@ -253,4 +255,15 @@ int RSrandom::Poisson(double mean)
 
 #endif // RS_RCPP
 
+#if RSDEBUG
+	void testRSrandom() {
+#ifdef YES
+		RSrandom rsr;
+		double p = 0.0;
+		int sample_nb;
+		sample_nb = rsr.Bernoulli(-3);
+		assert(sample_nb == 0);
+#endif
+	}
+#endif // RSDEBUG
 //---------------------------------------------------------------------------
