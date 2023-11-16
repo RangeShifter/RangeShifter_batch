@@ -33,7 +33,8 @@ int Individual::indCounter = 0;
 Individual::Individual(Cell *pCell,Patch *pPatch,short stg,short a,short repInt,
 	float probmale,bool movt,short moveType)
 {
-indId = indCounter; indCounter++; // unique identifier for each individual
+indId = indCounter;
+indCounter++; // unique identifier for each individual
 #if RSDEBUG
 //DEBUGLOG << "Individual::Individual(): indId=" << indId
 //	<< " stg=" << stg << " a=" << a << " probmale=" << probmale
@@ -2452,3 +2453,25 @@ return location + scale * tan(PI * pRandom->Random());
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+
+#if RSDEBUG
+void testIndividual() {
+
+	Patch* pPatch = new Patch(0, 0);
+	
+	int cell_x = 2;
+	int cell_y = 5;
+	int cell_hab = 2;
+	Cell* pCell = new Cell(cell_x, cell_y, (intptr)pPatch, cell_hab);
+
+	// Create an individual
+	short stg = 0;
+	short age = 0;
+	short repInt = 0;
+	float probmale = 0;
+	bool uses_movt_process = true;
+	short moveType = 1;
+	Individual i(pCell, pPatch, stg, age, repInt, probmale, uses_movt_process, moveType);
+}
+#endif // RSDEBUG
+

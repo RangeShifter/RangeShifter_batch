@@ -98,7 +98,9 @@ void DebugGUI(string msg) {
 }
 
 void run_unit_tests() {
-	// call tests here
+	cout << "******* Unit test output *******" << endl;
+	testIndividual();
+	cout << endl << "************************" << endl;
 }
 #endif // RSDEBUG
 
