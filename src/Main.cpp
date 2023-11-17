@@ -26,8 +26,6 @@ RangeShifter v2.0 Main
 
 Entry level function for BATCH MODE version
 
-For compilation in Embarcadero
-
 For full details of RangeShifter, please see:
 Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
 and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
@@ -35,8 +33,6 @@ eco-evolutionary dynamics and species’ responses to environmental changes.
 Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
 Author: Steve Palmer, University of Aberdeen
-
-Last updated: 14 January 2021 by Anne-Kathleen Malchow, Potsdam University
 
 ------------------------------------------------------------------------------*/
 #if RS_EMBARCADERO
@@ -145,7 +141,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	assert(1 == 2);
 #endif
 
-//int i,t0,t1,Nruns;
 int t0,t1;
 int nSimuls = 0, nLandscapes = 0; // no. of simulations and landscapes in batch
 
