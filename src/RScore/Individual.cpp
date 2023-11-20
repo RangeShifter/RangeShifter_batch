@@ -1895,10 +1895,11 @@ double cauchy(double location, double scale) {
 //---------------------------------------------------------------------------
 
 #if RSDEBUG
+
+
 void testIndividual() {
 
 	Patch* pPatch = new Patch(0, 0);
-
 	int cell_x = 2;
 	int cell_y = 5;
 	int cell_hab = 2;
@@ -1911,7 +1912,32 @@ void testIndividual() {
 	float probmale = 0;
 	bool uses_movt_process = true;
 	short moveType = 1;
-	Individual i(pCell, pPatch, stg, age, repInt, probmale, uses_movt_process, moveType);
+	Individual ind(pCell, pPatch, stg, age, repInt, probmale, uses_movt_process, moveType);
+
+	// An individual...
+	{
+		std::vector <Individual*> inds;
+		for (int i = 0; i < 2; i++)
+		{
+			inds.push_back(new Individual(pCell, pPatch, stg, age, repInt, probmale, uses_movt_process, moveType));
+		}
+	}
+
+	// Reproduces
+	// depending on whether it is sexual or not
+	// depending on the stage
+	// depending on the trait inheritance
+
+
+	// Disperses
+	// Emigrates
+	// Transfers
+	// Settles
+
+	// Survives
+
+	// Develops
+
 }
 #endif // RSDEBUG
 
