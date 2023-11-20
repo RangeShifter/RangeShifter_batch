@@ -35,10 +35,6 @@ Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 Author: Steve Palmer, University of Aberdeen
 
 ------------------------------------------------------------------------------*/
-#if RS_EMBARCADERO
-#pragma hdrstop
-#pragma argsused 
-#endif
 
 #include <string>
 #include <stdio.h>
@@ -55,6 +51,7 @@ using namespace std;
 #include "./RScore/Species.h"
 #include "./RScore/SubCommunity.h"
 #include "./BatchMode.h"
+
 #if RANDOMCHECK
 #include "./RScore/RandomCheck.h"
 #endif
@@ -91,6 +88,13 @@ void MemoLine(string msg) {
 #if RSDEBUG
 void DebugGUI(string msg) {
 // dummy function for batch version
+}
+
+void assert_error(const string& exptd_err_msg, void (*x)(void)) {
+	string err_msg{ "No error.\n" };
+	try { x(); }
+	catch (exception& e) { err_msg = e.what(); }
+	assert(err_msg == exptd_err_msg);
 }
 
 void run_unit_tests() {
@@ -292,7 +296,7 @@ DEBUGLOG << "Main(): dem.repType = " << dem.repType << endl;
 randomCheck();
 #else
 if (b.ok) {
-	RunBatch(nSimuls,nLandscapes);
+	RunBatch(nSimuls, nLandscapes);
 }
 #endif
 

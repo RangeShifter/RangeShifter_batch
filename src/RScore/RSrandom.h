@@ -39,6 +39,7 @@ Last updated: 12 January 2021 by Steve Palmer
 #include <stdlib.h>
 #include <fstream>
 #include <cassert>
+#include "Utils.h"
 
 #if RS_RCPP
 #include "../Version.h"
