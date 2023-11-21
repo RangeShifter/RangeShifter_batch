@@ -118,25 +118,14 @@ void Individual::setGenes(Species* pSpecies, int resol) {
 	else {
 		pGenome = new Genome(pSpecies);
 	}
-#if RSDEBUG
-	//DEBUGLOG << endl;
-	//DEBUGLOG << "Individual::setGenes(): indId=" << indId << " sex=" << sex
-	//	<< " trait1Chromosome=" << gen.trait1Chromosome << " pGenome=" << pGenome
-	//	<< endl;
-#endif
 
 	int gposn = 0;	// current position on genome
 	int expr = 0;		// gene expression type - NOT CURRENTLY USED
 
-	//int emigposn = 0;
-#if RSDEBUG
-//DEBUGLOG << "Individual::setGenes(): emigration genes" << endl;
-#endif
 	if (emig.indVar) { // set emigration genes
 		int emigposn = gposn;
 		double d0, alpha, beta;
 		emigParams eparams;
-		//	emigScales scale = pSpecies->getEmigScales();
 		if (emig.sexDep) { // must be a sexual species
 			ntraits = 2;
 		}
@@ -155,21 +144,6 @@ void Individual::setGenes(Species* pSpecies, int resol) {
 				alpha = pRandom->Normal(0.0, eparams.alphaSD) / eparams.alphaScale;
 				beta = pRandom->Normal(0.0, eparams.betaSD) / eparams.betaScale;
 			}
-#if RSDEBUG
-			//DEBUGLOG << "Individual::setGenes(): indId=" << indId << " g=" << g
-			//	<< " eparams.d0Mean=" << eparams.d0Mean << " eparams.d0SD=" << eparams.d0SD
-			//	<< " eparams.d0Scale=" << eparams.d0Scale << " d0=" << d0
-			////	<< " log(d0/(1.0-d0))=" << log(d0/(1.0-d0))
-			//	<< endl;
-			//DEBUGLOG << "Individual::setGenes(): indId=" << indId << " g=" << g
-			//	<< " eparams.alphaMean=" << eparams.alphaMean << " eparams.alphaSD=" << eparams.alphaSD
-			//	<< " eparams.alphaScale=" << eparams.alphaScale << " alpha=" << alpha
-			//	<< endl;
-			//DEBUGLOG << "Individual::setGenes(): indId=" << indId << " g=" << g
-			//	<< " eparams.betaMean=" << eparams.betaMean << " eparams.betaSD=" << eparams.betaSD
-			//	<< " eparams.betaScale=" << eparams.betaScale << " beta=" << beta
-			//	<< endl;
-#endif
 			if (gen.trait1Chromosome) {
 				pGenome->setGene(gposn++, expr, d0, gen.alleleSD);
 				if (emig.densDep) {
@@ -208,7 +182,6 @@ void Individual::setGenes(Species* pSpecies, int resol) {
 				ntraits = 1;
 			}
 		}
-		//	trfrScales scale = pSpecies->getTrfrScales();
 		if (trfr.moveModel) {
 			if (trfr.moveType == 1) { // set SMS genes
 				double dp, gb, alphaDB, betaDB;
@@ -298,15 +271,10 @@ void Individual::setGenes(Species* pSpecies, int resol) {
 		}
 	}
 
-	//int settposn = 0;
-#if RSDEBUG
-//DEBUGLOG << "Individual::setGenes(): settlement genes" << endl;
-#endif
 	if (sett.indVar) {
 		int settposn = gposn;
 		double s0, alpha, beta;
 		settParams sparams;
-		//	settScales scale = pSpecies->getSettScales();
 		if (sett.sexDep) { // must be a sexual species
 			ntraits = 2;
 		}
@@ -328,26 +296,7 @@ void Individual::setGenes(Species* pSpecies, int resol) {
 			s0 = pRandom->Normal(0.0, sparams.s0SD) / sparams.s0Scale;
 			alpha = pRandom->Normal(0.0, sparams.alphaSSD) / sparams.alphaSScale;
 			beta = pRandom->Normal(0.0, sparams.betaSSD) / sparams.betaSScale;
-#if RSDEBUG
-			//DEBUGLOG << "Individual::setGenes(): indId=" << indId << " g=" << g
-			//	<< " sparams.s0Mean=" << sparams.s0Mean
-			//	<< " sparams.s0SD=" << sparams.s0SD
-			//	<< " sparams.s0Scale=" << sparams.s0Scale
-			//	<< " s0=" << s0
-			//	<< endl;
-			//DEBUGLOG << "Individual::setGenes(): indId=" << indId << " g=" << g
-			//	<< " sparams.alphaSMean=" << sparams.alphaSMean
-			//	<< " sparams.alphaSSD=" << sparams.alphaSSD
-			//	<< " sparams.alphaSScale=" << sparams.alphaSScale
-			//	<< " alpha=" << alpha
-			//	<< endl;
-			//DEBUGLOG << "Individual::setGenes(): indId=" << indId << " g=" << g
-			//	<< " sparams.betaSMean=" << sparams.betaSMean
-			//	<< " sparams.betaSSD=" << sparams.betaSSD
-			//	<< " sparams.betaSScale=" << sparams.betaSScale
-			//	<< " beta=" << beta
-			//	<< endl;
-#endif
+
 			if (gen.trait1Chromosome) {
 				pGenome->setGene(gposn++, expr, s0, gen.alleleSD);
 				pGenome->setGene(gposn++, expr, alpha, gen.alleleSD);
@@ -368,27 +317,12 @@ void Individual::setGenes(Species* pSpecies, int resol) {
 			pGenome->setNeutralLoci(pSpecies, gen.alleleSD);
 		}
 	}
-#if RSDEBUG
-	//DEBUGLOG << "Individual::setGenes(): indId=" << indId << " finished"
-	//	<< endl;
-#endif
 }
 
 // Inherit genome from parent(s)
 void Individual::setGenes(Species* pSpecies, Individual* mother, Individual* father,
 	int resol)
 {
-#if RSDEBUG
-	//locn currloc = pCurrCell->getLocn();
-	//DEBUGLOG << "Individual::setGenes(): indId=" << indId
-	//	<< " x=" << currloc.x << " y=" << currloc.y
-	////	<< " pSpecies=" << pSpecies
-	//	<< " mother=" << mother
-	//	<< " motherID=" << mother->getId()
-	//	<< " father=" << father;
-	//if (father != 0) DEBUGLOG << " fatherID=" << father->getId();
-	//DEBUGLOG << endl;
-#endif
 	emigRules emig = pSpecies->getEmig();
 	trfrRules trfr = pSpecies->getTrfr();
 	settleType sett = pSpecies->getSettle();
@@ -461,17 +395,8 @@ void Individual::setGenes(Species* pSpecies, Individual* mother, Individual* fat
 		}
 		else { // diploid
 			setSettTraits(pSpecies, sett.settTrait[0], 3, sett.sexDep);
-			//		setSettTraits(pSpecies,sett.settTrait[0],3,0);
 		}
 	}
-
-#if RSDEBUG
-	//emigParams e = getEmigTraits(0,1,0);
-	//DEBUGLOG << "Individual::setGenes(): indId=" << indId << " finished "
-	//	<< " d0=" << e.d0
-	////	<< " alpha=" << e.alpha << " beta=" << e.beta
-	//	<< endl;
-#endif
 }
 
 //---------------------------------------------------------------------------
@@ -890,13 +815,6 @@ settleTraits Individual::getSettTraits(void) {
 	return s;
 }
 
-/*
-locus Individual::getAlleles(int g) {
-locus l; l.allele[0] = l.allele[1] = 0.0;
-if (pGenome != 0) l = pGenome->getAlleles(g);
-return l;
-}
-*/
 
 void Individual::setStatus(short s) {
 	if (s >= 0 && s <= 9) status = s;
@@ -970,7 +888,6 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies,
 
 	if (trfr.indVar) { // get individual's kernel parameters
 		kern.meanDist1 = kern.meanDist2 = kern.probKern1 = 0.0;
-		//	kparams = pSpecies->getKernParams(stage,sex);
 		if (pGenome != 0) {
 			kern.meanDist1 = kerntraits->meanDist1;
 			if (trfr.twinKern)
@@ -1159,7 +1076,6 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 	movedata move;
 	Patch* pPatch = 0;
 	bool absorbed = false;
-	//int popsize;
 
 	landData land = pLandscape->getLandData();
 	simParams sim = paramsSim->getSim();
@@ -1434,7 +1350,6 @@ movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
 	}
 
 	// determine reciprocal of effective cost for the 8 neighbours
-	//if (write_out) out<<"reciprocal weighted effective costs:"<<endl;
 	for (y2 = 2; y2 > -1; y2--) {
 		for (x2 = 0; x2 < 3; x2++) {
 			if (nbr.cell[x2][y2] > 0.0) nbr.cell[x2][y2] = 1.0f / nbr.cell[x2][y2];

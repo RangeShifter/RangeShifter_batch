@@ -49,7 +49,6 @@ Last updated: 26 October 2021 by Steve Palmer
 #include <algorithm>
 using namespace std;
 
-//#include "mathlib.h"
 #include "Parameters.h"
 #include "Species.h"
 #include "Landscape.h"
