@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # add RScore to source search path
+set(batchmode ON) # don't config RScore as standalone
 add_subdirectory(src/RScore)
 
 # add the executable
@@ -24,7 +25,6 @@ endif()
 if(NOT DEFINED release)
 	add_compile_definitions(RSDEBUG)
 endif()
-
 # link RScore to the executable as a library
 target_link_libraries(RangeShifter PUBLIC RScore)
 
