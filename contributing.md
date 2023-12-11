@@ -23,8 +23,8 @@ All three share the same source code for the core simulation (i.e., the actual m
 
 #### Maintainers
 
-- [@JetteReeg](https://github.com/JetteReeg)
-- [@TheoPannetier](https://github.com/TheoPannetier)
+- [@JetteReeg](https://github.com/JetteReeg): RScore repo and lead in R package
+- [@TheoPannetier](https://github.com/TheoPannetier): RScore repo and lead in batch mode
 
 Maintainers are responsible for coordinating development efforts and ensuring that RangeShifter keeps building continuously.
 
@@ -42,15 +42,15 @@ This policy applies to RScore and all three RangeShifter interfaces.
 RangeShifter uses the following branching structure:
 
 - `main` is the default branch, where the stable releases live. Because it contains the version of RangeShifter that users normally interact with, it must be stable and build at all times.
-  Only maintainers should make changes to `main`, either directly for small changes (e.g. typo fixes), or by merging `develop` into `main` for any larger change.
+Only maintainers should make changes to `main`, either directly for small changes (e.g. typo fixes), or by merging `develop` into `main` for any larger change.
 - `develop` is the development branch containing new features not yet made available to users.
-  Contributors are welcome to make changes to `develop`, but because this is the version that every contributor uses as a reference, one should ensure that new changes do not break `develop`.
-  If one happens to break `develop`, it should be their first priority to fix it.
-  For this reason, we recommend working from feature branches instead.
+Contributors are welcome to make changes to `develop`, but because this is the version that every contributor uses as a reference, one should ensure that new changes do not break `develop`.
+If one happens to break `develop`, it should be their first priority to fix it.
+For this reason, we recommend working from feature branches instead.
 - Feature branches are created from `develop` by contributors to work on a new feature or other change, e.g. `cmake`, `mutualism`, etc. 
-  Contributors can also create their own branch, e.g. `theo` or `jette` to experiment with the code or implement miscellaneous changes.
-  Once a contributor deems their changes ready to be added to the development version, they should merge their changes from the feature branch into `develop`.
-  Optionally, we encourage contributors to seek a review from one or more developers and or maintainers by opening a pull request to merge their branch into develop.
+Contributors can also create their own branch, e.g. `theo` or `jette` to experiment with the code or implement miscellaneous changes.
+Once a contributor deems their changes ready to be added to the development version, they should merge their changes from the feature branch into `develop`.
+Optionally, we encourage contributors to seek a review from one or more developers and or maintainers by opening a pull request to merge their branch into develop.
 
 ### Contributing to RangeShifter core code
 
@@ -62,7 +62,7 @@ To report a bug, please [open an issue](https://github.com/RangeShifter/RangeShi
 Please do check if a related issue has already open on one of the other interfaces ([here](https://github.com/RangeShifter/RangeShifter_batch/issues) for the batch interface).
 To propose a bug fix (thank you!!), please create and work on your own branch or fork, from either `main` or `develop` (preferred), and open a pull request when your fix is ready to be merged into the original branch.
 
-**For RangeShifter-batch only, (for now?):** as a prerequisite for merging, please ensure that your version passes status check (that is, RangeShifter can still build and run as intended).
+As a prerequisite for merging, please ensure that your version passes status check (that is, RangeShifter batch mode can still build and run as intended).
 This can be seen in the Actions panel for every commit and at the bottom of the pull request.
 
 Maintainers will review the pull request, possibly request changes, and eventually integrate the bug fix into RScore, and update the subtrees to bring the fix to all interfaces.
