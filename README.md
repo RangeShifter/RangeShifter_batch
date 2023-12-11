@@ -56,6 +56,10 @@ See [CONTRIBUTING](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/d
 - [RScore](https://github.com/RangeShifter/RScore), source for RangeShifter's core code
 - [RangeShiftR-pkg](https://github.com/RangeShifter/RangeShiftR-pkg), source for the R interface
 
+## Maintainer
+
+- [@TheoPannetier](https://github.com/TheoPannetier)
+
 ## References
 
 - Bocedi G, Palmer SCF, Pe’er G, Heikkinen RK, Matsinos YG, Watts K, Travis JMJ (2014). 
