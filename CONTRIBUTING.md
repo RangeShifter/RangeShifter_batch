@@ -54,7 +54,7 @@ Optionally, we encourage contributors to seek a review from one or more develope
 
 ### Contributing to RangeShifter core code
 
-Any changes regarding the RangeShifter core code should be done in this repository and can afterwards be synced with all interfaces using the git subtree feature (see [Git subtree](https://github.com/RangeShifter/RScore/tree/main#usage-git-subtrees) section in the README).
+Any changes regarding the RangeShifter core code should be done in this repository and can afterwards be synced with all interfaces using the git subtree feature (see [Git subtree](https://github.com/RangeShifter/RScore/tree/development-guidelines#usage-git-subtrees) section in the README).
 
 #### Bugs
 
