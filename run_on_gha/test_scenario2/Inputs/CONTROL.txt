@@ -1,0 +1,27 @@
+BatchNum	1
+PatchModel	0
+Resolution	1
+LandType	9
+MaxHabitats	1
+SpeciesDist	0
+DistResolution	1
+Reproduction	2
+RepSeasons	1
+StageStruct	0
+Stages	1
+Transfer	0
+ParameterFile	ParameterFile_test2.txt
+LandFile	LandFile_test2.txt
+StageStructFile	NULL
+EmigrationFile	EmigrationFile_test2.txt
+TransferFile	TransferFile_test2.txt
+SettlementFile	SettlementFile_test2.txt
+GeneticsFile	GeneticsFile_test2.txt
+InitialisationFile	InitialisationFile_test2.txt
+
+ANY ADDITIONAL LINES ARE NOT READ, AND CAN THEREFORE BE USED FOR COMMENTS
+
+Control file for RangeShifter Tutorial Example 4, estimating connectivity
+
+Patch-based landscape, stage-structured population, transfer by the Stochastic Movement Simulator (SMS)
+

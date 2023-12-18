@@ -1,0 +1,2 @@
+Simulation	SeedType	FreeType 	SpType	InitDens	IndsCell	minX	maxX	minY	maxY	NCells	NSpCells	InitFreezeYear	RestrictRows	RestrictFreq	FinalFreezeYear	InitIndsFile
+1	0	0	-9	1	-9	22	44	0	10	110	-9	3	10	2	9	NULL

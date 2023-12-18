@@ -1,0 +1,2 @@
+LandNum	Fractal	Type	Xdim	Ydim	MinHab	MaxHab	Psuit	H
+1	1	1	65	65	0.1	0.9	0.75	0.3

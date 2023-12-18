@@ -1,0 +1,80 @@
+Main(): dem.repType = 2
+
+RunBatch(): nSimuls=1 nLandscapes=1
+RunBatch(): landtype=9 maxNhab=1
+ReadLandFile(): option=0 landFile=./run_on_gha/test_scenario2/Inputs\LandFile_test2.txt
+
+ReadLandFile(): option=1
+ReadLandFile(): artificial: 
+ReadLandFile(): ppLand.landNum=1 continuous=1 ppLand.nHab=2 ppLand.dimX=65 ppLand.dimY=65 ppLand.maxX=64 ppLand.maxY=64 propSuit=0.75
+ReadLandFile(): ppLand.landNum=1
+
+RunBatch(): j=0 land_nr=1 landtype=9
+
+ReadParameters(): option=0
+ReadTransfer(): option=0 paramsLand.generated=1 paramsLand.rasterType=9 trfr.moveModel=0 trfr.twinKern=0
+ReadTransfer(): option=0 nheaders=23
+ReadGenetics(): option=0 geneticsFile= ./run_on_gha/test_scenario2/Inputs\GeneticsFile_test2.txt
+
+ReadParameters(): option=1
+ReadParameters(): simulation=1 reps=1 years=10
+ReadParameters(): dem.lambda=3 habK[0] = 0.002 nHabMax = 1
+ReadParameters(): outRange=1 outInt=1
+ReadTransfer(): option=1 paramsLand.generated=1 paramsLand.rasterType=9 trfr.moveModel=0 trfr.twinKern=0
+ReadGenetics(): option=1 geneticsFile= ./run_on_gha/test_scenario2/Inputs\GeneticsFile_test2.txt
+ReadGenetics(): simulation=1 arch=0 g.nLoci=4 archfile=NULL g.probMutn=0.1 g.probCrossover=0 g.alleleSD=0.1 g.mutationSD=0.1
+ReadInitialisation(): simulation=1 seedType=0 freeType=0 spDistType=-9 maxSeedX=44 maxSeedY=10 initFrzYr=3 restrictRows=10 restrictFreq=2 finalFrzYr=9 indsFile=NULL
+
+RunBatch(): i=0 simulation=1 landFile=./run_on_gha/test_scenario2/Inputs\LandFile_test2.txt outRange=1 outIntRange=1
+RunModel(): reps=1 ppLand.nHab=2 p.pix=1
+
+
+RunModel(): starting simulation=1 rep=0
+RunModel(): npatchchanges=0 ncostchanges=0
+
+RunModel(): generating new landscape ...
+RunModel(): finished resetting landscape
+
+fractal_landscape(): X=65 Y=65 Hurst=0.3 prop=0.25 maxValue=100 minValue=0.1
+
+RunModel(): finished generating patches
+RunModel(): patch count is 3170
+
+RunModel(): finished generating populations
+Community::outRangeHeaders(): simulation=1 sim.batchMode=1 landNr=1
+Community::outRangeHeaders(): finished
+RunModel(): completed opening output files
+RunModel(): completed updating carrying capacity
+
+Community::initialise(): this=00000210B4FDAC60 seedType=0 freeType=0 minSeedX=22 minSeedY=0 maxSeedX=44 maxSeedY=10 indsFile=NULL nsubcomms=3170 spratio=1
+Community::initialise(): this=00000210B4FDAC60 nsubcomms=3170
+RunModel(): completed initialisation, rep=0 pSpecies=00000210B4FE13B0
+
+RunModel(): starting simulation=1 rep=0 yr=0
+
+RunModel(): start of gen 0 in year 0 for rep 0 ( 1517 1465 1837 1293 1541 )
+Community::outRange(): rep=0 yr=0 gen=0
+Community::reproduction(): this=00000210B4FDAC60 nsubcomms=3170
+Community::reproduction(): finished
+RunModel(): yr=0 gen=0 completed reproduction
+Community::emigration(): this=00000210B4FDAC60 nsubcomms=3170
+Community::emigration(): finished
+RunModel(): yr=0 gen=0 completed emigration
+Community::dispersal(): this=00000210B4FDAC60 nsubcomms=3170 initiation time=0
+Community::dispersal(): matrix=00000210B4FDA460
+Community::dispersal(): transfer time=0
+RunModel(): yr=0 gen=0 completed dispersal
+RunModel(): yr=0 gen=0 completed survival part 0
+RunModel(): yr=0 gen=0 completed survival part 1
+RunModel(): yr=0 completed generation loop
+Community::outRange(): rep=0 yr=1 gen=0
+RunModel(): yr=1 completed final summary output
+RunModel(): yr=1 landIx=reset npatchchanges=0 ncostchanges=0 ixpchchg=0 ixcostchg=0
+RunModel(): yr=1 completed reset
+
+RunModel(): finished rep=0
+
+ReadParameters(): option=9
+ReadTransfer(): option=9 paramsLand.generated=1 paramsLand.rasterType=2 trfr.moveModel=0 trfr.twinKern=0
+ReadGenetics(): option=9 geneticsFile= ./run_on_gha/test_scenario2/Inputs\GeneticsFile_test2.txt
+ReadLandFile(): option=9 landFile=./run_on_gha/test_scenario2/Inputs\LandFile_test2.txt

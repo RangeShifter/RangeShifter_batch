@@ -1,0 +1,2 @@
+Simulation	Architecture	NLoci	ArchFile	ProbMutn	ProbCross	AlleleSD	MutationSD
+1	0	4	NULL	0.1	0	0.1	0.1
