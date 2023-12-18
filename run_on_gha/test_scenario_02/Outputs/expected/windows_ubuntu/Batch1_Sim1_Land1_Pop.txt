@@ -1,0 +1,1 @@
+Rep	Year	RepSeason	x	y	Epsilon	Gradient	Local_K	Species	NInd	Nfemales	Nmales

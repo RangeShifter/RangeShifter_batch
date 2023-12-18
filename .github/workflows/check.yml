@@ -25,10 +25,12 @@ jobs:
           cmake --build .
           
       - name: run
-        run: ${{ matrix.path_to_exe }} run_on_gha/test_scenario_01/
+        run: |
+            ${{ matrix.path_to_exe }} run_on_gha/test_scenario_01/
+            ${{ matrix.path_to_exe }} run_on_gha/test_scenario_02/
 
       - name: check_output
         run: |
          cd ./run_on_gha/ 
           bash check_output.bash 01
-        # DebugLog contains addresses, changes every run
+          bash check_output.bash 02

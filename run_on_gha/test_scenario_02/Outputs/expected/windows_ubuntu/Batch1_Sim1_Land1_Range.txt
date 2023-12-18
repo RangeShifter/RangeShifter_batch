@@ -1,0 +1,3 @@
+Rep	Year	RepSeason	NInds	NOccupCells	Occup/Suit	min_X	max_X	min_Y	max_Y	F_mean_distI	F_std_distI	M_mean_distI	M_std_distI
+0	0	0	0	0	0	0	0	0	0	0	0	0	0
+0	1	0	0	0	0	0	0	0	0	0	0	0	0
