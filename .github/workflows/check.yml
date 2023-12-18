@@ -29,7 +29,6 @@ jobs:
 
       - name: check_output
         run: |
-         cd ./run_on_gha/test_scenario_01 
-          rm Outputs/DebugLog.txt
-          bash check_output.bash
+         cd ./run_on_gha/ 
+          bash check_output.bash 01
         # DebugLog contains addresses, changes every run
