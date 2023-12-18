@@ -1,0 +1,265 @@
+Main(): dem.repType = 1
+
+RunBatch(): nSimuls=1 nLandscapes=1
+RunBatch(): landtype=0 maxNhab=7
+ReadLandFile(): option=0 landFile=./run_on_gha/test_scenario_01/Inputs\LandFile_ex4.txt
+
+ReadLandFile(): option=1
+ReadLandFile(): ppLand.landNum=37 name_landscape=landscape_10m_batch.txt name_patch=woodland_1ha_patchIDs.txt name_costfile=NULL name_dynland=NULL name_sp_dist=patch30.txt
+ReadLandFile(): ppLand.landNum=37
+
+RunBatch(): j=0 land_nr=37 landtype=0 name_landscape=landscape_10m_batch.txt name_patch=woodland_1ha_patchIDs.txt name_costfile=NULL name_sp_dist=patch30.txt
+RunBatch(): TIME for readLandscape() 2
+RunBatch(): j=0 land_nr=37 landcode=0 nHab=7
+RunBatch(): j=0 spDist=1
+
+ReadParameters(): option=0
+ReadStageStructure{}: nheaders=18
+ReadTransfer(): option=0 paramsLand.generated=0 paramsLand.rasterType=0 trfr.moveModel=1 trfr.twinKern=0
+ReadTransfer(): creating cost/mortality matrix, dimension=7
+ReadTransfer(): option=0 nheaders=39
+
+ReadParameters(): option=1
+ReadParameters(): simulation=1 reps=1 years=10
+ReadParameters(): dem.lambda=0 habK[0] = 0.1 nHabMax = 7
+ReadParameters(): outRange=1 outInt=1
+ReadStageStructure{}: sstruct.nStages=3
+Read_TransitionMatrix(): matrix = 000001AD94785AE0 matrix[1][1] = 0.1
+ReadTransfer(): option=1 paramsLand.generated=0 paramsLand.rasterType=0 trfr.moveModel=1 trfr.twinKern=0
+ReadTransfer(): simulation=1 indVar=0 PR=5 PRmethod=1
+ReadTransfer(): dp=10 MemSize=1 gb=1 goaltype=0
+ReadTransfer(): SMtype=0 SMconst=0.01
+ReadTransfer(): nHabMax=7 i=0 tttt=1 habCost[i]=1
+ReadTransfer(): nHabMax=7 i=1 tttt=1 habCost[i]=1
+ReadTransfer(): nHabMax=7 i=2 tttt=3 habCost[i]=3
+ReadTransfer(): nHabMax=7 i=3 tttt=5 habCost[i]=5
+ReadTransfer(): nHabMax=7 i=4 tttt=10 habCost[i]=10
+ReadTransfer(): nHabMax=7 i=5 tttt=20 habCost[i]=20
+ReadTransfer(): nHabMax=7 i=6 tttt=50 habCost[i]=50
+ReadSettlement(): sexSettle=0
+ReadInitialisation(): simulation=1 seedType=1 freeType=0 spDistType=0 maxSeedX=0 maxSeedY=0 initFrzYr=0 restrictRows=0 restrictFreq=0 finalFrzYr=0 indsFile=NULL
+
+RunBatch(): i=0 simulation=1 landFile=./run_on_gha/test_scenario_01/Inputs\LandFile_ex4.txt outRange=1 outIntRange=1
+RunModel(): reps=1 ppLand.nHab=7 p.pix=1
+
+
+RunModel(): starting simulation=1 rep=0
+RunModel(): npatchchanges=0 ncostchanges=0
+Community::outRangeHeaders(): simulation=1 sim.batchMode=1 landNr=37
+Community::outRangeHeaders(): finished
+RunModel(): completed opening output files
+RunModel(): completed updating carrying capacity
+
+Community::initialise(): this=000001AD9478E2D0 seedType=1 freeType=0 minSeedX=0 minSeedY=0 maxSeedX=0 maxSeedY=0 indsFile=NULL nsubcomms=51 spratio=1
+Community::initialise(): this=000001AD9478E2D0 nsubcomms=51
+RunModel(): completed initialisation, rep=0 pSpecies=000001AD9478EA10
+
+RunModel(): starting simulation=1 rep=0 yr=0
+
+RunModel(): start of gen 0 in year 0 for rep 0 ( 1188 1246 1210 1777 1304 )
+Community::reproduction(): this=000001AD9478E2D0 nsubcomms=51
+Community::reproduction(): finished
+Community::outRange(): rep=0 yr=0 gen=0
+RunModel(): yr=0 gen=0 completed reproduction
+Community::emigration(): this=000001AD9478E2D0 nsubcomms=51
+Community::emigration(): finished
+RunModel(): yr=0 gen=0 completed emigration
+Community::dispersal(): this=000001AD9478E2D0 nsubcomms=51 initiation time=0
+Community::dispersal(): matrix=000001AD9478D6D0
+Community::dispersal(): transfer time=0
+RunModel(): yr=0 gen=0 completed dispersal
+RunModel(): yr=0 gen=0 completed survival part 0
+RunModel(): yr=0 gen=0 completed survival part 1
+RunModel(): yr=0 completed generation loop
+RunModel(): yr=0 completed annual survival
+RunModel(): yr=0 completed Age_increment and final survival
+
+RunModel(): starting simulation=1 rep=0 yr=1
+
+RunModel(): start of gen 0 in year 1 for rep 0 ( 1617 1069 1293 1292 1013 )
+Community::reproduction(): this=000001AD9478E2D0 nsubcomms=51
+Community::reproduction(): finished
+Community::outRange(): rep=0 yr=1 gen=0
+RunModel(): yr=1 gen=0 completed reproduction
+Community::emigration(): this=000001AD9478E2D0 nsubcomms=51
+Community::emigration(): finished
+RunModel(): yr=1 gen=0 completed emigration
+Community::dispersal(): this=000001AD9478E2D0 nsubcomms=51 initiation time=0
+Community::dispersal(): matrix=000001AD9478D6D0
+Community::dispersal(): transfer time=0
+RunModel(): yr=1 gen=0 completed dispersal
+RunModel(): yr=1 gen=0 completed survival part 0
+RunModel(): yr=1 gen=0 completed survival part 1
+RunModel(): yr=1 completed generation loop
+RunModel(): yr=1 completed annual survival
+RunModel(): yr=1 completed Age_increment and final survival
+
+RunModel(): starting simulation=1 rep=0 yr=2
+
+RunModel(): start of gen 0 in year 2 for rep 0 ( 1073 1951 1279 1233 1718 )
+Community::reproduction(): this=000001AD9478E2D0 nsubcomms=51
+Community::reproduction(): finished
+Community::outRange(): rep=0 yr=2 gen=0
+RunModel(): yr=2 gen=0 completed reproduction
+Community::emigration(): this=000001AD9478E2D0 nsubcomms=51
+Community::emigration(): finished
+RunModel(): yr=2 gen=0 completed emigration
+Community::dispersal(): this=000001AD9478E2D0 nsubcomms=51 initiation time=0
+Community::dispersal(): matrix=000001AD9478D6D0
+Community::dispersal(): transfer time=0
+RunModel(): yr=2 gen=0 completed dispersal
+RunModel(): yr=2 gen=0 completed survival part 0
+RunModel(): yr=2 gen=0 completed survival part 1
+RunModel(): yr=2 completed generation loop
+RunModel(): yr=2 completed annual survival
+RunModel(): yr=2 completed Age_increment and final survival
+
+RunModel(): starting simulation=1 rep=0 yr=3
+
+RunModel(): start of gen 0 in year 3 for rep 0 ( 1842 1807 1424 1696 1844 )
+Community::reproduction(): this=000001AD9478E2D0 nsubcomms=51
+Community::reproduction(): finished
+Community::outRange(): rep=0 yr=3 gen=0
+RunModel(): yr=3 gen=0 completed reproduction
+Community::emigration(): this=000001AD9478E2D0 nsubcomms=51
+Community::emigration(): finished
+RunModel(): yr=3 gen=0 completed emigration
+Community::dispersal(): this=000001AD9478E2D0 nsubcomms=51 initiation time=0
+Community::dispersal(): matrix=000001AD9478D6D0
+Community::dispersal(): transfer time=0
+RunModel(): yr=3 gen=0 completed dispersal
+RunModel(): yr=3 gen=0 completed survival part 0
+RunModel(): yr=3 gen=0 completed survival part 1
+RunModel(): yr=3 completed generation loop
+RunModel(): yr=3 completed annual survival
+RunModel(): yr=3 completed Age_increment and final survival
+
+RunModel(): starting simulation=1 rep=0 yr=4
+
+RunModel(): start of gen 0 in year 4 for rep 0 ( 1091 1721 1259 1573 1004 )
+Community::reproduction(): this=000001AD9478E2D0 nsubcomms=51
+Community::reproduction(): finished
+Community::outRange(): rep=0 yr=4 gen=0
+RunModel(): yr=4 gen=0 completed reproduction
+Community::emigration(): this=000001AD9478E2D0 nsubcomms=51
+Community::emigration(): finished
+RunModel(): yr=4 gen=0 completed emigration
+Community::dispersal(): this=000001AD9478E2D0 nsubcomms=51 initiation time=0
+Community::dispersal(): matrix=000001AD9478D6D0
+Community::dispersal(): transfer time=0
+RunModel(): yr=4 gen=0 completed dispersal
+RunModel(): yr=4 gen=0 completed survival part 0
+RunModel(): yr=4 gen=0 completed survival part 1
+RunModel(): yr=4 completed generation loop
+RunModel(): yr=4 completed annual survival
+RunModel(): yr=4 completed Age_increment and final survival
+
+RunModel(): starting simulation=1 rep=0 yr=5
+
+RunModel(): start of gen 0 in year 5 for rep 0 ( 1038 1184 1866 1178 1525 )
+Community::reproduction(): this=000001AD9478E2D0 nsubcomms=51
+Community::reproduction(): finished
+Community::outRange(): rep=0 yr=5 gen=0
+RunModel(): yr=5 gen=0 completed reproduction
+Community::emigration(): this=000001AD9478E2D0 nsubcomms=51
+Community::emigration(): finished
+RunModel(): yr=5 gen=0 completed emigration
+Community::dispersal(): this=000001AD9478E2D0 nsubcomms=51 initiation time=0
+Community::dispersal(): matrix=000001AD9478D6D0
+Community::dispersal(): transfer time=0
+RunModel(): yr=5 gen=0 completed dispersal
+RunModel(): yr=5 gen=0 completed survival part 0
+RunModel(): yr=5 gen=0 completed survival part 1
+RunModel(): yr=5 completed generation loop
+RunModel(): yr=5 completed annual survival
+RunModel(): yr=5 completed Age_increment and final survival
+
+RunModel(): starting simulation=1 rep=0 yr=6
+
+RunModel(): start of gen 0 in year 6 for rep 0 ( 1321 1550 1186 1251 1892 )
+Community::reproduction(): this=000001AD9478E2D0 nsubcomms=51
+Community::reproduction(): finished
+Community::outRange(): rep=0 yr=6 gen=0
+RunModel(): yr=6 gen=0 completed reproduction
+Community::emigration(): this=000001AD9478E2D0 nsubcomms=51
+Community::emigration(): finished
+RunModel(): yr=6 gen=0 completed emigration
+Community::dispersal(): this=000001AD9478E2D0 nsubcomms=51 initiation time=0
+Community::dispersal(): matrix=000001AD9478D6D0
+Community::dispersal(): transfer time=0
+RunModel(): yr=6 gen=0 completed dispersal
+RunModel(): yr=6 gen=0 completed survival part 0
+RunModel(): yr=6 gen=0 completed survival part 1
+RunModel(): yr=6 completed generation loop
+RunModel(): yr=6 completed annual survival
+RunModel(): yr=6 completed Age_increment and final survival
+
+RunModel(): starting simulation=1 rep=0 yr=7
+
+RunModel(): start of gen 0 in year 7 for rep 0 ( 1533 1751 1792 1027 1478 )
+Community::reproduction(): this=000001AD9478E2D0 nsubcomms=51
+Community::reproduction(): finished
+Community::outRange(): rep=0 yr=7 gen=0
+RunModel(): yr=7 gen=0 completed reproduction
+Community::emigration(): this=000001AD9478E2D0 nsubcomms=51
+Community::emigration(): finished
+RunModel(): yr=7 gen=0 completed emigration
+Community::dispersal(): this=000001AD9478E2D0 nsubcomms=51 initiation time=0
+Community::dispersal(): matrix=000001AD9478D6D0
+Community::dispersal(): transfer time=0
+RunModel(): yr=7 gen=0 completed dispersal
+RunModel(): yr=7 gen=0 completed survival part 0
+RunModel(): yr=7 gen=0 completed survival part 1
+RunModel(): yr=7 completed generation loop
+RunModel(): yr=7 completed annual survival
+RunModel(): yr=7 completed Age_increment and final survival
+
+RunModel(): starting simulation=1 rep=0 yr=8
+
+RunModel(): start of gen 0 in year 8 for rep 0 ( 1282 1478 1944 1116 1762 )
+Community::reproduction(): this=000001AD9478E2D0 nsubcomms=51
+Community::reproduction(): finished
+Community::outRange(): rep=0 yr=8 gen=0
+RunModel(): yr=8 gen=0 completed reproduction
+Community::emigration(): this=000001AD9478E2D0 nsubcomms=51
+Community::emigration(): finished
+RunModel(): yr=8 gen=0 completed emigration
+Community::dispersal(): this=000001AD9478E2D0 nsubcomms=51 initiation time=0
+Community::dispersal(): matrix=000001AD9478D6D0
+Community::dispersal(): transfer time=0
+RunModel(): yr=8 gen=0 completed dispersal
+RunModel(): yr=8 gen=0 completed survival part 0
+RunModel(): yr=8 gen=0 completed survival part 1
+RunModel(): yr=8 completed generation loop
+RunModel(): yr=8 completed annual survival
+RunModel(): yr=8 completed Age_increment and final survival
+
+RunModel(): starting simulation=1 rep=0 yr=9
+
+RunModel(): start of gen 0 in year 9 for rep 0 ( 1338 1840 1589 1612 1324 )
+Community::reproduction(): this=000001AD9478E2D0 nsubcomms=51
+Community::reproduction(): finished
+Community::outRange(): rep=0 yr=9 gen=0
+RunModel(): yr=9 gen=0 completed reproduction
+Community::emigration(): this=000001AD9478E2D0 nsubcomms=51
+Community::emigration(): finished
+RunModel(): yr=9 gen=0 completed emigration
+Community::dispersal(): this=000001AD9478E2D0 nsubcomms=51 initiation time=0
+Community::dispersal(): matrix=000001AD9478D6D0
+Community::dispersal(): transfer time=0
+RunModel(): yr=9 gen=0 completed dispersal
+RunModel(): yr=9 gen=0 completed survival part 0
+RunModel(): yr=9 gen=0 completed survival part 1
+RunModel(): yr=9 completed generation loop
+RunModel(): yr=9 completed annual survival
+RunModel(): yr=9 completed Age_increment and final survival
+Community::outRange(): rep=0 yr=10 gen=0
+RunModel(): yr=10 completed final summary output
+RunModel(): yr=10 landIx=reset npatchchanges=0 ncostchanges=0 ixpchchg=0 ixcostchg=0
+RunModel(): yr=10 completed reset
+
+RunModel(): finished rep=0
+
+ReadParameters(): option=9
+ReadTransfer(): option=9 paramsLand.generated=0 paramsLand.rasterType=0 trfr.moveModel=1 trfr.twinKern=0
+ReadLandFile(): option=9 landFile=./run_on_gha/test_scenario_01/Inputs\LandFile_ex4.txt

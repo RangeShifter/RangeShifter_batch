@@ -1,0 +1,29 @@
+Checking Control file ./run_on_gha/test_scenario_01/Inputs\CONTROL.txt
+
+Checking ParameterFile ./run_on_gha/test_scenario_01/Inputs\ParameterFile_ex4.txt
+ParameterFile OK: total no. of simulations = 1
+
+Checking LandFile ./run_on_gha/test_scenario_01/Inputs\LandFile_ex4.txt
+LandscapeFile headers OK: ./run_on_gha/test_scenario_01/Inputs\landscape_10m_batch.txt
+PatchFile headers OK: ./run_on_gha/test_scenario_01/Inputs\woodland_1ha_patchIDs.txt
+SpDistFile headers OK: ./run_on_gha/test_scenario_01/Inputs\patch30.txt
+LandFile OK: total no. of landscapes = 1
+
+Checking StageStructFile ./run_on_gha/test_scenario_01/Inputs\StageStructFile_ex4.txt
+Checking TransMatrixFile ./run_on_gha/test_scenario_01/Inputs\TransitionMatrix_ex4A.txt
+TransMatrixFile OK
+StageStructFile OK: total no. of simulations = 1
+
+Checking EmigrationFile ./run_on_gha/test_scenario_01/Inputs\EmigrationFile_ex4.txt
+EmigrationFile OK: total no. of simulations = 1
+
+Checking TransferFile ./run_on_gha/test_scenario_01/Inputs\TransferFile_ex4.txt
+Checking SMS format file for LandType = 0
+TransferFile OK: total no. of simulations = 1
+
+Checking SettlementFile ./run_on_gha/test_scenario_01/Inputs\SettlementFile_ex4.txt
+SettlementFile OK: total no. of simulations = 1
+
+
+Checking InitialisationFile ./run_on_gha/test_scenario_01/Inputs\InitialisationFile_ex4.txt
+InitialisationFile OK: total no. of simulations = 1
