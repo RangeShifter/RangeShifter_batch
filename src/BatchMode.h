@@ -34,7 +34,7 @@
 
  Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
 
- Last updated: 26 October 2021 by Steve Palmer
+ Last updated: 28 July 2021 by Greta Bocedi
 
  ------------------------------------------------------------------------------*/
 
@@ -51,6 +51,8 @@ using namespace std;
 #include "./RScore/Landscape.h"
 #include "./RScore/Species.h"
 #include "./RScore/Model.h"
+#include "./RScore/ProtoTrait.h"
+#include "./RScore/SNPTrait.h"
 
 struct batchfiles {
 	bool ok;
@@ -81,6 +83,7 @@ struct simCheck {
 batchfiles ParseControlFile(string, string, string);
 int ParseParameterFile(void);
 int ParseLandFile(int, string);
+int ParseGeneticsFile(string);
 int ParseDynamicFile(string, string);
 int ParseStageFile(string);
 int ParseTransitionFile(short, short);
@@ -88,8 +91,6 @@ int ParseWeightsFile(string);
 int ParseEmigFile(void);
 int ParseTransferFile(string);
 int ParseSettleFile(void);
-int ParseGeneticsFile(string);
-int ParseArchFile(void);
 int ParseInitFile(string);
 int ParseInitIndsFile(void);
 simCheck CheckStageSex(string, int, int, simCheck, int, int, int, int, int, bool, bool);
@@ -157,6 +158,7 @@ void SimulnCountError(string);
 
 void RunBatch(int, int);
 int ReadParameters(int, Landscape*);
+void setUpTrait(vector<string>);
 int ReadLandFile(int);
 int ReadLandFile(int, Landscape*);
 int ReadDynLandFile(Landscape*);
@@ -171,10 +173,10 @@ int ReadStageWeights(int);
 int ReadEmigration(int);
 int ReadTransfer(int, Landscape*);
 int ReadSettlement(int);
-int ReadGenetics(int);
-int ReadArchFile(string);
 int ReadInitialisation(int, Landscape*);
 int ReadInitIndsFile(int, Landscape*, string);
+int readGeneticsFile(int, Landscape*);
+int readTraitsFile(int);
 
 #if RSDEBUG
 extern ofstream DEBUGLOG;
