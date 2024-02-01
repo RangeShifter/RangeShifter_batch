@@ -51,7 +51,7 @@ using namespace std;
 #include "./RScore/Landscape.h"
 #include "./RScore/Species.h"
 #include "./RScore/Model.h"
-#include "./RScore/ProtoTrait.h"
+#include "./RScore/SpeciesTrait.h"
 #include "./RScore/SNPTrait.h"
 
 struct batchfiles {

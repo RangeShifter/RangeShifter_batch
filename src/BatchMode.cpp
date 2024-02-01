@@ -2467,7 +2467,6 @@ int ParseTransferFile(string indir)
 
 }
 
-
 //---------------------------------------------------------------------------
 int ParseSettleFile(void)
 {
@@ -2679,12 +2678,9 @@ int ParseTraitsFile(string indir)
 		prev = current;
 
 		// validate parameters
-
-
 		if ((isInherited == "true" || isInherited == "True" || isInherited == "TRUE") && (stof(mutationRate) < 0.0 || stof(mutationRate) > 1.0)) {
 			BatchError(filetype, line, 20, "mutationRate"); errors++;
 		}
-
 
 		// read next simulation
 		line++;
@@ -2819,8 +2815,6 @@ int ParseGeneticsFile(string indir) {
 	else return simuls;
 
 }
-
-
 
 //---------------------------------------------------------------------------
 int ParseInitFile(string indir)
@@ -3724,7 +3718,6 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 		string headerLine, line, value;
 		std::getline(inFile, headerLine);
 
-
 		while (std::getline(inFile, line)) {
 			stringstream ss(line);
 			vector<string> parameters;
@@ -3746,14 +3739,12 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 
 				string nSampleCellsFst; //number of patches to sample for neutral markers in cell based landscape, not used in patch based landscape
 
-
 				string patches = parameters[8];
 				string n = parameters[9];
 
 				if (pLandscape->getLandParams().patchModel)
 					patchList = convertStringToPatches(patches, stoi(n), pLandscape);
 				else nSampleCellsFst = (patches == "all") ? "all" : n; //for cell based landscape because it's set up after traits file is read in 
-
 
 				set<int> stagesToSampleFrom = convertStringToStages(parameters[11]);
 
@@ -3764,16 +3755,12 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 
 				traitsFile = indir + parameters[12];
 			}
-
 		}
 		inFile.close();
 		inFile.clear();
 	}
-
-
 	return 0; //this is for error reporting, need to do error input checks in this function 
 }
-
 
 int readTraitsFile(int simulationN) {
 
@@ -3785,7 +3772,6 @@ int readTraitsFile(int simulationN) {
 		//read first header line
 		string headerLine, line, value;
 		std::getline(inFile, headerLine);
-
 
 		while (std::getline(inFile, line)) {
 			stringstream ss(line);
@@ -3803,22 +3789,15 @@ int readTraitsFile(int simulationN) {
 		}
 		inFile.close();
 		inFile.clear();
-
 	}
 	return 0;
 }
 
-
 void setUpTrait(vector<string> parameters) {
-
-	ProtoTrait* trait = new ProtoTrait(parameters, pSpecies);
-
-	TraitType type = trait->convertToTraitType(parameters[1], convertToSex(parameters[2]));
-
+	SpeciesTrait* trait = new SpeciesTrait(parameters, pSpecies);
+	TraitType type = trait->stringToTraitType(parameters[1], stringToSex(parameters[2]));
 	pSpecies->addTrait(type, *trait);
-
 }
-
 
 //---------------------------------------------------------------------------
 int ReadParameters(int option, Landscape* pLandscape)
@@ -4345,7 +4324,6 @@ int ReadStageWeights(int option)
 }
 
 //---------------------------------------------------------------------------
-
 
 //---------------------------------------------------------------------------
 int ReadEmigration(int option)
@@ -5503,7 +5481,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 			if (stagestruct) {
 				ReadStageStructure(0);
 			}
-
 			ReadEmigration(0);
 			ReadTransfer(0, pLandscape);
 			ReadSettlement(0);
@@ -5625,7 +5602,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 	if (rsLog.is_open()) {
 		rsLog.close(); rsLog.clear();
 	}
-
 }
 
 //---------------------------------------------------------------------------
