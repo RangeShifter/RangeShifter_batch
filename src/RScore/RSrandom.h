@@ -42,7 +42,8 @@
 
 //#if RS_RCPP && !R_CMD
 #include "../Version.h"
-//#endif
+#endif
+
 using namespace std;
 
 #if RSDEBUG
