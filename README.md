@@ -1,19 +1,17 @@
-# RangeShifter Batch Mode <img src="doc/RS_logo.png" align="right" height = 100/>
-C++ code for the RangeShifter v2 batch mode application
+# RangeShifter Batch Mode 
 
-[RangeShifter](https://rangeshifter.github.io/)
-is an eco-evolutionary modelling platform that is becoming 
-increasingly used worldwide for both theoretical and applied purposes
-[(Bocedi et al. 2014)](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.12162).
+C++ code for the RangeShifter v2 batch mode application 
+
+<img title="" src="https://github.com/RangeShifter/RangeShifter_batch_dev/blob/development-guidelines/doc/rs_batch_logo.png" alt="" align="right" height="150">
+
+[RangeShifter](https://rangeshifter.github.io/) is an eco-evolutionary modelling platform that is becoming 
+increasingly used worldwide for both theoretical and applied purposes [(Bocedi et al. 2014)](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.12162).
 
 RangeShifter is a spatially-explicit, individual-based simulation platform that 
-allows modelling species’ population and range dynamics, such as expansion and shifting, and 
-patch connectivity by linking complex local population dynamics and dispersal 
-behaviour, while also taking into account inter-individual variability and 
+allows modelling species’ population and range dynamics, such as expansion and shifting, and patch connectivity by linking complex local population dynamics and dispersal behaviour, while also taking into account inter-individual variability and 
 evolutionary processes. RangeShifter is highly flexible in terms of the spatial 
 resolution and extent, and regarding the complexity of the considered ecological 
-processes. Due to its modular structure, the level of detail in genetics, demographic and 
-dispersal processes can be easily adapted to different research questions and 
+processes. Due to its modular structure, the level of detail in genetics, demographic and dispersal processes can be easily adapted to different research questions and 
 available data.
 
 This repo contains the source code for the Batch Mode interface of RangeShifter.
@@ -34,6 +32,7 @@ mkdir build && cd build
 cmake ..
 cmake --build .
 ```
+
 If you use Visual Studio as your IDE, CMake should be recognised automatically when `RangeShifter_batch_dev` is opened as a new folder. 
 Visual Studio will take care of the configuration, and you only need to select target RangeShifter.exe before pressing the build button.
 
@@ -49,8 +48,7 @@ For instructions on how to setup the project directory and input files, please r
 
 ## Contributing
 
-Have you spotted a typo, discovered a bug you could fix or would like to propose a new feature? 
-We welcome contributions! Please refer to our [contributing guidelines](https://github.com/RangeShifter/RangeShifter_batch_dev/contributing.md) for how to proceed.
+See [CONTRIBUTING](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/development-guidelines/contributing.md)
 
 ## See also
 
@@ -58,9 +56,13 @@ We welcome contributions! Please refer to our [contributing guidelines](https://
 - [RScore](https://github.com/RangeShifter/RScore), source for RangeShifter's core code
 - [RangeShiftR-pkg](https://github.com/RangeShifter/RangeShiftR-pkg), source for the R interface
 
+## Maintainer
+
+- [@TheoPannetier](https://github.com/TheoPannetier)
+
 ## References
 
- - Bocedi G, Palmer SCF, Pe’er G, Heikkinen RK, Matsinos YG, Watts K, Travis JMJ (2014). 
- *RangeShifter: A Platform for Modelling Spatial Eco-Evolutionary Dynamics and 
- Species’ Responses to Environmental Changes.* Methods in Ecology and Evolution 5: 388–96. 
- - Bocedi G, Palmer SCF, Malchow AK, Zurell D, Watts K, Travis JMJ (2021) *RangeShifter 2.0: An extended and enhanced platform for modelling spatial eco-evolutionary dynamics and species’ responses to environmental changes.* Ecography 44:1453-1462.
+- Bocedi G, Palmer SCF, Pe’er G, Heikkinen RK, Matsinos YG, Watts K, Travis JMJ (2014). 
+  *RangeShifter: A Platform for Modelling Spatial Eco-Evolutionary Dynamics and 
+  Species’ Responses to Environmental Changes.* Methods in Ecology and Evolution 5: 388–96. 
+- Bocedi G, Palmer SCF, Malchow AK, Zurell D, Watts K, Travis JMJ (2021) *RangeShifter 2.0: An extended and enhanced platform for modelling spatial eco-evolutionary dynamics and species’ responses to environmental changes.* Ecography 44:1453-1462.
