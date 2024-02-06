@@ -19,14 +19,11 @@
  *	
  --------------------------------------------------------------------------*/
  
- 
 /*------------------------------------------------------------------------------
 
 RangeShifter v2.0 Main
 
 Entry level function for BATCH MODE version
-
-For compilation in Embarcadero
 
 For full details of RangeShifter, please see:
 Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
@@ -36,13 +33,7 @@ Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
 Author: Steve Palmer, University of Aberdeen
 
-Last updated: 14 January 2021 by Anne-Kathleen Malchow, Potsdam University
-
 ------------------------------------------------------------------------------*/
-#if RS_EMBARCADERO
-#pragma hdrstop
-#pragma argsused 
-#endif
 
 #include <string>
 #include <stdio.h>
@@ -50,6 +41,7 @@ Last updated: 14 January 2021 by Anne-Kathleen Malchow, Potsdam University
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
+#include <cassert>
 
 using namespace std;
 
@@ -58,6 +50,7 @@ using namespace std;
 #include "./RScore/Species.h"
 #include "./RScore/SubCommunity.h"
 #include "./BatchMode.h"
+
 #if RANDOMCHECK
 #include "./RScore/RandomCheck.h"
 #endif
@@ -70,23 +63,6 @@ using namespace std;
 #include <direct.h>
 #endif
 
-const string Int2Str(const int x)
-{
-	ostringstream o;
-	if (!(o << x)) return "ERROR";
-	return o.str();
-}
-const string Float2Str(const float x) {
-	ostringstream o;
-	if (!(o << x)) return "ERROR";
-	return o.str();
-}
-const string Double2Str(const double x) {
-	ostringstream o;
-	if (!(o << x)) return "ERROR";
-	return o.str();
-}
-
 void MemoLine(string msg) {
 // dummy function for batch version
 }
@@ -95,7 +71,14 @@ void MemoLine(string msg) {
 void DebugGUI(string msg) {
 // dummy function for batch version
 }
-#endif
+
+void run_unit_tests() {
+	cout << "******* Unit test output *******" << endl;
+	testRSrandom();
+	testIndividual();
+	cout << endl << "************************" << endl;
+}
+#endif // RSDEBUG
 
 string habmapname,patchmapname,distnmapname;	// req'd for compilation, but not used
 string costmapname,genfilename;					 			// ditto
@@ -123,7 +106,20 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 {
 
-//int i,t0,t1,Nruns;
+#if RSDEBUG
+	cout << "RangeShifter Debug Mode" << endl;
+#else
+	cout << "RangeShifter Release Mode" << endl;
+#endif
+
+#if RSDEBUG
+	assert(0.1 > 0.0); // assert does run correctly
+	run_unit_tests();
+#else
+	// assert does not run in Release mode
+	assert(1 == 2);
+#endif
+
 int t0,t1;
 int nSimuls = 0, nLandscapes = 0; // no. of simulations and landscapes in batch
 
@@ -179,15 +175,6 @@ if (__argc > 1) {
 	}
 }
 else {
-	// use current directory - get name from first (automatic) parameter
-//	string nameS = __argv[0];
-//	string path = __argv[0];
-//	unsigned int loc = nameS.find("\\", 0);
-//	while (loc < 999999) {
-//		nameS = nameS.substr(loc + 1);
-//		loc = nameS.find("\\", 0);
-//	}
-//	path = path.substr(0, path.length() - nameS.length());
 	// Get the current directory. 
 	char* buffer = _getcwd(NULL, 0);
 	string dir = buffer;
@@ -222,93 +209,11 @@ string name = paramsSim->getDir(2) + "DebugLog.txt";
 DEBUGLOG.open(name.c_str());
 name = paramsSim->getDir(2) + "MutnLog.txt";
 MUTNLOG.open(name.c_str());
-//DEBUGLOG << "Main(): random integers:";
-//for (int i = 0; i < 5; i++) {
-//	int rrrr = pRandom->IRandom(1000,2000); DEBUGLOG << " " << rrrr;
-//}
-//DEBUGLOG << endl;
-//DEBUGLOG << "Main(): paramsSim = " << paramsSim << endl;
 if (DEBUGLOG.is_open())
 	cout << endl << "Main(): DEBUGLOG is open" << endl << endl;
 else
 	cout << endl << "Main(): DEBUGLOG is NOT open" << endl << endl;
 #endif
-
-/*
-for (int i = 0; i < 10; i++) {
-//	DEBUGLOG << pRandom->Random() << endl;
-//	DEBUGLOG << pRandom->IRandom(5,55) << endl;
-//	DEBUGLOG << pRandom->Poisson(4.2) << endl;
-//	DEBUGLOG << pRandom->Bernoulli(0.6045) << endl;
-	DEBUGLOG << pRandom->Normal(-564.7,123.4) << endl;
-}
-*/
-
-/*
-
-DEBUGLOG << endl << "Random():" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 10; j++) {
-		DEBUGLOG << pRandom->Random() << " ";
-	}
-	DEBUGLOG << endl;
-}
-DEBUGLOG << endl << "IRandom(5,55):" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 50; j++) {
-		DEBUGLOG << pRandom->IRandom(5,55) << " ";
-	}
-	DEBUGLOG << endl;
-}
-DEBUGLOG << endl << "Poisson(4.2):" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 10; j++) {
-		DEBUGLOG << pRandom->Poisson(4.2) << " ";
-	}
-	DEBUGLOG << endl;
-}
-DEBUGLOG << endl << "Bernoulli(0.6):" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 20; j++) {
-		DEBUGLOG << pRandom->Bernoulli(0.6) << " ";
-	}
-	DEBUGLOG << endl;
-}
-DEBUGLOG << endl << "Normal(0.0,1.0):" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 10; j++) {
-		DEBUGLOG << pRandom->Normal(0.0,1.0) << " ";
-	}
-	DEBUGLOG << endl;
-}
-DEBUGLOG << endl << "Normal(2.5,0.35):" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 10; j++) {
-		DEBUGLOG << pRandom->Normal(2.5,0.35) << " ";
-	}
-	DEBUGLOG << endl;
-}
-DEBUGLOG << endl << "Normal(-564.7,123.4):" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 10; j++) {
-		DEBUGLOG << pRandom->Normal(-564.7,123.4) << " ";
-	}
-	DEBUGLOG << endl;
-}
-
-*/
-
-/*
-DEBUGLOG.close();
-DEBUGLOG.clear();
-
-cout << "*****" << endl;
-cout << "***** Simulation completed" << endl;
-cout << "*****" << endl;
-
-return 0;
-*/
-
 
 // set up species
 // FOR MULTI-SPECIES MODEL, THERE WILL BE AN ARRAY OF SPECIES POINTERS
@@ -366,7 +271,7 @@ DEBUGLOG << "Main(): dem.repType = " << dem.repType << endl;
 randomCheck();
 #else
 if (b.ok) {
-	RunBatch(nSimuls,nLandscapes);
+	RunBatch(nSimuls, nLandscapes);
 }
 #endif
 
@@ -408,9 +313,9 @@ Does such exist?
 */
 
 traitCanvas SetupTraitCanvas(void) {
-traitCanvas tcanv;
-for (int i = 0; i < NTRAITS; i++) { tcanv.pcanvas[i] = 0; }
-return tcanv;
+	traitCanvas tcanv;
+	for (int i = 0; i < NTRAITS; i++) { tcanv.pcanvas[i] = 0; }
+	return tcanv;
 }
 
 void Landscape::setLandMap(void) { }
