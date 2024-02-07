@@ -2,7 +2,7 @@
 
 C++ code for the RangeShifter v2 batch mode application 
 
-<img title="" src="https://github.com/RangeShifter/RangeShifter_batch_dev/blob/development-guidelines/doc/rs_batch_logo.png" alt="" align="right" height="150">
+<img title="" src="https://github.com/RangeShifter/RangeShifter_batch_dev/blob/main/doc/rs_batch_logo.png" alt="" align="right" height="150">
 
 [RangeShifter](https://rangeshifter.github.io/) is an eco-evolutionary modelling platform that is becoming 
 increasingly used worldwide for both theoretical and applied purposes [(Bocedi et al. 2014)](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.12162).
@@ -48,7 +48,7 @@ For instructions on how to setup the project directory and input files, please r
 
 ## Contributing
 
-See [CONTRIBUTING](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/development-guidelines/contributing.md)
+See [CONTRIBUTING](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/main/CONTRIBUTING.md)
 
 ## See also
 
