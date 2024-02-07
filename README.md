@@ -48,7 +48,7 @@ For instructions on how to setup the project directory and input files, please r
 
 ## Contributing
 
-See [CONTRIBUTING](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/main/contributing.md)
+See [CONTRIBUTING](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/main/CONTRIBUTING.md)
 
 ## See also
 
