@@ -3742,13 +3742,17 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 				string patches = parameters[8];
 				string n = parameters[9];
 
-				if (pLandscape->getLandParams().patchModel)
+				if (pLandscape->getLandParams().patchModel) // patch-based
 					patchList = convertStringToPatches(patches, stoi(n), pLandscape);
-				else nSampleCellsFst = (patches == "all") ? "all" : n; //for cell based landscape because it's set up after traits file is read in 
+				else { // cell-based
+					if (patches == "all") nSampleCellsFst = "all";
+					else if (patches == "random") nSampleCellsFst = n;
+					else throw logic_error("Genetics File - ERROR: PatchList must be either 'all' or 'random' for cell-based landscapes.");
+				}
 
 				set<int> stagesToSampleFrom = convertStringToStages(parameters[11]);
 
-				pSpecies->setGeneticParameters(convertStringToChromosomeEnds(parameters[2], genomeSize - 1), genomeSize, stof(parameters[3]),
+				pSpecies->setGeneticParameters(convertStringToChromosomeEnds(parameters[2], genomeSize), genomeSize, stof(parameters[3]),
 					patchList, parameters[10], stagesToSampleFrom, nSampleCellsFst);
 
 				paramsSim->setGeneticSim(outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputGeneticInterval);
