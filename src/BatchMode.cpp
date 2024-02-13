@@ -3742,15 +3742,17 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 				string patches = parameters[8];
 				string n = parameters[9];
 
-				if (pLandscape->getLandParams().patchModel) // patch-based
-					patchList = convertStringToPatches(patches, stoi(n), pLandscape);
+				if (pLandscape->getLandParams().patchModel) {// patch-based
+					const vector<int> existingPatches = pLandscape->getPatchNums();
+					patchList = convertStringToPatches(patches, stoi(n), existingPatches);
+				}
 				else { // cell-based
 					if (patches == "all") nSampleCellsFst = "all";
 					else if (patches == "random") nSampleCellsFst = n;
 					else throw logic_error("Genetics File - ERROR: PatchList must be either 'all' or 'random' for cell-based landscapes.");
 				}
-
-				set<int> stagesToSampleFrom = convertStringToStages(parameters[11]);
+				const int nbStages = pSpecies->getStage().nStages;
+				set<int> stagesToSampleFrom = convertStringToStages(parameters[11], nbStages);
 
 				pSpecies->setGeneticParameters(convertStringToChromosomeEnds(parameters[2], genomeSize), genomeSize, stof(parameters[3]),
 					patchList, parameters[10], stagesToSampleFrom, nSampleCellsFst);
