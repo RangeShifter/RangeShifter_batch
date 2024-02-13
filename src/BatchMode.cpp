@@ -3731,9 +3731,9 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 
 				int genomeSize = stoi(parameters[1]);
 
-				outputWCFstat = iequals(parameters[4], "true");
-				outputPerLocusWCFstat = iequals(parameters[5], "true");
-				outputPairwiseFst = iequals(parameters[6], "true");
+				outputWCFstat = (parameters[4] == "true");
+				outputPerLocusWCFstat = (parameters[5] == "true");
+				outputPairwiseFst = (parameters[6] == "true");
 				outputGeneticInterval = stoi(parameters[7]);
 				set<int> patchList;
 
