@@ -21,14 +21,14 @@ SNPTrait::SNPTrait(SpeciesTrait* P)
 	if (mutationDistribution != SSM && mutationDistribution != KAM)
 		cout << endl << ("Error:: wrong mutation distribution for neutral markers, must be KAM or SSM \n");
 
-	if (!mutationParameters.count(MAX))
+	if (mutationParameters.count(MAX) != 1)
 		cout << endl << ("Error:: KAM or SSM mutation distribution parameter must contain max value (e.g. max= ), max cannot exceed 256  \n");
 
 	if (wildType == -999)
 		wildType = (int)mutationParameters.find(MAX)->second - 1;
 
 	if (wildType > maxSNPAlleles - 1)
-		cout << endl << ("Error:: max number of alleles cannot exceed " << maxSNPAlleles << ".\n");
+		cout << endl << "Error:: max number of alleles cannot exceed " << maxSNPAlleles << ".\n";
 
 	DistributionType initialDistribution = pProtoTrait->getInitialDistribution();
 	map<parameter_t, float> initialParameters = pProtoTrait->getInitialParameters();
@@ -39,12 +39,12 @@ SNPTrait::SNPTrait(SpeciesTrait* P)
 	switch (initialDistribution) {
 	case UNIFORM:
 	{
-		if (!initialParameters.count(MAX))
-			cout << endl << ("Error:: initial SNP/Microsat distribution parameter must contain max value if set to UNIFORM (e.g. max= ), max cannot exceed " << maxSNPAlleles << "\n");
+		if (initialParameters.count(MAX) != 1)
+			cout << endl << "Error:: initial SNP/Microsat distribution parameter must contain one max value if set to UNIFORM (e.g. max= ), max cannot exceed " << maxSNPAlleles << "\n";
 
 		float maxD = initialParameters.find(MAX)->second;
 		if (maxD > maxSNPAlleles) {
-			cout << endl << ("Warning:: initial SNP/Microsat distribution parameter max cannot exceed " << maxSNPAlleles << ", resetting to " << maxSNPAlleles << "\n");
+			cout << endl << "Warning:: initial SNP/Microsat distribution parameter max cannot exceed " << maxSNPAlleles << ", resetting to " << maxSNPAlleles << "\n";
 
 			maxD = maxSNPAlleles; //reserve 255 for wildtype
 		}
@@ -83,7 +83,6 @@ SNPTrait::SNPTrait(const SNPTrait& T) :
 // ----------------------------------------------------------------------------------------
 void SNPTrait::mutate_KAM()
 {
-
 	const int positionsSize = pProtoTrait->getPositionsSize();
 	const auto& positions = pProtoTrait->getPositions();
 	const short ploidy = pProtoTrait->getPloidy();
@@ -199,7 +198,7 @@ void SNPTrait::inheritDiploid(sex_t whichChromosome, map<int, vector<unsigned ch
 
 		auto distance = std::distance(recomPositions.begin(), it);
 		if (distance - 1 % 2 != 0)
-			parentChromosome = !parentChromosome; //switch chromosome
+			parentChromosome = 1 - parentChromosome; //switch chromosome
 
 
 		for (auto const& [locus, allelePair] : parentGenes) {
@@ -207,7 +206,7 @@ void SNPTrait::inheritDiploid(sex_t whichChromosome, map<int, vector<unsigned ch
 			while (locus > nextBreakpoint) {
 				std::advance(it, 1);
 				nextBreakpoint = *it;
-				parentChromosome = !parentChromosome; //switch chromosome
+				parentChromosome = 1 - parentChromosome; //switch chromosome
 			}
 
 			if (locus <= nextBreakpoint) {

@@ -50,9 +50,6 @@
 
 #include <vector>
 #include <algorithm>
- //#include <Math.hpp>
- //#include <math.h>
- //#include <stdlib.h>
 using namespace std;
 
 #include "Parameters.h"
@@ -238,7 +235,6 @@ public:
 	int countHeterozygoteLoci();
 	vector<double> countLociHeterozyotes();
 	double computeHs();
-	void updateHeteroTable();
 
 private:
 	short nStages;

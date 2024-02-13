@@ -64,8 +64,6 @@ using namespace std;
 
 #include "RSrandom.h"
 
-class Landscape;
-
 #define NODATACOST 100000 // cost to use in place of nodata value for SMS;
 #define ABSNODATACOST 100 // cost to use in place of nodata value for SMS;
 // when boundaries are absorbing
@@ -159,11 +157,8 @@ typedef enum { KERNEL, SMS, CRW} movement_t;
 
 //GeneType convertToGeneType(const string& );
 
-float convertParameters(string, string);
-bool iequals(std::string_view lhs, std::string_view rhs);
-set<int> convertStringToSet(string);
-set<int> convertStringToPatches(string, int, Landscape*);
-set<int> convertStringToStages(string);
+set<int> convertStringToPatches(const string&, const int&, const vector<int>&);
+set<int> convertStringToStages(const string&, const int&);
 set<int> convertStringToChromosomeEnds(string, int);
 
 //sex types
@@ -450,6 +445,8 @@ private:
 extern ofstream DEBUGLOG;
 void DebugGUI(string);
 #endif
+
+extern RSrandom* pRandom;
 
 //---------------------------------------------------------------------------
 #endif

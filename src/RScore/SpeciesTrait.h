@@ -2,6 +2,8 @@
 #define SPECIESTRAITH
 
 #include "Parameters.h"
+#include "Species.h"
+
 #include <map>
 #include <vector>
 #include <set>
@@ -34,7 +36,7 @@ public:
     float getMutationRate() const { return mutationRate; }
     short getPloidy() const { return ploidy; }
     set<int>& getPositions() { return positions; } // returning by reference, make sure receiver is const
-    int getPositionsSize() const { return positions.size(); }
+    int getPositionsSize() const { return static_cast<int>(positions.size()); }
     bool isInherited() const { return inherited;  }
     DistributionType getMutationDistribution() const { return mutationDistribution; };
     map<parameter_t, float> getMutationParameters() const { return mutationParameters; };

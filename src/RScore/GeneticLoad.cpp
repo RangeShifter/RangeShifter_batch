@@ -21,39 +21,39 @@ GeneticLoad::GeneticLoad(SpeciesTrait* P)
 	switch (mutationDistribution) {
 	case UNIFORM:
 	{
-		if (!mutationParameters.count(MAX))
-			cout << endl << ("Error:: adaptive mutation uniform distribution parameter must contain max value (e.g. max= ) \n");
+		if (mutationParameters.count(MAX) != 1)
+			cout << endl << ("Error:: adaptive mutation uniform distribution parameter must contain one max value (e.g. max= ) \n");
 
-		if (!mutationParameters.count(MIN))
-			cout << endl << ("Error:: adaptive mutation uniform distribution parameter must contain min value (e.g. min= ) \n");
+		if (mutationParameters.count(MIN) != 1)
+			cout << endl << ("Error:: adaptive mutation uniform distribution parameter must contain one min value (e.g. min= ) \n");
 
 		break;
 	}
 	case NORMAL:
 	{
 
-		if (!mutationParameters.count(MEAN))
-			cout << endl << ("Error:: adaptive mutation distribution set to normal so parameters must contain mean value (e.g. mean= ) \n");
+		if (mutationParameters.count(MEAN) != 1)
+			cout << endl << ("Error:: adaptive mutation distribution set to normal so parameters must contain one mean value (e.g. mean= ) \n");
 
-		if (!mutationParameters.count(SDEV))
-			cout << endl << ("Error:: adaptive mutation distribution set to normal so parameters must contain sdev value (e.g. sdev= ) \n");
+		if (mutationParameters.count(SDEV) != 1)
+			cout << endl << ("Error:: adaptive mutation distribution set to normal so parameters must contain one sdev value (e.g. sdev= ) \n");
 
 		break;
 	}
 	case GAMMA:
 	{
-		if (!mutationParameters.count(SHAPE))
-			cout << endl << ("Error:: adaptive mutation distribution set to gamma so parameters must contain shape value (e.g. shape= ) \n");
+		if (mutationParameters.count(SHAPE) != 1)
+			cout << endl << ("Error:: adaptive mutation distribution set to gamma so parameters must contain one shape value (e.g. shape= ) \n");
 
-		if (!mutationParameters.count(SCALE))
-			cout << endl << ("Error:: adaptive mutation distribution set to gamma so parameters must contain scale value (e.g. scale= ) \n");
+		if (mutationParameters.count(SCALE) != 1)
+			cout << endl << ("Error:: adaptive mutation distribution set to gamma so parameters must contain one scale value (e.g. scale= ) \n");
 
 		break;
 	}
 	case NEGEXP:
 	{
-		if (!mutationParameters.count(MEAN))
-			cout << endl << ("Error:: adaptive mutation distribution set to negative exponential (negative decay) so parameters must contain mean value (e.g. mean= ) \n");
+		if (mutationParameters.count(MEAN) != 1)
+			cout << endl << ("Error:: adaptive mutation distribution set to negative exponential (negative decay) so parameters must contain one mean value (e.g. mean= ) \n");
 
 		break;
 	}
@@ -70,38 +70,38 @@ GeneticLoad::GeneticLoad(SpeciesTrait* P)
 	switch (dominanceDistribution) {
 	case UNIFORM:
 	{
-		if (!dominanceParameters.count(MAX))
-			cout << endl << ("Error:: adaptive dominance uniform distribution parameter must contain max value (e.g. max= ) \n");
+		if (dominanceParameters.count(MAX) != 1)
+			cout << endl << ("Error:: adaptive dominance uniform distribution parameter must contain one max value (e.g. max= ) \n");
 
-		if (!dominanceParameters.count(MIN))
-			cout << endl << ("Error:: adaptive dominance uniform distribution parameter must contain min value (e.g. min= ) \n");
+		if (dominanceParameters.count(MIN) != 1)
+			cout << endl << ("Error:: adaptive dominance uniform distribution parameter must contain one min value (e.g. min= ) \n");
 
 		break;
 	}
 	case NORMAL:
 	{
 
-		if (!dominanceParameters.count(MEAN))
-			cout << endl << ("Error:: adaptive dominance distribution set to normal so parameters must contain mean value (e.g. mean= ) \n");
+		if (dominanceParameters.count(MEAN) != 1)
+			cout << endl << ("Error:: adaptive dominance distribution set to normal so parameters must contain one mean value (e.g. mean= ) \n");
 
-		if (!dominanceParameters.count(SDEV))
-			cout << endl << ("Error:: adaptive dominance distribution set to normal so parameters must contain sdev value (e.g. sdev= ) \n");
+		if (dominanceParameters.count(SDEV) != 1)
+			cout << endl << ("Error:: adaptive dominance distribution set to normal so parameters must contain one sdev value (e.g. sdev= ) \n");
 
 		break;
 	}
 	case GAMMA:
 	{
-		if (!dominanceParameters.count(SHAPE))
-			cout << endl << ("Error:: adaptive dominance distribution set to gamma so parameters must contain shape value (e.g. shape= ) \n");
+		if (dominanceParameters.count(SHAPE) != 1)
+			cout << endl << ("Error:: adaptive dominance distribution set to gamma so parameters must contain one shape value (e.g. shape= ) \n");
 
-		if (!dominanceParameters.count(SCALE))
-			cout << endl << ("Error:: adaptive dominance distribution set to gamma so parameters must contain scale value (e.g. scale= ) \n");
+		if (dominanceParameters.count(SCALE) != 1)
+			cout << endl << ("Error:: adaptive dominance distribution set to gamma so parameters must contain one scale value (e.g. scale= ) \n");
 
 		break;
 	}
 	case NEGEXP:
 	{
-		if (!dominanceParameters.count(MEAN))
+		if (dominanceParameters.count(MEAN) != 1)
 			cout << endl << ("Error:: adaptive dominance distribution set to negative exponential (negative decay) so parameters must contain mean value (e.g. mean= ) \n");
 
 		break;
@@ -211,27 +211,27 @@ float GeneticLoad::drawDominance(float selCoef) {
 	{
 		const float mean = dominanceParameters.find(MEAN)->second;
 		const float sd = dominanceParameters.find(SDEV)->second;
-		h = pRandom->Normal(mean, sd);
+		h = static_cast<float>(pRandom->Normal(mean, sd));
 		break;
 	}
 	case GAMMA:
 	{
 		const float shape = dominanceParameters.find(SHAPE)->second;
 		const float scale = dominanceParameters.find(SCALE)->second;
-		h = pRandom->Gamma(shape, scale);
+		h = static_cast<float>(pRandom->Gamma(shape, scale));
 		break;
 	}
 	case NEGEXP:
 	{
 		const float mean = dominanceParameters.find(MEAN)->second;
-		h = pRandom->NegExp(mean);
+		h = static_cast<float>(pRandom->NegExp(mean));
 		break;
 	}
 	case SCALED:
 	{
 		const float min = 0;
-		const float max = exp((-log(2 * 0.36) / 0.05) * selCoef);
-		h = pRandom->FRandom(min, max);
+		const float max = static_cast<float>(exp((-log(2 * 0.36) / 0.05) * selCoef));
+		h = static_cast<float>(pRandom->FRandom(min, max));
 		break;
 	}
 
@@ -270,7 +270,7 @@ float GeneticLoad::drawSelectionCoef() {
 	{
 		const float mean = mutationParameters.find(MEAN)->second;
 		const float sd = mutationParameters.find(SDEV)->second;
-		s = pRandom->Normal(mean, sd);
+		s = static_cast<float>(pRandom->Normal(mean, sd));
 
 		break;
 	}
@@ -278,13 +278,13 @@ float GeneticLoad::drawSelectionCoef() {
 	{
 		const float shape = mutationParameters.find(SHAPE)->second;
 		const float scale = mutationParameters.find(SCALE)->second;
-		s = pRandom->Gamma(shape, scale);
+		s = static_cast<float>(pRandom->Gamma(shape, scale));
 		break;
 	}
 	case NEGEXP:
 	{
 		const float mean = mutationParameters.find(MEAN)->second;
-		s = pRandom->NegExp(mean);
+		s = static_cast<float>(pRandom->NegExp(mean));
 		break;
 	}
 	default:
@@ -315,11 +315,11 @@ void GeneticLoad::inheritDiploid(sex_t whichChromosome, map<int, vector<shared_p
 
 	auto it = recomPositions.lower_bound(parentGenes.begin()->first);
 
-	unsigned int nextBreakpoint = *it;
+	int nextBreakpoint = *it;
 
 	auto distance = std::distance(recomPositions.begin(), it);
 	if (distance % 2 != 0)
-		parentChromosome = !parentChromosome; // switch to the other one
+		parentChromosome = 1 - parentChromosome; // switch to the other one
 		// use 1-parentChromosome, or switch to a sex_t ?
 
 	for (auto const& [locus, allelePair] : parentGenes) {
@@ -327,7 +327,7 @@ void GeneticLoad::inheritDiploid(sex_t whichChromosome, map<int, vector<shared_p
 		while (locus > nextBreakpoint) {
 			std::advance(it, 1);
 			nextBreakpoint = *it;
-			parentChromosome = !parentChromosome; // switch to the other one
+			parentChromosome = 1 - parentChromosome; // switch to the other one
 		}
 
 		if (locus <= nextBreakpoint) {
@@ -363,8 +363,8 @@ float GeneticLoad::express() {
 
 	for (auto const& [locus, pAllelePair] : genes)
 	{
-		auto pAlleleLeft  = (!pAllelePair[0]) ? wildType : pAllelePair[0];
-		auto pAlleleRight = (!pAllelePair[1]) ? wildType : pAllelePair[1];
+		shared_ptr<Allele> pAlleleLeft  = (!pAllelePair[0]) ? wildType : pAllelePair[0];
+		shared_ptr<Allele> pAlleleRight = (!pAllelePair[1]) ? wildType : pAllelePair[1];
 
 		if (pAlleleLeft.get()->getId() != pAlleleRight.get()->getId()) // heterozygote
 		{
@@ -391,9 +391,9 @@ bool GeneticLoad::isHeterozygoteAtLocus(int locus) const {
 	if (it == genes.end()) //not found so must be wildtype homozygous
 		return false;
 	else {
-		auto a = (!it->second[0]) ? wildType : it->second[0];
-		auto b = (!it->second[1]) ? wildType : it->second[1];
-		return a != b;
+		shared_ptr<Allele> alleleRight = (!it->second[0]) ? wildType : it->second[0];
+		shared_ptr<Allele> alleleLeft = (!it->second[1]) ? wildType : it->second[1];
+		return alleleRight != alleleLeft;
 	}
 }
 
@@ -407,8 +407,8 @@ int GeneticLoad::countHeterozygoteLoci() const {
 	int count = 0;
 
 	for (auto const& [locus, allelePair] : genes) {
-		auto alleleLeft = (!allelePair[0]) ? wildType : allelePair[0];
-		auto alleleRight = (!allelePair[1]) ? wildType : allelePair[1];
+		shared_ptr<Allele> alleleLeft = (!allelePair[0]) ? wildType : allelePair[0];
+		shared_ptr<Allele> alleleRight = (!allelePair[1]) ? wildType : allelePair[1];
 		count += alleleLeft != alleleRight;
 	}
 	return count;

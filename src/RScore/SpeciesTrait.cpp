@@ -1,6 +1,5 @@
 
 #include "SpeciesTrait.h"
-#include "Species.h"
 
 //could be handled in header file but here for now for flexibility
 SpeciesTrait::SpeciesTrait(vector<string> parameters, Species* pSpecies) {
@@ -20,7 +19,7 @@ SpeciesTrait::SpeciesTrait(vector<string> parameters, Species* pSpecies) {
 	if (traitType == SNP || traitType == ADAPTIVE)
 		this->inherited = true;
 	else
-		this->inherited = iequals(parameters[10], "true") ? true : false;
+		this->inherited = (parameters[10] == "true") ? true : false;
 
 	if (this->isInherited()) {
 		this->mutationDistribution = stringToDistributionType(parameters[11]);
@@ -35,7 +34,7 @@ SpeciesTrait::SpeciesTrait(vector<string> parameters, Species* pSpecies) {
 
 		if (pSpecies->getNumberOfNeutralLoci() > 0)
 			cout << endl << "Traits file: WARNING - can only have one set of neutral markers, overwriting previous" << endl;
-		else pSpecies->setNumberOfNeutralLoci(positions.size());
+		else pSpecies->setNumberOfNeutralLoci(static_cast<int>(positions.size()));
 	}
 }
 
@@ -53,6 +52,7 @@ TraitType SpeciesTrait::stringToTraitType(const std::string& str, sex_t sex) con
 		else if (str == "kernel_probability") return KERNEL_PROBABILITY_M;
 		else if (str == "crw_stepLength") return CRW_STEPLENGTH_M;
 		else if (str == "crw_stepCorrelation") return CRW_STEPCORRELATION_M;
+		else throw logic_error(str + " is not a valid trait type.");
 	} else {
 		if (str == "emigration_d0") return E_D0_F;
 		else if (str == "emigration_alpha") return E_ALPHA_F;
@@ -71,6 +71,7 @@ TraitType SpeciesTrait::stringToTraitType(const std::string& str, sex_t sex) con
 		else if (str == "sms_betaDB") return SMS_BETADB;
 		else if (str == "neutral") return SNP;
 		else if (str == "adaptive") return ADAPTIVE;
+		else throw logic_error(str + " is not a valid trait type.");
 	}
 }
 
@@ -79,6 +80,7 @@ ExpressionType SpeciesTrait::stringToExpressionType(const std::string& str) cons
 	else if (str == "additive") return ADDITIVE;
 	else if (str == "multiplicative") return MULTIPLICATIVE;
 	else if (str == "#") return NEUTRAL;
+	else throw logic_error(str + " is not a valid gene expression type.");
 }
 
 DistributionType SpeciesTrait::stringToDistributionType(const std::string& str) const
@@ -91,6 +93,7 @@ DistributionType SpeciesTrait::stringToDistributionType(const std::string& str) 
 	else if (str == "negExp") return NEGEXP;
 	else if (str == "KAM") return KAM;
 	else if (str == "SSM") return SSM;
+	else throw logic_error(str + " is not a valid distribution type.");
 }
 
 map<parameter_t, float> SpeciesTrait::stringToParameterMap(string parameters) const {
@@ -135,29 +138,38 @@ set<int> SpeciesTrait::stringToLoci(string pos, string nLoci, Species* pSpecies)
 	set<int> positions;
 
 	if (pos != "random") {
-		//stringstream ss(pos);
 
-		//string value, valueWithin;
-		//while (std::getline(ss, value, ',')) {
-		//	stringstream sss(value);
-		//	vector<int> minMax;
-		//	while (std::getline(sss, valueWithin, '-')) {
-		//		minMax.push_back(stoi(valueWithin));
-		//	}
-		//	if (minMax[0] > pSpecies->getGenomeSize() || minMax[1] > pSpecies->getGenomeSize()) {
-		//		cout << endl << "Traits file: ERROR - trait positions must not exceed genome size" << endl;
-		//	}
-		//	else {
-		//		if (minMax.size() > 1) {
-		//			for (int i = minMax[0]; i < minMax[1] + 1; ++i) {
-		//				positions.insert(i);
-		//			}
-		//		}
-		//		else
-		//			positions.insert(minMax[0]);
-		//	}
-		//}
-		positions = convertStringToSet(pos);
+		// Parse comma-separated list from input string
+		stringstream ss(pos);
+		string value, valueWithin;
+		// Read comma-separated positions
+		while (std::getline(ss, value, ',')) {
+			stringstream sss(value);
+			vector<int> positionRange;
+			// Read single positions and dash-separated ranges
+			while (std::getline(sss, valueWithin, '-')) {
+				positionRange.push_back(stoi(valueWithin));
+			}
+			switch (positionRange.size())
+			{
+			case 1: // single position
+				if (positionRange[0] > pSpecies->getGenomeSize())
+					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
+				positions.insert(positionRange[0]);
+				break;
+			case 2: // dash-separated range
+				if (positionRange[0] > pSpecies->getGenomeSize() || positionRange[1] > pSpecies->getGenomeSize()) {
+					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
+				}
+				for (int i = positionRange[0]; i < positionRange[1] + 1; ++i) {
+					positions.insert(i);
+				}
+				break;
+			default: // zero or more than 2 values between commas: error
+				throw logic_error("Traits file: ERROR - incorrectly formatted position range.");
+				break;
+			}
+		}
 
 		for (auto position : positions) {
 			if (position > pSpecies->getGenomeSize())

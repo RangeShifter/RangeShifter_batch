@@ -31,9 +31,9 @@
  The class holds all the demographic and dispersal parameters of the species.
 
  For full details of RangeShifter, please see:
- Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+ Bocedi G., Palmer S.C.F., Peâ€™er G., Heikkinen R.K., Matsinos Y.G., Watts K.
  and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
- eco-evolutionary dynamics and species’ responses to environmental changes.
+ eco-evolutionary dynamics and speciesâ€™ responses to environmental changes.
  Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
  Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
@@ -49,6 +49,10 @@
 #include "SpeciesTrait.h"
 #include "TTrait.h"
 #include <ranges>
+#include <map>
+#include <set>
+
+class SpeciesTrait;
 
  // structures for demographic parameters
 
@@ -280,7 +284,7 @@ public:
 		short		// option: 0 = return minimum, otherwise = return maximum
 	);
 
-	set<int>& getSamplePatches() {
+	std::set<int>& getSamplePatches() {
 		return samplePatchList;
 	};
 
@@ -288,7 +292,7 @@ public:
 		return nIndsToSample;
 	};
 
-	set<int>& getStagesToSample() {
+	std::set<int>& getStagesToSample() {
 		return stagesToSampleFrom;
 	}
 
@@ -419,19 +423,16 @@ public:
 
 	//map<TraitType, std::unique_ptr<ProtoTrait>>& getTraitTable(void); //return by reference so ensure variable recieving is const
 
-	set<TraitType> getTraitTypes();
+	std::set<TraitType> getTraitTypes();
 
 	int getNTraits() const;
 	int getNPositionsForTrait(const TraitType trait) const;
 	int getGenomeSize() const;
-	void setGenomeSize(int);
 	float getRecombinationRate() const;
-	void setRecombinationRate(float);
-	set<int> getChromosomeEnds() const;
-	void setChromosomeEnds(const set<int>& ends);
-	void setGeneticParameters(const set<int>& chromosomeEnds, const int genomeSize, const float recombinationRate,
-		const set<int>& samplePatchList, const string nIndsToSample, const set<int>& stagesToSampleFrom, string nSampleCellsFst);
-	void setSamplePatchList(const set<int>& samplePatchList);
+	std::set<int> getChromosomeEnds() const;
+	void setGeneticParameters(const std::set<int>& chromosomeEnds, const int genomeSize, const float recombinationRate,
+		const std::set<int>& samplePatchList, const string nIndsToSample, const std::set<int>& stagesToSampleFrom, string nSampleCellsFst);
+	void setSamplePatchList(const std::set<int>& samplePatchList);
 
 private:
 
@@ -484,17 +485,17 @@ private:
 	// genome parameters
 
 	/**The traits table.*/
-	map<TraitType, std::unique_ptr<SpeciesTrait>> spTraitTable;
-	set<int> chromosomeEnds;
+	std::map<TraitType, std::unique_ptr<SpeciesTrait>> spTraitTable;
+	std::set<int> chromosomeEnds;
 	int genomeSize;
-	bool isDiploid;
+	bool diploid;
 	bool mutationsOn;
 	int numberOfNeutralLoci;
 	int numberOfAdaptiveTraits;
 	float recombinationRate;
-	set<int> samplePatchList;
+	std::set<int> samplePatchList;
 	string nSampleCellsFst; //for cell based landscape
-	set<int> stagesToSampleFrom;
+	std::set<int> stagesToSampleFrom;
 	string nIndsToSample; //could be integer or 'all', all means in in selected patches not necessarily all in population
 
 	// emigration parameters
@@ -569,7 +570,6 @@ private:
 	float betaS[NSTAGES][NSEXES];			// inflection point of the settlement reaction norm to density
 
 	// other attributes
-
 	int spNum;
 
 };

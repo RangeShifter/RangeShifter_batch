@@ -209,10 +209,6 @@ int InitDist::readDistribution(string distfile) {
 #else
 			dfile >> p;
 #endif
-#if RSDEBUG
-			//DEBUGLOG << "InitDist::readDistribution():"
-			//	<< " y = " << y << " x = " << x << " p = " << p << endl;
-#endif
 			if (p == nodata || p == 0 || p == 1) { // only valid values
 				if (p == 1) { // species present
 					cells.push_back(new DistCell(x, y));
@@ -266,60 +262,26 @@ Landscape::Landscape(void) {
 	pix = (int)gpix;
 	minEast = minNorth = 0.0;
 	cells = 0;
-#if RSDEBUG
-	// NOTE: do NOT write to output stream before it has been opened - it will be empty
-	//DebugGUI("Landscape::Landscape(): this = " + Int2Str((int)this)
-	//	+ " pCell = " + Int2Str((int)pCell));
-	//DEBUGLOGGUI << "Landscape::Landscape(): this = " << this << " pCell = " << pCell << endl;
-#endif
 	connectMatrix = 0;
 	epsGlobal = 0;
 	patchChgMatrix = 0;
 	costsChgMatrix = 0;
-
-#if RSDEBUG
-	//DEBUGLOG << "Landscape::Landscape():"
-	//	<< " rasterType= " << rasterType << endl;
-#endif
-#if RSDEBUG
-//MemoLine(("Landscape::Landscape(): landscape created " + Int2Str(0)
-//	).c_str());
-#endif
 }
 
 Landscape::~Landscape() {
 
-#if RSDEBUG
-	//DebugGUI(("Landscape::~Landscape(): this=" + Int2Str((int)this) + " cells=" + Int2Str((int)cells)
-	//	 + " maxX=" + Int2Str(maxX) + " maxY=" + Int2Str(maxY)).c_str());
-#endif
 	if (cells != 0) {
 		for (int y = dimY - 1; y >= 0; y--) {
-#if RSDEBUG
-			//DebugGUI(("Landscape::~Landscape(): y=" + Int2Str(y) + " cells[y]=" + Int2Str((int)cells[y])).c_str());
-#endif
 			for (int x = 0; x < dimX; x++) {
-#if RSDEBUG
-				//DebugGUI(("Landscape::~Landscape(): y=" + Int2Str(y) + " x=" + Int2Str(x)
-				//	+ " cells[y][x]=" + Int2Str((int)cells[y][x])).c_str());
-#endif
 				if (cells[y][x] != 0) delete cells[y][x];
 			}
 			if (cells[y] != 0) {
-#if RSDEBUG
-				//DebugGUI(("Landscape::~Landscape(): deleting cells[y]=" + Int2Str((int)cells[y])).c_str());
-#endif
-//			delete cells[y];
 				delete[] cells[y];
 			}
 		}
 		delete[] cells;
 		cells = 0;
 	}
-#if RSDEBUG
-	//DebugGUI(("Landscape::~Landscape(): this=" + Int2Str((int)this)
-	//	+ " cells=" + Int2Str((int)cells)).c_str());
-#endif
 
 	int npatches = (int)patches.size();
 	for (int i = 0; i < npatches; i++)
@@ -345,63 +307,28 @@ Landscape::~Landscape() {
 	deleteConnectMatrix();
 	deletePatchChgMatrix();
 	if (epsGlobal != 0) delete[] epsGlobal;
-
-#if RSDEBUG
-	//MemoLine(("Landscape::~Landscape(): landscape deleted " + Int2Str(1)
-	//	).c_str());
-#endif
 }
 
 // Remove all patches and cells
 // Used for replicating artificial landscape without deleting the landscape itself
 void Landscape::resetLand(void) {
-
-#if RSDEBUG
-	//DebugGUI("Landscape::resetLand(): starting...");
-#endif
 	resetLandLimits();
 	int npatches = (int)patches.size();
-#if RSDEBUG
-	//DebugGUI(("Landscape::resetLand(): npatches=" + Int2Str(npatches)
-	//	).c_str());
-#endif
 	for (int i = 0; i < npatches; i++) if (patches[i] != NULL) delete patches[i];
 	patches.clear();
 	patchnums.clear();
-#if RSDEBUG
-	//DebugGUI("Landscape::resetLand(): finished resetting patches");
-#endif
-
-#if RSDEBUG
-//DebugGUI(("Landscape::resetLand(): this=" + Int2Str((int)this)
-//	+ " cells=" + Int2Str((int)cells)).c_str());
-#endif
 	if (cells != 0) {
 		for (int y = dimY - 1; y >= 0; y--) {
-#if RSDEBUG
-			//DebugGUI(("Landscape::resetLand(): y=" + Int2Str(y) + " cells[y]=" + Int2Str((int)cells[y])).c_str());
-#endif
 			for (int x = 0; x < dimX; x++) {
-#if RSDEBUG
-				//DebugGUI(("Landscape::resetLand(): y=" + Int2Str(y) + " x=" + Int2Str(x)
-				//	+ " cells[y][x]=" + Int2Str((int)cells[y][x])).c_str());
-#endif
 				if (cells[y][x] != 0) delete cells[y][x];
 			}
 			if (cells[y] != 0) {
-#if RSDEBUG
-				//DebugGUI(("Landscape::resetLand(): deleting cells[y]=" + Int2Str((int)cells[y])).c_str());
-#endif
 				delete[] cells[y];
 			}
 		}
 		delete[] cells;
 		cells = 0;
 	}
-#if RSDEBUG
-	//DebugGUI(("Landscape::resetLand(): this=" + Int2Str((int)this)
-	//	+ " cells=" + Int2Str((int)cells)).c_str());
-#endif
 }
 
 void Landscape::setLandParams(landParams ppp, bool batchMode)
@@ -593,30 +520,15 @@ int Landscape::colourCount(void) {
 
 //---------------------------------------------------------------------------
 void Landscape::setCellArray(void) {
-#if RSDEBUG
-	//DebugGUI(("Landscape::setCellArray(): start: this=" + Int2Str((int)this)
-	//	+ " cells=" + Int2Str((int)cells)).c_str());
-#endif
 	if (cells != 0) resetLand();
 	//cells = new Cell **[maxY+1];
 	cells = new Cell * *[dimY];
-#if RSDEBUG
-	//DebugGUI(("Landscape::setCellArray(): cells=" + Int2Str((int)cells)).c_str());
-#endif
 	for (int y = dimY - 1; y >= 0; y--) {
 		cells[y] = new Cell * [dimX];
-#if RSDEBUG
-		//DebugGUI(("Landscape::setCellArray(): y=" + Int2Str(y)
-		//	+ " cells[y]=" + Int2Str((int)cells[y])).c_str());
-#endif
 		for (int x = 0; x < dimX; x++) {
 			cells[y][x] = 0;
 		}
 	}
-#if RSDEBUG
-	//DebugGUI(("Landscape::setCellArray(): end: this=" + Int2Str((int)this)
-	//	+ " cells=" + Int2Str((int)cells)).c_str());
-#endif
 }
 
 void Landscape::addPatchNum(int p) {
@@ -635,7 +547,7 @@ void Landscape::addPatchNum(int p) {
 /* Create an artificial landscape (random or fractal), which can be
 either binary (habitat index 0 is the matrix, 1 is suitable habitat)
 or continuous (0 is the matrix, >0 is suitable habitat) */
-void Landscape::generatePatches(void)
+void Landscape::generatePatches(Species* pSpecies)
 {
 	int x, y, ncells;
 	double p;
@@ -644,17 +556,6 @@ void Landscape::generatePatches(void)
 
 	vector <land> ArtLandscape;
 
-#if RSDEBUG
-	//int iiiiii = (int)fractal;
-	//DEBUGLOG << "Landscape::generatePatches(): (int)fractal=" << iiiiii
-	//	<< " rasterType=" << rasterType
-	//	<< " continuous=" << continuous
-	//	<< " dimX=" << dimX << " dimY=" << dimY
-	//	<< " propSuit=" << propSuit
-	//	<< " hurst=" << hurst
-	//	<< " maxPct=" << maxPct << " minPct=" << minPct
-	//	<< endl;
-#endif
 
 	setCellArray();
 
@@ -668,9 +569,6 @@ void Landscape::generatePatches(void)
 	// habitat cells
 	for (int yy = dimY - 1; yy >= 0; yy--) {
 		for (int xx = 0; xx < dimX; xx++) {
-#if RSDEBUG
-			//DEBUGLOG << "Landscape::generatePatches(): yy=" << yy	<< " xx=" << xx << endl;
-#endif
 			addNewCellToLand(xx, yy, 0);
 		}
 	}
@@ -689,11 +587,6 @@ void Landscape::generatePatches(void)
 		vector<land>::iterator iter = ArtLandscape.begin();
 		while (iter != ArtLandscape.end()) {
 			x = iter->y_coord; y = iter->x_coord;
-#if RSDEBUG
-			//DEBUGLOG << "Landscape::generatePatches(): x=" << x	<< " y=" << y
-			//	<< " iter->avail=" << iter->avail
-			//	<< " iter->value=" << iter->value << endl;
-#endif
 			pCell = findCell(x, y);
 			if (continuous) {
 				if (iter->value > 0.0) { // habitat
@@ -722,12 +615,6 @@ void Landscape::generatePatches(void)
 	else { // random landscape
 		int hab = 0;
 		ncells = (int)((float)(dimX) * (float)(dimY)*propSuit + 0.00001); // no. of cells to initialise
-#if RSDEBUG
-		//DEBUGLOG << "Landscape::generatePatches(): dimX=" << dimX	<< " dimY=" << dimY
-		//	<< " propSuit=" << propSuit
-		//	<< " PRODUCT=" << ((float)(dimX) * (float)(dimY) * propSuit + 0.00001)
-		//	<< " ncells=" << ncells << endl;
-#endif
 		int i = 0;
 		do {
 			do {
@@ -735,11 +622,6 @@ void Landscape::generatePatches(void)
 				pCell = findCell(x, y);
 				hab = pCell->getHabIndex(0);
 			} while (hab > 0);
-#if RSDEBUG
-			//DEBUGLOG << "Landscape::generatePatches() 00000: y=" << y	<< " x=" << x
-			//	<< " i=" << i << " hab=" << hab << " patchnum=" << patchnum
-			//	<< endl;
-#endif
 			patchnums.push_back(patchnum);
 			pPatch = newPatch(patchnum++);
 			pCell = findCell(x, y);
@@ -764,21 +646,12 @@ void Landscape::generatePatches(void)
 				}
 				else { // discrete
 					if (pCell->getHabIndex(0) == 0) {
-#if RSDEBUG
-						//DEBUGLOG << "Landscape::generatePatches() 11111: yy=" << yy	<< " xx=" << xx
-						//	<< endl;
-#endif
 						addCellToPatch(pCell, patches[0], x);
 					}
 				}
 			}
 		}
 	}
-
-#if RSDEBUG
-	//DEBUGLOG << "Landscape::generatePatches(): finished, no. of patches = "
-	//	<< patchCount() << endl;
-#endif
 
 	simParams sim = paramsSim->getSim();
 	if (pSpecies->getNumberOfNeutralLoci() > 0 && (sim.outputWCFstat || sim.outputPairwiseFst)) {
@@ -802,11 +675,6 @@ void Landscape::generatePatches(void)
 habitat cells are added to the matrix patch) */
 void Landscape::allocatePatches(Species* pSpecies)
 {
-#if RSDEBUG
-	//DEBUGLOG << "Landscape::allocatePatches(): pSpecies=" << pSpecies
-	//	<< " N patches=" << (int)patches.size() << endl;
-#endif
-//int hx;
 	float habK;
 	Patch* pPatch;
 	Cell* pCell;
@@ -814,10 +682,6 @@ void Landscape::allocatePatches(Species* pSpecies)
 	// delete all existing patches
 	int npatches = (int)patches.size();
 	for (int i = 0; i < npatches; i++) {
-#if RSDEBUG
-		//DEBUGLOG << "Landscape::allocatePatches(): i=" << i
-		//	<< " patches[i]=" << patches[i] << endl;
-#endif
 		if (patches[i] != NULL) delete patches[i];
 	}
 	patches.clear();
@@ -825,10 +689,6 @@ void Landscape::allocatePatches(Species* pSpecies)
 	patches.push_back(new Patch(0, 0));
 	Patch* matrixPatch = patches[0];
 	patchnums.push_back(0);
-#if RSDEBUG
-	//DEBUGLOG << "Landscape::allocatePatches(): npatches=" << npatches
-	//	<< " N patches=" << (int)patches.size() << endl;
-#endif
 	int patchnum = 1;
 
 	switch (rasterType) {
@@ -836,10 +696,6 @@ void Landscape::allocatePatches(Species* pSpecies)
 	case 0: // habitat codes
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
-#if RSDEBUG
-				//DEBUGLOG << "Landscape::allocatePatches(): x=" << x << " y=" << y
-				//	<< " cells=" << cells[y][x] << endl;
-#endif
 				if (cells[y][x] != 0) { // not no-data cell
 					pCell = cells[y][x];
 					//				hx = pCell->getHabIndex();
@@ -848,13 +704,6 @@ void Landscape::allocatePatches(Species* pSpecies)
 					int nhab = pCell->nHabitats();
 					for (int i = 0; i < nhab; i++) {
 						habK += pSpecies->getHabK(pCell->getHabIndex(i));
-#if RSDEBUG
-						//DEBUGLOG << "Landscape::allocatePatches(): x=" << x << " y=" << y
-						//	<< " i=" << i
-						//	<< " cells[y][x]=" << cells[y][x]
-						//	<< " pCell=" << pCell
-						//	<< " habK=" << habK << endl;
-#endif
 					}
 					if (habK > 0.0) { // cell is suitable - create a patch for it
 						patchnums.push_back(patchnum);
@@ -872,10 +721,6 @@ void Landscape::allocatePatches(Species* pSpecies)
 	case 1: // habitat cover
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
-#if RSDEBUG
-				//DEBUGLOG << "Landscape::allocatePatches(): x=" << x << " y=" << y
-				//	<< " cells=" << cells[y][x] << endl;
-#endif
 				if (cells[y][x] != 0) { // not no-data cell
 					pCell = cells[y][x];
 					habK = 0.0;
@@ -884,13 +729,6 @@ void Landscape::allocatePatches(Species* pSpecies)
 					for (int i = 0; i < nhab; i++)
 					{
 						habK += pSpecies->getHabK(i) * pCell->getHabitat(i) / 100.0f;
-#if RSDEBUG
-						//DEBUGLOG << "Landscape::allocatePatches(): x=" << x << " y=" << y
-						//	<< " i=" << i
-						//	<< " cells[y][x]=" << cells[y][x]
-						//	<< " pCell=" << pCell
-						//	<< " habK=" << habK << endl;
-#endif
 					}
 					if (habK > 0.0) { // cell is suitable - create a patch for it
 						patchnums.push_back(patchnum);
@@ -908,25 +746,13 @@ void Landscape::allocatePatches(Species* pSpecies)
 	case 2: // habitat quality
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
-#if RSDEBUG
-				//DEBUGLOG << "Landscape::allocatePatches(): x=" << x << " y=" << y
-				//	<< " cells=" << cells[y][x] << endl;
-#endif
 				if (cells[y][x] != 0) { // not no-data cell
 					pCell = cells[y][x];
 					habK = 0.0;
 					int nhab = pCell->nHabitats();
-					//				for (int i = 0; i < nHab; i++)
 					for (int i = 0; i < nhab; i++)
 					{
 						habK += pSpecies->getHabK(0) * pCell->getHabitat(i) / 100.0f;
-#if RSDEBUG
-						//DEBUGLOG << "Landscape::allocatePatches(): x=" << x << " y=" << y
-						//	<< " i=" << i
-						//	<< " cells[y][x]=" << cells[y][x]
-						//	<< " pCell=" << pCell
-						//	<< " habK=" << habK << endl;
-#endif
 					}
 					if (habK > 0.0) { // cell is suitable (at some time) - create a patch for it
 						patchnums.push_back(patchnum);
@@ -955,12 +781,6 @@ void Landscape::allocatePatches(Species* pSpecies)
 		pSpecies->setSamplePatchList(patchesToSample);
 
 	}
-
-
-#if RSDEBUG
-	//DEBUGLOG << "Landscape::allocatePatches(): finished, N patches = " << (int)patches.size() << endl;
-#endif
-
 }
 
 Patch* Landscape::newPatch(int num)
@@ -1118,12 +938,6 @@ void Landscape::updateCarryingCapacity(Species* pSpecies, int yr, short landIx) 
 	patchLimits landlimits;
 	landlimits.xMin = minX; landlimits.xMax = maxX;
 	landlimits.yMin = minY; landlimits.yMax = maxY;
-#if RSDEBUG
-	//DEBUGLOG << "Landscape::updateCarryingCapacity(): yr=" << yr
-	//	<< " xMin=" << landlimits.xMin << " yMin=" << landlimits.yMin
-	//	<< " xMax=" << landlimits.xMax << " yMax=" << landlimits.yMax
-	//	<< endl;
-#endif
 	int npatches = (int)patches.size();
 	for (int i = 0; i < npatches; i++) {
 		if (patches[i]->getPatchNum() != 0) { // not matrix patch
@@ -1181,13 +995,6 @@ int Landscape::checkTotalCover(void) {
 				float sumCover = 0.0;
 				for (int i = 0; i < nHab; i++) {
 					sumCover += cells[y][x]->getHabitat(i);
-#if RSDEBUG
-					//DebugGUI(("Landscape::checkTotalCover(): y=" + Int2Str(y)
-					//	+ " x=" + Int2Str(x)
-					//	+ " i=" + Int2Str(i)
-					//	+ " sumCover=" + Float2Str(sumCover)
-					//	).c_str());
-#endif
 				}
 				if (sumCover > 100.00001) nCells++; // decimal part to allow for floating point error
 				if (sumCover <= 0.0) // cell is a matrix cell
@@ -1209,28 +1016,13 @@ void Landscape::updateHabitatIndices(void) {
 	// convert codes in landscape
 	int h;
 	int changes = (int)landchanges.size();
-#if RSDEBUG
-	//DebugGUI(("Landscape::updateHabitatIndices(): nHab=" + Int2Str(nHab)
-	//	+ " changes=" + Int2Str(changes)
-	//	).c_str());
-#endif
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
 			if (cells[y][x] != 0) { // not a no-data cell
 				for (int c = 0; c <= changes; c++) {
 					h = cells[y][x]->getHabIndex(c);
-#if RSDEBUG
-					//DebugGUI(("Landscape::updateHabitatIndices() 00000: y=" + Int2Str(y)
-					//	+ " x=" + Int2Str(x) + " c=" + Int2Str(c) + " h=" + Int2Str(h)
-					//	).c_str());
-#endif
 					if (h >= 0) {
 						h = findHabCode(h);
-#if RSDEBUG
-						//DebugGUI(("Landscape::updateHabitatIndices() 11111: y=" + Int2Str(y)
-						//	+ " x=" + Int2Str(x) + " c=" + Int2Str(c) + " h=" + Int2Str(h)
-						//	).c_str());
-#endif
 						cells[y][x]->changeHabIndex(c, h);
 					}
 				}
@@ -1248,11 +1040,6 @@ void Landscape::setEnvGradient(Species* pSpecies, bool initial)
 	double envval;
 	// gradient parameters
 	envGradParams grad = paramsGrad->getGradient();
-#if RSDEBUG
-	//DEBUGLOG << "Landscape::setEnvGradient(): grad.opt_y = " << grad.opt_y
-	//	<< " grad.grad_inc = " << grad.grad_inc << " grad.factor " << grad.factor
-	//	<< endl;
-#endif
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
 			// NB: gradient lies in range 0-1 for all types, and is applied when necessary...
@@ -1273,11 +1060,6 @@ void Landscape::setEnvGradient(Species* pSpecies, bool initial)
 						break;
 					}
 				}
-#if RSDEBUG
-				//DEBUGLOG << "Landscape::setEnvGradient(): y=" << y << " x=" << x
-				//	<< " dist_from_opt=" << dist_from_opt << " rasterType=" << rasterType << " hab=" << hab
-				//	<< endl;
-#endif
 				if (habK > 0.0) { // suitable cell
 					if (initial) { // set local environmental deviation
 						cells[y][x]->setEnvDev((float)pRandom->Random() * (2.0f) - 1.0f);
@@ -1285,11 +1067,6 @@ void Landscape::setEnvGradient(Species* pSpecies, bool initial)
 					dist_from_opt = (float)(fabs((double)grad.opt_y - (double)y));
 					dev = cells[y][x]->getEnvDev();
 					envval = 1.0 - dist_from_opt * grad.grad_inc + dev * grad.factor;
-#if RSDEBUG
-					//DEBUGLOG << "Landscape::setEnvGradient(): y=" << y << " x=" << x
-					//	<< " dist_from_opt=" << dist_from_opt << " dev=" << dev << " p=" << p
-					//	<< endl;
-#endif
 					if (envval < 0.000001) envval = 0.0;
 					if (envval > 1.0) envval = 1.0;
 				}
@@ -1325,11 +1102,6 @@ void Landscape::updateLocalStoch(void) {
 		for (int x = 0; x < dimX; x++) {
 			if (cells[y][x] != 0) { // not a no-data cell
 				randpart = (float)(pRandom->Normal(0.0, env.std) * sqrt(1.0 - (env.ac * env.ac)));
-#if RSDEBUG
-				//DEBUGLOG << "Landscape::updateLocalStoch(): y=" << y << " x=" << x
-				//	<< " env.std= " << env.std << " env.ac= " << env.ac << " randpart= " << randpart
-				//	<< endl;
-#endif
 				cells[y][x]->updateEps((float)env.ac, randpart);
 			}
 		}
@@ -1364,11 +1136,6 @@ void Landscape::resetEffCosts(void) {
 void Landscape::setDynamicLand(bool dyn) { dynamic = dyn; }
 
 void Landscape::addLandChange(landChange c) {
-#if RSDEBUG
-	//DebugGUI(("Landscape::addLandChange(): chgnum=" + Int2Str(c.chgnum)
-	//	+ " chgyear=" + Int2Str(c.chgyear)
-	//	).c_str());
-#endif
 	landchanges.push_back(c);
 }
 
@@ -1412,13 +1179,6 @@ int Landscape::readLandChange(int filenum, bool costs)
 	simParams sim = paramsSim->getSim();
 
 	if (filenum < 0) return 19;
-
-	//if (patchModel && (rasterType == 0 || rasterType == 2)) {
-	//	if (filenum == 0) { // first change
-	//		createPatchChgMatrix();
-	//	}
-	//	pchseq = patchCount();
-	//}
 	if (patchModel) pchseq = patchCount();
 
 #if !RS_RCPP
@@ -1543,11 +1303,6 @@ int Landscape::readLandChange(int filenum, bool costs)
 		}
 #endif
 		}
-#if RSDEBUG
-				//DebugGUI(("Landscape::readLandscape(): x=" + Int2Str(x) + " y=" + Int2Str(y)
-				//	+ " h=" + Int2Str(h) + " p=" + Int2Str(p)
-				//).c_str());
-#endif
 				if (cells[y][x] != 0) { // not a no data cell (in initial landscape)
 					if (h == habnodata) { // invalid no data cell in change map
 						hfile.close(); hfile.clear();
@@ -1687,10 +1442,6 @@ int Landscape::readLandChange(int filenum, bool costs)
 		}
 #endif
 		}
-#if RSDEBUG
-				//MemoLine(("y=" + Int2Str(y) + " x=" + Int2Str(x) + " hfloat=" + Float2Str(hfloat)
-				//	+ " p=" + Int2Str(p)).c_str());
-#endif
 				if (cells[y][x] != 0) { // not a no data cell (in initial landscape)
 					if (h == habnodata) { // invalid no data cell in change map
 						hfile.close(); hfile.clear();
@@ -1795,14 +1546,6 @@ void Landscape::createPatchChgMatrix(void)
 				}
 			}
 			patchChgMatrix[y][x][2] = 0;
-#if RSDEBUG
-			//DebugGUI(("Landscape::createPatchChgMatrix(): y=" + Int2Str(y)
-			//	+ " x=" + Int2Str(x)
-			//	+ " patchChgMatrix[y][x][0]=" + Int2Str(patchChgMatrix[y][x][0])
-			//	+ " [1]=" + Int2Str(patchChgMatrix[y][x][1])
-			//	+ " [2]=" + Int2Str(patchChgMatrix[y][x][2])
-			//	).c_str());
-#endif
 		}
 	}
 }
@@ -1820,15 +1563,6 @@ void Landscape::recordPatchChanges(int landIx) {
 					chg.oldpatch = patchChgMatrix[y][x][2];
 					chg.newpatch = patchChgMatrix[y][x][0];
 					patchchanges.push_back(chg);
-#if RSDEBUG
-					//DebugGUI(("Landscape::recordPatchChanges(): landIx=" + Int2Str(landIx)
-					//	+ " chg.chgnum=" + Int2Str(chg.chgnum)
-					//	+ " chg.x=" + Int2Str(chg.x)
-					//	+ " chg.y=" + Int2Str(chg.y)
-					//	+ " chg.oldpatch=" + Int2Str(chg.oldpatch)
-					//	+ " chg.newpatch=" + Int2Str(chg.newpatch)
-					//	).c_str());
-#endif
 				}
 			}
 			else { // any other change
@@ -1838,15 +1572,6 @@ void Landscape::recordPatchChanges(int landIx) {
 					chg.oldpatch = patchChgMatrix[y][x][1];
 					chg.newpatch = patchChgMatrix[y][x][2];
 					patchchanges.push_back(chg);
-#if RSDEBUG
-					//DebugGUI(("Landscape::recordPatchChanges(): landIx=" + Int2Str(landIx)
-					//	+ " chg.chgnum=" + Int2Str(chg.chgnum)
-					//	+ " chg.x=" + Int2Str(chg.x)
-					//	+ " chg.y=" + Int2Str(chg.y)
-					//	+ " chg.oldpatch=" + Int2Str(chg.oldpatch)
-					//	+ " chg.newpatch=" + Int2Str(chg.newpatch)
-					//	).c_str());
-#endif
 				}
 			}
 			// reset cell for next landscape change
@@ -1897,14 +1622,6 @@ void Landscape::createCostsChgMatrix(void)
 				costsChgMatrix[y][x][0] = costsChgMatrix[y][x][1] = pCell->getCost();
 			}
 			costsChgMatrix[y][x][2] = 0;
-#if RSDEBUG
-			//DebugGUI(("Landscape::createCostsChgMatrix(): y=" + Int2Str(y)
-			//	+ " x=" + Int2Str(x)
-			//	+ " costsChgMatrix[y][x][0]=" + Int2Str(costsChgMatrix[y][x][0])
-			//	+ " [1]=" + Int2Str(costsChgMatrix[y][x][1])
-			//	+ " [2]=" + Int2Str(costsChgMatrix[y][x][2])
-			//	).c_str());
-#endif
 		}
 	}
 }
@@ -1925,42 +1642,15 @@ void Landscape::recordCostChanges(int landIx) {
 					chg.oldcost = costsChgMatrix[y][x][2];
 					chg.newcost = costsChgMatrix[y][x][0];
 					costschanges.push_back(chg);
-#if RSDEBUG
-					//DebugGUI(("Landscape::recordCostsChanges(): landIx=" + Int2Str(landIx)
-					//	+ " chg.chgnum=" + Int2Str(chg.chgnum)
-					//	+ " chg.x=" + Int2Str(chg.x)
-					//	+ " chg.y=" + Int2Str(chg.y)
-					//	+ " chg.oldcost=" + Int2Str(chg.oldcost)
-					//	+ " chg.newcost=" + Int2Str(chg.newcost)
-					//	).c_str());
-#endif
 				}
 			}
 			else { // any other change
-#if RSDEBUG
-				//if (x < 20 && y == 0) {
-				//	DEBUGLOG << "Landscape::recordCostChanges(): x=" << x << " y=" << y
-				//		<< " costsChgMatrix[y][x][0]=" << costsChgMatrix[y][x][0]
-				//		<< " costsChgMatrix[y][x][1]=" << costsChgMatrix[y][x][1]
-				//		<< " costsChgMatrix[y][x][2]=" << costsChgMatrix[y][x][2]
-				//		<< endl;
-				//}
-#endif
 				if (costsChgMatrix[y][x][2] != costsChgMatrix[y][x][1]) {
 					// record change of cost for current cell
 					chg.chgnum = landIx; chg.x = x; chg.y = y;
 					chg.oldcost = costsChgMatrix[y][x][1];
 					chg.newcost = costsChgMatrix[y][x][2];
 					costschanges.push_back(chg);
-#if RSDEBUG
-					//DebugGUI(("Landscape::recordCostsChanges(): landIx=" + Int2Str(landIx)
-					//	+ " chg.chgnum=" + Int2Str(chg.chgnum)
-					//	+ " chg.x=" + Int2Str(chg.x)
-					//	+ " chg.y=" + Int2Str(chg.y)
-					//	+ " chg.oldcost=" + Int2Str(chg.oldcost)
-					//	+ " chg.newcost=" + Int2Str(chg.newcost)
-					//	).c_str());
-#endif
 				}
 			}
 			// reset cell for next landscape change
@@ -2267,12 +1957,6 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 			return 135;
 		}
 #endif
-
-#if RSDEBUG
-				//DebugGUI(("Landscape::readLandscape(): x=" + Int2Str(x) + " y=" + Int2Str(y)
-				//	+ " h=" + Int2Str(h) + " p=" + Int2Str(p)
-				//).c_str());
-#endif
 				if (h == habnodata)
 					addNewCellToLand(x, y, -1); // add cell only to landscape
 				else {
@@ -2374,10 +2058,6 @@ if (patchModel)
 #endif
 					} //end if patchmodel
 
-#if RSDEBUG
-//MemoLine(("y=" + Int2Str(y) + " x=" + Int2Str(x) + " hfloat=" + Float2Str(hfloat)
-//	+ " p=" + Int2Str(p)).c_str());
-#endif
 					if (h == habnodata) {
 						addNewCellToLand(x, y, -1); // add cell only to landscape
 					}
@@ -2526,10 +2206,6 @@ else { // couldn't read from hfile
 	}
 #endif
 				}
-#if RSDEBUG
-				//MemoLine(("y=" + Int2Str(y) + " x=" + Int2Str(x) + " hfloat=" + Float2Str(hfloat)
-				//	+ " p=" + Int2Str(p)).c_str());
-#endif
 				if (h == habnodata) {
 					addNewCellToLand(x, y, -1); // add cell only to landscape
 				}
@@ -2631,6 +2307,7 @@ int Landscape::readCosts(string fname)
 	wstring header;
 #else
 	string header;
+#endif
 	Cell* pCell;
 #if !RS_RCPP
 	simView v = paramsSim->getViews();
@@ -2644,6 +2321,7 @@ int Landscape::readCosts(string fname)
 #endif
 #endif
 	// open cost file
+ // open cost file
 #if !RS_RCPP || RSWIN64
 	costs.open(fname.c_str());
 #else
@@ -2653,14 +2331,6 @@ int Landscape::readCosts(string fname)
 		costs.imbue(std::locale(costs.getloc(), new std::codecvt_utf16<wchar_t, 0x10ffff, std::consume_header>));
 	}
 #endif
-	//if (!costs.is_open()) {
-	//	MessageDlg("COSTS IS NOT OPEN!!!!!",
-	//				mtError, TMsgDlgButtons() << mbRetry,0);
-	//}
-	//else {
-	//	MessageDlg("Costs is open!",
-	//				mtError, TMsgDlgButtons() << mbRetry,0);
-	//}
 	// read headers and check that they correspond to the landscape ones
 	costs >> header;
 #if RS_RCPP
@@ -2683,6 +2353,7 @@ int Landscape::readCosts(string fname)
 	}
 	costs >> maxXcost >> header >> maxYcost >> header >> minLongCost;
 	costs >> header >> minLatCost >> header >> resolCost >> header >> NODATACost;
+
 
 #if !RS_RCPP
 	MemoLine("Loading costs map. Please wait...");
@@ -2710,19 +2381,10 @@ int Landscape::readCosts(string fname)
 	}
 #endif
 			if (hc < 1 && hc != NODATACost) {
-#if RSDEBUG
-#if BATCH
-				//		DEBUGLOG << "Landscape::readCosts(): x=" << x << " y=" << y 
-				//			<< " fcost=" << fcost << " hc=" << hc
-				//			<< endl;
-#endif
-#endif
 #if RS_RCPP && !R_CMD
 		Rcpp::Rcout << "Cost map my only contain values of 1 or higher, but found " << fcost << "." << endl;
 #endif
 			// error - zero / negative cost not allowed
-//			MessageDlg("Error in the costs map file : zero or negative cost detected."
-//			 , mtError, TMsgDlgButtons() << mbOK,0);
 				costs.close(); costs.clear();
 				return -999;
 			}
@@ -2742,7 +2404,7 @@ if (costs.eof()) {
 	}
 else EOFerrorR(fname);
 #else
-	MemoLine("Costs map loaded.");
+MemoLine("Costs map loaded.");
 #endif
 
 	costs.close(); costs.clear();
@@ -2767,40 +2429,16 @@ rasterdata CheckRasterFile(string fname)
 	infile.open(fname.c_str());
 	if (infile.is_open()) {
 		infile >> header >> r.ncols;
-#if RSDEBUG
-		DebugGUI(("CheckRasterFile(): header=" + header + " r.ncols=" + Int2Str(r.ncols)
-			).c_str());
-#endif
 		if (header != "ncols" && header != "NCOLS") r.errors++;
 		infile >> header >> r.nrows;
-#if RSDEBUG
-		DebugGUI(("CheckRasterFile(): header=" + header + " r.nrows=" + Int2Str(r.nrows)
-			).c_str());
-#endif
 		if (header != "nrows" && header != "NROWS") r.errors++;
 		infile >> header >> r.xllcorner;
-#if RSDEBUG
-		DebugGUI(("CheckRasterFile(): header=" + header + " r.xllcorner=" + Float2Str(r.xllcorner)
-			).c_str());
-#endif
 		if (header != "xllcorner" && header != "XLLCORNER") r.errors++;
 		infile >> header >> r.yllcorner;
-#if RSDEBUG
-		DebugGUI(("CheckRasterFile(): header=" + header + " r.yllcorner=" + Float2Str(r.yllcorner)
-			).c_str());
-#endif
 		if (header != "yllcorner" && header != "YLLCORNER") r.errors++;
 		infile >> header >> r.cellsize;
-#if RSDEBUG
-		DebugGUI(("CheckRasterFile(): header=" + header + " r.cellsize=" + Int2Str(r.cellsize)
-			).c_str());
-#endif
 		if (header != "cellsize" && header != "CELLSIZE") r.errors++;
 		infile >> header >> inint;
-#if RSDEBUG
-		DebugGUI(("CheckRasterFile(): header=" + header + " inint=" + Int2Str(inint)
-			).c_str());
-#endif
 		if (header != "NODATA_value" && header != "NODATA_VALUE") r.errors++;
 		infile.close();
 		infile.clear();
@@ -2823,9 +2461,6 @@ void Landscape::createConnectMatrix(void)
 {
 	if (connectMatrix != 0) deleteConnectMatrix();
 	int npatches = (int)patches.size();
-#if RSDEBUG
-	//DEBUGLOG << "Landscape::createConnectMatrix(): npatches=" << npatches << endl;
-#endif
 	connectMatrix = new int* [npatches];
 	for (int i = 0; i < npatches; i++) {
 		connectMatrix[i] = new int[npatches];
@@ -3025,10 +2660,6 @@ void Landscape::outVisits(int rep, int landNr) {
 	outvisits << "NODATA_value -9" << endl;
 
 	for (int y = dimY - 1; y >= 0; y--) {
-#if RSDEBUG
-		//DebugGUI(("Landscape::drawLandscape(): y=" + Int2Str(y)
-		//	+ " cells[y]=" + Int2Str((int)cells[y])).c_str());
-#endif
 		for (int x = 0; x < dimX; x++) {
 			if (cells[y][x] == 0) { // no-data cell
 				outvisits << "-9 ";

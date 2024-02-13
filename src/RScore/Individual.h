@@ -50,7 +50,6 @@
 #include <ranges>
 using namespace std;
 
-//#include "mathlib.h"
 #include "Parameters.h"
 #include "Species.h"
 #include "Landscape.h"
@@ -124,7 +123,7 @@ struct crwData : trfrData { // to hold data for CRW movement model
 	void clone(const trfrData& copyFrom) {
 
 
-		auto pCopy = dynamic_cast<const crwData&>(copyFrom);
+		const crwData& pCopy = dynamic_cast<const crwData&>(copyFrom);
 
 		stepLength = pCopy.stepLength;
 		rho = pCopy.rho;
@@ -155,7 +154,7 @@ struct smsData : trfrData {
 	//static float stepMort;
 	//static bool straigtenPath;
 
-	smsData(locn prevA, locn goalA) : prev(prevA), goal(goalA), dp(0.0), gb(0.0), alphaDB(0.0), betaDB(0.0) {}
+	smsData(locn prevA, locn goalA) : prev(prevA), goal(goalA), dp(0.0), gb(0.0), alphaDB(0.0), betaDB(0) {}
 	~smsData() {}
 
 
@@ -207,7 +206,7 @@ struct kernelData : trfrData {
 	movement_t getType() { return KERNEL; }
 
 	void clone(const trfrData& copyFrom) {
-		auto pCopy = dynamic_cast<const kernelData&>(copyFrom);
+		const kernelData& pCopy = dynamic_cast<const kernelData&>(copyFrom);
 		meanDist1 = pCopy.meanDist1;
 		meanDist2 = pCopy.meanDist2;
 		probKern1 = pCopy.probKern1;
@@ -334,13 +333,6 @@ public:
 		const short,	// landscape change index
 		const bool    // absorbing boundaries?
 	);
-	void drawMove(	// Visualise paths resulting from movement simulation model
-		// NULL for the batch version
-		const float,	// initial x co-ordinate
-		const float,	// initial y co-ordinate
-		const float,	// final x co-ordinate
-		const float		// final y co-ordinate
-	);
 	movedata smsMove( // Move to a neighbouring cell according to the SMS algorithm
 		Landscape*,		// pointer to Landscape
 		Species*,			// pointer to Species
@@ -435,5 +427,9 @@ extern ofstream DEBUGLOG;
 extern ofstream outMovePaths;
 #endif
 
-//---------------------------------------------------------------------------
+#if RSDEBUG
+void testIndividual();
 #endif
+
+//---------------------------------------------------------------------------
+#endif // IndividualH
