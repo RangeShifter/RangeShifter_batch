@@ -588,7 +588,6 @@ int ParseParameterFile(void)
 	float infloat, minR, maxR, minK, maxK, sum_K, min_K, max_K;
 	int errors = 0;
 	int Kerrors = 0;
-	int fionaOption;
 	string filetype = "ParameterFile";
 
 	//batchlog << "ParseParametersFile(): starting " << endl;
@@ -876,14 +875,6 @@ int ParseParameterFile(void)
 		}
 		bParamFile >> inint; if (savemaps == 1 && (inint < 0 || inint > 1)) {
 			BatchError(filetype, line, 1, "DrawLoadedSp");
-			errors++;
-		}
-		bParamFile >> fionaOption; if (fionaOption < 0 || fionaOption > 3) {
-			BatchError(filetype, line, 3, "FionaOption");
-			errors++;
-		}
-		bParamFile >> inint; if ((fionaOption < 0 || fionaOption > 3) && (inint < 0 || inint > years)) {
-			BatchError(filetype, line, 10, "StoreIndsYr");
 			errors++;
 		}
 		bParamFile >> inint; if (inint < 0 || inint > 1) {
@@ -3948,7 +3939,6 @@ int ReadParameters(int option, Landscape* pLandscape)
 	//sim.saveInitMap = false;
 	if (iiii == 0) sim.drawLoaded = false; else sim.drawLoaded = true;
 
-	parameters >> sim.fionaOptions;
 	parameters >> sim.storeIndsYr;
 	parameters >> iiii;
 	if (iiii == 1) sim.fixReplicateSeed = true; else sim.fixReplicateSeed = false;
