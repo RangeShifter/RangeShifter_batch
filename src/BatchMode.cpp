@@ -3291,25 +3291,6 @@ simCheck CheckStageSex(string filetype, int line, int simul, simCheck prev,
 
 }
 
-//---------------------------------------------------------------------------
-
-/* TEMPLATE PARSING FUNCTION
-int ParseXXXXXXXXFile(void)
-{
-string header;
-int errors = 0;
-int simuls = 0;
-
- >> header; if (header != "" ) errors++;
-
-if (errors > 0) return -111;
-else return simuls;
-
-}
-*/
-
-//---------------------------------------------------------------------------
-
 // Functions to handle and report error conditions
 
 void BatchError(string filename, int line, int option, string fieldname)
@@ -4816,9 +4797,6 @@ int ReadTransfer(int option, Landscape* pLandscape)
 }
 
 //---------------------------------------------------------------------------
-// NOTE that stage- and sex-dependent settlement parameters are set for
-// ALL stage/sex combinations, even if the species has stage- and/or
-// sex-independent settlement rules
 int ReadSettlement(int option)
 {
 

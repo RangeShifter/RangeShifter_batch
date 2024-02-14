@@ -59,6 +59,7 @@ Bacup*/
 *.vcxproj*
 out/
 x64/
+*.json
 
 # Ignore test project outputs, except anchors
 run_on_gha/rs_test_project/Outputs/*
