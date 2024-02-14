@@ -72,10 +72,9 @@ void DebugGUI(string msg) {
 // dummy function for batch version
 }
 
-void run_unit_tests() {
-	cout << "******* Unit test output *******" << endl;
-	testRSrandom();
-	testIndividual();
+void run_batch_unit_tests() {
+	cout << "******* Unit test output for batch interface *******" << endl;
+	// call tests here
 	cout << endl << "************************" << endl;
 }
 #endif // RSDEBUG
@@ -114,7 +113,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 #if RSDEBUG
 	assert(0.1 > 0.0); // assert does run correctly
-	run_unit_tests();
+	run_batch_unit_tests();
 #else
 	// assert does not run in Release mode
 	assert(1 == 2);
