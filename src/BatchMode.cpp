@@ -588,8 +588,7 @@ int ParseParameterFile(void)
 	float infloat, minR, maxR, minK, maxK, sum_K, min_K, max_K;
 	int errors = 0;
 	int Kerrors = 0;
-	int fionaOption, storeIndsYear;
-	int fixReplicateSeed;
+	int fionaOption;
 	string filetype = "ParameterFile";
 
 	//batchlog << "ParseParametersFile(): starting " << endl;
@@ -2623,10 +2622,9 @@ int ParseSettleFile(void)
 int ParseTraitsFile(string indir)
 {
 	string header, colheader;
-	int i, simul, err;
+	int simul;
 	string filename, TraitType, Sex, initialDistribution, initialParameters,
 		dominanceDistribution, dominanceParameters, isInherited, mutationDistribution, mutationParameters, positions, NbrOfPositions, expressionType, mutationRate;
-	bool checkfile;
 	int errors = 0;
 	int simuls = 0;
 	vector <string> archfiles;
@@ -3794,7 +3792,7 @@ int ReadParameters(int option, Landscape* pLandscape)
 		//	<< " parameters=" << parameters
 		<< endl;
 #endif
-	int iiii, jjjj;
+	int iiii;
 	int error = 0;
 	landParams paramsLand = pLandscape->getLandParams();
 
@@ -5377,11 +5375,11 @@ void RunBatch(int nSimuls, int nLandscapes)
 			if (paramsLand.patchModel) {
 				string pname = paramsSim->getDir(1) + name_patch;
 #if RSDEBUG
-				int t02a = time(0);
+				time_t t02a = time(0);
 #endif
 				landcode = pLandscape->readLandscape(0, hname, pname, cname);
 #if RSDEBUG
-				int t02b = time(0);
+				time_t t02b = time(0);
 				DEBUGLOG << "RunBatch(): TIME for readLandscape() " << t02b - t02a << endl;
 #endif
 			}
@@ -5395,11 +5393,11 @@ void RunBatch(int nSimuls, int nLandscapes)
 			}
 			if (paramsLand.dynamic) {
 #if RSDEBUG
-				int t03a = time(0);
+				time_t t03a = time(0);
 #endif
 				landcode = ReadDynLandFile(pLandscape);
 #if RSDEBUG
-				int t03b = time(0);
+				time_t t03b = time(0);
 				DEBUGLOG << "RunBatch(): TIME for ReadDynLandFile() " << t03b - t03a << endl;
 #endif
 				if (landcode != 0) {
