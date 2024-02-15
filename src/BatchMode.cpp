@@ -639,8 +639,6 @@ int ParseParameterFile(void)
 	bParamFile >> header; if (header != "MapsInterval") errors++;
 	bParamFile >> header; if (header != "SMSHeatMap") errors++;
 	bParamFile >> header; if (header != "DrawLoadedSp") errors++;
-	bParamFile >> header; if (header != "FionaOptions") errors++;
-	bParamFile >> header; if (header != "StoreIndsYr") errors++;
 	bParamFile >> header; if (header != "FixReplicateSeed") errors++;
 	if (errors > 0 || Kerrors > 0) {
 		FormatError(filetype, errors);
@@ -3791,7 +3789,7 @@ int ReadParameters(int option, Landscape* pLandscape)
 		parameters.open(parameterFile.c_str());
 		if (parameters.is_open()) {
 			string header;
-			int nheaders = 46 + paramsLand.nHabMax;
+			int nheaders = 44 + paramsLand.nHabMax;
 			for (int i = 0; i < nheaders; i++) parameters >> header;
 			return 0;
 		}
@@ -3938,8 +3936,6 @@ int ReadParameters(int option, Landscape* pLandscape)
 	parameters >> iiii;
 	//sim.saveInitMap = false;
 	if (iiii == 0) sim.drawLoaded = false; else sim.drawLoaded = true;
-
-	parameters >> sim.storeIndsYr;
 	parameters >> iiii;
 	if (iiii == 1) sim.fixReplicateSeed = true; else sim.fixReplicateSeed = false;
 
