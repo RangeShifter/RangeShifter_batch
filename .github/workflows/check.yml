@@ -5,7 +5,7 @@ jobs:
   check:
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-13]
         include:
           - os: windows-latest
             path_to_exe: ./build/Debug/RangeShifter.exe
