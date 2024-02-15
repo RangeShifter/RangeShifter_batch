@@ -11,7 +11,7 @@ jobs:
             path_to_exe: ./build/Debug/RangeShifter.exe
           - os: ubuntu-latest
             path_to_exe: ./build/RangeShifter
-          - os: macos-latest
+          - os: macos-13
             path_to_exe: ./build/RangeShifter
     runs-on: ${{ matrix.os }}
     steps:
