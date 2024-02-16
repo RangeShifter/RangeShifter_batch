@@ -11,7 +11,9 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: build
-        run: g++ --std=c++20 -o RangeShifter.exe ./src/*.cpp ./src/RScore/!(Main).cpp -DRSDEBUG -DRSWIN64 -DLINUX_CLUSTER
+        run: |
+          shopt -s extglob
+          g++ --std=c++20 -o RangeShifter.exe ./src/*.cpp ./src/RScore/!(Main).cpp -DRSDEBUG -DRSWIN64 -DLINUX_CLUSTER
 
       - name: run
         run: |
