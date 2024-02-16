@@ -5317,12 +5317,9 @@ void RunBatch(int nSimuls, int nLandscapes)
 			string msg = "Error code " + Int2Str(-land_nr)
 				+ " returned from reading LandFile - aborting batch run";
 			cout << endl << msg << endl;
-			MemoLine(msg.c_str());
 			ReadLandFile(9); // close the landscape file
 			return;
 		}
-
-		MemoLine(("Starting landscape " + Int2Str(land_nr) + "...").c_str());
 
 #if RSDEBUG
 		DEBUGLOG << endl << "RunBatch(): j=" << j << " land_nr=" << land_nr
@@ -5486,11 +5483,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
-				if (params_ok) {
-#if RSDEBUG
-					DebugGUI("RunBatch(): simulation i=" + Int2Str(i));
-#endif
-				}
 				read_error = ReadInitialisation(1, pLandscape);
 				if (read_error) {
 					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
@@ -5521,8 +5513,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 
 					cout << endl << "Running simulation nr. " << Int2Str(sim.simulation)
 						<< " on landscape no. " << Int2Str(land_nr) << endl;
-
-					MemoLine(("Starting simulation " + Int2Str(sim.simulation) + "...").c_str());
 
 					// for batch processing, include landscape number in parameter file name
 					OutParameters(pLandscape);

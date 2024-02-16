@@ -63,15 +63,7 @@ using namespace std;
 #include <direct.h>
 #endif
 
-void MemoLine(string msg) {
-// dummy function for batch version
-}
-
 #if RSDEBUG
-void DebugGUI(string msg) {
-// dummy function for batch version
-}
-
 void run_batch_unit_tests() {
 	cout << "******* Unit test output for batch interface *******" << endl;
 	// call tests here

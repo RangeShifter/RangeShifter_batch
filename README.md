@@ -35,10 +35,12 @@ cmake --build .
 If you use Visual Studio as your IDE, CMake should be recognised automatically when `RangeShifter_batch_dev` is opened as a new folder. 
 Visual Studio will take care of the configuration, and you only need to select target RangeShifter.exe before pressing the build button.
 
-Alternatively, RangeShifter can also be built directly with the GNU C++ compiler, in which case some #define macros must be passed to it:
+Alternatively, RangeShifter can also be built directly with the GNU C++ compiler. 
+In this case, some #define macros must be passed to it, and RScore/Main.cpp must be excluded from source files:
 
 ```bash
-g++ -o RangeShifter.exe ./src/*.cpp ./src/RScore/*.cpp -DRSDEBUG -DRSWIN64 -DLINUX_CLUSTER
+shopt -s extglob # enable the !(file) pattern below
+g++ --std=c++20 -o RangeShifter.exe ./src/*.cpp ./src/RScore/(!Main).cpp -DRSDEBUG -DRSWIN64 -DLINUX_CLUSTER
 ```
 
 ## Running RangeShifter
