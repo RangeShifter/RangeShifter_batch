@@ -1,49 +1,49 @@
 /*----------------------------------------------------------------------------
- *	
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell 
- *	
+ *
+ *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *
  *	This file is part of RangeShifter.
- *	
+ *
  *	RangeShifter is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 3 of the License, or
  *	(at your option) any later version.
- *	
+ *
  *	RangeShifter is distributed in the hope that it will be useful,
  *	but WITHOUT ANY WARRANTY; without even the implied warranty of
  *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  *	GNU General Public License for more details.
- *	
+ *
  *	You should have received a copy of the GNU General Public License
  *	along with RangeShifter. If not, see <https://www.gnu.org/licenses/>.
- *	
+ *
  --------------------------------------------------------------------------*/
- 
- 
-/*------------------------------------------------------------------------------
 
-RangeShifter v2.0 Population
 
-Implements the Population class
+ /*------------------------------------------------------------------------------
 
-There is ONE instance of a Population for each Species within each SubCommunity
-(including the matrix). The Population holds a list of all the Individuals in
-the Population.
+ RangeShifter v2.0 Population
 
-The matrix Population(s) hold(s) Individuals which are currently in the process
-of transfer through the matrix.
+ Implements the Population class
 
-For full details of RangeShifter, please see:
-Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
-and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
-eco-evolutionary dynamics and species’ responses to environmental changes.
-Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
+ There is ONE instance of a Population for each Species within each SubCommunity
+ (including the matrix). The Population holds a list of all the Individuals in
+ the Population.
 
-Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
+ The matrix Population(s) hold(s) Individuals which are currently in the process
+ of transfer through the matrix.
 
-Last updated: 22 January 2022 by Steve Palmer
+ For full details of RangeShifter, please see:
+ Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+ and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
+ eco-evolutionary dynamics and species’ responses to environmental changes.
+ Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
-------------------------------------------------------------------------------*/
+ Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
+
+ Last updated: 25 June 2021 by Steve Palmer
+
+ ------------------------------------------------------------------------------*/
 
 #ifndef PopulationH
 #define PopulationH
@@ -58,14 +58,18 @@ using namespace std;
 #include "Landscape.h"
 #include "Patch.h"
 #include "Cell.h"
+#include "NeutralStatsManager.h"
 
 //---------------------------------------------------------------------------
 
 struct popStats {
-	Species *pSpecies; Patch *pPatch; int spNum,nInds,nNonJuvs,nAdults; bool breeding;
+	Species* pSpecies; Patch* pPatch; int spNum, nInds, nNonJuvs, nAdults; bool breeding;
 };
 struct disperser {
-	Individual *pInd; Cell *pCell; bool yes;
+	Individual* pInd; Cell* pCell; bool yes;
+};
+struct zombie {
+	Individual* pInd;
 };
 struct traitsums { // sums of trait genes for dispersal
 	int ninds[NSEXES];				// no. of individuals
@@ -99,6 +103,8 @@ struct traitsums { // sums of trait genes for dispersal
 	double ssqAlphaS[NSEXES];	// sum of squares of slope of settlement den-dep reaction norm
 	double sumBetaS[NSEXES]; 	// sum of inflection point of settlement reaction norm
 	double ssqBetaS[NSEXES]; 	// sum of squares of inflection point of settlement reaction norm
+	double sumFitness[NSEXES];
+	double ssqFitness[NSEXES];
 };
 
 class Population {
@@ -124,7 +130,10 @@ public:
 	void reproduction(
 		const float,	// local carrying capacity
 		const float,	// effect of environmental gradient and/or stochasticty
-		const int			// Landscape resolution
+		const int,			// Landscape resolution
+		bool,
+		Population*
+
 	);
 	// Following reproduction of ALL species, add juveniles to the population
 	void fledge(void);
@@ -142,9 +151,17 @@ public:
 	disperser extractSettler(
 		int   // index no. to the Individual in the inds vector
 	);
+	Individual* copyForColdStorage(int ix);
+	void addEmigTraitsForInd(int ix, emigTraits&);
+	void addSettleTraitsForInd(int, settleTraits&);
+	void addTransferDataForInd(int ix, trfrData* avgTrfrData);
 	void recruit( // Add a specified individual to the population
 		Individual*	// pointer to Individual
 	);
+	Individual* sampleInd() const;
+	void sampleIndsWithoutReplacement(string n, const set<int>& sampleStages);
+	int sampleSize() const;
+	set<Individual*> getIndividualsInStage(int stage);
 #if RS_RCPP
 	int transfer( // Executed for the Population(s) in the matrix only
 		Landscape*,	// pointer to Landscape
@@ -174,8 +191,8 @@ public:
 	void survival0(
 		float,	// local carrying capacity
 		short,	// option0:	0 - stage 0 (juveniles) only
-						//	  			1 - all stages
-						//					2 - stage 1 and above (all non-juveniles)
+		//	  			1 - all stages
+		//					2 - stage 1 and above (all non-juveniles)
 		short 	// option1:	0 - development only (when survival is annual)
 						//	  	 		1 - development and survival
 						//	  	 		2 - survival only (when survival is annual)
@@ -208,33 +225,40 @@ public:
 		int,				// generation
 		int					// Patch number
 	);
-	void outGenetics( // Write records to genetics file
-		const int,		// replicate
-		const int,		// year
-		const int	 		// landscape number
-	);
+
 	void clean(void); // Remove zero pointers to dead or dispersed individuals
+
+	void updateAlleleTable();
+	double getAlleleFrequency(int locus, int allele);
+	int getAlleleCount(int locus, int allele);
+	double getHetero(int locus, int allele);
+	int countHeterozygoteLoci();
+	vector<double> countLociHeterozyotes();
+	double computeHs();
 
 private:
 	short nStages;
 	short nSexes;
-	Species *pSpecies;	// pointer to the species
-	Patch *pPatch;			// pointer to the patch
+	Species* pSpecies;	// pointer to the species
+	Patch* pPatch;			// pointer to the patch
 	int nInds[NSTAGES][NSEXES];		// no. of individuals in each stage/sex
 
 	std::vector <Individual*> inds; // all individuals in population except ...
 	std::vector <Individual*> juvs; // ... juveniles until reproduction of ALL species
-																	// has been completed
+	// has been completed
 
+	std::set <Individual*> sampledInds;
+	vector<NeutralData> alleleTable;
+	void resetAlleleTable();
 };
 
 //---------------------------------------------------------------------------
 
-extern paramGrad *paramsGrad;
-extern paramStoch *paramsStoch;
-extern paramInit *paramsInit;
-extern paramSim *paramsSim;
-extern RSrandom *pRandom;
+extern paramGrad* paramsGrad;
+extern paramStoch* paramsStoch;
+extern paramInit* paramsInit;
+extern paramSim* paramsSim;
+extern RSrandom* pRandom;
 
 #if RSDEBUG
 extern ofstream DEBUGLOG;

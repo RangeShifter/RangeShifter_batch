@@ -31,7 +31,8 @@ ifstream bParamFile, bLandFile, bDynLandFile;
 ifstream bSpDistFile, bStageStructFile, bTransMatrix;
 ifstream bStageWeightsFile;
 ifstream bEmigrationFile, bTransferFile, bSettlementFile;
-ifstream bGeneticsFile, bArchFile, bInitFile, bInitIndsFile;
+ifstream bTraitsFile, bGeneticsFile;
+ifstream bInitFile, bInitIndsFile;
 
 ofstream batchlog;
 
@@ -41,7 +42,7 @@ ofstream rsLog; // performance log for recording simulation times, etc.
 // USED DURING PARSING (ABOVE)
 ifstream parameters;
 ifstream ssfile, tmfile, fdfile, ddfile, sdfile;
-ifstream emigFile, transFile, settFile, genFile, archFile, initFile, initIndsFile;
+ifstream emigFile, transFile, settFile, initFile, initIndsFile;
 ifstream landfile, dynlandfile;
 
 // global variables passed between parsing functions...
@@ -61,7 +62,7 @@ string parameterFile;
 string landFile;
 string name_landscape, name_patch, name_dynland, name_sp_dist, name_costfile;
 string stageStructFile, transMatrix;
-string emigrationFile, transferFile, settleFile, geneticsFile, initialFile;
+string emigrationFile, transferFile, settleFile, geneticsFile, traitsFile, initialFile;
 string prevInitialIndsFile = " ";
 
 string msgnlines = "No. of lines for final Simulation ";
@@ -492,14 +493,14 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 	}
 	else controlFormatError = true; // wrong control file format
 
-	// Check genetics file (optional)
+	// Check genetics file if required file
 	controlfile >> paramname >> filename;
 	batchlog << endl;
 	if (paramname == "GeneticsFile" && !controlFormatError) {
 		if (filename == "NULL") {
-			// this is allowed, because at this stage we do not know whether any simulation
-			// includes individual variability - if so, default genetics settings are applied
-			b.geneticsFile = filename;
+
+			batchlog << "No genetics required " << paramname << endl;
+
 		}
 		else { // filename is not NULL
 			fname = indir + filename;
@@ -589,6 +590,7 @@ int ParseParameterFile(void)
 	int Kerrors = 0;
 	string filetype = "ParameterFile";
 
+	//batchlog << "ParseParametersFile(): starting " << endl;
 	// Parse header line;
 	bParamFile >> header; if (header != "Simulation") errors++;
 	bParamFile >> header; if (header != "Replicates") errors++;
@@ -623,7 +625,6 @@ int ParseParameterFile(void)
 	}
 	bParamFile >> header; if (header != "OutStartPop") errors++;
 	bParamFile >> header; if (header != "OutStartInd") errors++;
-	bParamFile >> header; if (header != "OutStartGenetic") errors++;
 	bParamFile >> header; if (header != "OutStartTraitCell") errors++;
 	bParamFile >> header; if (header != "OutStartTraitRow") errors++;
 	bParamFile >> header; if (header != "OutStartConn") errors++;
@@ -631,9 +632,6 @@ int ParseParameterFile(void)
 	bParamFile >> header; if (header != "OutIntOcc") errors++;
 	bParamFile >> header; if (header != "OutIntPop") errors++;
 	bParamFile >> header; if (header != "OutIntInd") errors++;
-	bParamFile >> header; if (header != "OutIntGenetic") errors++;
-	bParamFile >> header; if (header != "OutGenType") errors++;
-	bParamFile >> header; if (header != "OutGenCrossTab") errors++;
 	bParamFile >> header; if (header != "OutIntTraitCell") errors++;
 	bParamFile >> header; if (header != "OutIntTraitRow") errors++;
 	bParamFile >> header; if (header != "OutIntConn") errors++;
@@ -641,6 +639,7 @@ int ParseParameterFile(void)
 	bParamFile >> header; if (header != "MapsInterval") errors++;
 	bParamFile >> header; if (header != "SMSHeatMap") errors++;
 	bParamFile >> header; if (header != "DrawLoadedSp") errors++;
+	bParamFile >> header; if (header != "FixReplicateSeed") errors++;
 	if (errors > 0 || Kerrors > 0) {
 		FormatError(filetype, errors);
 		batchlog << "*** Ensure column headers are correct to continue checking data" << endl;
@@ -713,6 +712,7 @@ int ParseParameterFile(void)
 				BatchError(filetype, line, 0, " ");
 				batchlog << "EnvStoch must be 0, 1 or 2 for cell-based model" << endl;
 				errors++;
+				//			envstoch = 0; // to prevent checking of subsequent fields
 			}
 		}
 		else { // patch-based model
@@ -720,6 +720,7 @@ int ParseParameterFile(void)
 				BatchError(filetype, line, 0, " ");
 				batchlog << "EnvStoch must be 0 or 1 for patch-based model" << endl;
 				errors++;
+				//			envstoch = 0; // to prevent checking of subsequent fields
 			}
 		}
 		bParamFile >> stochtype;
@@ -818,8 +819,6 @@ int ParseParameterFile(void)
 		bParamFile >> inint;
 		if (inint < 0) { BatchError(filetype, line, 19, "OutStartInd"); errors++; }
 		bParamFile >> inint;
-		if (inint < 0) { BatchError(filetype, line, 19, "OutStartGenetic"); errors++; }
-		bParamFile >> inint;
 		if (inint < 0) { BatchError(filetype, line, 19, "OutStartTraitCell"); errors++; }
 		bParamFile >> inint;
 		if (inint < 0) { BatchError(filetype, line, 19, "OutStartTraitRow"); errors++; }
@@ -847,12 +846,6 @@ int ParseParameterFile(void)
 		if (inint < 0) { BatchError(filetype, line, 19, "OutIntPop"); errors++; }
 		bParamFile >> inint;
 		if (inint < 0) { BatchError(filetype, line, 19, "OutIntInd"); errors++; }
-		bParamFile >> inint;
-		if (inint < 0) { BatchError(filetype, line, 19, "OutIntGenetic"); errors++; }
-		bParamFile >> inint;
-		if (inint < 0 || inint > 2) { BatchError(filetype, line, 2, "OutGenType"); errors++; }
-		bParamFile >> inint;
-		if (inint < 0 || inint > 1) { BatchError(filetype, line, 1, "OutGenCrossTab"); errors++; }
 		bParamFile >> inint;
 		if (inint < 0) { BatchError(filetype, line, 19, "OutIntTraitCell"); errors++; }
 		bParamFile >> inint;
@@ -882,6 +875,11 @@ int ParseParameterFile(void)
 			BatchError(filetype, line, 1, "DrawLoadedSp");
 			errors++;
 		}
+		bParamFile >> inint; if (inint < 0 || inint > 1) {
+			BatchError(filetype, line, 1, "FixReplicateSeed");
+			errors++;
+		}
+
 		line++;
 		// read next simulation number
 		inint = -98765;
@@ -915,13 +913,17 @@ int ParseLandFile(int landtype, string indir)
 	float infloat;
 	rasterdata patchraster, spdistraster, costraster;
 	int errors = 0;
+	//int Kerrors = 0;
 	int totlines = 0;
+	//bool errorshown = false;
 	vector <int> landlist;
 	string filetype = "LandFile";
 
+	//batchlog << "ParseLandFile(): starting " << endl;
 	if (landtype == 0 || landtype == 2) { // real landscape
 		// Parse header line;
 		bLandFile >> header; if (header != "LandNum") errors++;
+		//	batchlog << "ParseLandFile(): header = " << header << endl;
 		bLandFile >> header; if (header != "Nhabitats") errors++;
 		bLandFile >> header; if (header != "LandscapeFile") errors++;
 		bLandFile >> header; if (header != "PatchFile") errors++;
@@ -938,6 +940,7 @@ int ParseLandFile(int landtype, string indir)
 		inint = -98765;
 		bLandFile >> inint;
 		while (inint != -98765) {
+			//		 batchlog << "ParseLandFile(): Landscape no. = " << inint << endl;
 			if (inint < 1) {
 				BatchError(filetype, line, 11, "LandNum"); errors++;
 			}
@@ -948,6 +951,8 @@ int ParseLandFile(int landtype, string indir)
 						BatchError(filetype, line, 666, "LandNum"); j = (int)landlist.size() + 1; errors++;
 					}
 				}
+				//		batchlog << "ParseLandFile(): Adding landscape no. " << inint
+				//			<< " to landscape list" << endl;
 				landlist.push_back(inint);
 			}
 			bLandFile >> inint;
@@ -1168,6 +1173,7 @@ int ParseLandFile(int landtype, string indir)
 			// read first field on next line
 			inint = -98765;
 			bLandFile >> inint;
+			//		batchlog << "ParseLandFile(): first item of next line = " << inint << endl;
 		} // end of while loop
 		landlist.clear();
 	} // end of real landscape
@@ -1200,6 +1206,8 @@ int ParseLandFile(int landtype, string indir)
 						BatchError(filetype, line, 666, "LandNum"); j = (int)landlist.size() + 1; errors++;
 					}
 				}
+				//		batchlog << "ParseLandFile(): Adding landscape no. " << inint
+				//			<< " to landscape list" << endl;
 				landlist.push_back(inint);
 				bLandFile >> fractal;
 				if (fractal < 0 || fractal > 1) {
@@ -1328,6 +1336,7 @@ int ParseDynamicFile(string indir, string costfile) {
 		// check landscape filename
 		ftype = "LandChangeFile";
 		bDynLandFile >> intext;
+		//batchlog << "***** indir=" << indir << " intext=" << intext << endl;
 		fname = indir + intext;
 		landchgraster = CheckRasterFile(fname);
 		if (landchgraster.ok) {
@@ -1534,6 +1543,8 @@ int ParseStageFile(string indir)
 		checkfile = true;
 		for (i = 0; i < (int)transfiles.size(); i++) {
 			if (filename == transfiles[i]) { // file has already been checked
+				//			batchlog << "*** line = " << line << " i = " << i << " filename = " << filename
+				//				<< " transfiles[i] = " << transfiles[i] << endl;
 				checkfile = false;
 			}
 		}
@@ -1759,6 +1770,7 @@ int ParseTransitionFile(short nstages, short nsexesDem)
 {
 	string header, hhh;
 	int i, j, stage, sex, line, minage;
+	//int prevminage;
 	float infloat;
 	int errors = 0;
 	string filetype = "TransMatrixFile";
@@ -1773,6 +1785,8 @@ int ParseTransitionFile(short nstages, short nsexesDem)
 				if (j == 0) hhh = Int2Str(i) + "m"; else hhh = Int2Str(i) + "f";
 			}
 			if (header != hhh) errors++;
+			//		batchlog << "i = " << i << " j = " << j << " hhh = " << hhh << " header = " << header
+			//			<< " errors = " << errors << endl;
 		}
 	}
 	bTransMatrix >> header; if (header != "MinAge") errors++;
@@ -1807,12 +1821,15 @@ int ParseTransitionFile(short nstages, short nsexesDem)
 		BatchError(filetype, line, 10, "Total fecundity"); errors++;
 	}
 	bTransMatrix >> minage;
+	//prevminage = minage;
+	//				batchlog << "MINAGE = " << minage << endl;
 	if (minage != 0) {
 		BatchError(filetype, line, 0, " ");
 		batchlog << "MinAge must be zero for juvenile stage" << endl; errors++;
 	}
 
 	// one row for each stage/sex combination
+	//				batchlog << "HEADER = " << header << endl;
 	for (stage = 1; stage < nstages; stage++) {
 		for (sex = 0; sex < nsexesDem; sex++) {
 			line++;
@@ -1829,12 +1846,15 @@ int ParseTransitionFile(short nstages, short nsexesDem)
 			for (i = 0; i < nstages; i++) {
 				for (j = 0; j < nsexesDem; j++) {
 					bTransMatrix >> infloat;
+					//				batchlog << "TRANS PROB = " << infloat << endl;
 					if (infloat < 0.0 || infloat > 1) {
 						BatchError(filetype, line, 20, "Transition probability"); errors++;
 					}
 				}
 			}
+			//		 prevminage = minage;
 			bTransMatrix >> minage;
+			//				batchlog << "MINAGE = " << minage << endl;
 			if (stage == 1 && minage != 0) {
 				BatchError(filetype, line, 0, " ");
 				batchlog << "MinAge must be zero for stage 1" << endl; errors++;
@@ -1843,6 +1863,14 @@ int ParseTransitionFile(short nstages, short nsexesDem)
 				if (minage < 0) {
 					BatchError(filetype, line, 19, "MinAge"); errors++;
 				}
+				// SCFP 30/9/13 - IDEALLY OUGHT TO TEST THAT MINAGE IS NO LESS THAN PREVIOUS MINAGE
+				// BUT WOULD NEED TO BE PREV MINAGE FOR THE SAME SEX
+				// HOWEVER, IT IS NOT CRITICAL, AS A MINAGE OF LESS THAN PREVIOUS CANNOT CAUSE ANY
+				// PROBLEM, AS PREVIOUS MINAGE GETS APPLIED EARLIER
+	//			if (minage < prevminage) {
+	//				BatchError(filetype,line,0," ");
+	//				batchlog << "MinAge may not be less than MinAge of previous stage" << endl; errors++;
+	//			}
 			}
 		}
 	}
@@ -1930,9 +1958,7 @@ int ParseEmigFile(void)
 	int simul;
 	int densdep, usefullkern, stagedep, sexdep, indvar, emigstage, stage, sex;
 	bool densdepset, indvarset;
-	float	ep, d0, alpha, beta, epMean, epSD, d0Mean, d0SD, alphaMean, alphaSD, betaMean, betaSD;
-	float epScale, d0Scale, alphaScale, betaScale;
-	float epScale0 = 0, d0Scale0 = 0, alphaScale0 = 0, betaScale0 = 0;
+	float ep, d0, alpha, beta;
 	int errors = 0;
 	int simuls = 0;
 	string filetype = "EmigrationFile";
@@ -1955,18 +1981,7 @@ int ParseEmigFile(void)
 	bEmigrationFile >> header; if (header != "D0") errors++;
 	bEmigrationFile >> header; if (header != "alpha") errors++;
 	bEmigrationFile >> header; if (header != "beta") errors++;
-	bEmigrationFile >> header; if (header != "EPMean") errors++;
-	bEmigrationFile >> header; if (header != "EPSD") errors++;
-	bEmigrationFile >> header; if (header != "D0Mean") errors++;
-	bEmigrationFile >> header; if (header != "D0SD") errors++;
-	bEmigrationFile >> header; if (header != "alphaMean") errors++;
-	bEmigrationFile >> header; if (header != "alphaSD") errors++;
-	bEmigrationFile >> header; if (header != "betaMean") errors++;
-	bEmigrationFile >> header; if (header != "betaSD") errors++;
-	bEmigrationFile >> header; if (header != "EPScale") errors++;
-	bEmigrationFile >> header; if (header != "D0Scale") errors++;
-	bEmigrationFile >> header; if (header != "alphaScale") errors++;
-	bEmigrationFile >> header; if (header != "betaScale") errors++;
+
 	if (errors > 0) {
 		FormatError(filetype, errors);
 		return -111;
@@ -2022,83 +2037,30 @@ int ParseEmigFile(void)
 		}
 
 		// read remaining columns of the current record
-		bEmigrationFile >> ep >> d0 >> alpha >> beta >> epMean >> epSD >> d0Mean >> d0SD;
-		bEmigrationFile >> alphaMean >> alphaSD >> betaMean >> betaSD;
-		bEmigrationFile >> epScale >> d0Scale >> alphaScale >> betaScale;
-
-		if (current.newsimul) {
-			// record scaling factors from first line of the simulation
-			epScale0 = epScale; d0Scale0 = d0Scale;
-			alphaScale0 = alphaScale; betaScale0 = betaScale;
-		}
+		bEmigrationFile >> ep >> d0 >> alpha >> beta;
+#if RSDEBUG
+		//DEBUGLOG << "ParseEmigFile(): simul=" << simul
+		//	<< " reqdsimlines=" << current.reqdsimlines
+		//	<< " line=" << line << " stage=" << stage << " sex=" << sex
+		//	<< " densdep=" << densdep << " indvar=" << indvar
+		//	<< " ep=" << ep << " d0=" << d0 << " alpha=" << alpha << " beta=" << beta
+		//	<< " epMean=" << epMean << " epSD=" << epSD
+		//	<< " d0Mean=" << d0Mean << " d0SD=" << d0SD
+		//	<< " alphaMean=" << alphaMean << " alphaSD=" << alphaSD
+		//	<< " betaMean=" << betaMean << " betaSD=" << betaSD
+		//	<< " epScale=" << epScale << " d0Scale=" << d0Scale
+		//	<< " alphaScale=" << alphaScale << " betaScale=" << betaScale
+		//	<< endl;
+#endif
 
 		if (densdepset) {
-			if (indvarset) {
-				if (d0Mean <= 0.0 || d0Mean > 1.0) {
-					BatchError(filetype, line, 20, "D0Mean"); errors++;
-				}
-				if (d0SD <= 0.0 || d0SD > 1.0) {
-					BatchError(filetype, line, 20, "D0SD"); errors++;
-				}
-				if (stage == 0 && sex == 0) {
-					if (d0Scale <= 0.0 || d0Scale > 1.0) {
-						BatchError(filetype, line, 20, "D0Scale"); errors++;
-					}
-				}
-				if (d0SD > d0Scale0) {
-					BatchError(filetype, line, 3, "D0SD", "D0Scale (first line)"); errors++;
-				}
-				if (alphaSD <= 0.0) {
-					BatchError(filetype, line, 10, "alphaSD"); errors++;
-				}
-				if (stage == 0 && sex == 0) {
-					if (alphaScale0 <= 0.0) {
-						BatchError(filetype, line, 10, "alphaScale"); errors++;
-					}
-				}
-				if (alphaSD > alphaScale0) {
-					BatchError(filetype, line, 3, "alphaSD", "alphaScale (first line)"); errors++;
-				}
-				if (betaSD <= 0.0) {
-					BatchError(filetype, line, 10, "betaSD"); errors++;
-				}
-				if (stage == 0 && sex == 0) {
-					if (betaScale0 <= 0.0) {
-						BatchError(filetype, line, 10, "betaScale"); errors++;
-					}
-				}
-				if (betaSD > betaScale0) {
-					BatchError(filetype, line, 3, "betaSD", "betaScale (first line)"); errors++;
-				}
-			}
-			else { // !indvarset
-				if (d0 < 0.0 || d0 > 1.0) {
-					BatchError(filetype, line, 20, "D0"); errors++;
-				}
-				// NB alpha and beta may take any value
+			if (d0 < 0.0 || d0 > 1.0) {
+				BatchError(filetype, line, 20, "D0"); errors++;
 			}
 		}
 		else { // !densdepset
-			if (indvarset) {
-				if (epMean <= 0.0 || epMean > 1.0) {
-					BatchError(filetype, line, 20, "EPMean"); errors++;
-				}
-				if (epSD <= 0.0 || epSD > 1.0) {
-					BatchError(filetype, line, 20, "EPSD"); errors++;
-				}
-				if (stage == 0 && sex == 0) {
-					if (epScale <= 0.0 || epScale > 1.0) {
-						BatchError(filetype, line, 20, "EPScale"); errors++;
-					}
-				}
-				if (epSD > epScale0) {
-					BatchError(filetype, line, 3, "EPSD", "EPScale (first line)"); errors++;
-				}
-			}
-			else { // !indvarset
-				if (ep < 0.0 || ep > 1.0) {
-					BatchError(filetype, line, 20, "EP"); errors++;
-				}
+			if (ep < 0.0 || ep > 1.0) {
+				BatchError(filetype, line, 20, "EP"); errors++;
 			}
 		}
 
@@ -2132,27 +2094,17 @@ int ParseTransferFile(string indir)
 	int	prMethod, smtype, straightenPath;
 	float pr, dp, smconst;
 	int goaltype, memsize, betaDB; float gb, alphaDB;
-	float dpMean, dpSD, gbMean, gbSD, alphaDBMean, alphaDBSD, betaDBMean, betaDBSD;
-	float dpScale, gbScale, alphaDBScale, betaDBScale;
 	float meanDistI, meanDistII, ProbKernelI;
-	float DistIMean, DistISD, DistIIMean, DistIISD, ProbKernelIMean, ProbKernelISD;
-	float DistIScale, DistIIScale, ProbKernelIScale;
-	float DistIScale0, DistIIScale0, ProbKernelIScale0;
 	float mortProb, slope, inflPoint;
 	float morthab, mortmatrix;
 	int costhab, costmatrix;
 	float SL, rho;
-	float StepLMean, StepLSD, RhoMean, RhoSD, StepLScale, RhoScale;
 
 	vector <string> costsfiles;
 
 	int errors = 0; int morthaberrors = 0; int costerrors = 0; int hrerrors = 0;
 	int simuls = 0;
 	string filetype = "TransferFile";
-
-	DistIScale0 = 0.0;
-	DistIIScale0 = 0.0;
-	ProbKernelIScale0 = 0.0;
 
 	// Parse header line;
 	bTransferFile >> header; if (header != "Simulation") errors++;
@@ -2170,15 +2122,6 @@ int ParseTransferFile(string indir)
 		bTransferFile >> header; if (header != "meanDistI") errors++;
 		bTransferFile >> header; if (header != "meanDistII") errors++;
 		bTransferFile >> header; if (header != "ProbKernelI") errors++;
-		bTransferFile >> header; if (header != "DistIMean") errors++;
-		bTransferFile >> header; if (header != "DistISD") errors++;
-		bTransferFile >> header; if (header != "DistIIMean") errors++;
-		bTransferFile >> header; if (header != "DistIISD") errors++;
-		bTransferFile >> header; if (header != "ProbKernelIMean") errors++;
-		bTransferFile >> header; if (header != "ProbKernelISD") errors++;
-		bTransferFile >> header; if (header != "DistIScale") errors++;
-		bTransferFile >> header; if (header != "DistIIScale") errors++;
-		bTransferFile >> header; if (header != "ProbKernelIScale") errors++;
 		bTransferFile >> header; if (header != "MortProb") errors++;
 		bTransferFile >> header; if (header != "Slope") errors++;
 		bTransferFile >> header; if (header != "InflPoint") errors++;
@@ -2196,18 +2139,6 @@ int ParseTransferFile(string indir)
 		bTransferFile >> header; if (header != "GoalType") errors++;
 		bTransferFile >> header; if (header != "AlphaDB") errors++;
 		bTransferFile >> header; if (header != "BetaDB") errors++;
-		bTransferFile >> header; if (header != "DPMean") errors++;
-		bTransferFile >> header; if (header != "DPSD") errors++;
-		bTransferFile >> header; if (header != "GBMean") errors++;
-		bTransferFile >> header; if (header != "GBSD") errors++;
-		bTransferFile >> header; if (header != "AlphaDBMean") errors++;
-		bTransferFile >> header; if (header != "AlphaDBSD") errors++;
-		bTransferFile >> header; if (header != "BetaDBMean") errors++;
-		bTransferFile >> header; if (header != "BetaDBSD") errors++;
-		bTransferFile >> header; if (header != "DPScale") errors++;
-		bTransferFile >> header; if (header != "GBScale") errors++;
-		bTransferFile >> header; if (header != "AlphaDBScale") errors++;
-		bTransferFile >> header; if (header != "BetaDBScale") errors++;
 		bTransferFile >> header; if (header != "StraightenPath") errors++;
 		bTransferFile >> header; if (header != "SMtype") errors++;
 		bTransferFile >> header; if (header != "SMconst") errors++;
@@ -2245,12 +2176,6 @@ int ParseTransferFile(string indir)
 		bTransferFile >> header; if (header != "IndVar") errors++;
 		bTransferFile >> header; if (header != "SL") errors++;
 		bTransferFile >> header; if (header != "Rho") errors++;
-		bTransferFile >> header; if (header != "StepLMean") errors++;
-		bTransferFile >> header; if (header != "StepLSD") errors++;
-		bTransferFile >> header; if (header != "RhoMean") errors++;
-		bTransferFile >> header; if (header != "RhoSD") errors++;
-		bTransferFile >> header; if (header != "StepLScale") errors++;
-		bTransferFile >> header; if (header != "RhoScale") errors++;
 		bTransferFile >> header; if (header != "StraightenPath") errors++;
 		bTransferFile >> header; if (header != "SMtype") errors++;
 		bTransferFile >> header; if (header != "SMconst") errors++;
@@ -2306,15 +2231,9 @@ int ParseTransferFile(string indir)
 				BatchError(filetype, line, 1, "DistMort"); errors++;
 			}
 			// read remaining columns of the current record
-			bTransferFile >> meanDistI >> meanDistII >> ProbKernelI >> DistIMean >> DistISD;
-			bTransferFile >> DistIIMean >> DistIISD >> ProbKernelIMean >> ProbKernelISD;
-			bTransferFile >> DistIScale >> DistIIScale >> ProbKernelIScale;
+			bTransferFile >> meanDistI >> meanDistII >> ProbKernelI;
 			bTransferFile >> mortProb >> slope >> inflPoint;
 
-			if (current.newsimul) {
-				DistIScale0 = DistIScale; DistIIScale0 = DistIIScale;
-				ProbKernelIScale0 = ProbKernelIScale;
-			}
 
 			if (!indvar) {
 				if (meanDistI < resolution) {
@@ -2329,55 +2248,6 @@ int ParseTransferFile(string indir)
 					}
 					if (ProbKernelI <= 0.0 || ProbKernelI >= 1.0) {
 						BatchError(filetype, line, 20, "ProbKernelI"); errors++;
-					}
-				}
-			}
-
-			if (!stagestruct && indvar) {
-				if (DistIMean < resolution) {
-					// NOTE - DITTO
-					BatchError(filetype, line, 2, "DistIMean", "Resolution"); errors++;
-				}
-				if (DistISD <= 0.0) {
-					BatchError(filetype, line, 10, "DistISD"); errors++;
-				}
-				if (DistISD > DistIScale0) {
-					BatchError(filetype, line, 3, "DistISD", "DistIScale (first line)"); errors++;
-				}
-				if (current.newsimul) {
-					if (DistIScale <= 0.0) {
-						BatchError(filetype, line, 10, "DistIScale"); errors++;
-					}
-				}
-				if (kerneltype != 0) {
-					if (DistIIMean < resolution) {
-						// NOTE - DITTO
-						BatchError(filetype, line, 2, "DistIIMean", "Resolution"); errors++;
-					}
-					if (DistIISD <= 0.0) {
-						BatchError(filetype, line, 10, "DistIISD"); errors++;
-					}
-					if (DistIISD > DistIIScale0) {
-						BatchError(filetype, line, 3, "DistIISD", "DistIIScale (first line)"); errors++;
-					}
-					if (current.newsimul) {
-						if (DistIIScale <= 0.0) {
-							BatchError(filetype, line, 10, "DistIIScale"); errors++;
-						}
-					}
-					if (ProbKernelIMean <= 0.0 || ProbKernelIMean > 1.0) {
-						BatchError(filetype, line, 20, "ProbKernelIMean"); errors++;
-					}
-					if (ProbKernelISD <= 0.0 || ProbKernelISD > 1.0) {
-						BatchError(filetype, line, 20, "ProbKernelISD"); errors++;
-					}
-					if (ProbKernelISD > ProbKernelIScale0) {
-						BatchError(filetype, line, 3, "ProbKernelISD", "ProbKernelIScale (first line)"); errors++;
-					}
-					if (current.newsimul) {
-						if (ProbKernelIScale <= 0.0 || ProbKernelIScale > 1.0) {
-							BatchError(filetype, line, 20, "ProbKernelIScale"); errors++;
-						}
 					}
 				}
 			}
@@ -2432,60 +2302,6 @@ int ParseTransferFile(string indir)
 					BatchError(filetype, line, 10, "BetaDB"); errors++;
 				}
 			}
-			bTransferFile >> dpMean >> dpSD >> gbMean >> gbSD >> alphaDBMean >> alphaDBSD
-				>> betaDBMean >> betaDBSD >> dpScale >> gbScale >> alphaDBScale >> betaDBScale;
-			if (indvar) {
-				if (dpMean < 1.0) {
-					BatchError(filetype, line, 11, "DPMean"); errors++;
-				}
-				if (dpSD <= 0.0) {
-					BatchError(filetype, line, 10, "DPSD"); errors++;
-				}
-				if (dpScale <= 0.0) {
-					BatchError(filetype, line, 10, "DPScale"); errors++;
-				}
-				if (dpSD > dpScale) {
-					BatchError(filetype, line, 3, "DPSD", "DPScale"); errors++;
-				}
-				if (gbMean < 1.0) {
-					BatchError(filetype, line, 11, "GBMean"); errors++;
-				}
-				if (gbSD <= 0.0) {
-					BatchError(filetype, line, 10, "GBSD"); errors++;
-				}
-				if (gbScale <= 0.0) {
-					BatchError(filetype, line, 10, "GBScale"); errors++;
-				}
-				if (gbSD > gbScale) {
-					BatchError(filetype, line, 3, "GBSD", "GBScale"); errors++;
-				}
-				if (goaltype == 2) { // dispersal bias
-					if (alphaDBMean <= 0.0) {
-						BatchError(filetype, line, 10, "AlphaDBMean"); errors++;
-					}
-					if (alphaDBSD <= 0.0) {
-						BatchError(filetype, line, 10, "AlphaDBSD"); errors++;
-					}
-					if (alphaDBScale <= 0.0) {
-						BatchError(filetype, line, 10, "AlphaDBScale"); errors++;
-					}
-					if (alphaDBSD > alphaDBScale) {
-						BatchError(filetype, line, 3, "AlphaDBSD", "AlphaDBScale"); errors++;
-					}
-					if (betaDBMean < 1.0) {
-						BatchError(filetype, line, 11, "BetaDBMean"); errors++;
-					}
-					if (betaDBSD <= 0.0) {
-						BatchError(filetype, line, 10, "BetaDBSD"); errors++;
-					}
-					if (betaDBScale <= 0.0) {
-						BatchError(filetype, line, 10, "BetaDBScale"); errors++;
-					}
-					if (betaDBSD > betaDBScale) {
-						BatchError(filetype, line, 3, "BetaDBSD", "BetaDBScale"); errors++;
-					}
-				}
-			}
 			bTransferFile >> straightenPath >> smtype >> smconst;
 			if (straightenPath < 0 || straightenPath > 1) {
 				BatchError(filetype, line, 1, "StraightenPath"); errors++;
@@ -2511,6 +2327,7 @@ int ParseTransferFile(string indir)
 			switch (landtype) {
 
 			case 0: { // raster map with unique habitat codes
+				//			batchlog << "for LandType = 0" << endl;
 				for (i = 0; i < maxNhab; i++) {
 					bTransferFile >> morthab;
 					if (smtype == 1)
@@ -2534,10 +2351,12 @@ int ParseTransferFile(string indir)
 			} // end of raster map with unique habitat codes
 
 			case 2: { // raster map with habitat quality
+				//			batchlog << "for LandType = 2" << endl;
 				break;
 			} // end of raster map with habitat quality
 
 			case 9: { // artificial landscape
+				//			batchlog << "for LandType = 9" << endl;
 				bTransferFile >> morthab >> mortmatrix;
 				bTransferFile >> costhab >> costmatrix;
 				if (smtype) { // validate habitat-dependent mortality
@@ -2564,46 +2383,17 @@ int ParseTransferFile(string indir)
 		} // end of SMS
 
 		case 2: { // CRW
-			bTransferFile >> indvar >> SL >> rho >> StepLMean >> StepLSD >> RhoMean >> RhoSD;
-			bTransferFile >> StepLScale >> RhoScale >> straightenPath >> smtype >> smconst;
+			bTransferFile >> indvar >> SL >> rho >> straightenPath >> smtype >> smconst;
 			current = CheckStageSex(filetype, line, simul, prev, 0, 0, 0, 0, indvar, true, false);
 			if (current.newsimul) simuls++;
 			errors += current.errors;
 			prev = current;
 
-			if (indvar) { // individual variability
-				if (StepLMean <= 0.0) {
-					BatchError(filetype, line, 10, "StepLMean"); errors++;
-				}
-				if (StepLSD <= 0.0) {
-					BatchError(filetype, line, 10, "StepLSD"); errors++;
-				}
-				if (StepLScale <= 0.0) {
-					BatchError(filetype, line, 10, "StepLScale"); errors++;
-				}
-				if (StepLSD > StepLScale) {
-					BatchError(filetype, line, 3, "StepLSD", "StepLScale"); errors++;
-				}
-				if (RhoMean <= 0.0 || RhoMean >= 1.0) {
-					BatchError(filetype, line, 20, "RhoMean"); errors++;
-				}
-				if (RhoSD <= 0.0 || RhoSD >= 1.0) {
-					BatchError(filetype, line, 20, "RhoSD"); errors++;
-				}
-				if (RhoScale <= 0.0 || RhoScale >= 1.0) {
-					BatchError(filetype, line, 20, "RhoScale"); errors++;
-				}
-				if (RhoSD > RhoScale) {
-					BatchError(filetype, line, 3, "RhoSD", "RhoScale"); errors++;
-				}
+			if (SL <= 0.0) {
+				BatchError(filetype, line, 10, "SL"); errors++;
 			}
-			else { // no individual variability
-				if (SL <= 0.0) {
-					BatchError(filetype, line, 10, "SL"); errors++;
-				}
-				if (rho <= 0.0 || rho >= 1.0) {
-					BatchError(filetype, line, 20, "Rho"); errors++;
-				}
+			if (rho <= 0.0 || rho >= 1.0) {
+				BatchError(filetype, line, 20, "Rho"); errors++;
 			}
 			if (straightenPath < 0 || straightenPath > 1) {
 				BatchError(filetype, line, 1, "StraightenPath"); errors++;
@@ -2665,7 +2455,6 @@ int ParseTransferFile(string indir)
 
 }
 
-
 //---------------------------------------------------------------------------
 int ParseSettleFile(void)
 {
@@ -2673,8 +2462,6 @@ int ParseSettleFile(void)
 	int simul, stagedep, sexdep, stage, sex, settletype;
 	int densdep, indvar, findmate, minSteps, maxSteps, maxStepsYear;
 	float s0, alphaS, betaS;
-	float s0mean, alphaSmean, betaSmean, s0sd, alphaSsd, betaSsd, s0scale, alphaSscale, betaSscale;
-	float s0scale0 = 0, alphaSscale0 = 0, betaSscale0 = 0;
 	int errors = 0;
 	int simuls = 0;
 	string filetype = "SettlementFile";
@@ -2700,15 +2487,6 @@ int ParseSettleFile(void)
 		bSettlementFile >> header; if (header != "S0") errors++;
 		bSettlementFile >> header; if (header != "AlphaS") errors++;
 		bSettlementFile >> header; if (header != "BetaS") errors++;
-		bSettlementFile >> header; if (header != "S0Mean") errors++;
-		bSettlementFile >> header; if (header != "S0SD") errors++;
-		bSettlementFile >> header; if (header != "AlphaSMean") errors++;
-		bSettlementFile >> header; if (header != "AlphaSSD") errors++;
-		bSettlementFile >> header; if (header != "BetaSMean") errors++;
-		bSettlementFile >> header; if (header != "BetaSSD") errors++;
-		bSettlementFile >> header; if (header != "S0Scale") errors++;
-		bSettlementFile >> header; if (header != "AlphaSScale") errors++;
-		bSettlementFile >> header; if (header != "BetaSScale") errors++;
 	}
 	if (errors > 0) {
 		FormatError(filetype, errors);
@@ -2783,58 +2561,28 @@ int ParseSettleFile(void)
 				BatchError(filetype, line, 19, "MaxStepsYear"); errors++;
 			}
 			bSettlementFile >> s0 >> alphaS >> betaS;
-			bSettlementFile >> s0mean >> s0sd >> alphaSmean >> alphaSsd
-				>> betaSmean >> betaSsd >> s0scale >> alphaSscale >> betaSscale;
-			if (current.newsimul) {
-				// record scaling factors from first line of the simulation
-				s0scale0 = s0scale;
-				alphaSscale0 = alphaSscale; betaSscale0 = betaSscale;
-			}
+#if RSDEBUG
+			//DEBUGLOG << "ParseSettleFile(): simul=" << simul
+			//	<< " reqdsimlines=" << current.reqdsimlines
+			//	<< " line=" << line << " stage=" << stage << " sex=" << sex
+			//	<< " densdep=" << densdep << " indvar=" << indvar << " findmate=" << findmate
+			//	<< " s0=" << s0 << " alphaS=" << alphaS << " betaS=" << betaS
+			//	<< " s0mean=" << s0mean << " s0sd=" << s0sd
+			//	<< " alphaSmean=" << alphaSmean << " alphaSsd=" << alphaSsd
+			//	<< " betaSmean=" << betaSmean << " betaSsd=" << betaSsd
+			//	<< " s0scale=" << s0scale << " alphaSscale=" << alphaSscale << " betaSscale=" << betaSscale
+			//	<< endl;
+#endif
 
 			if (densdep == 1) {
-				if (indvar == 1) {
-					if (stage == 0)
-					{
-						if (s0mean <= 0.0 || s0mean > 1.0) {
-							BatchError(filetype, line, 20, "S0Mean"); errors++;
-						}
-						if (s0sd <= 0.0 || s0sd > 1.0) {
-							BatchError(filetype, line, 20, "S0SD"); errors++;
-						}
-						if (alphaSsd <= 0.0) {
-							BatchError(filetype, line, 10, "AlphaSsd"); errors++;
-						}
-						if (betaSsd <= 0.0) {
-							BatchError(filetype, line, 10, "BetaSsd"); errors++;
-						}
-						if (sex == 0) {
-							if (s0scale <= 0.0 || s0scale > 1.0) {
-								BatchError(filetype, line, 20, "S0Scale"); errors++;
-							}
-							if (alphaSscale <= 0.0) {
-								BatchError(filetype, line, 10, "AlphaSscale"); errors++;
-							}
-							if (betaSscale <= 0.0) {
-								BatchError(filetype, line, 10, "BetaSscale"); errors++;
-							}
-						}
-						if (s0sd > s0scale0) {
-							BatchError(filetype, line, 3, "S0SD", "S0Scale (first line)"); errors++;
-						}
-						if (alphaSsd > alphaSscale0) {
-							BatchError(filetype, line, 3, "AlphaSsd", "AlphaSscale (first line)"); errors++;
-						}
-						if (betaSsd > betaSscale0) {
-							BatchError(filetype, line, 3, "BetaSsd", "BetaSscale (first line)"); errors++;
-						}
-					}
+
+#if RSDEBUG
+				//DEBUGLOG << "ParseSettleFile(): validating s0 only" << endl;
+#endif
+				if (s0 <= 0.0 || s0 > 1.0) {
+					BatchError(filetype, line, 20, "S0"); errors++;
 				}
-				else { // no individual variation
-					if (s0 <= 0.0 || s0 > 1.0) {
-						BatchError(filetype, line, 20, "S0"); errors++;
-					}
-					// NOTE: alphaS and betaS can take any value
-				}
+				// NOTE: alphaS and betaS can take any value
 			}
 		}
 		// read next simulation
@@ -2860,14 +2608,100 @@ int ParseSettleFile(void)
 }
 
 //---------------------------------------------------------------------------
-int ParseGeneticsFile(string indir)
+int ParseTraitsFile(string indir)
 {
 	string header, colheader;
-	int i, simul, err;
-	int arch, nLoci;
-	string filename, ftype, fname;
-	float probMutn, probCross, alleleSD, mutationSD;
-	bool checkfile;
+	int simul;
+	string filename, TraitType, Sex, initialDistribution, initialParameters,
+		dominanceDistribution, dominanceParameters, isInherited, mutationDistribution, mutationParameters, positions, NbrOfPositions, expressionType, mutationRate;
+	int errors = 0;
+	int simuls = 0;
+	vector <string> archfiles;
+	string filetype = "TraitsFile";
+
+	// Parse header line;
+	bTraitsFile >> header; if (header != "Simulation") errors++;
+	bTraitsFile >> header; if (header != "TraitType") errors++;
+	bTraitsFile >> header; if (header != "Sex") errors++;
+	bTraitsFile >> header; if (header != "Positions") errors++;
+	bTraitsFile >> header; if (header != "NbrOfPositions") errors++;
+	bTraitsFile >> header; if (header != "ExpressionType") errors++;
+	bTraitsFile >> header; if (header != "InitialDistribution") errors++;
+	bTraitsFile >> header; if (header != "InitialParameters") errors++;
+	bTraitsFile >> header; if (header != "DominanceDistribution") errors++;
+	bTraitsFile >> header; if (header != "DominanceParameters") errors++;
+	bTraitsFile >> header; if (header != "IsInherited") errors++;
+	bTraitsFile >> header; if (header != "MutationDistribution") errors++;
+	bTraitsFile >> header; if (header != "MutationParameters") errors++;
+	bTraitsFile >> header; if (header != "MutationRate") errors++;
+
+
+	if (errors > 0) {
+		FormatError(filetype, errors);
+		return -111;
+	}
+
+	// Parse data lines
+	int line = 1;
+	simCheck current, prev;
+	simul = -98765;
+	prev.simul = -999;
+	prev.simlines = prev.reqdsimlines = 0;
+	bTraitsFile >> simul;
+	// first simulation number must match first one in parameterFile
+	if (simul != firstsimul) {
+		BatchError(filetype, line, 111, "Simulation"); errors++;
+	}
+	current.simul = 0; //dummy line to prevent warning message in VisualStudio 2019
+	while (simul != -98765) {
+		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
+		bTraitsFile >> TraitType >> Sex >> positions >> NbrOfPositions >> expressionType >> initialDistribution >> initialParameters
+			>> dominanceDistribution >> dominanceParameters >> isInherited >> mutationDistribution >> mutationParameters
+			>> mutationRate;
+
+		current = CheckStageSex(filetype, line, simul, prev, 0, 0, 0, 0, 0, true, false);
+		if (current.newsimul) simuls++;
+		errors += current.errors;
+		prev = current;
+
+		// validate parameters
+		if ((isInherited == "true" || isInherited == "True" || isInherited == "TRUE") && (stof(mutationRate) < 0.0 || stof(mutationRate) > 1.0)) {
+			BatchError(filetype, line, 20, "mutationRate"); errors++;
+		}
+
+		// read next simulation
+		line++;
+		simul = -98765;
+		bTraitsFile >> simul;
+		if (bTraitsFile.eof()) simul = -98765;
+	} // end of while loop
+	// check for correct number of lines for previous simulation
+	if (!(current.simlines >= current.reqdsimlines)) {
+		BatchError(filetype, line, 0, " "); errors++;
+		batchlog << msgnlines << current.simul
+			<< msgshldbe << current.reqdsimlines << endl;
+	}
+	if (!bTraitsFile.eof()) {
+		EOFerror(filetype);
+		errors++;
+	}
+
+	if (errors > 0) return -111;
+	else return simuls;
+
+}
+
+//---------------------------------------------------------------------------
+
+int ParseGeneticsFile(string indir) {
+
+	string header, colheader, tfName, ftype2;
+	int i, simul, err, NbrPatchesToSample, nIndividualsToSample;
+	string filename, ChromosomeEnds, TraitsFile, PatchList, Stages,
+		OutputNeutralStatistics, OutputPerLocusWCFstat, OutputPairwiseFst;
+	int GenomeSize, OutputInterval;
+	float RecombinationRate;
+	bool traitsParsed = false;
 	int errors = 0;
 	int simuls = 0;
 	vector <string> archfiles;
@@ -2875,13 +2709,19 @@ int ParseGeneticsFile(string indir)
 
 	// Parse header line;
 	bGeneticsFile >> header; if (header != "Simulation") errors++;
-	bGeneticsFile >> header; if (header != "Architecture") errors++;
-	bGeneticsFile >> header; if (header != "NLoci") errors++;
-	bGeneticsFile >> header; if (header != "ArchFile") errors++;
-	bGeneticsFile >> header; if (header != "ProbMutn") errors++;
-	bGeneticsFile >> header; if (header != "ProbCross") errors++;
-	bGeneticsFile >> header; if (header != "AlleleSD") errors++;
-	bGeneticsFile >> header; if (header != "MutationSD") errors++;
+	bGeneticsFile >> header; if (header != "GenomeSize") errors++;
+	bGeneticsFile >> header; if (header != "ChromosomeEnds") errors++;
+	bGeneticsFile >> header; if (header != "RecombinationRate") errors++;
+	bGeneticsFile >> header; if (header != "OutputNeutralStatistics") errors++;
+	bGeneticsFile >> header; if (header != "OutputPerLocusWCFstat") errors++;
+	bGeneticsFile >> header; if (header != "OutputPairwiseFst") errors++;
+	bGeneticsFile >> header; if (header != "OutputInterval") errors++;
+	bGeneticsFile >> header; if (header != "PatchList") errors++;
+	bGeneticsFile >> header; if (header != "NbrPatchesToSample") errors++;
+	bGeneticsFile >> header; if (header != "nIndividualsToSample") errors++;
+	bGeneticsFile >> header; if (header != "Stages") errors++;
+	bGeneticsFile >> header; if (header != "TraitsFile") errors++;
+
 	if (errors > 0) {
 		FormatError(filetype, errors);
 		return -111;
@@ -2901,8 +2741,9 @@ int ParseGeneticsFile(string indir)
 	current.simul = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simul != -98765) {
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
-		bGeneticsFile >> arch >> nLoci >> filename
-			>> probMutn >> probCross >> alleleSD >> mutationSD;
+		bGeneticsFile >> GenomeSize >> ChromosomeEnds >> RecombinationRate >> OutputNeutralStatistics >>
+			OutputPerLocusWCFstat >> OutputPairwiseFst >> OutputInterval >> PatchList >> NbrPatchesToSample
+			>> nIndividualsToSample >> Stages >> TraitsFile;
 
 		current = CheckStageSex(filetype, line, simul, prev, 0, 0, 0, 0, 0, true, false);
 		if (current.newsimul) simuls++;
@@ -2911,65 +2752,33 @@ int ParseGeneticsFile(string indir)
 
 		// validate parameters
 
-		if (arch < 0 || arch > 1) {
-			BatchError(filetype, line, 1, "Architecture"); errors++;
+
+		if (GenomeSize < 0) {
+			BatchError(filetype, line, 10, "GenomeSize"); errors++;
 		}
 
-		// genetic architecture file - optional
-		ftype = "ArchFile";
-		if (filename == "NULL") {
-			if (arch != 0) {
-				BatchError(filetype, line, 0, " ");
-				batchlog << ftype << " is compulsory unless Architecture is 0" << endl;
-				errors++;
-			}
+		if (TraitsFile == "NULL") {
+			batchlog << "*** " << TraitsFile << " is compulsory for genetic models" << endl;
+			errors++;
 		}
 		else {
-			if (arch != 1) {
-				BatchError(filetype, line, 0, " ");
-				batchlog << ftype << " must be NULL if Architecture is 0" << endl;
-				errors++;
+			//if (!traitsParsed) { //only parse the first traits file for now, could have multiple different traits files if we want 
+			tfName = indir + TraitsFile;
+			ftype2 = "Traits file";
+			batchlog << "Checking " << ftype2 << " " << tfName << endl;
+			bTraitsFile.open(tfName.c_str());
+			if (bTraitsFile.is_open()) {
+				err = ParseTraitsFile(indir);
+				if (err >= 0) FileHeadersOK(ftype2); else errors++;
+				bTraitsFile.close();
 			}
-			else { // check architecture file
-				checkfile = true;
-				for (i = 0; i < (int)archfiles.size(); i++) {
-					if (filename == archfiles[i]) checkfile = false; // file has already been checked
-				}
-				if (checkfile) {
-					fname = indir + filename;
-					batchlog << "Checking " << ftype << " " << fname << endl;
-					bArchFile.open(fname.c_str());
-					if (bArchFile.is_open()) {
-						err = ParseArchFile();
-						if (err == 0) FileHeadersOK(ftype); else errors++;
-						bArchFile.close();
-					}
-					else {
-						OpenError(ftype, fname); errors++;
-					}
-					if (bArchFile.is_open()) bArchFile.close();
-					bArchFile.clear();
-				}
-				archfiles.push_back(filename);
+			else {
+				OpenError(ftype2, tfName); errors++;
 			}
-		}
-
-		if (arch == 0) {
-			if (nLoci < 1) {
-				BatchError(filetype, line, 11, "NLoci"); errors++;
-			}
-		}
-		if (probMutn < 0.0 || probMutn > 1.0) {
-			BatchError(filetype, line, 20, "ProbMutn"); errors++;
-		}
-		if (probCross < 0.0 || probCross > 1.0) {
-			BatchError(filetype, line, 20, "ProbCross"); errors++;
-		}
-		if (alleleSD <= 0.0) {
-			BatchError(filetype, line, 10, "AlleleSD"); errors++;
-		}
-		if (mutationSD <= 0.0) {
-			BatchError(filetype, line, 10, "MutationSD"); errors++;
+			if (bTraitsFile.is_open()) bTraitsFile.close();
+			bTraitsFile.clear();
+			//traitsParsed = true;
+		//}
 		}
 
 		// read next simulation
@@ -2991,114 +2800,6 @@ int ParseGeneticsFile(string indir)
 
 	if (errors > 0) return -111;
 	else return simuls;
-
-}
-
-//---------------------------------------------------------------------------
-int ParseArchFile(void)
-{
-	string paramname;
-	int nchromosomes, nloci;
-	int errors = 0;
-	bool formatError = false;
-	string filetype = "ArchFile";
-	int* chromsize = 0;
-
-	// check no. of chromosomes, and terminate if in error
-	bArchFile >> paramname >> nchromosomes;
-	if (paramname == "NChromosomes") {
-		if (nchromosomes < 1) {
-			BatchError(filetype, -999, 11, "NChromosomes"); errors++;
-			return -111;
-		}
-	}
-	else {
-		ArchFormatError();
-		return -111;
-	}
-	chromsize = new int[nchromosomes];
-	for (int i = 0; i < nchromosomes; i++) chromsize[i] = 0;
-
-	// check no. of loci on each chromosome, and terminate if in error
-	bArchFile >> paramname;
-	if (paramname != "NLoci") formatError = true;
-	int locerrors = 0;
-	for (int i = 0; i < nchromosomes; i++) {
-		nloci = -999;
-		bArchFile >> nloci;
-		if (nloci < 1) locerrors++; else chromsize[i] = nloci;
-	}
-	if (locerrors) {
-		BatchError(filetype, -999, 11, "NLoci");
-		return -111;
-	}
-	// check unspecified no. of traits
-	fileNtraits = 0;
-	int traitnum, prevtrait, chrom, locus;
-	traitnum = prevtrait = -1;
-	bool traitError = false;
-	bool lociError = false;
-	bool chromError = false;
-	bool locusError = false;
-	paramname = "XXXyyyZZZ";
-	bArchFile >> paramname;
-	while (paramname != "XXXyyyZZZ") {
-		bArchFile >> traitnum;
-		if (paramname != "Trait") formatError = true;
-		if (traitnum == (prevtrait + 1)) prevtrait = traitnum;
-		else traitError = true;
-		bArchFile >> paramname >> nloci;
-		if (paramname != "NLoci") formatError = true;
-		if (nloci < 1) lociError = true;
-		for (int i = 0; i < nloci; i++) {
-			chrom = locus = -999999;
-			bArchFile >> chrom >> locus;
-			if (chrom == -999999 || locus == -999999) {
-				BatchError(filetype, -999, 0, " "); errors++;
-				batchlog << "Too few loci listed for trait " << traitnum << endl;
-			}
-			else {
-				if (chrom >= 0 && chrom < nchromosomes) {
-					if (locus < 0 || locus >= chromsize[chrom]) locusError = true;
-				}
-				else chromError = true;
-			}
-		}
-		fileNtraits++;
-		paramname = "XXXyyyZZZ";
-		bArchFile >> paramname;
-	}
-
-	if (traitError) {
-		BatchError(filetype, -999, 0, " "); errors++;
-		batchlog << "Traits must be sequentially numbered starting at 0 " << endl;
-	}
-	if (lociError) {
-		BatchError(filetype, -999, 11, "Trait NLoci"); errors++;
-	}
-	if (chromError) {
-		BatchError(filetype, -999, 0, " "); errors++;
-		batchlog << "Chromosome no. must be from 0 to " << (nchromosomes - 1) << endl;
-	}
-	if (locusError) {
-		BatchError(filetype, -999, 0, " "); errors++;
-		batchlog << "Locus no. must not exceed no. of loci on specified chromosome " << endl;
-	}
-	if (formatError || errors > 0) { // terminate batch error checking
-		if (formatError) ArchFormatError();
-		return -111;
-	}
-
-	// final read should hit EOF
-
-	if (!bArchFile.eof()) {
-		EOFerror(filetype);
-		errors++;
-	}
-
-	if (chromsize != 0) delete[] chromsize;
-
-	return errors;
 
 }
 
@@ -3218,9 +2919,15 @@ int ParseInitFile(string indir)
 
 		bInitFile >> minX >> maxX >> minY >> maxY >> nCells >> nSpCells;
 		if (seedtype == 0) {
+			//		if (minX < 0) {
+			//			BatchError(filetype,line,19,"minX"); errors++;
+			//		}
 			if (maxX < minX) {
 				BatchError(filetype, line, 2, "maxX", "minX"); errors++;
 			}
+			//		if (minY < 0) {
+			//			BatchError(filetype,line,19,"minY"); errors++;
+			//		}
 			if (maxY < minY) {
 				BatchError(filetype, line, 2, "maxY", "minY"); errors++;
 			}
@@ -3470,7 +3177,7 @@ simCheck CheckStageSex(string filetype, int line, int simul, simCheck prev,
 			BatchError(filetype, line, 222, " "); current.errors++;
 		}
 		// check for correct number of lines for previous simulation
-		if (checklines && prev.simlines != prev.reqdsimlines) {
+		if (checklines && !(prev.simlines >= prev.reqdsimlines)) {
 			BatchError(filetype, line, 0, " "); current.errors++;
 			batchlog << "No. of lines for previous Simulation " << prev.simul
 				<< msgshldbe << prev.reqdsimlines << endl;
@@ -3706,6 +3413,7 @@ void CtrlFormatError(void)
 {
 	cout << "Format error in Control file" << endl;
 	batchlog << endl << "***" << endl << "*** Format error in Control file:"
+		//	<< " case-sensitive parameter and file names must match the specification exactly"
 		<< msgcase << " and file names" << msgmatch
 		<< endl
 		<< "***" << endl;
@@ -3713,6 +3421,8 @@ void CtrlFormatError(void)
 
 void ArchFormatError(void)
 {
+	//batchlog << "*** Format error in ArchFile: case-sensitive parameter names "
+	//	<< "must match the specification exactly" << endl;
 	batchlog << "*** Format error in ArchFile:" << msgcase << msgmatch << endl;
 }
 
@@ -3755,6 +3465,8 @@ void FileOK(string ftype, int n, int option)
 	default:
 		batchlog << "PROBLEMS = ";
 	}
+	//if (option == 0) batchlog << "simulations = ";
+	//else batchlog << "landscapes = ";
 	batchlog << n << endl;
 }
 
@@ -3784,6 +3496,7 @@ int ReadLandFile(int option)
 			int nheaders;
 			if (landtype == 9) nheaders = 9; // artificial landscape
 			else { // imported raster map
+				//			nheaders = 6;
 				nheaders = 7;
 			}
 			for (int i = 0; i < nheaders; i++) landfile >> header;
@@ -3827,6 +3540,9 @@ int ReadLandFile(int option, Landscape* pLandscape)
 				return -902;
 			}
 		}
+		// SCFP 26/9/13 - min and max habitat percentages need to be set for all types of
+		// fractal landscape (including discrete), as they are passed to the fractal generator
+		// NOTE that will not have been checked for a discrete landscape
 		if (ppGenLand.fractal && !ppGenLand.continuous) { ppGenLand.minPct = 1; ppGenLand.maxPct = 100; }
 		if (ppGenLand.continuous) ppLand.nHab = 2;
 		else ppLand.nHab = 1;
@@ -3841,6 +3557,7 @@ int ReadLandFile(int option, Landscape* pLandscape)
 	}
 	else { // imported raster map
 		string dummy; // no longer necessary to read no. of habitats from landFile
+		//	landfile >> ppGenLand.landNum >> ppLand.nHab >> name_landscape >> name_patch >> name_sp_dist;
 		landfile >> ppLand.landNum >> dummy >> name_landscape >> name_patch;
 		landfile >> name_costfile >> name_dynland >> name_sp_dist;
 		if (landtype == 2) ppLand.nHab = 1; // habitat quality landscape has one habitat class
@@ -3858,7 +3575,10 @@ int ReadLandFile(int option, Landscape* pLandscape)
 	pLandscape->setLandParams(ppLand, sim.batchMode);
 	pLandscape->setGenLandParams(ppGenLand);
 
+	//simParams sim = paramsSim->getSim();
+
 #if RSDEBUG
+//DEBUGLOG << "ReadLandFile(): NHab=" << ppLand.nHab << endl;
 	DEBUGLOG << "ReadLandFile(): ppLand.landNum=" << ppLand.landNum << endl;
 #endif
 
@@ -3872,6 +3592,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 		<< " name_dynland=" << name_dynland
 		<< endl;
 #endif
+	//int change,year;
 	string landchangefile, patchchangefile, costchangefile;
 	int change, imported;
 	int nchanges = 0;
@@ -3896,6 +3617,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	while (change != -98765) {
 		chg.chgnum = change;
 		dynlandfile >> chg.chgyear >> landchangefile >> patchchangefile >> costchangefile;
+		//	dynlandfile >> chg.chgyear >> chg.habfile >> chg.pchfile;
 		chg.habfile = paramsSim->getDir(1) + landchangefile;
 		chg.pchfile = paramsSim->getDir(1) + patchchangefile;
 		if (costchangefile == "NULL") chg.costfile = "none";
@@ -3948,13 +3670,118 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	return 0;
 }
 
+//--------------------------------------------------------------------------
+
+int readGeneticsFile(int simulationN, Landscape* pLandscape) {
+
+	string indir = paramsSim->getDir(1);
+	ifstream inFile(geneticsFile.c_str());
+	bool outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputGeneticInterval;
+
+	//not ideal to reset these in here 
+	pSpecies->resetGeneticParameters();
+
+	if (inFile.is_open()) {
+		//read first header line
+		string headerLine, line, value;
+		std::getline(inFile, headerLine);
+
+		while (std::getline(inFile, line)) {
+			stringstream ss(line);
+			vector<string> parameters;
+			while (std::getline(ss, value, '	'))
+			{
+				parameters.push_back(value);
+				//		std::cout << ", \"" << value << "\"";
+			}
+
+			if (stoi(parameters[0]) == simulationN) {
+
+				int genomeSize = stoi(parameters[1]);
+
+				outputWCFstat = (parameters[4] == "true");
+				outputPerLocusWCFstat = (parameters[5] == "true");
+				outputPairwiseFst = (parameters[6] == "true");
+				outputGeneticInterval = stoi(parameters[7]);
+				set<int> patchList;
+
+				string nSampleCellsFst; //number of patches to sample for neutral markers in cell based landscape, not used in patch based landscape
+
+				string patches = parameters[8];
+				string n = parameters[9];
+
+				if (pLandscape->getLandParams().patchModel) {// patch-based
+					const vector<int> existingPatches = pLandscape->getPatchNums();
+					patchList = convertStringToPatches(patches, stoi(n), existingPatches);
+				}
+				else { // cell-based
+					if (patches == "all") nSampleCellsFst = "all";
+					else if (patches == "random") nSampleCellsFst = n;
+					else throw logic_error("Genetics File - ERROR: PatchList must be either 'all' or 'random' for cell-based landscapes.");
+				}
+				const int nbStages = pSpecies->getStage().nStages;
+				set<int> stagesToSampleFrom = convertStringToStages(parameters[11], nbStages);
+
+				pSpecies->setGeneticParameters(convertStringToChromosomeEnds(parameters[2], genomeSize), genomeSize, stof(parameters[3]),
+					patchList, parameters[10], stagesToSampleFrom, nSampleCellsFst);
+
+				paramsSim->setGeneticSim(outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputGeneticInterval);
+
+				traitsFile = indir + parameters[12];
+			}
+		}
+		inFile.close();
+		inFile.clear();
+	}
+	return 0; //this is for error reporting, need to do error input checks in this function 
+}
+
+int readTraitsFile(int simulationN) {
+
+	pSpecies->clearTraitTable();
+
+	ifstream inFile(traitsFile.c_str());
+
+	if (inFile.is_open()) {
+		//read first header line
+		string headerLine, line, value;
+		std::getline(inFile, headerLine);
+
+		while (std::getline(inFile, line)) {
+			stringstream ss(line);
+			vector<string> parameters;
+			while (std::getline(ss, value, '	'))
+			{
+				parameters.push_back(value);
+				//std::cout << ", \"" << value << "\"";
+			}
+
+			if (stoi(parameters[0]) == simulationN)
+				setUpTrait(parameters);
+			//create trait with parameters 
+
+		}
+		inFile.close();
+		inFile.clear();
+	}
+	return 0;
+}
+
+void setUpTrait(vector<string> parameters) {
+	SpeciesTrait* trait = new SpeciesTrait(parameters, pSpecies);
+	TraitType type = trait->stringToTraitType(parameters[1], stringToSex(parameters[2]));
+	pSpecies->addTrait(type, *trait);
+}
+
 //---------------------------------------------------------------------------
 int ReadParameters(int option, Landscape* pLandscape)
 {
 #if RSDEBUG
-	DEBUGLOG << endl << "ReadParameters(): option=" << option << endl;
+	DEBUGLOG << endl << "ReadParameters(): option=" << option
+		//	<< " parameters=" << parameters
+		<< endl;
 #endif
-	int iiii, jjjj;
+	int iiii;
 	int error = 0;
 	landParams paramsLand = pLandscape->getLandParams();
 
@@ -3962,7 +3789,7 @@ int ReadParameters(int option, Landscape* pLandscape)
 		parameters.open(parameterFile.c_str());
 		if (parameters.is_open()) {
 			string header;
-			int nheaders = 47 + paramsLand.nHabMax;
+			int nheaders = 44 + paramsLand.nHabMax;
 			for (int i = 0; i < nheaders; i++) parameters >> header;
 			return 0;
 		}
@@ -3994,6 +3821,7 @@ int ReadParameters(int option, Landscape* pLandscape)
 	parameters >> iiii;
 	if (iiii == 1) sim.absorbing = true; else sim.absorbing = false;
 #if RSDEBUG
+	//DEBUGLOG << "ReadParameters(): paramsSim=" << paramsSim << endl;
 	DEBUGLOG << "ReadParameters(): simulation=" << sim.simulation
 		<< " reps=" << sim.reps << " years=" << sim.years << endl;
 #endif
@@ -4027,6 +3855,9 @@ int ReadParameters(int option, Landscape* pLandscape)
 		pSpecies->setMinMax(minKK, maxKK);
 	}
 	else pSpecies->setMinMax(minR, maxR);
+#if RSDEBUG
+	//DEBUGLOG << "ReadParameters(): minR=" << env.minR << " maxR=" << env.maxR << endl;
+#endif
 	parameters >> iiii;
 	if (iiii == 1) env.localExt = true; else env.localExt = false;
 	if (paramsLand.patchModel && env.localExt) error = 102;
@@ -4073,17 +3904,14 @@ int ReadParameters(int option, Landscape* pLandscape)
 		<< endl;
 #endif
 
-	parameters >> sim.outStartPop >> sim.outStartInd >> sim.outStartGenetic
+	parameters >> sim.outStartPop >> sim.outStartInd
 		>> sim.outStartTraitCell >> sim.outStartTraitRow >> sim.outStartConn;
 	parameters >> sim.outIntRange >> sim.outIntOcc >> sim.outIntPop >> sim.outIntInd
-		>> sim.outIntGenetic >> sim.outGenType >> jjjj
 		>> sim.outIntTraitCell >> sim.outIntTraitRow >> sim.outIntConn;
 	if (sim.outIntRange > 0)     sim.outRange = true; else sim.outRange = false;
 	if (sim.outIntOcc > 0)       sim.outOccup = true; else sim.outOccup = false;
 	if (sim.outIntPop > 0)       sim.outPop = true; else sim.outPop = false;
 	if (sim.outIntInd > 0)       sim.outInds = true; else sim.outInds = false;
-	if (sim.outIntGenetic > 0)   sim.outGenetics = true; else sim.outGenetics = false;
-	if (jjjj == 1)   						 sim.outGenXtab = true; else sim.outGenXtab = false;
 	if (sim.outIntRange > 0)     sim.outRange = true; else sim.outRange = false;
 	if (sim.outIntTraitCell > 0) sim.outTraitsCells = true; else sim.outTraitsCells = false;
 	if (sim.outIntTraitRow > 0)  sim.outTraitsRows = true; else sim.outTraitsRows = false;
@@ -4106,7 +3934,10 @@ int ReadParameters(int option, Landscape* pLandscape)
 	if (iiii == 0) sim.saveVisits = false;
 	else sim.saveVisits = true;
 	parameters >> iiii;
+	//sim.saveInitMap = false;
 	if (iiii == 0) sim.drawLoaded = false; else sim.drawLoaded = true;
+	parameters >> iiii;
+	if (iiii == 1) sim.fixReplicateSeed = true; else sim.fixReplicateSeed = false;
 
 	paramsSim->setSim(sim);
 	paramsSim->setViews(v);
@@ -4188,16 +4019,24 @@ int ReadStageStructure(int option)
 //---------------------------------------------------------------------------
 int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season)
 {
+	//#if RS_CONTAIN
+	//int hab = 0; // TEMPORARY set suitable habitat to 0
+	//#endif // RS_CONTAIN 
 	int ii;
 	int minAge;
 	float ss, dd;
 	string header;
 	demogrParams dem = pSpecies->getDemogr();
+	//stageParams sstruct = pSpecies->getStage();
 
 	// read header line
+	//for (int i = 0; i < (sstruct.nStages*nsexesDem)+2; i++)
 	for (int i = 0; i < (nstages * nsexesDem) + 2; i++)
 	{
 		tmfile >> header;
+#if RSDEBUG
+		//DEBUGLOG << "Read_TransitionMatrix(): i= << i << " header=" << header << endl;
+#endif
 	}
 
 	if (matrix != NULL) {
@@ -4207,29 +4046,41 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 	}
 
 	if (dem.repType != 2) { // asexual or implicit sexual model
-
-		// create a temporary matrix
+#if RSDEBUG
+		//DEBUGLOG << "Read_TransitionMatrix(): asexual model, sstruct.nStages = " << sstruct.nStages << endl;
+#endif
+	// create a temporary matrix
 		matrix = new float* [nstages];
 		matrixsize = nstages;
 		for (int i = 0; i < nstages; i++)
 			matrix[i] = new float[nstages];
 
+		//	for (int i = 0; i < sstruct.nStages; i++) 
 		for (int i = 0; i < nstages; i++)
 		{ // i = row; j = coloumn
 			tmfile >> header;
-
+#if RSDEBUG
+			//DEBUGLOG << "Read_TransitionMatrix(): i=" << i << " header=" << header << endl;
+#endif
+//		for (int j = 0; j < sstruct.nStages; j++) 
 			for (int j = 0; j < nstages; j++)
 			{
 				tmfile >> matrix[j][i];
+#if RSDEBUG
+				//DEBUGLOG << "Read_TransitionMatrix(): j=" << j << " matrix[j][i]=" << matrix[j][i] << endl;
+#endif
 			}
 			tmfile >> minAge; pSpecies->setMinAge(i, 0, minAge);
 		}
 
+		//	for (int j = 1; j < sstruct.nStages; j++)
 		for (int j = 1; j < nstages; j++)
 			pSpecies->setFec(j, 0, matrix[j][0]);
+		//	for (int j = 0; j < sstruct.nStages; j++) 
 		for (int j = 0; j < nstages; j++)
 		{
 			ss = 0.0; dd = 0.0;
+			//		for (int i = 0; i < sstruct.nStages; i++) 
 			for (int i = 0; i < nstages; i++)
 			{
 				if (i == j) ss = matrix[j][i];
@@ -4243,15 +4094,28 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 		}
 	}
 	else { // complex sexual model
-		// create a temporary matrix
+#if RSDEBUG
+		//DEBUGLOG << "Read_TransitionMatrix(): complex sexual model, sstruct.nStages = "
+		//	<< sstruct.nStages << endl;
+#endif
+	// create a temporary matrix
+//	matrix = new float *[sstruct.nStages*2];
+//	matrixsize = sstruct.nStages*2;
+//	for (int j = 0; j < sstruct.nStages*2; j++)
+//		matrix[j] = new float [sstruct.nStages*2-1];
 		matrix = new float* [nstages * 2];
 		matrixsize = nstages * 2;
 		for (int j = 0; j < nstages * 2; j++)
 			matrix[j] = new float[nstages * 2 - 1];
 
+		//	for (int i = 0; i < sstruct.nStages*2-1; i++) 
 		for (int i = 0; i < nstages * 2 - 1; i++)
 		{ // i = row; j = coloumn
 			tmfile >> header;
+#if RSDEBUG
+			//DEBUGLOG << "Read_TransitionMatrix{}: i = " << i << " header = " << header << endl;
+#endif
+//		for (int j = 0; j < sstruct.nStages*2; j++) tmfile >> matrix[j][i];
 			for (int j = 0; j < nstages * 2; j++) tmfile >> matrix[j][i];
 			if (i == 0) {
 				tmfile >> minAge; pSpecies->setMinAge(i, 0, minAge); pSpecies->setMinAge(i, 1, minAge);
@@ -4262,8 +4126,19 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 				else 		 pSpecies->setMinAge(i / 2, 0, minAge);			// even lines - females
 			}
 		}
+#if RSDEBUG
+		//	DEBUGLOG << endl;
+		//for (int ii = 0; ii < sstruct.nStages*2-1; ii++) { // row (0 = juvs, 1,2 = stage 1)
+		//	for (int jj = 0; jj < sstruct.nStages*2; jj++) { // column (m f m f)
+		//		DEBUGLOG << matrix[jj][ii] << " " ;   // matrix[column][row]
+		//	}
+		//	DEBUGLOG << endl;
+		//}
+		//	DEBUGLOG << endl;
+#endif
 
 		ii = 1;
+		//	for (int j = 2; j < sstruct.nStages*2; j++) 
 		for (int j = 2; j < nstages * 2; j++)
 		{
 			if (j % 2 == 0)
@@ -4287,10 +4162,12 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 			pSpecies->setDev(0, 0, 0.0);
 		// survival and development of stages 1+
 		ii = 1;
+		//	for (int j = 2; j < sstruct.nStages*2; j++) 
 		for (int j = 2; j < nstages * 2; j++)
 		{
 			ss = 0.0; dd = 0.0;
 			if (j % 2 == 0) { // males
+				//			for (int i = 0; i < sstruct.nStages*2-1; i++) 
 				for (int i = 0; i < nstages * 2 - 1; i++)
 				{
 					if (j == i + 1) ss = matrix[j][i];
@@ -4303,6 +4180,7 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 					pSpecies->setDev(ii, 1, 0.0);
 			}
 			else { // females
+				//			for (int i = 0; i < sstruct.nStages*2; i++) 
 				for (int i = 0; i < nstages * 2; i++)
 				{
 					if (j == i + 1) ss = matrix[j][i];
@@ -4316,6 +4194,8 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 				ii++;
 			}
 		}
+		//	for (int j = 0; j < sstruct.nStages*2; j++) delete[] matrix[j];
+		//	delete[] matrix;
 	}
 
 #if RSDEBUG
@@ -4416,7 +4296,6 @@ int ReadStageWeights(int option)
 
 //---------------------------------------------------------------------------
 
-
 //---------------------------------------------------------------------------
 int ReadEmigration(int option)
 {
@@ -4425,7 +4304,7 @@ int ReadEmigration(int option)
 	if (option == 0) { // open file and read header line
 		emigFile.open(emigrationFile.c_str());
 		string header;
-		for (int i = 0; i < 25; i++) emigFile >> header;
+		for (int i = 0; i < 13; i++) emigFile >> header;
 		return 0;
 	}
 	if (option == 9) { // close file
@@ -4437,18 +4316,21 @@ int ReadEmigration(int option)
 
 	int ffff, iiii, jjjj, kkkk, llll;
 	int Nlines, simulation, firstsimul = 0, stage, sex, emigstage;
-	float	ep, d0, alpha, beta, epMean, epSD, d0Mean, d0SD, alphaMean, alphaSD, betaMean, betaSD;
-	float epScale, d0Scale, alphaScale, betaScale;
+	float	ep, d0, alpha, beta;
 	bool firstline = true;
 	demogrParams dem = pSpecies->getDemogr();
 	stageParams sstruct = pSpecies->getStage();
 	emigRules emig = pSpecies->getEmig();
 	emigTraits etraits;
-	emigParams eparams;
 
 	// set no.of lines assuming maximum stage- and sex-dependency
 	if (sstruct.nStages == 0) Nlines = sexesDisp;
 	else Nlines = sstruct.nStages * sexesDisp;
+
+#if RSDEBUG
+	//DEBUGLOG << "ReadEmigration(): Nlines = " << Nlines << " dem.stageStruct = " << dem.stageStruct
+	//	<< " sstruct.nStages = " << sstruct.nStages << " sexesDisp = " << sexesDisp << endl;
+#endif
 
 	for (int line = 0; line < Nlines; line++) {
 
@@ -4474,19 +4356,38 @@ int ReadEmigration(int option)
 			pSpecies->setEmig(emig);
 		}
 
+#if RSDEBUG
+		//DEBUGLOG << "ReadEmigration(): Nlines=" << Nlines
+		//	<< " emig.densDep=" << emig.densDep
+		//	<< " emig.stgDep=" << emig.stgDep
+		//	<< " emig.sexDep=" << emig.sexDep
+		//	<< " emig.indVar=" << emig.indVar
+		//	<< endl;
+#endif
 		if (simulation != firstsimul) { // serious problem
 			error = 300;
 		}
 		emigFile >> stage >> sex;
 
 		// ERROR MESSAGES SHOULD NEVER BE ACTIVATED ---------------------------------
-		if (dem.repType == 0 && emig.sexDep) error = 301;
-		if (emig.stgDep && !dem.stageStruct) error = 303;
+#if RSDEBUG
+//DEBUGLOG << "ReadEmigration(): line = " << line
+//	<< " dem.stageStruct = " << dem.stageStruct
+//	<< " emig.stgDep = " << emig.stgDep << endl;
+#endif
+		if (dem.repType == 0) {
+			if (emig.sexDep) error = 301;
+		}
+		if (dem.stageStruct) {
+			//	if (emig.indVar) error = 302;
+		}
+		else {
+			//	cout << endl << "***** pSpecies = " << pSpecies << endl << endl;
+			if (emig.stgDep) error = 303;
+		}
 		//---------------------------------------------------------------------------
 
-		emigFile >> ep >> d0 >> alpha >> beta >> epMean >> epSD >> d0Mean >> d0SD;
-		emigFile >> alphaMean >> alphaSD >> betaMean >> betaSD;
-		emigFile >> epScale >> d0Scale >> alphaScale >> betaScale;
+		emigFile >> ep >> d0 >> alpha >> beta;
 
 		if (emig.sexDep) {
 			if (emig.stgDep) {
@@ -4499,28 +4400,15 @@ int ReadEmigration(int option)
 				pSpecies->setEmigTraits(stage, sex, etraits);
 			}
 			else { // !emig.stgDep
-				if (emig.indVar) {
-					if (emig.densDep) {
-						eparams.d0Mean = d0Mean; eparams.d0SD = d0SD;
-						eparams.alphaMean = alphaMean; eparams.alphaSD = alphaSD;
-						eparams.betaMean = betaMean; eparams.betaSD = betaSD;
-					}
-					else {
-						eparams.d0Mean = epMean; eparams.d0SD = epSD;
-						eparams.alphaMean = eparams.betaMean = 0.0;
-						eparams.alphaSD = eparams.betaSD = 0.000001f;
-					}
-					pSpecies->setEmigParams(0, sex, eparams);
+
+				if (emig.densDep) {
+					etraits.d0 = d0; etraits.alpha = alpha; etraits.beta = beta;
 				}
-				else { // !emig.indVar
-					if (emig.densDep) {
-						etraits.d0 = d0; etraits.alpha = alpha; etraits.beta = beta;
-					}
-					else {
-						etraits.d0 = ep; etraits.alpha = etraits.beta = 0.0;
-					}
-					pSpecies->setEmigTraits(0, sex, etraits);
+				else {
+					etraits.d0 = ep; etraits.alpha = etraits.beta = 0.0;
 				}
+				pSpecies->setEmigTraits(0, sex, etraits);
+
 			}
 		}
 		else { // !emig.sexDep
@@ -4542,30 +4430,10 @@ int ReadEmigration(int option)
 					etraits.d0 = ep; etraits.alpha = etraits.beta = 0.0;
 				}
 				pSpecies->setEmigTraits(0, 0, etraits);
-
-				if (emig.densDep) {
-					eparams.d0Mean = d0Mean; eparams.d0SD = d0SD;
-					eparams.alphaMean = alphaMean; eparams.alphaSD = alphaSD;
-					eparams.betaMean = betaMean; eparams.betaSD = betaSD;
-				}
-				else {
-					eparams.d0Mean = epMean; eparams.d0SD = epSD;
-					eparams.alphaMean = eparams.betaMean = 0.0;
-					eparams.alphaSD = eparams.betaSD = 0.000001f;
-				}
-				pSpecies->setEmigParams(0, 0, eparams);
+#if RSDEBUG
+				//DEBUGLOG << "ReadEmigration(): case 0: emigP = " << ep << endl;
+#endif
 			}
-		}
-
-		if (stage == 0 && sex == 0) {
-			emigScales scale = pSpecies->getEmigScales();
-			if (emig.densDep) {
-				scale.d0Scale = d0Scale; scale.alphaScale = alphaScale; scale.betaScale = betaScale;
-			}
-			else {
-				scale.d0Scale = epScale; scale.alphaScale = scale.betaScale = 0.000001f;
-			}
-			pSpecies->setEmigScales(scale);
 		}
 
 		firstline = false;
@@ -4613,28 +4481,28 @@ int ReadTransfer(int option, Landscape* pLandscape)
 			else
 				pSpecies->createHabCostMort(paramsLand.nHabMax);
 			if (trfr.moveType == 1) { // SMS
-				int standardcols = 23;
+				int standardcols = 10;
 				if (paramsLand.generated) {
 					nheaders = standardcols + 6; // artificial landscape
 				}
 				else { // real landscape
 					if (paramsLand.rasterType == 0)
-						nheaders = standardcols + 2 + 2 * paramsLand.nHabMax; // habitat codes
-					else nheaders = standardcols + 2; // habitat quality
+						nheaders = standardcols + 3 + 2 * paramsLand.nHabMax; // habitat codes
+					else nheaders = standardcols + 3; // habitat quality
 				}
 			}
 			else { // CRW
 				if (paramsLand.generated) {
-					nheaders = 13;
+					nheaders = 7;
 				}
 				else {
-					if (paramsLand.rasterType == 0) nheaders = 13 + paramsLand.nHabMax;
-					else nheaders = 13;
+					if (paramsLand.rasterType == 0) nheaders = 7 + paramsLand.nHabMax;
+					else nheaders = 7;
 				}
 			}
 		}
 		else { // dispersal kernel
-			nheaders = 23;
+			nheaders = 14;
 		}
 #if RSDEBUG
 		DEBUGLOG << "ReadTransfer(): option=" << option << " nheaders=" << nheaders
@@ -4657,10 +4525,7 @@ int ReadTransfer(int option, Landscape* pLandscape)
 	int sexKernels = 0;
 	trfrKernTraits k;
 	trfrMovtTraits move;
-	trfrKernParams kparams;
-	trfrScales scale = pSpecies->getTrfrScales();
 	string CostsFile;
-	trfrSMSParams smsparams;
 
 	switch (TransferType) {
 
@@ -4704,6 +4569,7 @@ int ReadTransfer(int option, Landscape* pLandscape)
 				if (sexKernels == 1 || sexKernels == 3) error = 401;
 			}
 			if (dem.stageStruct) {
+				//			if (trfr.indVar) error = 402;
 			}
 			else {
 				if (sexKernels == 2 || sexKernels == 3) error = 403;
@@ -4716,59 +4582,27 @@ int ReadTransfer(int option, Landscape* pLandscape)
 			case 0: // no sex / stage dependence
 				transFile >> k.meanDist1 >> k.meanDist2 >> k.probKern1;
 				pSpecies->setKernTraits(0, 0, k, paramsLand.resol);
-				if (trfr.indVar) {
-					transFile >> kparams.dist1Mean >> kparams.dist1SD
-						>> kparams.dist2Mean >> kparams.dist2SD
-						>> kparams.PKern1Mean >> kparams.PKern1SD;
-					pSpecies->setKernParams(0, 0, kparams, (double)paramsLand.resol);
-				}
-				else {
-					for (int i = 0; i < 6; i++) transFile >> tttt;
-				}
 				break;
 
 			case 1: // sex-dependent
-				if (trfr.indVar)
+				if (trfr.twinKern)
 				{
-					if (trfr.twinKern)
-					{
-						for (int i = 0; i < 3; i++) transFile >> tttt;
-						transFile >> kparams.dist1Mean >> kparams.dist1SD
-							>> kparams.dist2Mean >> kparams.dist2SD
-							>> kparams.PKern1Mean >> kparams.PKern1SD;
-					}
-					else { // single kernel
-						for (int i = 0; i < 3; i++) transFile >> tttt;
-						transFile >> kparams.dist1Mean >> kparams.dist1SD;
-						kparams.dist2Mean = kparams.dist1Mean; kparams.dist2SD = kparams.dist1SD;
-						kparams.PKern1Mean = 0.999f; kparams.PKern1SD = 0.001f;
-						for (int i = 0; i < 4; i++) transFile >> tttt;
-					}
-					pSpecies->setKernParams(0, sex, kparams, (float)paramsLand.resol);
+					transFile >> k.meanDist1 >> k.meanDist2 >> k.probKern1;
 				}
-				else { // not varKernels
-					if (trfr.twinKern)
-					{
-						transFile >> k.meanDist1 >> k.meanDist2 >> k.probKern1;
-						for (int i = 0; i < 6; i++) transFile >> tttt;
-					}
-					else {
-						transFile >> k.meanDist1; k.meanDist2 = k.meanDist1; k.probKern1 = 1.0;
-						for (int i = 0; i < 8; i++) transFile >> tttt;
-					}
-					pSpecies->setKernTraits(0, sex, k, paramsLand.resol);
+				else {
+					transFile >> k.meanDist1; k.meanDist2 = k.meanDist1; k.probKern1 = 1.0;
 				}
+				pSpecies->setKernTraits(0, sex, k, paramsLand.resol);
+
 				break;
 
 			case 2: // stage-dependent
 				if (trfr.twinKern)
 				{
 					transFile >> k.meanDist1 >> k.meanDist2 >> k.probKern1;
-					for (int i = 0; i < 6; i++) transFile >> tttt;
 				}
 				else {
 					transFile >> k.meanDist1; k.meanDist2 = k.meanDist1; k.probKern1 = 1.0;
-					for (int i = 0; i < 8; i++) transFile >> tttt;
 				}
 				pSpecies->setKernTraits(stage, 0, k, paramsLand.resol);
 				break;
@@ -4777,24 +4611,13 @@ int ReadTransfer(int option, Landscape* pLandscape)
 				if (trfr.twinKern)
 				{
 					transFile >> k.meanDist1 >> k.meanDist2 >> k.probKern1;
-					for (int i = 0; i < 6; i++) transFile >> tttt;
 				}
 				else {
 					transFile >> k.meanDist1; k.meanDist2 = k.meanDist1; k.probKern1 = 1.0;
-					for (int i = 0; i < 8; i++) transFile >> tttt;
 				}
 				pSpecies->setKernTraits(stage, sex, k, paramsLand.resol);
 				break;
 			} // end of switch (sexkernels)
-
-			if (trfr.indVar) {
-				if (stage == 0 && sex == 0) {
-					transFile >> scale.dist1Scale >> scale.dist2Scale >> scale.PKern1Scale;
-					pSpecies->setTrfrScales(scale);
-				}
-				else for (int i = 0; i < 3; i++) transFile >> tttt;
-			}
-			else for (int i = 0; i < 3; i++) transFile >> tttt;
 
 			// mortality
 			if (stage == 0 && sex == 0) {
@@ -4825,14 +4648,6 @@ int ReadTransfer(int option, Landscape* pLandscape)
 		DEBUGLOG << "ReadTransfer(): dp=" << move.dp << " MemSize=" << move.memSize
 			<< " gb=" << move.gb << " goaltype=" << move.goalType << endl;
 #endif
-		smsparams = pSpecies->getSMSParams(0, 0);
-		transFile >> smsparams.dpMean >> smsparams.dpSD >> smsparams.gbMean >> smsparams.gbSD
-			>> smsparams.alphaDBMean >> smsparams.alphaDBSD >> smsparams.betaDBMean >> smsparams.betaDBSD;
-		transFile >> scale.dpScale >> scale.gbScale >> scale.alphaDBScale >> scale.betaDBScale;
-		if (trfr.indVar) {
-			pSpecies->setSMSParams(0, 0, smsparams);
-			pSpecies->setTrfrScales(scale);
-		}
 		transFile >> jjjj >> iiii >> move.stepMort;
 		if (iiii == 0) trfr.habMort = false; else trfr.habMort = true;
 		if (jjjj == 0) move.straigtenPath = false; else move.straigtenPath = true;
@@ -4849,6 +4664,10 @@ int ReadTransfer(int option, Landscape* pLandscape)
 					{
 						transFile >> tttt;
 						pSpecies->setHabMort(i, tttt);
+#if RSDEBUG
+						//DEBUGLOG << "ReadTransfer(): nHabMax = " << paramsLand.nHabMax
+						//	<< " i = " << i << " mortality = " << tttt << endl;
+#endif
 					}
 				}
 				else { // constant step mortality
@@ -4922,27 +4741,14 @@ int ReadTransfer(int option, Landscape* pLandscape)
 	case 2: // CRW
 
 	{
-		trfrCRWParams mparams;
 
 		transFile >> simulation >> iiii;
 		if (iiii == 0) trfr.indVar = false; else trfr.indVar = true;
 
-		transFile >> move.stepLength >> move.rho
-			>> mparams.stepLgthMean >> mparams.stepLgthSD >> mparams.rhoMean >> mparams.rhoSD;
-		transFile >> scale.stepLScale >> scale.rhoScale;
+		transFile >> move.stepLength >> move.rho;
 		transFile >> jjjj >> iiii >> move.stepMort;
 		if (iiii == 0) trfr.habMort = false; else trfr.habMort = true;
 		if (jjjj == 0) move.straigtenPath = false; else move.straigtenPath = true;
-		pSpecies->setTrfrScales(scale);
-#if RSDEBUG
-		DEBUGLOG << "ReadTransfer(): simulation=" << simulation
-			<< " paramsLand.rasterType=" << paramsLand.rasterType
-			<< " trfr.indVar=" << trfr.indVar
-			<< " move.stepLength=" << move.stepLength << " move.rho=" << move.rho
-			<< " mparams.stepLgthMean=" << mparams.stepLgthMean << " mparams.rhoMean=" << mparams.rhoMean
-			<< " move.straigtenPath=" << move.straigtenPath
-			<< endl;
-#endif
 
 		//Habitat-dependent per step mortality
 		if (trfr.habMort && paramsLand.rasterType != 0) error = 434;
@@ -4961,7 +4767,6 @@ int ReadTransfer(int option, Landscape* pLandscape)
 		}
 		pSpecies->setTrfr(trfr);
 		pSpecies->setMovtTraits(move);
-		pSpecies->setCRWParams(0, 0, mparams);
 	}
 
 	break; // end of CRW
@@ -4989,17 +4794,24 @@ int ReadSettlement(int option)
 	settleRules srules;
 	settleSteps ssteps;
 	settleTraits settleDD;
-	settParams sparams;
 	int sexSettle = 0, settType = 0, densdep, indvar, findmate;
+
+#if RSDEBUG
+	//DEBUGLOG << "ReadSettlement(): option=" << option << " transfer=" << transfer 
+	//	<< " trfr.moveModel=" << trfr.moveModel << endl;
+#endif
 
 	if (option == 0) { // open file and read header line
 		settFile.open(settleFile.c_str());
 		string header;
 		int nheaders = 0;
-		if (trfr.moveModel) nheaders = 23;
+		if (trfr.moveModel) nheaders = 14;
 		else nheaders = 7;
 		for (int i = 0; i < nheaders; i++) {
 			settFile >> header;
+#if RSDEBUG
+			//DEBUGLOG << "ReadSettlement(): i=" << i << " header=" << header << endl;
+#endif
 		}
 		return 0;
 	}
@@ -5062,9 +4874,6 @@ int ReadSettlement(int option)
 #endif
 			settFile >> ssteps.minSteps >> ssteps.maxSteps >> ssteps.maxStepsYr;
 			settFile >> settleDD.s0 >> settleDD.alpha >> settleDD.beta;
-			settFile >> sparams.s0Mean >> sparams.s0SD >> sparams.alphaSMean >> sparams.alphaSSD
-				>> sparams.betaSMean >> sparams.betaSSD
-				>> sparams.s0Scale >> sparams.alphaSScale >> sparams.betaSScale;
 
 			switch (sexSettle) {
 
@@ -5075,12 +4884,7 @@ int ReadSettlement(int option)
 				pSpecies->setSettRules(0, 0, srules);
 				pSpecies->setSteps(0, 0, ssteps);
 				if (srules.densDep) {
-					if (sett.indVar) {
-						pSpecies->setSettParams(0, 0, sparams);
-					}
-					else {
-						pSpecies->setSettTraits(0, 0, settleDD);
-					}
+					pSpecies->setSettTraits(0, 0, settleDD);
 				}
 				if (dem.stageStruct) { // model is structured - also set parameters for all stages
 					for (int i = 1; i < sstruct.nStages; i++) {
@@ -5099,8 +4903,7 @@ int ReadSettlement(int option)
 						pSpecies->setSettRules(0, 1, srules);
 						pSpecies->setSteps(0, 1, ssteps);
 						if (srules.densDep) {
-							if (sett.indVar) pSpecies->setSettParams(0, 1, sparams);
-							else pSpecies->setSettTraits(0, 1, settleDD);
+							pSpecies->setSettTraits(0, 1, settleDD);
 						}
 					}
 				}
@@ -5112,18 +4915,9 @@ int ReadSettlement(int option)
 				if (findmate == 1) srules.findMate = true; else srules.findMate = false;
 				pSpecies->setSettRules(0, sex, srules);
 				pSpecies->setSteps(0, sex, ssteps);
-#if RSDEBUG
-				DEBUGLOG << "ReadSettlement(): stage=" << stage << " sex=" << sex
-					<< " sparams.s0Mean=" << sparams.s0Mean
-					<< endl;
-#endif
+
 				if (srules.densDep) {
-					if (sett.indVar) {
-						pSpecies->setSettParams(0, sex, sparams);
-					}
-					else {
-						pSpecies->setSettTraits(0, sex, settleDD);
-					}
+					pSpecies->setSettTraits(0, sex, settleDD);
 				}
 				if (dem.stageStruct) { // model is structured - also set parameters for all stages
 					for (int i = 1; i < sstruct.nStages; i++) {
@@ -5141,21 +4935,15 @@ int ReadSettlement(int option)
 				pSpecies->setSettRules(stage, 0, srules);
 				pSpecies->setSteps(stage, 0, ssteps);
 				if (srules.densDep) {
-					if (sett.indVar) {
-						if (stage == 0) pSpecies->setSettParams(0, 0, sparams);
-					}
-					else {
-						pSpecies->setSettTraits(stage, 0, settleDD);
-					}
+
+					pSpecies->setSettTraits(stage, 0, settleDD);
+
 				}
 				if (dem.repType > 0) { // model is sexual - also set parameters for males
 					pSpecies->setSettRules(stage, 1, srules);
 					pSpecies->setSteps(stage, 1, ssteps);
 					if (srules.densDep) {
-						if (sett.indVar) {
-							if (stage == 0) pSpecies->setSettParams(0, 1, sparams);
-						}
-						else pSpecies->setSettTraits(stage, 1, settleDD);
+						pSpecies->setSettTraits(stage, 1, settleDD);
 					}
 				}
 				break;
@@ -5167,12 +4955,7 @@ int ReadSettlement(int option)
 				pSpecies->setSettRules(stage, sex, srules);
 				pSpecies->setSteps(stage, sex, ssteps);
 				if (srules.densDep) {
-					if (sett.indVar) {
-						if (stage == 0) pSpecies->setSettParams(0, sex, sparams);
-					}
-					else {
-						pSpecies->setSettTraits(stage, sex, settleDD);
-					}
+					pSpecies->setSettTraits(stage, sex, settleDD);
 				}
 				break;
 			}
@@ -5305,136 +5088,6 @@ int ReadSettlement(int option)
 	return error;
 }
 
-//---------------------------------------------------------------------------
-int ReadGenetics(int option)
-{
-#if RSDEBUG
-	DEBUGLOG << "ReadGenetics(): option=" << option << " geneticsFile= " << geneticsFile
-		<< endl;
-#endif
-	emigRules emig = pSpecies->getEmig();
-	trfrRules trfr = pSpecies->getTrfr();
-	settleType sett = pSpecies->getSettle();
-
-	int simulation, arch;
-	string archfile;
-	int error = 0;
-	genomeData g;
-	demogrParams dem = pSpecies->getDemogr();
-
-	if (option == 0) { // open file and read header line
-		genFile.open(geneticsFile.c_str());
-		string header;
-		int nheaders = 8;
-		for (int i = 0; i < nheaders; i++) genFile >> header;
-		return 0;
-	}
-
-	if (option == 9) { // close file
-		if (genFile.is_open()) {
-			genFile.close(); genFile.clear();
-		}
-		return 0;
-	}
-
-	genFile >> simulation >> arch >> g.nLoci >> archfile >> g.probMutn >> g.probCrossover
-		>> g.alleleSD >> g.mutationSD;
-	if (dem.repType == 0) g.diploid = false; else g.diploid = true;
-#if RSDEBUG
-	DEBUGLOG << "ReadGenetics(): simulation=" << simulation << " arch=" << arch
-		<< " g.nLoci=" << g.nLoci << " archfile=" << archfile
-		<< " g.probMutn=" << g.probMutn << " g.probCrossover=" << g.probCrossover
-		<< " g.alleleSD=" << g.alleleSD << " g.mutationSD=" << g.mutationSD
-		<< endl;
-#endif
-
-	g.neutralMarkers = false;
-	if (arch == 0) { // no architecture file
-		g.trait1Chromosome = true;
-		pSpecies->set1ChromPerTrait(g.nLoci);
-	}
-	else { // architecture file
-		g.trait1Chromosome = false;
-		g.nLoci = 0;
-		if (!(emig.indVar || trfr.indVar || sett.indVar)) {
-			g.neutralMarkers = true;
-		}
-		error = ReadArchFile(archfile);
-	}
-
-	pSpecies->setGenomeData(g);
-
-	return error;
-}
-
-//---------------------------------------------------------------------------
-int ReadArchFile(string archfile) {
-
-	emigRules emig = pSpecies->getEmig();
-	trfrRules trfr = pSpecies->getTrfr();
-	settleType sett = pSpecies->getSettle();
-
-	int error = 0;
-	string Inputs = paramsSim->getDir(1);
-	genfilename = Inputs + archfile;
-
-	// in order to determine no. of defined traits in architecture file, parse it again,
-	// which sets the variable fileNtraits correctly
-	bArchFile.open(genfilename.c_str());
-	ParseArchFile();
-	bArchFile.close(); bArchFile.clear();
-
-	// re-open the file to read data and set up trait maps
-	archFile.open(genfilename.c_str());
-
-	string paramname;
-	int nchromosomes, nloci, traitnum, chrom, locus;
-	// set no. of chromosomes
-	archFile >> paramname >> nchromosomes;
-	pSpecies->setNChromosomes(nchromosomes);
-	int nchromset = pSpecies->getNChromosomes();
-	if (nchromset <= 0) error = 1;
-	if (emig.indVar || trfr.indVar || sett.indVar) {
-		pSpecies->setTraitData(fileNtraits);
-	}
-	else { // neutral markers only
-		pSpecies->setTraitData(0);
-	}
-	// set no. of loci for each chromosome
-	archFile >> paramname;
-	for (int i = 0; i < nchromosomes; i++) {
-		archFile >> nloci;
-		pSpecies->setNLoci(i, nloci);
-	}
-	if (emig.indVar || trfr.indVar || sett.indVar) {
-		// set trait maps
-		paramname = "XXXyyyZZZ";
-		archFile >> paramname;
-		while (paramname != "XXXyyyZZZ") {
-			archFile >> traitnum >> paramname >> nloci;
-			pSpecies->setTraitMap(traitnum, nloci);
-			for (int allele = 0; allele < nloci; allele++) {
-				chrom = locus = -999999;
-				archFile >> chrom >> locus;
-				pSpecies->setTraitAllele(traitnum, allele, chrom, locus);
-			}
-			paramname = "XXXyyyZZZ";
-			archFile >> paramname;
-		};
-	}
-
-	archFile.close(); archFile.clear();
-
-	// any loci not contributing to a trait are recorded as neutral
-	if (emig.indVar || trfr.indVar || sett.indVar) {
-		pSpecies->setNeutralLoci(false);
-	}
-	else { // model has neutral markers only
-		pSpecies->setNeutralLoci(true);
-	}
-
-	return error;
-}
 
 //---------------------------------------------------------------------------
 int ReadInitialisation(int option, Landscape* pLandscape)
@@ -5625,6 +5278,8 @@ void RunBatch(int nSimuls, int nLandscapes)
 
 	t0 = (int)time(0);
 
+	//int batch_line = 0;
+
 	string name = paramsSim->getDir(2) + "Batch" + Int2Str(sim.batchNum) + "_RS_log.csv";
 	if (rsLog.is_open()) {
 		rsLog.close(); rsLog.clear();
@@ -5662,12 +5317,9 @@ void RunBatch(int nSimuls, int nLandscapes)
 			string msg = "Error code " + Int2Str(-land_nr)
 				+ " returned from reading LandFile - aborting batch run";
 			cout << endl << msg << endl;
-			MemoLine(msg.c_str());
 			ReadLandFile(9); // close the landscape file
 			return;
 		}
-
-		MemoLine(("Starting landscape " + Int2Str(land_nr) + "...").c_str());
 
 #if RSDEBUG
 		DEBUGLOG << endl << "RunBatch(): j=" << j << " land_nr=" << land_nr
@@ -5706,11 +5358,11 @@ void RunBatch(int nSimuls, int nLandscapes)
 			if (paramsLand.patchModel) {
 				string pname = paramsSim->getDir(1) + name_patch;
 #if RSDEBUG
-				int t02a = time(0);
+				time_t t02a = time(0);
 #endif
 				landcode = pLandscape->readLandscape(0, hname, pname, cname);
 #if RSDEBUG
-				int t02b = time(0);
+				time_t t02b = time(0);
 				DEBUGLOG << "RunBatch(): TIME for readLandscape() " << t02b - t02a << endl;
 #endif
 			}
@@ -5724,11 +5376,11 @@ void RunBatch(int nSimuls, int nLandscapes)
 			}
 			if (paramsLand.dynamic) {
 #if RSDEBUG
-				int t03a = time(0);
+				time_t t03a = time(0);
 #endif
 				landcode = ReadDynLandFile(pLandscape);
 #if RSDEBUG
-				int t03b = time(0);
+				time_t t03b = time(0);
 				DEBUGLOG << "RunBatch(): TIME for ReadDynLandFile() " << t03b - t03a << endl;
 #endif
 				if (landcode != 0) {
@@ -5752,6 +5404,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 			// species distribution
 
 			if (paramsLand.spDist) { // read initial species distribution
+				// WILL NEED TO BE CHANGED FOR MULTIPLE SPECIES ...
 				string distname = paramsSim->getDir(1) + name_sp_dist;
 				landcode = pLandscape->newDistribution(pSpecies, distname);
 				if (landcode == 0) {
@@ -5785,13 +5438,17 @@ void RunBatch(int nSimuls, int nLandscapes)
 				cout << endl << "Error opening ParameterFile - aborting batch run" << endl;
 				return;
 			}
+#if RSDEBUG
+			//bool pppp = parameters.is_open();
+			//DEBUGLOG << "RunBatch(): parameterFile = " << parameterFile
+			//	<< " parameters.open() = " << pppp << endl;
+#endif
 			if (stagestruct) {
 				ReadStageStructure(0);
 			}
 			ReadEmigration(0);
 			ReadTransfer(0, pLandscape);
 			ReadSettlement(0);
-			if (geneticsFile != "NULL") ReadGenetics(0);
 			ReadInitialisation(0, pLandscape);
 
 			// nSimuls is the total number of lines (simulations) in
@@ -5826,31 +5483,19 @@ void RunBatch(int nSimuls, int nLandscapes)
 					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
-				if (params_ok) {
-#if RSDEBUG
-					DebugGUI("RunBatch(): simulation i=" + Int2Str(i));
-#endif
-					pSpecies->setNChromosomes(0);
-					pSpecies->setTraits();
-				}
-				if (geneticsFile == "NULL") {
-					// use default genetics parameters
-					// (by setting illegal values except for diploid)
-					genomeData g;
-					g.nLoci = -1; g.probMutn = g.probCrossover = g.alleleSD = g.mutationSD = -1.0;
-					if (reproductn == 0) g.diploid = false; else g.diploid = true;
-					g.neutralMarkers = g.trait1Chromosome = false;
-
-					pSpecies->setGenomeData(g);
-				}
-				else {
-					read_error = ReadGenetics(1);
-					if (read_error) {
-						rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
-						params_ok = false;
-					}
-				}
 				read_error = ReadInitialisation(1, pLandscape);
+				if (read_error) {
+					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
+					params_ok = false;
+				}
+
+				read_error = readGeneticsFile(i + 1, pLandscape); //simulations numbered >= 1 not 0
+				if (read_error) {
+					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
+					params_ok = false;
+				}
+
+				read_error = readTraitsFile(i + 1); //simulations numbered >= 1 not 0
 				if (read_error) {
 					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
@@ -5869,12 +5514,15 @@ void RunBatch(int nSimuls, int nLandscapes)
 					cout << endl << "Running simulation nr. " << Int2Str(sim.simulation)
 						<< " on landscape no. " << Int2Str(land_nr) << endl;
 
-					MemoLine(("Starting simulation " + Int2Str(sim.simulation) + "...").c_str());
-
 					// for batch processing, include landscape number in parameter file name
 					OutParameters(pLandscape);
 
 					RunModel(pLandscape, i);
+#if RSDEBUG
+					//DEBUGLOG << endl << "RunBatch(): real landscape, i = " << i
+					//	<< " simulation = " << sim.simulation << " landFile = " << landFile
+					//	<< endl;
+#endif
 
 					t01 = (int)time(0);
 					rsLog << msgsim << sim.simulation << "," << sim.reps
@@ -5891,9 +5539,9 @@ void RunBatch(int nSimuls, int nLandscapes)
 			ReadEmigration(9);
 			ReadTransfer(9, pLandscape);
 			ReadSettlement(9);
-			if (geneticsFile != "NULL") ReadGenetics(9);
 			ReadInitialisation(9, pLandscape);
 
+			//		if (landtype != 9) 
 			if (pLandscape != NULL)
 			{
 				delete pLandscape; pLandscape = NULL;
@@ -5912,7 +5560,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 	if (rsLog.is_open()) {
 		rsLog.close(); rsLog.clear();
 	}
-
 }
 
 //---------------------------------------------------------------------------
