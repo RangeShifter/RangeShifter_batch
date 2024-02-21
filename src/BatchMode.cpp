@@ -3711,7 +3711,7 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 				string n = parameters[9];
 
 				if (pLandscape->getLandParams().patchModel) {// patch-based
-					const vector<int> existingPatches = pLandscape->getPatchNums();
+					const vector<int> existingPatches = pLandscape->getTruePatchNums();
 					patchList = convertStringToPatches(patches, stoi(n), existingPatches);
 				}
 				else { // cell-based
