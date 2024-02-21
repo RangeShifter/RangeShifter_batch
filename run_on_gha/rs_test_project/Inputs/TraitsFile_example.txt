@@ -1,0 +1,7 @@
+Simulation	TraitType	Sex	Positions	NbrOfPositions	ExpressionType	 InitialDistribution	InitialParameters	DominanceDistribution	DominanceParameters	IsInherited	MutationDistribution	MutationParameters	MutationRate
+1	adaptive	female	200-210	#	multiplicative	#	#	scaled	#	TRUE	gamma	"shape=0.2,scale=-0.15"	0.0001
+1	adaptive	female	230-240	#	multiplicative	#	#	normal	"mean=0.5,sd=0.0"	TRUE	normal	"mean=-0.5,sd=0.0"	0.0001
+1	neutral	male	0-4	#	#	#	#	#	#	TRUE	KAM	max=4	0.001
+1	emigration_d0	male	200-210	#	average	uniform	"min=0.0,max=1.0"	#	#	TRUE	normal	"mean=0,sd=0.2"	0.0001
+1	emigration_d0	female	230-240	#	average	uniform	"min=0.0,max=1.0"	#	#	TRUE	normal	"mean=0,sd=0.2"	0.0001
+1	neutral	female	random	20	#	uniform	max=1	#	#	TRUE	SSM	max=200	0.001
