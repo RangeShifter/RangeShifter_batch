@@ -4222,7 +4222,7 @@ int ReadStageWeights(int option)
 	stageParams sstruct = pSpecies->getStage();
 
 	if (dem.repType != 2) n = sstruct.nStages;
-	else n = sstruct.nStages * NSEXES;
+	else n = sstruct.nStages * maxNbSexes;
 
 #if RSDEBUG
 	DEBUGLOG << "Read_StageWeights(): option = " << option << " n = " << n << endl;

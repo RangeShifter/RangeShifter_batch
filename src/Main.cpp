@@ -305,7 +305,7 @@ Does such exist?
 
 traitCanvas SetupTraitCanvas(void) {
 	traitCanvas tcanv;
-	for (int i = 0; i < NTRAITS; i++) { tcanv.pcanvas[i] = 0; }
+	for (int i = 0; i < maxNbTraitsGUI; i++) { tcanv.pcanvas[i] = 0; }
 	return tcanv;
 }
 
