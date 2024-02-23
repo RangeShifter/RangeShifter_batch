@@ -210,8 +210,8 @@ else
 // FOR MULTI-SPECIES MODEL, THERE WILL BE AN ARRAY OF SPECIES POINTERS
 // OR A COMMUNITY CLASS TO HOLD THE SPECIES
 pSpecies = new Species;
-demogrParams dem = pSpecies->getDemogr();
-stageParams sstruct = pSpecies->getStage();
+demogrParams dem = pSpecies->getDemogrParams();
+stageParams sstruct = pSpecies->getStageParams();
 trfrRules trfr = pSpecies->getTrfr();
 
 batchfiles b;

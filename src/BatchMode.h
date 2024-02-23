@@ -75,9 +75,11 @@ struct batchfiles {
 	string initFile;
 };
 
+constexpr int nHeadersEmig = 13;
+
 struct simCheck {
-	bool newsimul;
-	int simul, simlines, reqdsimlines, errors;
+	bool isNewSim;
+	int simNb, simLines, reqdSimLines, errors;
 };
 
 batchfiles ParseControlFile(string, string, string);
@@ -88,7 +90,7 @@ int ParseDynamicFile(string, string);
 int ParseStageFile(string);
 int ParseTransitionFile(short, short);
 int ParseWeightsFile(string);
-int ParseEmigFile(void);
+int CheckEmigFile(void);
 int ParseTransferFile(string);
 int ParseSettleFile(void);
 int ParseInitFile(string);

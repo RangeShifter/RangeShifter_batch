@@ -53,7 +53,7 @@ int repseasons;
 int stagestruct, stages, transfer;
 int sexesDem;		// no. of explicit sexes for demographic model
 int sexesDisp;	// no. of explicit sexes for dispersal model
-int firstsimul = 0;
+int gFirstSimNb = 0; // BAD, globals should not be modified.
 int fileNtraits; // no. of traits defined in genetic architecture file
 //rasterdata landraster,patchraster,spdistraster;
 rasterdata landraster;
@@ -419,7 +419,7 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 		batchlog << endl << "Checking " << paramname << " " << fname << endl;
 		bEmigrationFile.open(fname.c_str());
 		if (bEmigrationFile.is_open()) {
-			nSimuls = ParseEmigFile();
+			nSimuls = CheckEmigFile();
 			if (nSimuls < 0) {
 				b.ok = false;
 			}
@@ -661,7 +661,8 @@ int ParseParameterFile(void)
 		errors++;
 	}
 	else {
-		prevsimul = firstsimul = inint; nSimuls++;
+		prevsimul = gFirstSimNb = inint; 
+		nSimuls++;
 	}
 	while (inint != -98765) {
 		bParamFile >> replicates; if (replicates <= 0) { BatchError(filetype, line, 11, "Replicates"); errors++; }
@@ -1524,7 +1525,7 @@ int ParseStageFile(string indir)
 	inint = -98765;
 	bStageStructFile >> inint;
 	// first simulation number must match first one in parameterFile
-	if (inint != firstsimul) {
+	if (inint != gFirstSimNb) {
 		BatchError(filetype, line, 111, "Simulation"); errors++;
 	}
 	prevsimul = inint;
@@ -1954,131 +1955,142 @@ int ParseWeightsFile(string filetype)
 }
 
 //---------------------------------------------------------------------------
-int ParseEmigFile(void)
+int CheckEmigFile(void)
 {
 	string header;
-	int simul;
-	int densdep, usefullkern, stagedep, sexdep, indvar, emigstage, stage, sex;
-	bool densdepset, indvarset;
-	float ep, d0, alpha, beta;
-	int errors = 0;
-	int simuls = 0;
-	string filetype = "EmigrationFile";
+	int simNb;
+	int inDensDep, inUseFullKern, inStgDep, inSexDep, inIndVar, inEmigStg, inStage, inSex;
+	bool isDensDep, isIndVar;
+	float inEp, inD0, inAlpha, inBeta;
+	int nbErrors = 0;
+	int nbSims = 0;
+	string whichInputFile = "EmigrationFile";
 
-	densdepset = false;
-	indvarset = false;
-	ep = 0.0;
+	isDensDep = false;
+	isIndVar = false;
+	inEp = 0.0;
 
 	// Parse header line;
-	bEmigrationFile >> header; if (header != "Simulation") errors++;
-	bEmigrationFile >> header; if (header != "DensDep") errors++;
-	bEmigrationFile >> header; if (header != "UseFullKern") errors++;
-	bEmigrationFile >> header; if (header != "StageDep") errors++;
-	bEmigrationFile >> header; if (header != "SexDep") errors++;
-	bEmigrationFile >> header; if (header != "IndVar") errors++;
-	bEmigrationFile >> header; if (header != "EmigStage") errors++;
-	bEmigrationFile >> header; if (header != "Stage") errors++;
-	bEmigrationFile >> header; if (header != "Sex") errors++;
-	bEmigrationFile >> header; if (header != "EP") errors++;
-	bEmigrationFile >> header; if (header != "D0") errors++;
-	bEmigrationFile >> header; if (header != "alpha") errors++;
-	bEmigrationFile >> header; if (header != "beta") errors++;
+	bEmigrationFile >> header; if (header != "Simulation") nbErrors++;
+	bEmigrationFile >> header; if (header != "DensDep") nbErrors++;
+	bEmigrationFile >> header; if (header != "UseFullKern") nbErrors++;
+	bEmigrationFile >> header; if (header != "StageDep") nbErrors++;
+	bEmigrationFile >> header; if (header != "SexDep") nbErrors++;
+	bEmigrationFile >> header; if (header != "IndVar") nbErrors++;
+	bEmigrationFile >> header; if (header != "EmigStage") nbErrors++;
+	bEmigrationFile >> header; if (header != "Stage") nbErrors++;
+	bEmigrationFile >> header; if (header != "Sex") nbErrors++;
+	bEmigrationFile >> header; if (header != "EP") nbErrors++;
+	bEmigrationFile >> header; if (header != "D0") nbErrors++;
+	bEmigrationFile >> header; if (header != "alpha") nbErrors++;
+	bEmigrationFile >> header; if (header != "beta") nbErrors++;
 
-	if (errors > 0) {
-		FormatError(filetype, errors);
+	if (nbErrors > 0) {
+		FormatError(whichInputFile, nbErrors);
 		return -111;
 	}
 
 	// Parse data lines
-	int line = 1;
-	simCheck current, prev;
-	simul = -98765;
-	prev.simul = -999;
-	prev.simlines = prev.reqdsimlines = 0;
-	bEmigrationFile >> simul;
+	bool readNextLine = true;
+	int lineNb = 1;
+	simCheck currentLine, prevLine;
+	simNb = gFirstSimNb + 1; // that is, NOT first sim number
+	prevLine.simNb = -999;
+	prevLine.simLines = prevLine.reqdSimLines = 0;
+	bEmigrationFile >> simNb;
 	// first simulation number must match first one in parameterFile
-	if (simul != firstsimul) {
-		BatchError(filetype, line, 111, "Simulation"); errors++;
+	if (simNb != gFirstSimNb) {
+		BatchError(whichInputFile, lineNb, 111, "Simulation"); 
+		nbErrors++;
+		readNextLine = false;
 	}
-	current.simul = 0; //dummy line to prevent warning message in VisualStudio 2019
-	while (simul != -98765) {
+
+	while (readNextLine) {
 		// read and validate columns relating to stage and sex-dependency and to IIV
-		bEmigrationFile >> densdep >> usefullkern >> stagedep >> sexdep;
-		bEmigrationFile >> indvar >> emigstage >> stage >> sex;
-		current = CheckStageSex(filetype, line, simul, prev, stagedep, sexdep, stage, sex, indvar, true, false);
-		if (current.newsimul) simuls++;
-		errors += current.errors;
-		prev = current;
+		bEmigrationFile >> inDensDep >> inUseFullKern >> inStgDep >> inSexDep;
+		bEmigrationFile >> inIndVar >> inEmigStg >> inStage >> inSex;
+		currentLine = CheckStageSex(whichInputFile, lineNb, simNb, prevLine, inStgDep, inSexDep, inStage, inSex, inIndVar, true, false);
+		if (currentLine.isNewSim) nbSims++;
+		nbErrors += currentLine.errors;
+		prevLine = currentLine;
+
 		// validate density dependency
-		if (densdep < 0 || densdep > 1) {
-			BatchError(filetype, line, 1, "DensDep"); errors++;
+		if (inDensDep != 0 && inDensDep != 1) {
+			BatchError(whichInputFile, lineNb, 1, "DensDep"); 
+			nbErrors++;
 		}
 		// validate use full kernel
-		if (usefullkern < 0 || usefullkern > 1) {
-			BatchError(filetype, line, 1, "UseFullKern"); errors++;
+		if (inUseFullKern != 0 && inUseFullKern != 1) {
+			BatchError(whichInputFile, lineNb, 1, "UseFullKern"); 
+			nbErrors++;
 		}
-		if (densdep != 0) {
-			if (usefullkern != 0) {
-				BatchError(filetype, line, 0, "UseFullKern"); errors++;
+		if (inDensDep == 1 && inUseFullKern != 0) {
+				BatchError(whichInputFile, lineNb, 0, "UseFullKern"); 
+				nbErrors++;
 				batchlog << "UseFullKern must be 0 if there is density-dependent emigration" << endl;
-			}
 		}
 		// validate emigration stage
-		if (stagestruct && !stagedep && indvar) {
-			if (stage == 0 && sex == 0) {
-				if (emigstage < 0 || emigstage >= stages) {
-					BatchError(filetype, line, 0, "EmigStage"); errors++;
-					batchlog << "EmigStage must be from 0 to " << Int2Str(stages - 1) << endl;
-				}
-			}
+		if (stagestruct && !inStgDep && inIndVar == 1
+			&& inStage == 0 && inSex == 0
+			&& (inEmigStg < 0 || inEmigStg >= stages)) {
+			BatchError(whichInputFile, lineNb, 0, "EmigStage");
+			nbErrors++;
+			batchlog << "EmigStage must be from 0 to " << Int2Str(stages - 1) << endl;
 		}
-		if (stage == 0 && sex == 0) { // first line of a simulation
+		if (inStage == 0 && inSex == 0) { // first line of a simulation
 			// record whether density dependence and individual variability are applied
-			if (densdep == 1) densdepset = true; else densdepset = false;
-			if (indvar == 1)  indvarset = true;  else indvarset = false;
+			if (inDensDep == 1) isDensDep = true; 
+			else isDensDep = false;
+			if (inIndVar == 1)  isIndVar = true;  
+			else isIndVar = false;
 		}
 
 		// read remaining columns of the current record
-		bEmigrationFile >> ep >> d0 >> alpha >> beta;
+		bEmigrationFile >> inEp >> inD0 >> inAlpha >> inBeta;
 
-		if (densdepset) {
-			if (d0 < 0.0 || d0 > 1.0) {
-				BatchError(filetype, line, 20, "D0"); errors++;
+		if (isDensDep) {
+			if (inD0 < 0.0 || inD0 > 1.0) {
+				BatchError(whichInputFile, lineNb, 20, "D0"); 
+				nbErrors++;
 			}
 		}
 		else { // !densdepset
-			if (ep < 0.0 || ep > 1.0) {
-				BatchError(filetype, line, 20, "EP"); errors++;
+			if (inEp < 0.0 || inEp > 1.0) {
+				BatchError(whichInputFile, lineNb, 20, "EP"); 
+				nbErrors++;
 			}
 		}
 
-		// if densep, alpha and beta must be set
+		// if densdep, alpha and beta must be set
 
 		// read next simulation
-		line++;
-		simul = -98765;
-		bEmigrationFile >> simul;
-		if (bEmigrationFile.eof()) simul = -98765;
+		lineNb++;
+		const int errSimNb = -98765;
+		simNb = errSimNb;
+		bEmigrationFile >> simNb;
+		if (simNb == errSimNb || bEmigrationFile.eof()) readNextLine = false;
 	} // end of while loop
+
 	// check for correct number of lines for previous simulation
-	if (current.simlines != current.reqdsimlines) {
-		BatchError(filetype, line, 0, " "); errors++;
-		batchlog << msgnlines << current.simul
-			<< msgshldbe << current.reqdsimlines << endl;
+	if (currentLine.simLines != currentLine.reqdSimLines) {
+		BatchError(whichInputFile, lineNb, 0, " "); 
+		nbErrors++;
+		batchlog << msgnlines << currentLine.simNb
+			<< msgshldbe << currentLine.reqdSimLines << endl;
 	}
 	if (!bEmigrationFile.eof()) {
-		EOFerror(filetype);
-		errors++;
+		EOFerror(whichInputFile);
+		nbErrors++;
 	}
-	if (errors > 0) return -111;
-	else return simuls;
+	if (nbErrors > 0) return -111;
+	else return nbSims;
 }
 
 //---------------------------------------------------------------------------
 int ParseTransferFile(string indir)
 {
 	string header, colheader, intext, fname, ftype;
-	int i, simul, stagedep, sexdep, kerneltype, distmort, indvar, stage, sex;
+	int i, simNb, stagedep, sexdep, kerneltype, distmort, indvar, stage, sex;
 	int	prMethod, smtype, straightenPath;
 	float pr, dp, smconst;
 	int goaltype, memsize, betaDB; float gb, alphaDB;
@@ -2189,16 +2201,16 @@ int ParseTransferFile(string indir)
 	// Parse data lines
 	int line = 1;
 	simCheck current, prev;
-	simul = -98765;
-	prev.simul = -999;
-	prev.simlines = prev.reqdsimlines = 0;
-	bTransferFile >> simul;
+	simNb = -98765;
+	prev.simNb = -999;
+	prev.simLines = prev.reqdSimLines = 0;
+	bTransferFile >> simNb;
 	// first simulation number must match first one in parameterFile
-	if (simul != firstsimul) {
+	if (simNb != gFirstSimNb) {
 		BatchError(filetype, line, 111, "Simulation"); errors++;
 	}
-	current.simul = 0; //dummy line to prevent warning message in VisualStudio 2019
-	while (simul != -98765) {
+	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
+	while (simNb != -98765) {
 
 		switch (transfer) {
 
@@ -2206,8 +2218,8 @@ int ParseTransferFile(string indir)
 			// read and validate columns relating to stage and sex-dependency and to IIV
 			bTransferFile >> stagedep >> sexdep >> kerneltype >> distmort;
 			bTransferFile >> indvar >> stage >> sex;
-			current = CheckStageSex(filetype, line, simul, prev, stagedep, sexdep, stage, sex, indvar, true, false);
-			if (current.newsimul) simuls++;
+			current = CheckStageSex(filetype, line, simNb, prev, stagedep, sexdep, stage, sex, indvar, true, false);
+			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
 			// validate kernel type
@@ -2258,8 +2270,8 @@ int ParseTransferFile(string indir)
 			bTransferFile >> indvar;
 			bTransferFile >> pr >> prMethod >> dp;
 			bTransferFile >> memsize >> gb >> goaltype >> alphaDB >> betaDB;
-			current = CheckStageSex(filetype, line, simul, prev, 0, 0, 0, 0, 0, true, false);
-			if (current.newsimul) simuls++;
+			current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, 0, true, false);
+			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
 			// validate SMS movement parameters
@@ -2372,8 +2384,8 @@ int ParseTransferFile(string indir)
 
 		case 2: { // CRW
 			bTransferFile >> indvar >> SL >> rho >> straightenPath >> smtype >> smconst;
-			current = CheckStageSex(filetype, line, simul, prev, 0, 0, 0, 0, indvar, true, false);
-			if (current.newsimul) simuls++;
+			current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, indvar, true, false);
+			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
 
@@ -2421,16 +2433,16 @@ int ParseTransferFile(string indir)
 
 		// read next simulation
 		line++;
-		simul = -98765;
-		bTransferFile >> simul;
-		if (bTransferFile.eof()) simul = -98765;
+		simNb = -98765;
+		bTransferFile >> simNb;
+		if (bTransferFile.eof()) simNb = -98765;
 	} // end of while loop
 	// check for correct number of lines for previous simulation
 	if (transfer == 0 // no. of lines checked for dispersal kernel transfer method only
-		&& current.simlines != current.reqdsimlines) {
+		&& current.simLines != current.reqdSimLines) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchlog << msgnlines << current.simul
-			<< msgshldbe << current.reqdsimlines << endl;
+		batchlog << msgnlines << current.simNb
+			<< msgshldbe << current.reqdSimLines << endl;
 	}
 	if (!bTransferFile.eof()) {
 		EOFerror(filetype);
@@ -2447,7 +2459,7 @@ int ParseTransferFile(string indir)
 int ParseSettleFile(void)
 {
 	string header;
-	int simul, stagedep, sexdep, stage, sex, settletype;
+	int simNb, stagedep, sexdep, stage, sex, settletype;
 	int densdep, indvar, findmate, minSteps, maxSteps, maxStepsYear;
 	float s0, alphaS, betaS;
 	int errors = 0;
@@ -2484,22 +2496,22 @@ int ParseSettleFile(void)
 	// Parse data lines
 	int line = 1;
 	simCheck current, prev;
-	simul = -98765;
-	prev.simul = -999;
-	prev.simlines = prev.reqdsimlines = 0;
-	bSettlementFile >> simul;
+	simNb = -98765;
+	prev.simNb = -999;
+	prev.simLines = prev.reqdSimLines = 0;
+	bSettlementFile >> simNb;
 	// first simulation number must match first one in parameterFile
-	if (simul != firstsimul) {
+	if (simNb != gFirstSimNb) {
 		BatchError(filetype, line, 111, "Simulation"); errors++;
 	}
-	current.simul = 0; //dummy line to prevent warning message in VisualStudio 2019
-	while (simul != -98765) {
+	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
+	while (simNb != -98765) {
 		if (transfer == 0)
 		{ // dispersal kernel
 			// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 			bSettlementFile >> stagedep >> sexdep >> stage >> sex >> settletype >> findmate;
-			current = CheckStageSex(filetype, line, simul, prev, stagedep, sexdep, stage, sex, 0, true, false);
-			if (current.newsimul) simuls++;
+			current = CheckStageSex(filetype, line, simNb, prev, stagedep, sexdep, stage, sex, 0, true, false);
+			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
 			if (settletype < 0 || settletype > 3) {
@@ -2518,8 +2530,8 @@ int ParseSettleFile(void)
 		else { // movement method
 			// read and validate columns relating to stage and sex-dependency (IIV psossible)
 			bSettlementFile >> stagedep >> sexdep >> stage >> sex >> densdep >> indvar >> findmate;
-			current = CheckStageSex(filetype, line, simul, prev, stagedep, sexdep, stage, sex, indvar, true, false);
-			if (current.newsimul) simuls++;
+			current = CheckStageSex(filetype, line, simNb, prev, stagedep, sexdep, stage, sex, indvar, true, false);
+			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
 			if (densdep < 0 || densdep > 1) {
@@ -2575,15 +2587,15 @@ int ParseSettleFile(void)
 		}
 		// read next simulation
 		line++;
-		simul = -98765;
-		bSettlementFile >> simul;
-		if (bSettlementFile.eof()) simul = -98765;
+		simNb = -98765;
+		bSettlementFile >> simNb;
+		if (bSettlementFile.eof()) simNb = -98765;
 	} // end of while loop
 	// check for correct number of lines for previous simulation
-	if (current.simlines != current.reqdsimlines) {
+	if (current.simLines != current.reqdSimLines) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchlog << msgnlines << current.simul
-			<< msgshldbe << current.reqdsimlines << endl;
+		batchlog << msgnlines << current.simNb
+			<< msgshldbe << current.reqdSimLines << endl;
 	}
 	if (!bSettlementFile.eof()) {
 		EOFerror(filetype);
@@ -2599,7 +2611,7 @@ int ParseSettleFile(void)
 int ParseTraitsFile(string indir)
 {
 	string header, colheader;
-	int simul;
+	int simNb;
 	string filename, TraitType, Sex, initialDistribution, initialParameters,
 		dominanceDistribution, dominanceParameters, isInherited, mutationDistribution, mutationParameters, positions, NbrOfPositions, expressionType, mutationRate;
 	int errors = 0;
@@ -2632,23 +2644,23 @@ int ParseTraitsFile(string indir)
 	// Parse data lines
 	int line = 1;
 	simCheck current, prev;
-	simul = -98765;
-	prev.simul = -999;
-	prev.simlines = prev.reqdsimlines = 0;
-	bTraitsFile >> simul;
+	simNb = -98765;
+	prev.simNb = -999;
+	prev.simLines = prev.reqdSimLines = 0;
+	bTraitsFile >> simNb;
 	// first simulation number must match first one in parameterFile
-	if (simul != firstsimul) {
+	if (simNb != gFirstSimNb) {
 		BatchError(filetype, line, 111, "Simulation"); errors++;
 	}
-	current.simul = 0; //dummy line to prevent warning message in VisualStudio 2019
-	while (simul != -98765) {
+	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
+	while (simNb != -98765) {
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 		bTraitsFile >> TraitType >> Sex >> positions >> NbrOfPositions >> expressionType >> initialDistribution >> initialParameters
 			>> dominanceDistribution >> dominanceParameters >> isInherited >> mutationDistribution >> mutationParameters
 			>> mutationRate;
 
-		current = CheckStageSex(filetype, line, simul, prev, 0, 0, 0, 0, 0, true, false);
-		if (current.newsimul) simuls++;
+		current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, 0, true, false);
+		if (current.isNewSim) simuls++;
 		errors += current.errors;
 		prev = current;
 
@@ -2659,15 +2671,15 @@ int ParseTraitsFile(string indir)
 
 		// read next simulation
 		line++;
-		simul = -98765;
-		bTraitsFile >> simul;
-		if (bTraitsFile.eof()) simul = -98765;
+		simNb = -98765;
+		bTraitsFile >> simNb;
+		if (bTraitsFile.eof()) simNb = -98765;
 	} // end of while loop
 	// check for correct number of lines for previous simulation
-	if (!(current.simlines >= current.reqdsimlines)) {
+	if (!(current.simLines >= current.reqdSimLines)) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchlog << msgnlines << current.simul
-			<< msgshldbe << current.reqdsimlines << endl;
+		batchlog << msgnlines << current.simNb
+			<< msgshldbe << current.reqdSimLines << endl;
 	}
 	if (!bTraitsFile.eof()) {
 		EOFerror(filetype);
@@ -2684,7 +2696,7 @@ int ParseTraitsFile(string indir)
 int ParseGeneticsFile(string indir) {
 
 	string header, colheader, tfName, ftype2;
-	int i, simul, err, NbrPatchesToSample, nIndividualsToSample;
+	int i, simNb, err, NbrPatchesToSample, nIndividualsToSample;
 	string filename, ChromosomeEnds, TraitsFile, PatchList, Stages,
 		OutputNeutralStatistics, OutputPerLocusWCFstat, OutputPairwiseFst;
 	int GenomeSize, OutputInterval;
@@ -2718,23 +2730,23 @@ int ParseGeneticsFile(string indir) {
 	// Parse data lines
 	int line = 1;
 	simCheck current, prev;
-	simul = -98765;
-	prev.simul = -999;
-	prev.simlines = prev.reqdsimlines = 0;
-	bGeneticsFile >> simul;
+	simNb = -98765;
+	prev.simNb = -999;
+	prev.simLines = prev.reqdSimLines = 0;
+	bGeneticsFile >> simNb;
 	// first simulation number must match first one in parameterFile
-	if (simul != firstsimul) {
+	if (simNb != gFirstSimNb) {
 		BatchError(filetype, line, 111, "Simulation"); errors++;
 	}
-	current.simul = 0; //dummy line to prevent warning message in VisualStudio 2019
-	while (simul != -98765) {
+	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
+	while (simNb != -98765) {
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 		bGeneticsFile >> GenomeSize >> ChromosomeEnds >> RecombinationRate >> OutputNeutralStatistics >>
 			OutputPerLocusWCFstat >> OutputPairwiseFst >> OutputInterval >> PatchList >> NbrPatchesToSample
 			>> nIndividualsToSample >> Stages >> TraitsFile;
 
-		current = CheckStageSex(filetype, line, simul, prev, 0, 0, 0, 0, 0, true, false);
-		if (current.newsimul) simuls++;
+		current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, 0, true, false);
+		if (current.isNewSim) simuls++;
 		errors += current.errors;
 		prev = current;
 
@@ -2771,15 +2783,15 @@ int ParseGeneticsFile(string indir) {
 
 		// read next simulation
 		line++;
-		simul = -98765;
-		bGeneticsFile >> simul;
-		if (bGeneticsFile.eof()) simul = -98765;
+		simNb = -98765;
+		bGeneticsFile >> simNb;
+		if (bGeneticsFile.eof()) simNb = -98765;
 	} // end of while loop
 	// check for correct number of lines for previous simulation
-	if (current.simlines != current.reqdsimlines) {
+	if (current.simLines != current.reqdSimLines) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchlog << msgnlines << current.simul
-			<< msgshldbe << current.reqdsimlines << endl;
+		batchlog << msgnlines << current.simNb
+			<< msgshldbe << current.reqdSimLines << endl;
 	}
 	if (!bGeneticsFile.eof()) {
 		EOFerror(filetype);
@@ -2795,7 +2807,7 @@ int ParseGeneticsFile(string indir) {
 int ParseInitFile(string indir)
 {
 	string header, colheader;
-	int i, simul;
+	int i, simNb;
 	int seedtype, freetype, sptype, initdens, indscell = 0, minX, maxX, minY, maxY;
 	int nCells, nSpCells, initAge;
 	int initFreezeYear, restrictRows, restrictFreq, finalFreezeYear;
@@ -2847,18 +2859,18 @@ int ParseInitFile(string indir)
 	string filename, ftype2, fname;
 	vector <string> indsfiles;
 	ftype2 = "InitIndsFile";
-	simul = -98765;
-	prev.simul = -999;
-	prev.simlines = prev.reqdsimlines = 0;
-	bInitFile >> simul;
+	simNb = -98765;
+	prev.simNb = -999;
+	prev.simLines = prev.reqdSimLines = 0;
+	bInitFile >> simNb;
 	// first simulation number must match first one in parameterFile
-	if (simul != firstsimul) {
+	if (simNb != gFirstSimNb) {
 		BatchError(filetype, line, 111, "Simulation"); errors++;
 	}
-	current.simul = 0; //dummy line to prevent warning message in VisualStudio 2019
-	while (simul != -98765) {
-		current = CheckStageSex(filetype, line, simul, prev, 0, 0, 0, 0, 0, true, false);
-		if (current.newsimul) simuls++;
+	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
+	while (simNb != -98765) {
+		current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, 0, true, false);
+		if (current.isNewSim) simuls++;
 		errors += current.errors;
 		prev = current;
 
@@ -3019,15 +3031,15 @@ int ParseInitFile(string indir)
 
 		// read next simulation
 		line++;
-		simul = -98765;
-		bInitFile >> simul;
-		if (bInitFile.eof()) simul = -98765;
+		simNb = -98765;
+		bInitFile >> simNb;
+		if (bInitFile.eof()) simNb = -98765;
 	} // end of while loop
 	// check for correct number of lines for previous simulation
-	if (current.simlines != current.reqdsimlines) {
+	if (current.simLines != current.reqdSimLines) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchlog << msgnlines << current.simul
-			<< msgshldbe << current.reqdsimlines << endl;
+		batchlog << msgnlines << current.simNb
+			<< msgshldbe << current.reqdSimLines << endl;
 	}
 	if (!bInitFile.eof()) {
 		EOFerror(filetype);
@@ -3146,7 +3158,7 @@ Check that the number of records for a simulation matches the stage-
 and sex-dependency settings (unless checklines is false).
 Validate the IIV field (if present).
 */
-simCheck CheckStageSex(string filetype, int line, int simul, simCheck prev,
+simCheck CheckStageSex(string filetype, int line, int simNb, simCheck prev,
 	int stagedep, int sexdep, int stage, int sex, int indvar,
 	bool checklines, bool stgdepindvarok)
 {
@@ -3155,23 +3167,23 @@ simCheck CheckStageSex(string filetype, int line, int simul, simCheck prev,
 	int iii;
 
 	// has there been a change of simulation number?;
-	if (simul == prev.simul) { // no
-		current.newsimul = false; current.simlines = prev.simlines + 1;
+	if (simNb == prev.simNb) { // no
+		current.isNewSim = false; current.simLines = prev.simLines + 1;
 	}
 	else { // yes
 		// check for valid simulation number
-		current.newsimul = true; current.simlines = 1;
-		if (line > 1 && simul != prev.simul + 1) {
+		current.isNewSim = true; current.simLines = 1;
+		if (line > 1 && simNb != prev.simNb + 1) {
 			BatchError(filetype, line, 222, " "); current.errors++;
 		}
 		// check for correct number of lines for previous simulation
-		if (checklines && !(prev.simlines >= prev.reqdsimlines)) {
+		if (checklines && !(prev.simLines >= prev.reqdSimLines)) {
 			BatchError(filetype, line, 0, " "); current.errors++;
-			batchlog << "No. of lines for previous Simulation " << prev.simul
-				<< msgshldbe << prev.reqdsimlines << endl;
+			batchlog << "No. of lines for previous Simulation " << prev.simNb
+				<< msgshldbe << prev.reqdSimLines << endl;
 		}
 	}
-	current.simul = simul;
+	current.simNb = simNb;
 
 	// validate stagedep
 	if (stagestruct) {
@@ -3201,29 +3213,29 @@ simCheck CheckStageSex(string filetype, int line, int simul, simCheck prev,
 			sexdep = 0; // to calculate required number of lines
 		}
 	}
-	if (current.newsimul) { // set required number of lines
+	if (current.isNewSim) { // set required number of lines
 		if (stagedep) {
-			if (sexdep) current.reqdsimlines = stages * sexesDisp;
-			else current.reqdsimlines = stages;
+			if (sexdep) current.reqdSimLines = stages * sexesDisp;
+			else current.reqdSimLines = stages;
 		}
 		else {
-			if (sexdep) current.reqdsimlines = sexesDisp;
-			else current.reqdsimlines = 1;
+			if (sexdep) current.reqdSimLines = sexesDisp;
+			else current.reqdSimLines = 1;
 		}
 	}
-	else current.reqdsimlines = prev.reqdsimlines;
+	else current.reqdSimLines = prev.reqdSimLines;
 
 	// validate stage
 	if (stagedep) { // there must be 1 or 2 lines for each stage
 		if (sexdep) { // there must be 2 lines for each stage
-			if (current.simlines % 2) iii = (current.simlines + 1) / 2; else  iii = current.simlines / 2;
+			if (current.simLines % 2) iii = (current.simLines + 1) / 2; else  iii = current.simLines / 2;
 			if (stage != iii - 1) {
 				BatchError(filetype, line, 0, " "); current.errors++;
 				batchlog << "Stages must be sequentially numbered from 0" << endl;
 			}
 		}
 		else { // there must be 1 line for each stage
-			if (stage != current.simlines - 1) {
+			if (stage != current.simLines - 1) {
 				BatchError(filetype, line, 0, " "); current.errors++;
 				batchlog << "Stages must be sequentially numbered from 0" << endl;
 			}
@@ -3237,7 +3249,7 @@ simCheck CheckStageSex(string filetype, int line, int simul, simCheck prev,
 	}
 	// validate sex
 	if (sexdep) {
-		if (sex != (current.simlines + 1) % 2) {
+		if (sex != (current.simLines + 1) % 2) {
 			BatchError(filetype, line, 0, " "); current.errors++;
 			batchlog << "Sex must be alternately 0 and 1 if SexDep is 1" << endl;
 		}
@@ -3707,7 +3719,7 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 					else if (patches == "random") nSampleCellsFst = n;
 					else throw logic_error("Genetics File - ERROR: PatchList must be either 'all' or 'random' for cell-based landscapes.");
 				}
-				const int nbStages = pSpecies->getStage().nStages;
+				const int nbStages = pSpecies->getStageParams().nStages;
 				set<int> stagesToSampleFrom = convertStringToStages(parameters[11], nbStages);
 
 				pSpecies->setGeneticParameters(convertStringToChromosomeEnds(parameters[2], genomeSize), genomeSize, stof(parameters[3]),
@@ -3792,7 +3804,7 @@ int ReadParameters(int option, Landscape* pLandscape)
 	}
 
 	envStochParams env = paramsStoch->getStoch();
-	demogrParams dem = pSpecies->getDemogr();
+	demogrParams dem = pSpecies->getDemogrParams();
 	simParams sim = paramsSim->getSim();
 	simView v = paramsSim->getViews();
 
@@ -3938,7 +3950,7 @@ int ReadStageStructure(int option)
 {
 	string name;
 	int simulation, postDestructn;
-	stageParams sstruct = pSpecies->getStage();
+	stageParams sstruct = pSpecies->getStageParams();
 	string Inputs = paramsSim->getDir(1);
 
 	if (option == 0) { // open file and read header line
@@ -4014,7 +4026,7 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 	int minAge;
 	float ss, dd;
 	string header;
-	demogrParams dem = pSpecies->getDemogr();
+	demogrParams dem = pSpecies->getDemogrParams();
 	//stageParams sstruct = pSpecies->getStage();
 
 	// read header line
@@ -4206,8 +4218,8 @@ int ReadStageWeights(int option)
 	string header;
 	int i, j, n;
 	float f;
-	demogrParams dem = pSpecies->getDemogr();
-	stageParams sstruct = pSpecies->getStage();
+	demogrParams dem = pSpecies->getDemogrParams();
+	stageParams sstruct = pSpecies->getStageParams();
 
 	if (dem.repType != 2) n = sstruct.nStages;
 	else n = sstruct.nStages * maxNbSexes;
@@ -4292,7 +4304,7 @@ int ReadEmigration(int option)
 	if (option == 0) { // open file and read header line
 		emigFile.open(emigrationFile.c_str());
 		string header;
-		for (int i = 0; i < 13; i++) emigFile >> header;
+		for (int i = 0; i < nHeadersEmig; i++) emigFile >> header;
 		return 0;
 	}
 	if (option == 9) { // close file
@@ -4302,14 +4314,14 @@ int ReadEmigration(int option)
 		return 0;
 	}
 
-	int ffff, iiii, jjjj, kkkk, llll;
-	int Nlines, simulation, firstsimul = 0, stage, sex, emigstage;
-	float	ep, d0, alpha, beta;
-	bool firstline = true;
-	demogrParams dem = pSpecies->getDemogr();
-	stageParams sstruct = pSpecies->getStage();
-	emigRules emig = pSpecies->getEmig();
-	emigTraits etraits;
+	int inFullKernel, inDensDep, inStgDep, inSexDep, inIndVar;
+	int Nlines, simulationNb, gFirstSimNb = 0, inStage, inSex, inEmigstage;
+	float inEp, inD0, inAlpha, inBeta;
+	bool isFirstLine = true;
+	demogrParams dem = pSpecies->getDemogrParams();
+	stageParams sstruct = pSpecies->getStageParams();
+	emigRules emig = pSpecies->getEmigRules();
+	emigTraits emigrationTraits;
 
 	// set no.of lines assuming maximum stage- and sex-dependency
 	if (sstruct.nStages == 0) Nlines = sexesDisp;
@@ -4317,14 +4329,20 @@ int ReadEmigration(int option)
 
 	for (int line = 0; line < Nlines; line++) {
 
-		emigFile >> simulation >> iiii >> ffff >> jjjj >> kkkk >> llll >> emigstage;
-		if (firstline) {
-			firstsimul = simulation;
-			if (iiii == 0) emig.densDep = false; else emig.densDep = true;
-			if (jjjj == 0) emig.stgDep = false; else emig.stgDep = true;
-			if (kkkk == 0) emig.sexDep = false; else emig.sexDep = true;
-			if (llll == 0) emig.indVar = false; else emig.indVar = true;
-			if (emigstage >= 0 && emigstage < sstruct.nStages) emig.emigStage = emigstage;
+		emigFile >> simulationNb >> inDensDep >> inFullKernel 
+				 >> inStgDep >> inSexDep >> inIndVar >> inEmigstage;
+
+		if (isFirstLine) {
+			gFirstSimNb = simulationNb;
+			if (inDensDep == 0) emig.densDep = false; 
+			else emig.densDep = true;
+			if (inStgDep == 0) emig.stgDep = false;
+			else emig.stgDep = true;
+			if (inSexDep == 0) emig.sexDep = false; 
+			else emig.sexDep = true;
+			if (inIndVar == 0) emig.indVar = false; 
+			else emig.indVar = true;
+			if (inEmigstage >= 0 && inEmigstage < sstruct.nStages) emig.emigStage = inEmigstage;
 			else emig.emigStage = 0;
 			// update no.of lines according to known stage- and sex-dependency
 			if (emig.stgDep) {
@@ -4335,78 +4353,85 @@ int ReadEmigration(int option)
 				if (emig.sexDep) Nlines = sexesDisp;
 				else Nlines = 1;
 			}
-			if (ffff == 0) pSpecies->setFullKernel(false); else pSpecies->setFullKernel(true);
-			pSpecies->setEmig(emig);
+
+			if (inFullKernel == 0) pSpecies->setFullKernel(false); 
+			else pSpecies->setFullKernel(true);
+			pSpecies->setEmigRules(emig);
 		}
 
-		if (simulation != firstsimul) { // serious problem
+		if (simulationNb != gFirstSimNb) { // serious problem
 			errorCode = 300;
 		}
-		emigFile >> stage >> sex;
+		emigFile >> inStage >> inSex;
 
 		// ERROR MESSAGES SHOULD NEVER BE ACTIVATED ---------------------------------
-		if (dem.repType == 0) {
-			if (emig.sexDep) errorCode = 301;
+		if (dem.repType == 0 && emig.sexDep) {
+			errorCode = 301;
 		}
-		if (dem.stageStruct) {
-			//	if (emig.indVar) error = 302;
-		}
-		else {
-			//	cout << endl << "***** pSpecies = " << pSpecies << endl << endl;
-			if (emig.stgDep) errorCode = 303;
+		if (!dem.stageStruct && emig.stgDep) {
+			errorCode = 303;
 		}
 		//---------------------------------------------------------------------------
 
-		emigFile >> ep >> d0 >> alpha >> beta;
+		emigFile >> inEp >> inD0 >> inAlpha >> inBeta;
 
 		if (emig.sexDep) {
 			if (emig.stgDep) {
 				if (emig.densDep) {
-					etraits.d0 = d0; etraits.alpha = alpha; etraits.beta = beta;
+					emigrationTraits.d0 = inD0; 
+					emigrationTraits.alpha = inAlpha;
+					emigrationTraits.beta = inBeta;
 				}
 				else {
-					etraits.d0 = ep; etraits.alpha = etraits.beta = 0.0;
+					emigrationTraits.d0 = inEp; 
+					emigrationTraits.alpha = emigrationTraits.beta = 0.0;
 				}
-				pSpecies->setEmigTraits(stage, sex, etraits);
+				pSpecies->setEmigTraits(inStage, inSex, emigrationTraits);
 			}
 			else { // !emig.stgDep
 
 				if (emig.densDep) {
-					etraits.d0 = d0; etraits.alpha = alpha; etraits.beta = beta;
+					emigrationTraits.d0 = inD0;
+					emigrationTraits.alpha = inAlpha; 
+					emigrationTraits.beta = inBeta;
 				}
 				else {
-					etraits.d0 = ep; etraits.alpha = etraits.beta = 0.0;
+					emigrationTraits.d0 = inEp; 
+					emigrationTraits.alpha = emigrationTraits.beta = 0.0;
 				}
-				pSpecies->setEmigTraits(0, sex, etraits);
+				pSpecies->setEmigTraits(0, inSex, emigrationTraits);
 
 			}
 		}
 		else { // !emig.sexDep
 			if (emig.stgDep) {
 				if (emig.densDep) {
-					etraits.d0 = d0; etraits.alpha = alpha; etraits.beta = beta;
-					pSpecies->setEmigTraits(stage, 0, etraits);
+					emigrationTraits.d0 = inD0; 
+					emigrationTraits.alpha = inAlpha; 
+					emigrationTraits.beta = inBeta;
+					pSpecies->setEmigTraits(inStage, 0, emigrationTraits);
 				}
 				else {
-					etraits.d0 = ep; etraits.alpha = etraits.beta = 0.0;
-					pSpecies->setEmigTraits(stage, 0, etraits);
+					emigrationTraits.d0 = inEp; 
+					emigrationTraits.alpha = emigrationTraits.beta = 0.0;
+					pSpecies->setEmigTraits(inStage, 0, emigrationTraits);
 				}
 			}
 			else { // !emig.stgDep
 				if (emig.densDep) {
-					etraits.d0 = d0; etraits.alpha = alpha; etraits.beta = beta;
+					emigrationTraits.d0 = inD0; 
+					emigrationTraits.alpha = inAlpha; 
+					emigrationTraits.beta = inBeta;
 				}
 				else {
-					etraits.d0 = ep; etraits.alpha = etraits.beta = 0.0;
+					emigrationTraits.d0 = inEp; 
+					emigrationTraits.alpha = emigrationTraits.beta = 0.0;
 				}
-				pSpecies->setEmigTraits(0, 0, etraits);
-#if RSDEBUG
-				//DEBUGLOG << "ReadEmigration(): case 0: emigP = " << ep << endl;
-#endif
+				pSpecies->setEmigTraits(0, 0, emigrationTraits);
 			}
 		}
 
-		firstline = false;
+		isFirstLine = false;
 
 	} // end of Nlines for loop
 
@@ -4416,13 +4441,13 @@ int ReadEmigration(int option)
 //---------------------------------------------------------------------------
 int ReadTransfer(int option, Landscape* pLandscape)
 {
-	int iiii, jjjj, kkkk, Nlines, simulation, firstsimul = 0, stageDep, sexDep, stage, sex;
+	int iiii, jjjj, kkkk, Nlines, simulation, gFirstSimNb = 0, stageDep, sexDep, stage, sex;
 	float tttt;
 	bool firstline = true;
 	int error = 0;
 	landParams paramsLand = pLandscape->getLandParams();
-	demogrParams dem = pSpecies->getDemogr();
-	stageParams sstruct = pSpecies->getStage();
+	demogrParams dem = pSpecies->getDemogrParams();
+	stageParams sstruct = pSpecies->getStageParams();
 	trfrRules trfr = pSpecies->getTrfr();
 #if RSDEBUG
 	DEBUGLOG << "ReadTransfer(): option=" << option
@@ -4511,7 +4536,7 @@ int ReadTransfer(int option, Landscape* pLandscape)
 
 			transFile >> simulation >> stageDep >> sexDep >> iiii >> jjjj >> kkkk;
 			if (firstline) {
-				firstsimul = simulation;
+				gFirstSimNb = simulation;
 				if (iiii == 0) trfr.twinKern = false; else trfr.twinKern = true;
 				if (jjjj == 0) trfr.distMort = false; else trfr.distMort = true;
 				sexKernels = 2 * stageDep + sexDep;
@@ -4530,7 +4555,7 @@ int ReadTransfer(int option, Landscape* pLandscape)
 				}
 				pSpecies->setTrfrRules(trfr);
 			}
-			if (simulation != firstsimul) { // serious problem
+			if (simulation != gFirstSimNb) { // serious problem
 				error = 400;
 			}
 			transFile >> stage >> sex;
@@ -4754,11 +4779,11 @@ int ReadTransfer(int option, Landscape* pLandscape)
 int ReadSettlement(int option)
 {
 
-	int Nlines, simulation, firstsimul = 0, stageDep, sexDep, stage, sex;
+	int Nlines, simulation, gFirstSimNb = 0, stageDep, sexDep, stage, sex;
 	bool firstline = true;
 	int error = 0;
-	demogrParams dem = pSpecies->getDemogr();
-	stageParams sstruct = pSpecies->getStage();
+	demogrParams dem = pSpecies->getDemogrParams();
+	stageParams sstruct = pSpecies->getStageParams();
 	trfrRules trfr = pSpecies->getTrfr();
 	settleType sett = pSpecies->getSettle();
 	settleRules srules;
@@ -4809,7 +4834,7 @@ int ReadSettlement(int option)
 			settFile >> densdep >> indvar >> findmate;
 		}
 		if (firstline) {
-			firstsimul = simulation;
+			gFirstSimNb = simulation;
 			sexSettle = 2 * stageDep + sexDep;
 			if (stageDep == 1) sett.stgDep = true; else sett.stgDep = false;
 			if (sexDep == 1) sett.sexDep = true; else sett.sexDep = false;
@@ -4826,7 +4851,7 @@ int ReadSettlement(int option)
 				else Nlines = 1;
 			}
 		}
-		if (simulation != firstsimul) { // serious problem
+		if (simulation != gFirstSimNb) { // serious problem
 			error = 500;
 		}
 
@@ -5063,8 +5088,8 @@ int ReadSettlement(int option)
 int ReadInitialisation(int option, Landscape* pLandscape)
 {
 	landParams paramsLand = pLandscape->getLandParams();
-	demogrParams dem = pSpecies->getDemogr();
-	stageParams sstruct = pSpecies->getStage();
+	demogrParams dem = pSpecies->getDemogrParams();
+	stageParams sstruct = pSpecies->getStageParams();
 	initParams init = paramsInit->getInit();
 	string Inputs = paramsSim->getDir(1);
 
@@ -5166,7 +5191,7 @@ int ReadInitialisation(int option, Landscape* pLandscape)
 int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 	string header;
 	landParams paramsLand = pLandscape->getLandParams();
-	demogrParams dem = pSpecies->getDemogr();
+	demogrParams dem = pSpecies->getDemogrParams();
 	//stageParams sstruct = pSpecies->getStage();
 	initParams init = paramsInit->getInit();
 
