@@ -2039,10 +2039,8 @@ int CheckEmigFile(void)
 		}
 		if (inStage == 0 && inSex == 0) { // first line of a simulation
 			// record whether density dependence and individual variability are applied
-			if (inDensDep == 1) isDensDep = true; 
-			else isDensDep = false;
-			if (inIndVar == 1)  isIndVar = true;  
-			else isIndVar = false;
+			isDensDep = (inDensDep == 1);
+			isIndVar = (inIndVar == 1);
 		}
 
 		// read remaining columns of the current record
@@ -2051,6 +2049,14 @@ int CheckEmigFile(void)
 		if (isDensDep) {
 			if (inD0 < 0.0 || inD0 > 1.0) {
 				BatchError(whichInputFile, lineNb, 20, "D0"); 
+				nbErrors++;
+			}
+			if (inAlpha < 0.0) {
+				BatchError(whichInputFile, lineNb, 10, "alpha");
+				nbErrors++;
+			}
+			if (inBeta < 0.0) {
+				BatchError(whichInputFile, lineNb, 10, "beta");
 				nbErrors++;
 			}
 		}
@@ -2561,24 +2567,9 @@ int ParseSettleFile(void)
 				BatchError(filetype, line, 19, "MaxStepsYear"); errors++;
 			}
 			bSettlementFile >> s0 >> alphaS >> betaS;
-#if RSDEBUG
-			//DEBUGLOG << "ParseSettleFile(): simul=" << simul
-			//	<< " reqdsimlines=" << current.reqdsimlines
-			//	<< " line=" << line << " stage=" << stage << " sex=" << sex
-			//	<< " densdep=" << densdep << " indvar=" << indvar << " findmate=" << findmate
-			//	<< " s0=" << s0 << " alphaS=" << alphaS << " betaS=" << betaS
-			//	<< " s0mean=" << s0mean << " s0sd=" << s0sd
-			//	<< " alphaSmean=" << alphaSmean << " alphaSsd=" << alphaSsd
-			//	<< " betaSmean=" << betaSmean << " betaSsd=" << betaSsd
-			//	<< " s0scale=" << s0scale << " alphaSscale=" << alphaSscale << " betaSscale=" << betaSscale
-			//	<< endl;
-#endif
 
 			if (densdep == 1) {
 
-#if RSDEBUG
-				//DEBUGLOG << "ParseSettleFile(): validating s0 only" << endl;
-#endif
 				if (s0 <= 0.0 || s0 > 1.0) {
 					BatchError(filetype, line, 20, "S0"); errors++;
 				}
@@ -3187,7 +3178,7 @@ simCheck CheckStageSex(string filetype, int line, int simNb, simCheck prev,
 
 	// validate stagedep
 	if (stagestruct) {
-		if (stagedep < 0 || stagedep > 1) {
+		if (stagedep != 0 && stagedep != 1) {
 			BatchError(filetype, line, 1, "StageDep"); current.errors++;
 			stagedep = 1; // to calculate required number of lines
 		}
@@ -3201,7 +3192,7 @@ simCheck CheckStageSex(string filetype, int line, int simNb, simCheck prev,
 	}
 	// validate sexdep
 	if (sexesDisp == 2) {
-		if (sexdep < 0 || sexdep > 1) {
+		if (sexdep != 0 && sexdep != 1) {
 			BatchError(filetype, line, 1, "SexDep"); current.errors++;
 			sexdep = 1; // to calculate required number of lines
 		}
@@ -3273,9 +3264,7 @@ simCheck CheckStageSex(string filetype, int line, int simNb, simCheck prev,
 			BatchError(filetype, line, 1, "IndVar"); current.errors++;
 		}
 	}
-
 	return current;
-
 }
 
 // Functions to handle and report error conditions
@@ -4334,15 +4323,12 @@ int ReadEmigration(int option)
 
 		if (isFirstLine) {
 			gFirstSimNb = simulationNb;
-			if (inDensDep == 0) emig.densDep = false; 
-			else emig.densDep = true;
-			if (inStgDep == 0) emig.stgDep = false;
-			else emig.stgDep = true;
-			if (inSexDep == 0) emig.sexDep = false; 
-			else emig.sexDep = true;
-			if (inIndVar == 0) emig.indVar = false; 
-			else emig.indVar = true;
-			if (inEmigstage >= 0 && inEmigstage < sstruct.nStages) emig.emigStage = inEmigstage;
+			emig.densDep = (inDensDep == 1);
+			emig.stgDep = (inStgDep == 1);
+			emig.indVar = (inIndVar == 1);
+			emig.sexDep = (inSexDep == 1);
+			if (inEmigstage >= 0 && inEmigstage < sstruct.nStages)
+				emig.emigStage = inEmigstage;
 			else emig.emigStage = 0;
 			// update no.of lines according to known stage- and sex-dependency
 			if (emig.stgDep) {
