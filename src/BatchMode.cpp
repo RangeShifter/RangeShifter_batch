@@ -426,14 +426,16 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 			else {
 				FileOK(paramname, nSimuls, 0);
 				if (nSimuls != b.nSimuls) {
-					SimulnCountError(filename); b.ok = false;
+					SimulnCountError(filename); 
+					b.ok = false;
 				}
 				else b.emigrationFile = fname;
 			}
 			bEmigrationFile.close();
 		}
 		else {
-			OpenError(paramname, fname); b.ok = false;
+			OpenError(paramname, fname); 
+			b.ok = false;
 		}
 		bEmigrationFile.clear();
 	}
@@ -2038,20 +2040,6 @@ int ParseEmigFile(void)
 
 		// read remaining columns of the current record
 		bEmigrationFile >> ep >> d0 >> alpha >> beta;
-#if RSDEBUG
-		//DEBUGLOG << "ParseEmigFile(): simul=" << simul
-		//	<< " reqdsimlines=" << current.reqdsimlines
-		//	<< " line=" << line << " stage=" << stage << " sex=" << sex
-		//	<< " densdep=" << densdep << " indvar=" << indvar
-		//	<< " ep=" << ep << " d0=" << d0 << " alpha=" << alpha << " beta=" << beta
-		//	<< " epMean=" << epMean << " epSD=" << epSD
-		//	<< " d0Mean=" << d0Mean << " d0SD=" << d0SD
-		//	<< " alphaMean=" << alphaMean << " alphaSD=" << alphaSD
-		//	<< " betaMean=" << betaMean << " betaSD=" << betaSD
-		//	<< " epScale=" << epScale << " d0Scale=" << d0Scale
-		//	<< " alphaScale=" << alphaScale << " betaScale=" << betaScale
-		//	<< endl;
-#endif
 
 		if (densdepset) {
 			if (d0 < 0.0 || d0 > 1.0) {
@@ -2063,6 +2051,8 @@ int ParseEmigFile(void)
 				BatchError(filetype, line, 20, "EP"); errors++;
 			}
 		}
+
+		// if densep, alpha and beta must be set
 
 		// read next simulation
 		line++;
@@ -2080,10 +2070,8 @@ int ParseEmigFile(void)
 		EOFerror(filetype);
 		errors++;
 	}
-
 	if (errors > 0) return -111;
 	else return simuls;
-
 }
 
 //---------------------------------------------------------------------------
@@ -4299,7 +4287,7 @@ int ReadStageWeights(int option)
 //---------------------------------------------------------------------------
 int ReadEmigration(int option)
 {
-	int error = 0;
+	int errorCode = 0;
 
 	if (option == 0) { // open file and read header line
 		emigFile.open(emigrationFile.c_str());
@@ -4327,11 +4315,6 @@ int ReadEmigration(int option)
 	if (sstruct.nStages == 0) Nlines = sexesDisp;
 	else Nlines = sstruct.nStages * sexesDisp;
 
-#if RSDEBUG
-	//DEBUGLOG << "ReadEmigration(): Nlines = " << Nlines << " dem.stageStruct = " << dem.stageStruct
-	//	<< " sstruct.nStages = " << sstruct.nStages << " sexesDisp = " << sexesDisp << endl;
-#endif
-
 	for (int line = 0; line < Nlines; line++) {
 
 		emigFile >> simulation >> iiii >> ffff >> jjjj >> kkkk >> llll >> emigstage;
@@ -4356,34 +4339,21 @@ int ReadEmigration(int option)
 			pSpecies->setEmig(emig);
 		}
 
-#if RSDEBUG
-		//DEBUGLOG << "ReadEmigration(): Nlines=" << Nlines
-		//	<< " emig.densDep=" << emig.densDep
-		//	<< " emig.stgDep=" << emig.stgDep
-		//	<< " emig.sexDep=" << emig.sexDep
-		//	<< " emig.indVar=" << emig.indVar
-		//	<< endl;
-#endif
 		if (simulation != firstsimul) { // serious problem
-			error = 300;
+			errorCode = 300;
 		}
 		emigFile >> stage >> sex;
 
 		// ERROR MESSAGES SHOULD NEVER BE ACTIVATED ---------------------------------
-#if RSDEBUG
-//DEBUGLOG << "ReadEmigration(): line = " << line
-//	<< " dem.stageStruct = " << dem.stageStruct
-//	<< " emig.stgDep = " << emig.stgDep << endl;
-#endif
 		if (dem.repType == 0) {
-			if (emig.sexDep) error = 301;
+			if (emig.sexDep) errorCode = 301;
 		}
 		if (dem.stageStruct) {
 			//	if (emig.indVar) error = 302;
 		}
 		else {
 			//	cout << endl << "***** pSpecies = " << pSpecies << endl << endl;
-			if (emig.stgDep) error = 303;
+			if (emig.stgDep) errorCode = 303;
 		}
 		//---------------------------------------------------------------------------
 
@@ -4440,7 +4410,7 @@ int ReadEmigration(int option)
 
 	} // end of Nlines for loop
 
-	return error;
+	return errorCode;
 }
 
 //---------------------------------------------------------------------------
@@ -4558,7 +4528,7 @@ int ReadTransfer(int option, Landscape* pLandscape)
 					if (sexDep) Nlines = sexesDisp;
 					else Nlines = 1;
 				}
-				pSpecies->setTrfr(trfr);
+				pSpecies->setTrfrRules(trfr);
 			}
 			if (simulation != firstsimul) { // serious problem
 				error = 400;
@@ -4627,7 +4597,7 @@ int ReadTransfer(int option, Landscape* pLandscape)
 			}
 			else for (int i = 0; i < 3; i++) transFile >> tttt;
 
-			if (firstline) pSpecies->setTrfr(trfr);
+			if (firstline) pSpecies->setTrfrRules(trfr);
 			firstline = false;
 
 		} // end of lines for loop
@@ -4733,7 +4703,7 @@ int ReadTransfer(int option, Landscape* pLandscape)
 				pSpecies->setHabCost(0, iiii);
 			}
 		}
-		pSpecies->setTrfr(trfr);
+		pSpecies->setTrfrRules(trfr);
 		pSpecies->setMovtTraits(move);
 
 		break; // end of SMS
@@ -4765,7 +4735,7 @@ int ReadTransfer(int option, Landscape* pLandscape)
 				for (int i = 0; i < paramsLand.nHabMax; i++) transFile >> tttt;
 			}
 		}
-		pSpecies->setTrfr(trfr);
+		pSpecies->setTrfrRules(trfr);
 		pSpecies->setMovtTraits(move);
 	}
 
@@ -5404,7 +5374,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 			// species distribution
 
 			if (paramsLand.spDist) { // read initial species distribution
-				// WILL NEED TO BE CHANGED FOR MULTIPLE SPECIES ...
 				string distname = paramsSim->getDir(1) + name_sp_dist;
 				landcode = pLandscape->newDistribution(pSpecies, distname);
 				if (landcode == 0) {
@@ -5424,7 +5393,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 #endif
 
 			if (landOK) {
-				t01 = (int)time(0);
+				t01 = static_cast<int>(time(0));
 				rsLog << "Landscape," << land_nr << ",,," << t01 - t00 << endl;
 
 			} // end of landOK condition
@@ -5438,11 +5407,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 				cout << endl << "Error opening ParameterFile - aborting batch run" << endl;
 				return;
 			}
-#if RSDEBUG
-			//bool pppp = parameters.is_open();
-			//DEBUGLOG << "RunBatch(): parameterFile = " << parameterFile
-			//	<< " parameters.open() = " << pppp << endl;
-#endif
 			if (stagestruct) {
 				ReadStageStructure(0);
 			}

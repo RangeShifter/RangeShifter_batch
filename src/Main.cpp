@@ -223,7 +223,8 @@ if (b.ok) {
 	nLandscapes = b.nLandscapes;
 	dem.repType = b.reproductn;
 	dem.repSeasons = b.repseasons;
-	if (b.stagestruct == 0) dem.stageStruct = false; else dem.stageStruct = true;
+	if (b.stagestruct == 0) dem.stageStruct = false; 
+	else dem.stageStruct = true;
 	sstruct.nStages = b.stages;
 	if (b.transfer == 0) trfr.moveModel = false;
 	else {
@@ -233,7 +234,7 @@ if (b.ok) {
 	cout << endl << "Batch input files OK" << endl;
 	pSpecies->setDemogr(dem);
 	pSpecies->setStage(sstruct);
-	pSpecies->setTrfr(trfr);
+	pSpecies->setTrfrRules(trfr);
 	simParams sim = paramsSim->getSim();
 	sim.batchMode = true;
 	sim.batchNum = b.batchNum;  
