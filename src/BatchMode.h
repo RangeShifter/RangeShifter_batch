@@ -64,7 +64,7 @@ struct batchfiles {
 	int repseasons;
 	int stagestruct, stages, transfer;
 	int sexesDem;		// no. of explicit sexes for demographic model
-	int sexesDisp;	// no. of explicit sexes for dispersal model
+	int gNbSexesDisp;	// no. of explicit sexes for dispersal model
 	string parameterFile;
 	string landFile;
 	string stageStructFile;
@@ -175,6 +175,8 @@ int ReadTransitionMatrix(
 int ReadStageWeights(int);
 int ReadEmigration(int);
 int ReadTransfer(int, Landscape*);
+int ReadTransferKernels(transferRules, const int&);
+void ReadTransferSMS(transferRules, const landParams&);
 int ReadSettlement(int);
 int ReadInitialisation(int, Landscape*);
 int ReadInitIndsFile(int, Landscape*, string);

@@ -212,7 +212,7 @@ else
 pSpecies = new Species;
 demogrParams dem = pSpecies->getDemogrParams();
 stageParams sstruct = pSpecies->getStageParams();
-trfrRules trfr = pSpecies->getTrfr();
+transferRules trfr = pSpecies->getTransferRules();
 
 batchfiles b;
 string indir  = paramsSim->getDir(1);

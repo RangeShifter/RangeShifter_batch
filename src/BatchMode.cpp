@@ -52,7 +52,7 @@ int reproductn;
 int repseasons;
 int stagestruct, stages, transfer;
 int sexesDem;		// no. of explicit sexes for demographic model
-int sexesDisp;	// no. of explicit sexes for dispersal model
+int gNbSexesDisp;	// no. of explicit sexes for dispersal model
 int gFirstSimNb = 0; // BAD, globals should not be modified.
 int fileNtraits; // no. of traits defined in genetic architecture file
 //rasterdata landraster,patchraster,spdistraster;
@@ -60,7 +60,7 @@ rasterdata landraster;
 // ...including names of the input files
 string parameterFile;
 string landFile;
-string name_landscape, name_patch, name_dynland, name_sp_dist, name_costfile;
+string name_landscape, name_patch, name_dynland, name_sp_dist, gNameCostFile;
 string stageStructFile, transMatrix;
 string emigrationFile, transferFile, settleFile, geneticsFile, traitsFile, initialFile;
 string prevInitialIndsFile = " ";
@@ -233,18 +233,18 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 	else controlFormatError = true; // wrong control file format
 
 	controlfile >> paramname >> reproductn;
-	sexesDem = sexesDisp = 0;
+	sexesDem = gNbSexesDisp = 0;
 	if (paramname == "Reproduction") {
 		if (reproductn < 0 || reproductn > 2) {
 			BatchError(filetype, -999, 2, "Reproduction"); errors++;
 		}
 		else {
 			switch (reproductn) {
-			case 0: { sexesDem = 1; sexesDisp = 1; break; }
-			case 1: { sexesDem = 1; sexesDisp = 2; break; }
-			case 2: { sexesDem = 2; sexesDisp = 2; break; }
+			case 0: { sexesDem = 1; gNbSexesDisp = 1; break; }
+			case 1: { sexesDem = 1; gNbSexesDisp = 2; break; }
+			case 2: { sexesDem = 2; gNbSexesDisp = 2; break; }
 			}
-			b.reproductn = reproductn; b.sexesDem = sexesDem; b.sexesDisp = sexesDisp;
+			b.reproductn = reproductn; b.sexesDem = sexesDem; b.gNbSexesDisp = gNbSexesDisp;
 		}
 	}
 	else controlFormatError = true; // wrong control file format
@@ -1038,8 +1038,8 @@ int ParseLandFile(int landtype, string indir)
 
 			// check cost map filename
 			ftype = "CostMapFile";
-			bLandFile >> name_costfile;
-			if (name_costfile == "NULL") {
+			bLandFile >> gNameCostFile;
+			if (gNameCostFile == "NULL") {
 				if (transfer == 1) { // SMS
 					if (landtype == 2) {
 						BatchError(filetype, line, 0, " "); errors++;
@@ -1049,7 +1049,7 @@ int ParseLandFile(int landtype, string indir)
 			}
 			else {
 				if (transfer == 1) { // SMS
-					fname = indir + name_costfile;
+					fname = indir + gNameCostFile;
 					costraster = CheckRasterFile(fname);
 					if (costraster.ok) {
 						if (costraster.cellsize == resolution) {
@@ -1094,7 +1094,7 @@ int ParseLandFile(int landtype, string indir)
 				batchlog << "Checking " << ftype << " " << fname << endl;
 				bDynLandFile.open(fname.c_str());
 				if (bDynLandFile.is_open()) {
-					int something = ParseDynamicFile(indir, name_costfile);
+					int something = ParseDynamicFile(indir, gNameCostFile);
 					if (something < 0) {
 						errors++;
 					}
@@ -2364,7 +2364,7 @@ int ParseTransferFile(string indir)
 				}
 				for (i = 0; i < maxNhab; i++) {
 					bTransferFile >> costhab;
-					if (name_costfile == "NULL") {
+					if (gNameCostFile == "NULL") {
 						if (costhab < 1) {
 							colheader = "CostHab" + Int2Str(i + 1);
 							BatchError(filetype, line, 11, colheader); errors++;
@@ -2545,7 +2545,7 @@ int ParseSettleFile(void)
 				BatchError(filetype, line, 0, " "); errors++;
 				batchlog << "Invalid SettleType for a non-stage-structured population" << endl;
 			}
-			if (sexesDisp > 1) {
+			if (gNbSexesDisp > 1) {
 				if (findmate < 0 || findmate > 1) {
 					BatchError(filetype, line, 1, "FindMate"); errors++;
 				}
@@ -2567,7 +2567,7 @@ int ParseSettleFile(void)
 					batchlog << "IndVar must be 0 if DensDep is 0" << endl;
 				}
 			}
-			if (reproductn != 0 && sexesDisp > 1) {
+			if (reproductn != 0 && gNbSexesDisp > 1) {
 				if (findmate < 0 || findmate > 1) {
 					BatchError(filetype, line, 1, "FindMate"); errors++;
 				}
@@ -3208,7 +3208,7 @@ simCheck CheckStageSex(string filetype, int line, int simNb, simCheck prev,
 		}
 	}
 	// validate sexdep
-	if (sexesDisp == 2) {
+	if (gNbSexesDisp == 2) {
 		if (sexdep != 0 && sexdep != 1) {
 			BatchError(filetype, line, 1, "SexDep"); current.errors++;
 			sexdep = 1; // to calculate required number of lines
@@ -3223,11 +3223,11 @@ simCheck CheckStageSex(string filetype, int line, int simNb, simCheck prev,
 	}
 	if (current.isNewSim) { // set required number of lines
 		if (stagedep) {
-			if (sexdep) current.reqdSimLines = stages * sexesDisp;
+			if (sexdep) current.reqdSimLines = stages * gNbSexesDisp;
 			else current.reqdSimLines = stages;
 		}
 		else {
-			if (sexdep) current.reqdSimLines = sexesDisp;
+			if (sexdep) current.reqdSimLines = gNbSexesDisp;
 			else current.reqdSimLines = 1;
 		}
 	}
@@ -3565,13 +3565,13 @@ int ReadLandFile(int option, Landscape* pLandscape)
 		string dummy; // no longer necessary to read no. of habitats from landFile
 		//	landfile >> ppGenLand.landNum >> ppLand.nHab >> name_landscape >> name_patch >> name_sp_dist;
 		landfile >> ppLand.landNum >> dummy >> name_landscape >> name_patch;
-		landfile >> name_costfile >> name_dynland >> name_sp_dist;
+		landfile >> gNameCostFile >> name_dynland >> name_sp_dist;
 		if (landtype == 2) ppLand.nHab = 1; // habitat quality landscape has one habitat class
 #if RSDEBUG
 		DEBUGLOG << "ReadLandFile(): ppLand.landNum=" << ppLand.landNum
 			<< " name_landscape=" << name_landscape
 			<< " name_patch=" << name_patch
-			<< " name_costfile=" << name_costfile
+			<< " name_costfile=" << gNameCostFile
 			<< " name_dynland=" << name_dynland
 			<< " name_sp_dist=" << name_sp_dist
 			<< endl;
@@ -4330,8 +4330,8 @@ int ReadEmigration(int option)
 	emigTraits emigrationTraits;
 
 	// set no.of lines assuming maximum stage- and sex-dependency
-	if (sstruct.nStages == 0) Nlines = sexesDisp;
-	else Nlines = sstruct.nStages * sexesDisp;
+	if (sstruct.nStages == 0) Nlines = gNbSexesDisp;
+	else Nlines = sstruct.nStages * gNbSexesDisp;
 
 	for (int line = 0; line < Nlines; line++) {
 
@@ -4349,11 +4349,11 @@ int ReadEmigration(int option)
 			else emig.emigStage = 0;
 			// update no.of lines according to known stage- and sex-dependency
 			if (emig.stgDep) {
-				if (emig.sexDep) Nlines = sstruct.nStages * sexesDisp;
+				if (emig.sexDep) Nlines = sstruct.nStages * gNbSexesDisp;
 				else Nlines = sstruct.nStages;
 			}
 			else {
-				if (emig.sexDep) Nlines = sexesDisp;
+				if (emig.sexDep) Nlines = gNbSexesDisp;
 				else Nlines = 1;
 			}
 
@@ -4444,40 +4444,23 @@ int ReadEmigration(int option)
 //---------------------------------------------------------------------------
 int ReadTransfer(int option, Landscape* pLandscape)
 {
-	int iiii, jjjj, kkkk, Nlines, simulation, gFirstSimNb = 0, stageDep, sexDep, stage, sex;
+	int iiii, jjjj, kkkk, simNb, gFirstSimNb = 0, stageDep, sexDep, stage, sex;
 	float tttt;
-	bool firstline = true;
 	int error = 0;
 	landParams paramsLand = pLandscape->getLandParams();
-	demogrParams dem = pSpecies->getDemogrParams();
-	stageParams sstruct = pSpecies->getStageParams();
-	trfrRules trfr = pSpecies->getTrfr();
-#if RSDEBUG
-	DEBUGLOG << "ReadTransfer(): option=" << option
-		<< " paramsLand.generated=" << paramsLand.generated
-		<< " paramsLand.rasterType=" << paramsLand.rasterType
-		<< " trfr.moveModel=" << trfr.moveModel
-		<< " trfr.twinKern=" << trfr.twinKern
-		<< endl;
-#endif
+	transferRules trfr = pSpecies->getTransferRules();
 
 	if (option == 0) { // open file and read header line
 		transFile.open(transferFile.c_str());
 		string header;
 		int nheaders = 0;
 		if (trfr.moveModel) {
-#if RSDEBUG
-			DEBUGLOG << "ReadTransfer(): creating cost/mortality matrix, dimension=";
-			if (paramsLand.generated)
-				DEBUGLOG << paramsLand.nHab;
-			else
-				DEBUGLOG << paramsLand.nHabMax;
-			DEBUGLOG << endl;
-#endif
+
 			if (paramsLand.generated)
 				pSpecies->createHabCostMort(paramsLand.nHab);
 			else
 				pSpecies->createHabCostMort(paramsLand.nHabMax);
+
 			if (trfr.moveType == 1) { // SMS
 				int standardcols = 10;
 				if (paramsLand.generated) {
@@ -4498,14 +4481,9 @@ int ReadTransfer(int option, Landscape* pLandscape)
 					else nheaders = 7;
 				}
 			}
-		}
-		else { // dispersal kernel
+		} else { // dispersal kernel
 			nheaders = 14;
 		}
-#if RSDEBUG
-		DEBUGLOG << "ReadTransfer(): option=" << option << " nheaders=" << nheaders
-			<< endl;
-#endif
 		for (int i = 0; i < nheaders; i++) transFile >> header;
 		return 0;
 	}
@@ -4518,229 +4496,27 @@ int ReadTransfer(int option, Landscape* pLandscape)
 	}
 
 	int TransferType; // new local variable to replace former global variable
-	if (trfr.moveModel) TransferType = trfr.moveType; else TransferType = 0;
+	if (trfr.moveModel)
+		TransferType = trfr.moveType; 
+	else 
+		TransferType = 0;
 
-	int sexKernels = 0;
-	trfrKernTraits k;
-	trfrMovtTraits move;
 	string CostsFile;
 
 	switch (TransferType) {
 
 	case 0: // negative exponential dispersal kernel
-
-		firstline = true;
-
-		// set no.of lines assuming maximum stage- and sex-dependency
-		if (sstruct.nStages == 0) Nlines = sexesDisp;
-		else Nlines = sstruct.nStages * sexesDisp;
-
-		for (int line = 0; line < Nlines; line++) {
-
-			transFile >> simulation >> stageDep >> sexDep >> iiii >> jjjj >> kkkk;
-			if (firstline) {
-				gFirstSimNb = simulation;
-				if (iiii == 0) trfr.twinKern = false; else trfr.twinKern = true;
-				if (jjjj == 0) trfr.distMort = false; else trfr.distMort = true;
-				sexKernels = 2 * stageDep + sexDep;
-				if (kkkk == 0) trfr.indVar = false; else trfr.indVar = true;
-				if (sexDep) trfr.sexDep = true; else trfr.sexDep = false;
-				// update no.of lines according to known stage- and sex-dependency
-				if (stageDep) {
-					trfr.stgDep = true;
-					if (sexDep) Nlines = sstruct.nStages * sexesDisp;
-					else Nlines = sstruct.nStages;
-				}
-				else {
-					trfr.stgDep = false;
-					if (sexDep) Nlines = sexesDisp;
-					else Nlines = 1;
-				}
-				pSpecies->setTrfrRules(trfr);
-			}
-			if (simulation != gFirstSimNb) { // serious problem
-				error = 400;
-			}
-			transFile >> stage >> sex;
-
-			if (dem.repType == 0) {
-				if (sexKernels == 1 || sexKernels == 3) error = 401;
-			}
-			if (dem.stageStruct) {
-				//			if (trfr.indVar) error = 402;
-			}
-			else {
-				if (sexKernels == 2 || sexKernels == 3) error = 403;
-			}
-			if (sexKernels == 2 || sexKernels == 3) {
-			}
-
-			switch (sexKernels) {
-
-			case 0: // no sex / stage dependence
-				transFile >> k.meanDist1 >> k.meanDist2 >> k.probKern1;
-				pSpecies->setKernTraits(0, 0, k, paramsLand.resol);
-				break;
-
-			case 1: // sex-dependent
-				if (trfr.twinKern)
-				{
-					transFile >> k.meanDist1 >> k.meanDist2 >> k.probKern1;
-				}
-				else {
-					transFile >> k.meanDist1; k.meanDist2 = k.meanDist1; k.probKern1 = 1.0;
-				}
-				pSpecies->setKernTraits(0, sex, k, paramsLand.resol);
-
-				break;
-
-			case 2: // stage-dependent
-				if (trfr.twinKern)
-				{
-					transFile >> k.meanDist1 >> k.meanDist2 >> k.probKern1;
-				}
-				else {
-					transFile >> k.meanDist1; k.meanDist2 = k.meanDist1; k.probKern1 = 1.0;
-				}
-				pSpecies->setKernTraits(stage, 0, k, paramsLand.resol);
-				break;
-
-			case 3: // sex- & stage-dependent
-				if (trfr.twinKern)
-				{
-					transFile >> k.meanDist1 >> k.meanDist2 >> k.probKern1;
-				}
-				else {
-					transFile >> k.meanDist1; k.meanDist2 = k.meanDist1; k.probKern1 = 1.0;
-				}
-				pSpecies->setKernTraits(stage, sex, k, paramsLand.resol);
-				break;
-			} // end of switch (sexkernels)
-
-			// mortality
-			if (stage == 0 && sex == 0) {
-				trfrMortParams mort;
-				transFile >> mort.fixedMort >> mort.mortAlpha >> mort.mortBeta;
-				pSpecies->setMortParams(mort);
-			}
-			else for (int i = 0; i < 3; i++) transFile >> tttt;
-
-			if (firstline) pSpecies->setTrfrRules(trfr);
-			firstline = false;
-
-		} // end of lines for loop
-
+		error = ReadTransferKernels(trfr, paramsLand.resol);
 		break; // end of negative exponential dispersal kernel
 
 	case 1: // SMS
-
-		transFile >> simulation >> iiii >> move.pr >> move.prMethod >> move.dp;
-		if (iiii == 0) trfr.indVar = false; else trfr.indVar = true;
-		transFile >> move.memSize >> move.gb >> move.goalType >> tttt >> iiii;
-		if (move.goalType == 2) { // dispersal bias
-			move.alphaDB = tttt; move.betaDB = iiii;
-		}
-#if RSDEBUG
-		DEBUGLOG << "ReadTransfer(): simulation=" << simulation << " indVar=" << trfr.indVar
-			<< " PR=" << move.pr << " PRmethod=" << move.prMethod << endl;
-		DEBUGLOG << "ReadTransfer(): dp=" << move.dp << " MemSize=" << move.memSize
-			<< " gb=" << move.gb << " goaltype=" << move.goalType << endl;
-#endif
-		transFile >> jjjj >> iiii >> move.stepMort;
-		if (iiii == 0) trfr.habMort = false; else trfr.habMort = true;
-		if (jjjj == 0) move.straigtenPath = false; else move.straigtenPath = true;
-
-#if RSDEBUG
-		DEBUGLOG << "ReadTransfer(): SMtype=" << trfr.habMort << " SMconst=" << move.stepMort << endl;
-#endif // RSDEBUG
-
-		if (!paramsLand.generated) { // real landscape
-			if (paramsLand.rasterType == 0) { // habitat codes
-				if (trfr.habMort)
-				{ // habitat-dependent step mortality
-					for (int i = 0; i < paramsLand.nHabMax; i++)
-					{
-						transFile >> tttt;
-						pSpecies->setHabMort(i, tttt);
-#if RSDEBUG
-						//DEBUGLOG << "ReadTransfer(): nHabMax = " << paramsLand.nHabMax
-						//	<< " i = " << i << " mortality = " << tttt << endl;
-#endif
-					}
-				}
-				else { // constant step mortality
-					for (int i = 0; i < paramsLand.nHabMax; i++) transFile >> tttt;
-				}
-			}
-			else { // habitat quality
-				// no columns to be read until CostMap
-			}
-		}
-		else { // artificial landscape
-			if (trfr.habMort)
-			{ // habitat-dependent step mortality
-				// values are for habitat (hab=1) then for matrix (hab=0)
-				transFile >> tttt; pSpecies->setHabMort(1, tttt);
-				transFile >> tttt; pSpecies->setHabMort(0, tttt);
-#if RSDEBUG
-				DEBUGLOG << "ReadTransfer(): nHab=" << paramsLand.nHab << endl;
-				DEBUGLOG << "ReadTransfer(): MortHabitat=" << pSpecies->getHabMort(1)
-					<< " MortMatrix=" << pSpecies->getHabMort(0)
-					<< endl;
-#endif
-			}
-			else { // constant step mortality
-				for (int i = 0; i < paramsLand.nHab; i++) transFile >> tttt;
-			}
-		}
-
-		if (name_costfile != "NULL") trfr.costMap = true;
-		else trfr.costMap = false;
-
-		if (!paramsLand.generated) { // real landscape
-			if (paramsLand.rasterType == 0) { // habitat codes
-				if (trfr.costMap)
-				{
-					for (int i = 0; i < paramsLand.nHabMax; i++) transFile >> tttt;
-				}
-				else { // not costMap
-					for (int i = 0; i < paramsLand.nHabMax; i++) {
-						transFile >> tttt; iiii = (int)tttt;
-						pSpecies->setHabCost(i, iiii);
-#if RSDEBUG
-						DEBUGLOG << "ReadTransfer(): nHabMax=" << paramsLand.nHabMax << " i=" << i
-							<< " tttt=" << tttt << " habCost[i]=" << pSpecies->getHabCost(i) << endl;
-#endif
-					}
-				}
-			}
-			else { // habitat quality
-				// no further columns to be read
-			}
-		}
-		else { // artificial landscape
-			if (trfr.costMap) // should not occur 
-			{
-				transFile >> tttt >> tttt;
-			}
-			else { // not costMap
-				// costs are for habitat (hab=1) then for matrix (hab=0)
-				transFile >> tttt; iiii = (int)tttt;
-				pSpecies->setHabCost(1, iiii);
-				transFile >> tttt; iiii = (int)tttt;
-				pSpecies->setHabCost(0, iiii);
-			}
-		}
-		pSpecies->setTrfrRules(trfr);
-		pSpecies->setMovtTraits(move);
-
+		ReadTransferSMS(trfr, paramsLand);
 		break; // end of SMS
 
 	case 2: // CRW
-
 	{
-
-		transFile >> simulation >> iiii;
+		trfrMovtParams move;
+		transFile >> simNb >> iiii;
 		if (iiii == 0) trfr.indVar = false; else trfr.indVar = true;
 
 		transFile >> move.stepLength >> move.rho;
@@ -4749,7 +4525,8 @@ int ReadTransfer(int option, Landscape* pLandscape)
 		if (jjjj == 0) move.straigtenPath = false; else move.straigtenPath = true;
 
 		//Habitat-dependent per step mortality
-		if (trfr.habMort && paramsLand.rasterType != 0) error = 434;
+		if (trfr.habMort && paramsLand.rasterType != 0) 
+			error = 434;
 
 		if (!paramsLand.generated && paramsLand.rasterType == 0) { // real habitat codes landscape
 			if (trfr.habMort)
@@ -4766,9 +4543,7 @@ int ReadTransfer(int option, Landscape* pLandscape)
 		pSpecies->setTrfrRules(trfr);
 		pSpecies->setMovtTraits(move);
 	}
-
 	break; // end of CRW
-
 
 	default:
 		error = 440;
@@ -4776,6 +4551,202 @@ int ReadTransfer(int option, Landscape* pLandscape)
 	} // end of switch (TransferType)
 
 	return error;
+}
+
+int ReadTransferKernels(transferRules trfr, const int& landResol) {
+
+	int inKernelType, inDistMort, inIndVar, simNb, gFirstSimNb = 0, inStageDep, inSexDep, inStage, inSex;
+	float flushMort;
+	stageParams stageStruct = pSpecies->getStageParams();
+	demogrParams dem = pSpecies->getDemogrParams();
+	trfrKernelParams kernParams;
+	int sexKernels = 0;
+	bool isFirstLine = true;
+	int errorCode = 0;
+
+	// set no.of lines assuming maximum stage- and sex-dependency
+	int Nlines = stageStruct.nStages == 0 ? gNbSexesDisp : gNbSexesDisp * stageStruct.nStages;
+
+	for (int line = 0; line < Nlines; line++) {
+
+		transFile >> simNb >> inStageDep >> inSexDep >> inKernelType >> inDistMort >> inIndVar;
+		if (isFirstLine) {
+			gFirstSimNb = simNb;
+			if (inKernelType == 0) trfr.twinKern = false;
+			else trfr.twinKern = true;
+			if (inDistMort == 0) trfr.distMort = false;
+			else trfr.distMort = true;
+			sexKernels = 2 * inStageDep + inSexDep;
+			if (inIndVar == 0) trfr.indVar = false;
+			else trfr.indVar = true;
+			if (inSexDep) trfr.sexDep = true;
+			else trfr.sexDep = false;
+			// update no.of lines according to known stage- and sex-dependency
+			if (inStageDep) {
+				trfr.stgDep = true;
+				if (inSexDep) Nlines = stageStruct.nStages * gNbSexesDisp;
+				else Nlines = stageStruct.nStages;
+			}
+			else {
+				trfr.stgDep = false;
+				if (inSexDep) Nlines = gNbSexesDisp;
+				else Nlines = 1;
+			}
+			pSpecies->setTrfrRules(trfr);
+		}
+		if (simNb != gFirstSimNb) { // serious problem
+			errorCode = 400;
+		}
+		transFile >> inStage >> inSex;
+
+		if (dem.repType == 0) {
+			if (sexKernels == 1 || sexKernels == 3) 
+				errorCode = 401;
+		}
+		else {
+			if (sexKernels == 2 || sexKernels == 3) 
+				errorCode = 403;
+		}
+
+		switch (sexKernels) {
+
+		case 0: // no sex / stage dependence
+			transFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
+			pSpecies->setKernTraits(0, 0, kernParams, landResol);
+			break;
+
+		case 1: // sex-dependent
+			if (trfr.twinKern)
+			{
+				transFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
+			}
+			else {
+				transFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
+				kernParams.probKern1 = 1.0;
+			}
+			pSpecies->setKernTraits(0, inSex, kernParams, landResol);
+
+			break;
+
+		case 2: // stage-dependent
+			if (trfr.twinKern)
+			{
+				transFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
+			}
+			else {
+				transFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
+				kernParams.probKern1 = 1.0;
+			}
+			pSpecies->setKernTraits(inStage, 0, kernParams, landResol);
+			break;
+
+		case 3: // sex- & stage-dependent
+			if (trfr.twinKern)
+			{
+				transFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
+			}
+			else {
+				transFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
+				kernParams.probKern1 = 1.0;
+			}
+			pSpecies->setKernTraits(inStage, inSex, kernParams, landResol);
+			break;
+		} // end of switch (sexkernels)
+
+		// mortality
+		if (inStage == 0 && inSex == 0) {
+			trfrMortParams mort;
+			transFile >> mort.fixedMort >> mort.mortAlpha >> mort.mortBeta;
+			pSpecies->setMortParams(mort);
+		}
+		else for (int i = 0; i < 3; i++) 
+			transFile >> flushMort;
+
+		if (isFirstLine) pSpecies->setTrfrRules(trfr);
+		isFirstLine = false;
+	} // end of lines for loop
+	return errorCode;
+}
+
+void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
+
+	int inIndVar, inSMType, inAlphaDB, inBetaDB, inStraightenPath, simNb;
+	float inHabMort, flushHabMort, inMortHabitat, inMortMatrix;
+	int inCostHab, flushCostHab, inCostMatrix;
+	int gFirstSimNb = 0; // bad, this is a global
+	trfrMovtParams move;
+
+	transFile >> simNb >> inIndVar >> move.pr >> move.prMethod >> move.dp
+		>> move.memSize >> move.gb >> move.goalType >> inAlphaDB >> inBetaDB
+		>> inStraightenPath >> inSMType >> move.stepMort;
+
+	trfr.indVar = (inIndVar == 1) ? true : false;
+	if (move.goalType == 2) { // dispersal bias
+		move.alphaDB = inAlphaDB;
+		move.betaDB = inBetaDB;
+	}
+	trfr.habMort = (inSMType == 1) ? true : false;
+	move.straigtenPath = (inStraightenPath == 1) ? true : false;
+
+	if (!paramsLand.generated) { // imported landscape
+		if (paramsLand.rasterType == 0) { // habitat codes
+			if (trfr.habMort)
+			{ // habitat-dependent step mortality
+				for (int i = 0; i < paramsLand.nHabMax; i++)
+				{
+					transFile >> inHabMort;
+					pSpecies->setHabMort(i, inHabMort);
+				}
+			}
+			else { // constant step mortality
+				for (int i = 0; i < paramsLand.nHabMax; i++) 
+					transFile >> flushHabMort;
+			}
+		}
+	}
+	else { // artificial landscape
+		if (trfr.habMort)
+		{ // habitat-dependent step mortality
+			// values are for habitat (hab=1) then for matrix (hab=0)
+			transFile >> inMortHabitat >> inMortMatrix;
+			pSpecies->setHabMort(1, inMortHabitat);
+			pSpecies->setHabMort(0, inMortMatrix);
+		}
+		else { // constant step mortality
+			transFile >> flushHabMort >> flushHabMort;
+		}
+	}
+	trfr.costMap = (gNameCostFile != "NULL") ? true : false;
+
+	if (!paramsLand.generated) { // imported landscape
+		if (paramsLand.rasterType == 0) { // habitat codes
+			if (trfr.costMap)
+			{
+				for (int i = 0; i < paramsLand.nHabMax; i++) 
+					transFile >> flushCostHab;
+			}
+			else { // not costMap
+				for (int i = 0; i < paramsLand.nHabMax; i++) {
+					transFile >> inCostHab; 
+					pSpecies->setHabCost(i, inCostHab);
+				}
+			}
+		}
+	}
+	else { // artificial landscape
+		if (trfr.costMap) // should not occur 
+		{
+			transFile >> flushCostHab >> flushCostHab;
+		}
+		else { // not costMap
+			// costs are for habitat (hab=1) then for matrix (hab=0)
+			transFile >> inCostHab >> inCostMatrix;
+			pSpecies->setHabCost(1, inCostHab);
+			pSpecies->setHabCost(0, inCostMatrix);
+		}
+	}
+	pSpecies->setTrfrRules(trfr);
+	pSpecies->setMovtTraits(move);
 }
 
 //---------------------------------------------------------------------------
@@ -4787,7 +4758,7 @@ int ReadSettlement(int option)
 	int error = 0;
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
-	trfrRules trfr = pSpecies->getTrfr();
+	transferRules trfr = pSpecies->getTransferRules();
 	settleType sett = pSpecies->getSettle();
 	settleRules srules;
 	settleSteps ssteps;
@@ -4823,8 +4794,8 @@ int ReadSettlement(int option)
 	firstline = true;
 
 	// set no.of lines assuming maximum stage- and sex-dependency
-	if (sstruct.nStages == 0) Nlines = sexesDisp;
-	else Nlines = sstruct.nStages * sexesDisp;
+	if (sstruct.nStages == 0) Nlines = gNbSexesDisp;
+	else Nlines = sstruct.nStages * gNbSexesDisp;
 
 	for (int line = 0; line < Nlines; line++) {
 
@@ -4846,11 +4817,11 @@ int ReadSettlement(int option)
 			pSpecies->setSettle(sett);
 			// update no.of lines according to known stage- and sex-dependency
 			if (stageDep) {
-				if (sexDep) Nlines = sstruct.nStages * sexesDisp;
+				if (sexDep) Nlines = sstruct.nStages * gNbSexesDisp;
 				else Nlines = sstruct.nStages;
 			}
 			else {
-				if (sexDep) Nlines = sexesDisp;
+				if (sexDep) Nlines = gNbSexesDisp;
 				else Nlines = 1;
 			}
 		}
@@ -5325,7 +5296,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 		if (landtype != 9)
 			DEBUGLOG << " name_landscape=" << name_landscape
 			<< " name_patch=" << name_patch
-			<< " name_costfile=" << name_costfile
+			<< " name_costfile=" << gNameCostFile
 			<< " name_sp_dist=" << name_sp_dist;
 		DEBUGLOG << endl;
 #endif
@@ -5351,8 +5322,8 @@ void RunBatch(int nSimuls, int nLandscapes)
 			string hname = paramsSim->getDir(1) + name_landscape;
 			int landcode;
 			string cname;
-			if (name_costfile == "NULL" || name_costfile == "none") cname = "NULL";
-			else cname = paramsSim->getDir(1) + name_costfile;
+			if (gNameCostFile == "NULL" || gNameCostFile == "none") cname = "NULL";
+			else cname = paramsSim->getDir(1) + gNameCostFile;
 			if (paramsLand.patchModel) {
 				string pname = paramsSim->getDir(1) + name_patch;
 #if RSDEBUG
