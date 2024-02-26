@@ -75,6 +75,7 @@ struct batchfiles {
 	string initFile;
 };
 
+constexpr int gEmptyVal = -9;
 constexpr int nHeadersEmig = 13;
 
 struct simCheck {

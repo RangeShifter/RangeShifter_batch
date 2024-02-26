@@ -1961,14 +1961,14 @@ int CheckEmigFile(void)
 	int simNb;
 	int inDensDep, inUseFullKern, inStgDep, inSexDep, inIndVar, inEmigStg, inStage, inSex;
 	bool isDensDep, isIndVar;
-	float inEp, inD0, inAlpha, inBeta;
+	float inEP, inD0, inAlpha, inBeta;
 	int nbErrors = 0;
 	int nbSims = 0;
 	string whichInputFile = "EmigrationFile";
 
 	isDensDep = false;
 	isIndVar = false;
-	inEp = 0.0;
+	inEP = 0.0;
 
 	// Parse header line;
 	bEmigrationFile >> header; if (header != "Simulation") nbErrors++;
@@ -2044,9 +2044,14 @@ int CheckEmigFile(void)
 		}
 
 		// read remaining columns of the current record
-		bEmigrationFile >> inEp >> inD0 >> inAlpha >> inBeta;
+		bEmigrationFile >> inEP >> inD0 >> inAlpha >> inBeta;
 
 		if (isDensDep) {
+			if (inEP != gEmptyVal) {
+				batchlog << "*** Error in " << whichInputFile << ": "
+					<< "if density-dependence is enabled EP must be " << gEmptyVal << endl;
+				nbErrors++;
+			}
 			if (inD0 < 0.0 || inD0 > 1.0) {
 				BatchError(whichInputFile, lineNb, 20, "D0"); 
 				nbErrors++;
@@ -2061,13 +2066,26 @@ int CheckEmigFile(void)
 			}
 		}
 		else { // !densdepset
-			if (inEp < 0.0 || inEp > 1.0) {
+			if (inEP < 0.0 || inEP > 1.0) {
 				BatchError(whichInputFile, lineNb, 20, "EP"); 
 				nbErrors++;
 			}
+			if (inD0 != gEmptyVal) {
+				batchlog << "*** Error in " << whichInputFile << ": "
+					<< "if density-dependence is disabled D0 must be " << gEmptyVal << endl;
+				nbErrors++;
+			}
+			if (inAlpha != gEmptyVal) {
+				batchlog << "*** Error in " << whichInputFile << ": "
+					<< "if density-dependence is disabled alpha must be " << gEmptyVal << endl;
+				nbErrors++;
+			}
+			if (inAlpha != gEmptyVal) {
+				batchlog << "*** Error in " << whichInputFile << ": "
+					<< "if density-dependence is disabled beta must be " << gEmptyVal << endl;
+				nbErrors++;
+			}
 		}
-
-		// if densdep, alpha and beta must be set
 
 		// read next simulation
 		lineNb++;
@@ -2608,7 +2626,7 @@ int ParseTraitsFile(string indir)
 	int errors = 0;
 	int simuls = 0;
 	vector <string> archfiles;
-	string filetype = "TraitsFile";
+	const string filetype = "TraitsFile";
 
 	// Parse header line;
 	bTraitsFile >> header; if (header != "Simulation") errors++;
@@ -2626,7 +2644,6 @@ int ParseTraitsFile(string indir)
 	bTraitsFile >> header; if (header != "MutationParameters") errors++;
 	bTraitsFile >> header; if (header != "MutationRate") errors++;
 
-
 	if (errors > 0) {
 		FormatError(filetype, errors);
 		return -111;
@@ -2643,7 +2660,6 @@ int ParseTraitsFile(string indir)
 	if (simNb != gFirstSimNb) {
 		BatchError(filetype, line, 111, "Simulation"); errors++;
 	}
-	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 		bTraitsFile >> TraitType >> Sex >> positions >> NbrOfPositions >> expressionType >> initialDistribution >> initialParameters
@@ -2656,7 +2672,8 @@ int ParseTraitsFile(string indir)
 		prev = current;
 
 		// validate parameters
-		if ((isInherited == "true" || isInherited == "True" || isInherited == "TRUE") && (stof(mutationRate) < 0.0 || stof(mutationRate) > 1.0)) {
+		if ((isInherited == "true" || isInherited == "True" || isInherited == "TRUE") 
+			&& (stof(mutationRate) < 0.0 || stof(mutationRate) > 1.0)) {
 			BatchError(filetype, line, 20, "mutationRate"); errors++;
 		}
 
