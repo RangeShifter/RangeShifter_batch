@@ -50,7 +50,7 @@ int batchnum;
 int patchmodel, resolution, landtype, maxNhab, speciesdist, distresolution;
 int reproductn;
 int repseasons;
-int stagestruct, stages, transfer;
+int stagestruct, stages, gTransferType;
 int sexesDem;		// no. of explicit sexes for demographic model
 int gNbSexesDisp;	// no. of explicit sexes for dispersal model
 int gFirstSimNb = 0; // BAD, globals should not be modified.
@@ -282,12 +282,12 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 	}
 	else controlFormatError = true; // wrong control file format
 
-	controlfile >> paramname >> transfer;
+	controlfile >> paramname >> gTransferType;
 	if (paramname == "Transfer") {
-		if (transfer < 0 || transfer > 2) {
+		if (gTransferType < 0 || gTransferType > 2) {
 			BatchError(filetype, -999, 2, "Transfer"); errors++;
 		}
-		else b.transfer = transfer;
+		else b.transfer = gTransferType;
 	}
 	else controlFormatError = true; // wrong control file format
 
@@ -1040,7 +1040,7 @@ int ParseLandFile(int landtype, string indir)
 			ftype = "CostMapFile";
 			bLandFile >> gNameCostFile;
 			if (gNameCostFile == "NULL") {
-				if (transfer == 1) { // SMS
+				if (gTransferType == 1) { // SMS
 					if (landtype == 2) {
 						BatchError(filetype, line, 0, " "); errors++;
 						batchlog << ftype << " is required for a habitat quality landscape" << endl;
@@ -1048,7 +1048,7 @@ int ParseLandFile(int landtype, string indir)
 				}
 			}
 			else {
-				if (transfer == 1) { // SMS
+				if (gTransferType == 1) { // SMS
 					fname = indir + gNameCostFile;
 					costraster = CheckRasterFile(fname);
 					if (costraster.ok) {
@@ -2115,7 +2115,7 @@ int ParseTransferFile(string indir)
 {
 	string header, colheader, intext, fname, ftype;
 	int i, simNb, stagedep, sexdep, kerneltype, distmort, indvar, stage, sex;
-	int	prMethod, smtype, straightenPath;
+	int	prMethod, smtype, inStraightenPath;
 	float pr, dp, smconst;
 	int goaltype, memsize, betaDB; float gb, alphaDB;
 	float meanDistI, meanDistII, ProbKernelI;
@@ -2132,7 +2132,7 @@ int ParseTransferFile(string indir)
 
 	// Parse header line;
 	bTransferFile >> header; if (header != "Simulation") errors++;
-	switch (transfer) {
+	switch (gTransferType) {
 
 	case 0: { // negative exponential dispersal kernel
 		batchlog << "Checking dispersal kernel format file" << endl;
@@ -2236,7 +2236,7 @@ int ParseTransferFile(string indir)
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
 
-		switch (transfer) {
+		switch (gTransferType) {
 
 		case 0: { // negative exponential dispersal kernel
 			// read and validate columns relating to stage and sex-dependency and to IIV
@@ -2326,8 +2326,8 @@ int ParseTransferFile(string indir)
 					BatchError(filetype, line, 10, "BetaDB"); errors++;
 				}
 			}
-			bTransferFile >> straightenPath >> smtype >> smconst;
-			if (straightenPath < 0 || straightenPath > 1) {
+			bTransferFile >> inStraightenPath >> smtype >> smconst;
+			if (inStraightenPath < 0 || inStraightenPath > 1) {
 				BatchError(filetype, line, 1, "StraightenPath"); errors++;
 			}
 			if (landtype == 2) // habitat quality landscape 
@@ -2407,7 +2407,7 @@ int ParseTransferFile(string indir)
 		} // end of SMS
 
 		case 2: { // CRW
-			bTransferFile >> indvar >> SL >> rho >> straightenPath >> smtype >> smconst;
+			bTransferFile >> indvar >> SL >> rho >> inStraightenPath >> smtype >> smconst;
 			current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, indvar, true, false);
 			if (current.isNewSim) simuls++;
 			errors += current.errors;
@@ -2419,7 +2419,7 @@ int ParseTransferFile(string indir)
 			if (rho <= 0.0 || rho >= 1.0) {
 				BatchError(filetype, line, 20, "Rho"); errors++;
 			}
-			if (straightenPath < 0 || straightenPath > 1) {
+			if (inStraightenPath < 0 || inStraightenPath > 1) {
 				BatchError(filetype, line, 1, "StraightenPath"); errors++;
 			}
 			if (landtype == 0) { // real landscape with habitat types
@@ -2462,7 +2462,7 @@ int ParseTransferFile(string indir)
 		if (bTransferFile.eof()) simNb = -98765;
 	} // end of while loop
 	// check for correct number of lines for previous simulation
-	if (transfer == 0 // no. of lines checked for dispersal kernel transfer method only
+	if (gTransferType == 0 // no. of lines checked for dispersal kernel transfer method only
 		&& current.simLines != current.reqdSimLines) {
 		BatchError(filetype, line, 0, " "); errors++;
 		batchlog << msgnlines << current.simNb
@@ -2496,7 +2496,7 @@ int ParseSettleFile(void)
 	bSettlementFile >> header; if (header != "SexDep") errors++;
 	bSettlementFile >> header; if (header != "Stage") errors++;
 	bSettlementFile >> header; if (header != "Sex") errors++;
-	if (transfer == 0)
+	if (gTransferType == 0)
 	{ // dispersal kernel
 		bSettlementFile >> header; if (header != "SettleType") errors++;
 		bSettlementFile >> header; if (header != "FindMate") errors++;
@@ -2530,7 +2530,7 @@ int ParseSettleFile(void)
 	}
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
-		if (transfer == 0)
+		if (gTransferType == 0)
 		{ // dispersal kernel
 			// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 			bSettlementFile >> stagedep >> sexdep >> stage >> sex >> settletype >> findmate;
@@ -4442,10 +4442,8 @@ int ReadEmigration(int option)
 }
 
 //---------------------------------------------------------------------------
-int ReadTransfer(int option, Landscape* pLandscape)
+int ReadTransferFile(int option, Landscape* pLandscape)
 {
-	int iiii, jjjj, kkkk, simNb, gFirstSimNb = 0, stageDep, sexDep, stage, sex;
-	float tttt;
 	int error = 0;
 	landParams paramsLand = pLandscape->getLandParams();
 	transferRules trfr = pSpecies->getTransferRules();
@@ -4484,7 +4482,8 @@ int ReadTransfer(int option, Landscape* pLandscape)
 		} else { // dispersal kernel
 			nheaders = 14;
 		}
-		for (int i = 0; i < nheaders; i++) transFile >> header;
+		for (int i = 0; i < nheaders; i++) 
+			transFile >> header;
 		return 0;
 	}
 
@@ -4495,18 +4494,13 @@ int ReadTransfer(int option, Landscape* pLandscape)
 		return 0;
 	}
 
-	int TransferType; // new local variable to replace former global variable
-	if (trfr.moveModel)
-		TransferType = trfr.moveType; 
-	else 
-		TransferType = 0;
-
-	string CostsFile;
+	// new local variable to replace former global variable
+	int TransferType = trfr.moveModel ? trfr.moveType : 0; 
 
 	switch (TransferType) {
 
 	case 0: // negative exponential dispersal kernel
-		error = ReadTransferKernels(trfr, paramsLand.resol);
+		error = ReadTransferKernels(trfr, paramsLand);
 		break; // end of negative exponential dispersal kernel
 
 	case 1: // SMS
@@ -4514,36 +4508,8 @@ int ReadTransfer(int option, Landscape* pLandscape)
 		break; // end of SMS
 
 	case 2: // CRW
-	{
-		trfrMovtParams move;
-		transFile >> simNb >> iiii;
-		if (iiii == 0) trfr.indVar = false; else trfr.indVar = true;
-
-		transFile >> move.stepLength >> move.rho;
-		transFile >> jjjj >> iiii >> move.stepMort;
-		if (iiii == 0) trfr.habMort = false; else trfr.habMort = true;
-		if (jjjj == 0) move.straigtenPath = false; else move.straigtenPath = true;
-
-		//Habitat-dependent per step mortality
-		if (trfr.habMort && paramsLand.rasterType != 0) 
-			error = 434;
-
-		if (!paramsLand.generated && paramsLand.rasterType == 0) { // real habitat codes landscape
-			if (trfr.habMort)
-			{ // habitat-dependent step mortality
-				for (int i = 0; i < paramsLand.nHabMax; i++) {
-					transFile >> tttt;
-					pSpecies->setHabMort(i, tttt);
-				}
-			}
-			else { // constant step mortality
-				for (int i = 0; i < paramsLand.nHabMax; i++) transFile >> tttt;
-			}
-		}
-		pSpecies->setTrfrRules(trfr);
-		pSpecies->setMovtTraits(move);
-	}
-	break; // end of CRW
+		error = ReadTransferCRW(trfr, paramsLand);
+		break; // end of CRW
 
 	default:
 		error = 440;
@@ -4553,9 +4519,9 @@ int ReadTransfer(int option, Landscape* pLandscape)
 	return error;
 }
 
-int ReadTransferKernels(transferRules trfr, const int& landResol) {
+int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 
-	int inKernelType, inDistMort, inIndVar, simNb, gFirstSimNb = 0, inStageDep, inSexDep, inStage, inSex;
+	int inKernelType, inDistMort, inIndVar, simNb, inStageDep, inSexDep, inStage, inSex;
 	float flushMort;
 	stageParams stageStruct = pSpecies->getStageParams();
 	demogrParams dem = pSpecies->getDemogrParams();
@@ -4572,25 +4538,18 @@ int ReadTransferKernels(transferRules trfr, const int& landResol) {
 		transFile >> simNb >> inStageDep >> inSexDep >> inKernelType >> inDistMort >> inIndVar;
 		if (isFirstLine) {
 			gFirstSimNb = simNb;
-			if (inKernelType == 0) trfr.twinKern = false;
-			else trfr.twinKern = true;
-			if (inDistMort == 0) trfr.distMort = false;
-			else trfr.distMort = true;
+			trfr.twinKern = (inKernelType == 1);
+			trfr.distMort = (inDistMort == 1);
 			sexKernels = 2 * inStageDep + inSexDep;
-			if (inIndVar == 0) trfr.indVar = false;
-			else trfr.indVar = true;
-			if (inSexDep) trfr.sexDep = true;
-			else trfr.sexDep = false;
+			trfr.indVar = (inIndVar == 1);
+			trfr.sexDep = (inSexDep == 1);
 			// update no.of lines according to known stage- and sex-dependency
-			if (inStageDep) {
-				trfr.stgDep = true;
-				if (inSexDep) Nlines = stageStruct.nStages * gNbSexesDisp;
-				else Nlines = stageStruct.nStages;
+			trfr.stgDep = (inStageDep == 1);
+			if (trfr.stgDep) {
+				Nlines = inSexDep ? stageStruct.nStages * gNbSexesDisp : stageStruct.nStages;
 			}
 			else {
-				trfr.stgDep = false;
-				if (inSexDep) Nlines = gNbSexesDisp;
-				else Nlines = 1;
+				Nlines = inSexDep ? gNbSexesDisp : 1;
 			}
 			pSpecies->setTrfrRules(trfr);
 		}
@@ -4612,7 +4571,7 @@ int ReadTransferKernels(transferRules trfr, const int& landResol) {
 
 		case 0: // no sex / stage dependence
 			transFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
-			pSpecies->setKernTraits(0, 0, kernParams, landResol);
+			pSpecies->setKernTraits(0, 0, kernParams, paramsLand.resol);
 			break;
 
 		case 1: // sex-dependent
@@ -4624,7 +4583,7 @@ int ReadTransferKernels(transferRules trfr, const int& landResol) {
 				transFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
 				kernParams.probKern1 = 1.0;
 			}
-			pSpecies->setKernTraits(0, inSex, kernParams, landResol);
+			pSpecies->setKernTraits(0, inSex, kernParams, paramsLand.resol);
 
 			break;
 
@@ -4637,7 +4596,7 @@ int ReadTransferKernels(transferRules trfr, const int& landResol) {
 				transFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
 				kernParams.probKern1 = 1.0;
 			}
-			pSpecies->setKernTraits(inStage, 0, kernParams, landResol);
+			pSpecies->setKernTraits(inStage, 0, kernParams, paramsLand.resol);
 			break;
 
 		case 3: // sex- & stage-dependent
@@ -4649,7 +4608,7 @@ int ReadTransferKernels(transferRules trfr, const int& landResol) {
 				transFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
 				kernParams.probKern1 = 1.0;
 			}
-			pSpecies->setKernTraits(inStage, inSex, kernParams, landResol);
+			pSpecies->setKernTraits(inStage, inSex, kernParams, paramsLand.resol);
 			break;
 		} // end of switch (sexkernels)
 
@@ -4680,13 +4639,13 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 		>> move.memSize >> move.gb >> move.goalType >> inAlphaDB >> inBetaDB
 		>> inStraightenPath >> inSMType >> move.stepMort;
 
-	trfr.indVar = (inIndVar == 1) ? true : false;
+	trfr.indVar = (inIndVar == 1);
 	if (move.goalType == 2) { // dispersal bias
 		move.alphaDB = inAlphaDB;
 		move.betaDB = inBetaDB;
 	}
-	trfr.habMort = (inSMType == 1) ? true : false;
-	move.straigtenPath = (inStraightenPath == 1) ? true : false;
+	trfr.habMort = (inSMType == 1);
+	move.straightenPath = (inStraightenPath == 1);
 
 	if (!paramsLand.generated) { // imported landscape
 		if (paramsLand.rasterType == 0) { // habitat codes
@@ -4749,12 +4708,54 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 	pSpecies->setMovtTraits(move);
 }
 
+int ReadTransferCRW(transferRules trfr, const landParams& paramsLand) {
+
+	int inIndVar, inStraightenPath, inSMconst, simNb;
+	float inHabMort, flushHabMort;
+
+	int error = 0;
+	trfrMovtParams move;
+	transFile >> simNb >> inIndVar;
+	if (inIndVar == 0) trfr.indVar = false;
+	else trfr.indVar = true;
+
+	transFile >> move.stepLength >> move.rho;
+	transFile >> inStraightenPath >> inSMconst >> move.stepMort;
+
+	if (inSMconst == 0) trfr.habMort = false;
+	else trfr.habMort = true;
+
+	if (inStraightenPath == 0) move.straightenPath = false;
+	else move.straightenPath = true;
+
+	//Habitat-dependent per step mortality
+	if (trfr.habMort && paramsLand.rasterType != 0)
+		error = 434;
+
+	if (!paramsLand.generated && paramsLand.rasterType == 0) { // imported habitat codes landscape
+		if (trfr.habMort)
+		{ // habitat-dependent step mortality
+			for (int i = 0; i < paramsLand.nHabMax; i++) {
+				transFile >> inHabMort;
+				pSpecies->setHabMort(i, inHabMort);
+			}
+		}
+		else { // constant step mortality
+			for (int i = 0; i < paramsLand.nHabMax; i++) 
+				transFile >> flushHabMort;
+		}
+	}
+	pSpecies->setTrfrRules(trfr);
+	pSpecies->setMovtTraits(move);
+	return error;
+}
+
 //---------------------------------------------------------------------------
 int ReadSettlement(int option)
 {
-
-	int Nlines, simulation, gFirstSimNb = 0, stageDep, sexDep, stage, sex;
-	bool firstline = true;
+	int Nlines, simNb, gFirstSimNb = 0, inStageDep, inSexDep, inStage, inSex;
+	bool isFirstline = true;
+	bool mustFindMate;
 	int error = 0;
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
@@ -4763,12 +4764,7 @@ int ReadSettlement(int option)
 	settleRules srules;
 	settleSteps ssteps;
 	settleTraits settleDD;
-	int sexSettle = 0, settType = 0, densdep, indvar, findmate;
-
-#if RSDEBUG
-	//DEBUGLOG << "ReadSettlement(): option=" << option << " transfer=" << transfer 
-	//	<< " trfr.moveModel=" << trfr.moveModel << endl;
-#endif
+	int sexSettle = 0, inSettleType = 0, inDensDep, inIndVar, inFindMate;
 
 	if (option == 0) { // open file and read header line
 		settFile.open(settleFile.c_str());
@@ -4778,9 +4774,6 @@ int ReadSettlement(int option)
 		else nheaders = 7;
 		for (int i = 0; i < nheaders; i++) {
 			settFile >> header;
-#if RSDEBUG
-			//DEBUGLOG << "ReadSettlement(): i=" << i << " header=" << header << endl;
-#endif
 		}
 		return 0;
 	}
@@ -4791,7 +4784,7 @@ int ReadSettlement(int option)
 		return 0;
 	}
 
-	firstline = true;
+	isFirstline = true;
 
 	// set no.of lines assuming maximum stage- and sex-dependency
 	if (sstruct.nStages == 0) Nlines = gNbSexesDisp;
@@ -4799,38 +4792,36 @@ int ReadSettlement(int option)
 
 	for (int line = 0; line < Nlines; line++) {
 
-		settFile >> simulation >> stageDep >> sexDep >> stage >> sex;
-		if (transfer == 0)
+		settFile >> simNb >> inStageDep >> inSexDep >> inStage >> inSex;
+		if (!trfr.moveModel)
 		{ // dispersal kernel
-			settFile >> settType >> findmate;
+			settFile >> inSettleType >> inFindMate;
 		}
 		else {
-			settFile >> densdep >> indvar >> findmate;
+			settFile >> inDensDep >> inIndVar >> inFindMate;
 		}
-		if (firstline) {
-			gFirstSimNb = simulation;
-			sexSettle = 2 * stageDep + sexDep;
-			if (stageDep == 1) sett.stgDep = true; else sett.stgDep = false;
-			if (sexDep == 1) sett.sexDep = true; else sett.sexDep = false;
-			if (transfer == 0) sett.indVar = false;  // dispersal kernel
-			else if (indvar == 1) sett.indVar = true; else sett.indVar = false;
+		mustFindMate = (inFindMate == 1);
+
+		if (isFirstline) {
+			gFirstSimNb = simNb;
+			sexSettle = 2 * inStageDep + inSexDep;
+			sett.stgDep = (inStageDep == 1);
+			sett.sexDep = (inSexDep == 1);
+			sett.indVar = (inIndVar == 1) && trfr.moveModel; // no ind var for kernels
 			pSpecies->setSettle(sett);
+
 			// update no.of lines according to known stage- and sex-dependency
-			if (stageDep) {
-				if (sexDep) Nlines = sstruct.nStages * gNbSexesDisp;
-				else Nlines = sstruct.nStages;
-			}
-			else {
-				if (sexDep) Nlines = gNbSexesDisp;
-				else Nlines = 1;
-			}
+			Nlines = sett.sexDep ? gNbSexesDisp : 1;
+			if (sett.stgDep) Nlines *= sstruct.nStages;
 		}
-		if (simulation != gFirstSimNb) { // serious problem
+
+		if (simNb != gFirstSimNb) { // serious problem
 			error = 500;
 		}
 
 		if (trfr.moveModel) {
-
+			// Movement process
+			
 			if (dem.repType == 0) {
 				if (sexSettle == 1 || sexSettle == 3) error = 508;
 			}
@@ -4838,9 +4829,6 @@ int ReadSettlement(int option)
 				if (sexSettle == 2 || sexSettle == 3) error = 509;
 			}
 
-#if RSDEBUG
-			DEBUGLOG << "ReadSettlement(): sexSettle=" << sexSettle << endl;
-#endif
 			settFile >> ssteps.minSteps >> ssteps.maxSteps >> ssteps.maxStepsYr;
 			settFile >> settleDD.s0 >> settleDD.alpha >> settleDD.beta;
 
@@ -4848,8 +4836,8 @@ int ReadSettlement(int option)
 
 			case 0: // no sex- / stage-dependence
 				srules = pSpecies->getSettRules(0, 0);
-				if (densdep == 1) srules.densDep = true; else srules.densDep = false;
-				if (findmate == 1) srules.findMate = true; else srules.findMate = false;
+				if (inDensDep == 1) srules.densDep = true; else srules.densDep = false;
+				if (inFindMate == 1) srules.findMate = true; else srules.findMate = false;
 				pSpecies->setSettRules(0, 0, srules);
 				pSpecies->setSteps(0, 0, ssteps);
 				if (srules.densDep) {
@@ -4879,52 +4867,52 @@ int ReadSettlement(int option)
 				break;
 
 			case 1: // sex-dependent
-				srules = pSpecies->getSettRules(0, sex);
-				if (densdep == 1) srules.densDep = true; else srules.densDep = false;
-				if (findmate == 1) srules.findMate = true; else srules.findMate = false;
-				pSpecies->setSettRules(0, sex, srules);
-				pSpecies->setSteps(0, sex, ssteps);
+				srules = pSpecies->getSettRules(0, inSex);
+				if (inDensDep == 1) srules.densDep = true; else srules.densDep = false;
+				if (inFindMate == 1) srules.findMate = true; else srules.findMate = false;
+				pSpecies->setSettRules(0, inSex, srules);
+				pSpecies->setSteps(0, inSex, ssteps);
 
 				if (srules.densDep) {
-					pSpecies->setSettTraits(0, sex, settleDD);
+					pSpecies->setSettTraits(0, inSex, settleDD);
 				}
 				if (dem.stageStruct) { // model is structured - also set parameters for all stages
 					for (int i = 1; i < sstruct.nStages; i++) {
-						pSpecies->setSettRules(i, sex, srules);
-						pSpecies->setSteps(i, sex, ssteps);
-						if (srules.densDep && !sett.indVar) pSpecies->setSettTraits(i, sex, settleDD);
+						pSpecies->setSettRules(i, inSex, srules);
+						pSpecies->setSteps(i, inSex, ssteps);
+						if (srules.densDep && !sett.indVar) pSpecies->setSettTraits(i, inSex, settleDD);
 					}
 				}
 				break;
 
 			case 2: // stage-dependent
-				srules = pSpecies->getSettRules(stage, 0);
-				if (densdep == 1) srules.densDep = true; else srules.densDep = false;
-				if (findmate == 1) srules.findMate = true; else srules.findMate = false;
-				pSpecies->setSettRules(stage, 0, srules);
-				pSpecies->setSteps(stage, 0, ssteps);
+				srules = pSpecies->getSettRules(inStage, 0);
+				if (inDensDep == 1) srules.densDep = true; else srules.densDep = false;
+				if (inFindMate == 1) srules.findMate = true; else srules.findMate = false;
+				pSpecies->setSettRules(inStage, 0, srules);
+				pSpecies->setSteps(inStage, 0, ssteps);
 				if (srules.densDep) {
 
-					pSpecies->setSettTraits(stage, 0, settleDD);
+					pSpecies->setSettTraits(inStage, 0, settleDD);
 
 				}
 				if (dem.repType > 0) { // model is sexual - also set parameters for males
-					pSpecies->setSettRules(stage, 1, srules);
-					pSpecies->setSteps(stage, 1, ssteps);
+					pSpecies->setSettRules(inStage, 1, srules);
+					pSpecies->setSteps(inStage, 1, ssteps);
 					if (srules.densDep) {
-						pSpecies->setSettTraits(stage, 1, settleDD);
+						pSpecies->setSettTraits(inStage, 1, settleDD);
 					}
 				}
 				break;
 
 			case 3: // sex- & stage-dependent
-				srules = pSpecies->getSettRules(stage, sex);
-				if (densdep == 1) srules.densDep = true; else srules.densDep = false;
-				if (findmate == 1) srules.findMate = true; else srules.findMate = false;
-				pSpecies->setSettRules(stage, sex, srules);
-				pSpecies->setSteps(stage, sex, ssteps);
+				srules = pSpecies->getSettRules(inStage, inSex);
+				if (inDensDep == 1) srules.densDep = true; else srules.densDep = false;
+				if (inFindMate == 1) srules.findMate = true; else srules.findMate = false;
+				pSpecies->setSettRules(inStage, inSex, srules);
+				pSpecies->setSteps(inStage, inSex, ssteps);
 				if (srules.densDep) {
-					pSpecies->setSettTraits(stage, sex, settleDD);
+					pSpecies->setSettTraits(inStage, inSex, settleDD);
 				}
 				break;
 			}
@@ -4932,125 +4920,73 @@ int ReadSettlement(int option)
 		} // end of movement model
 		else { // dispersal kernel
 
-			if (dem.repType == 0) {
-				if (sett.sexDep) error = 501;
-			}
-			if (!dem.stageStruct) {
-				if (sett.stgDep) error = 502;
-			}
+			bool hasMales = dem.repType > 0;
+			if (!hasMales && sett.sexDep)
+				error = 501;
+			if (!dem.stageStruct && sett.stgDep)
+				error = 502;
+			if (!sett.stgDep && (inSettleType == 1 || inSettleType == 3) && !dem.stageStruct)
+				error = 503;
+			if (!sett.sexDep && mustFindMate && !hasMales)
+				error = 504;
 
-			switch (sexSettle) {
+			int stageToSet = sett.stgDep ? inStage : 0;
+			int sexToSet = sett.sexDep ? inSex : 0;
+			srules = pSpecies->getSettRules(stageToSet, sexToSet);
 
-			case 0: //no sex / stage dependence
-				if ((settType == 1 || settType == 3) && dem.stageStruct == false) error = 503;
-				if (findmate == 1 && dem.repType == 0) error = 504;
-				srules = pSpecies->getSettRules(0, 0);
-				switch (settType) {
-				case 0:
-					srules.wait = false; srules.go2nbrLocn = false;
-					break;
-				case 1:
-					srules.wait = true; srules.go2nbrLocn = false;
-					break;
-				case 2:
-					srules.wait = false; srules.go2nbrLocn = true;
-					break;
-				case 3:
-					srules.wait = true; srules.go2nbrLocn = true;
-					break;
-				}
-				if (findmate == 1) srules.findMate = true; else srules.findMate = false;
-				pSpecies->setSettRules(0, 0, srules);
-				if (dem.stageStruct) { // model is structured - also set parameters for all stages
-					for (int i = 0; i < sstruct.nStages; i++) {
-						pSpecies->setSettRules(i, 0, srules);
-						if (dem.repType > 0) { // model is sexual - also set parameters for males
-							pSpecies->setSettRules(i, 1, srules);
+			switch (inSettleType) {
+			case 0:
+				srules.wait = false;
+				srules.go2nbrLocn = false;
+				break;
+			case 1:
+				srules.wait = true;
+				srules.go2nbrLocn = false;
+				break;
+			case 2:
+				srules.wait = false;
+				srules.go2nbrLocn = true;
+				break;
+			case 3:
+				srules.wait = true;
+				srules.go2nbrLocn = true;
+				break;
+			}
+			srules.findMate = mustFindMate;
+			pSpecies->setSettRules(stageToSet, sexToSet, srules);
+
+			// Surely this can be simplified further
+			if (!sett.stgDep && dem.stageStruct) {
+				// Must set other stages
+				if (!sett.sexDep) {
+					for (int stg = 0; stg < sstruct.nStages; stg++) {
+						pSpecies->setSettRules(stg, 0, srules);
+						if (hasMales) { // model is sexual - also set parameters for males
+							pSpecies->setSettRules(stg, 1, srules);
 						}
 					}
 				}
 				else {
-					if (dem.repType > 0) { // model is sexual - also set parameters for males
-						pSpecies->setSettRules(0, 1, srules);
+					for (int stg = 1; stg < sstruct.nStages; stg++) {
+						pSpecies->setSettRules(stg, sexToSet, srules);
 					}
 				}
-				break;
-
-			case 1: //sex dependent
-				if ((settType == 1 || settType == 3) && dem.stageStruct == false) error = 505;
-				srules = pSpecies->getSettRules(0, sex);
-				switch (settType) {
-				case 0:
-					srules.wait = false; srules.go2nbrLocn = false;
-					break;
-				case 1:
-					srules.wait = true; srules.go2nbrLocn = false;
-					break;
-				case 2:
-					srules.wait = false; srules.go2nbrLocn = true;
-					break;
-				case 3:
-					srules.wait = true; srules.go2nbrLocn = true;
-					break;
+			}
+			if (!sett.sexDep && hasMales) {
+				// Must set males
+				if (!sett.stgDep) {
+					pSpecies->setSettRules(0, 1, srules);
+					// males of other stages already set above
+					// actually stage 0 males too?
 				}
-				if (findmate == 1) srules.findMate = true; else srules.findMate = false;
-				pSpecies->setSettRules(0, sex, srules);
-				if (dem.stageStruct) { // model is structured - also set parameters for all stages
-					for (int i = 1; i < sstruct.nStages; i++) {
-						pSpecies->setSettRules(i, sex, srules);
-					}
+				else {
+					pSpecies->setSettRules(stageToSet, 1, srules);
 				}
-				break;
-
-			case 2: //stage dependent
-				if (findmate == 1 && dem.repType == 0) error = 507;
-				srules = pSpecies->getSettRules(stage, 0);
-				switch (settType) {
-				case 0:
-					srules.wait = false; srules.go2nbrLocn = false;
-					break;
-				case 1:
-					srules.wait = true; srules.go2nbrLocn = false;
-					break;
-				case 2:
-					srules.wait = false; srules.go2nbrLocn = true;
-					break;
-				case 3:
-					srules.wait = true; srules.go2nbrLocn = true;
-					break;
-				}
-				if (findmate == 1) srules.findMate = true; else srules.findMate = false;
-				pSpecies->setSettRules(stage, 0, srules);
-				if (dem.repType > 0) { // model is sexual - also set parameters for males
-					pSpecies->setSettRules(stage, 1, srules);
-				}
-				break;
-
-			case 3: //sex & stage dependent
-				srules = pSpecies->getSettRules(stage, sex);
-				switch (settType) {
-				case 0:
-					srules.wait = false; srules.go2nbrLocn = false;
-					break;
-				case 1:
-					srules.wait = true; srules.go2nbrLocn = false;
-					break;
-				case 2:
-					srules.wait = false; srules.go2nbrLocn = true;
-					break;
-				case 3:
-					srules.wait = true; srules.go2nbrLocn = true;
-					break;
-				}
-				if (findmate == 1) srules.findMate = true; else srules.findMate = false;
-				pSpecies->setSettRules(stage, sex, srules);
-				break;
-
-			} // end of switch (sexSettle)
+			}
 
 		} // end of dispersal kernel
 
-		firstline = false;
+		isFirstline = false;
 
 	} // end of for line loop
 
@@ -5410,7 +5346,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 				ReadStageStructure(0);
 			}
 			ReadEmigration(0);
-			ReadTransfer(0, pLandscape);
+			ReadTransferFile(0, pLandscape);
 			ReadSettlement(0);
 			ReadInitialisation(0, pLandscape);
 
@@ -5436,7 +5372,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
-				read_error = ReadTransfer(1, pLandscape);
+				read_error = ReadTransferFile(1, pLandscape);
 				if (read_error) {
 					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
@@ -5500,7 +5436,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 			ReadParameters(9, pLandscape);
 			if (stagestruct) ReadStageStructure(9);
 			ReadEmigration(9);
-			ReadTransfer(9, pLandscape);
+			ReadTransferFile(9, pLandscape);
 			ReadSettlement(9);
 			ReadInitialisation(9, pLandscape);
 

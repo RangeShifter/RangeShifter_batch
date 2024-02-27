@@ -174,9 +174,10 @@ int ReadTransitionMatrix(
 );
 int ReadStageWeights(int);
 int ReadEmigration(int);
-int ReadTransfer(int, Landscape*);
-int ReadTransferKernels(transferRules, const int&);
+int ReadTransferFile(int, Landscape*);
+int ReadTransferKernels(transferRules, const landParams&);
 void ReadTransferSMS(transferRules, const landParams&);
+int ReadTransferCRW(transferRules, const landParams&);
 int ReadSettlement(int);
 int ReadInitialisation(int, Landscape*);
 int ReadInitIndsFile(int, Landscape*, string);
