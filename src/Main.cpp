@@ -226,9 +226,9 @@ if (b.ok) {
 	if (b.stagestruct == 0) dem.stageStruct = false; 
 	else dem.stageStruct = true;
 	sstruct.nStages = b.stages;
-	if (b.transfer == 0) trfr.moveModel = false;
+	if (b.transfer == 0) trfr.usesMovtProc = false;
 	else {
-		trfr.moveModel = true;
+		trfr.usesMovtProc = true;
 		trfr.moveType = b.transfer;
 	}
 	cout << endl << "Batch input files OK" << endl;

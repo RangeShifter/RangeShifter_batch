@@ -4452,7 +4452,7 @@ int ReadTransferFile(int option, Landscape* pLandscape)
 		transFile.open(transferFile.c_str());
 		string header;
 		int nheaders = 0;
-		if (trfr.moveModel) {
+		if (trfr.usesMovtProc) {
 
 			if (paramsLand.generated)
 				pSpecies->createHabCostMort(paramsLand.nHab);
@@ -4495,7 +4495,7 @@ int ReadTransferFile(int option, Landscape* pLandscape)
 	}
 
 	// new local variable to replace former global variable
-	int TransferType = trfr.moveModel ? trfr.moveType : 0; 
+	int TransferType = trfr.usesMovtProc ? trfr.moveType : 0; 
 
 	switch (TransferType) {
 
@@ -4756,7 +4756,7 @@ int ReadSettlement(int option)
 	int Nlines, simNb, gFirstSimNb = 0, inStageDep, inSexDep, inStage, inSex;
 	bool isFirstline = true;
 	bool mustFindMate;
-	int error = 0;
+	int errorCode = 0;
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
 	transferRules trfr = pSpecies->getTransferRules();
@@ -4770,7 +4770,7 @@ int ReadSettlement(int option)
 		settFile.open(settleFile.c_str());
 		string header;
 		int nheaders = 0;
-		if (trfr.moveModel) nheaders = 14;
+		if (trfr.usesMovtProc) nheaders = 14;
 		else nheaders = 7;
 		for (int i = 0; i < nheaders; i++) {
 			settFile >> header;
@@ -4793,7 +4793,7 @@ int ReadSettlement(int option)
 	for (int line = 0; line < Nlines; line++) {
 
 		settFile >> simNb >> inStageDep >> inSexDep >> inStage >> inSex;
-		if (!trfr.moveModel)
+		if (!trfr.usesMovtProc)
 		{ // dispersal kernel
 			settFile >> inSettleType >> inFindMate;
 		}
@@ -4804,10 +4804,9 @@ int ReadSettlement(int option)
 
 		if (isFirstline) {
 			gFirstSimNb = simNb;
-			sexSettle = 2 * inStageDep + inSexDep;
 			sett.stgDep = (inStageDep == 1);
 			sett.sexDep = (inSexDep == 1);
-			sett.indVar = (inIndVar == 1) && trfr.moveModel; // no ind var for kernels
+			sett.indVar = (inIndVar == 1) && trfr.usesMovtProc; // no ind var for kernels
 			pSpecies->setSettle(sett);
 
 			// update no.of lines according to known stage- and sex-dependency
@@ -4816,119 +4815,91 @@ int ReadSettlement(int option)
 		}
 
 		if (simNb != gFirstSimNb) { // serious problem
-			error = 500;
+			errorCode = 500;
 		}
 
-		if (trfr.moveModel) {
+		if (trfr.usesMovtProc) {
 			// Movement process
-			
-			if (dem.repType == 0) {
-				if (sexSettle == 1 || sexSettle == 3) error = 508;
-			}
-			if (!dem.stageStruct) {
-				if (sexSettle == 2 || sexSettle == 3) error = 509;
-			}
+			bool hasMales = dem.repType > 0;
+			if (!hasMales && sett.sexDep) 
+				errorCode = 508;
+			if (!dem.stageStruct && sett.stgDep) 
+				errorCode = 509;
 
 			settFile >> ssteps.minSteps >> ssteps.maxSteps >> ssteps.maxStepsYr;
 			settFile >> settleDD.s0 >> settleDD.alpha >> settleDD.beta;
 
-			switch (sexSettle) {
+			int stageToSet = sett.stgDep ? inStage : 0;
+			int sexToSet = sett.sexDep ? inSex : 0;
+			srules = pSpecies->getSettRules(stageToSet, sexToSet);
+			srules.densDep = (inDensDep == 1);
+			srules.findMate = (inFindMate == 1);
 
-			case 0: // no sex- / stage-dependence
-				srules = pSpecies->getSettRules(0, 0);
-				if (inDensDep == 1) srules.densDep = true; else srules.densDep = false;
-				if (inFindMate == 1) srules.findMate = true; else srules.findMate = false;
-				pSpecies->setSettRules(0, 0, srules);
-				pSpecies->setSteps(0, 0, ssteps);
-				if (srules.densDep) {
-					pSpecies->setSettTraits(0, 0, settleDD);
-				}
-				if (dem.stageStruct) { // model is structured - also set parameters for all stages
-					for (int i = 1; i < sstruct.nStages; i++) {
-						pSpecies->setSettRules(i, 0, srules);
-						pSpecies->setSteps(i, 0, ssteps);
-						pSpecies->setSettTraits(i, 0, settleDD);
-						if (dem.repType > 0) { // model is sexual - also set parameters for males
-							pSpecies->setSettRules(i, 1, srules);
-							pSpecies->setSteps(i, 1, ssteps);
-							if (srules.densDep && !sett.indVar) pSpecies->setSettTraits(i, 1, settleDD);
-						}
-					}
-				}
-				else {
-					if (dem.repType > 0) { // model is sexual - also set parameters for males
-						pSpecies->setSettRules(0, 1, srules);
-						pSpecies->setSteps(0, 1, ssteps);
-						if (srules.densDep) {
-							pSpecies->setSettTraits(0, 1, settleDD);
-						}
-					}
-				}
-				break;
-
-			case 1: // sex-dependent
-				srules = pSpecies->getSettRules(0, inSex);
-				if (inDensDep == 1) srules.densDep = true; else srules.densDep = false;
-				if (inFindMate == 1) srules.findMate = true; else srules.findMate = false;
-				pSpecies->setSettRules(0, inSex, srules);
-				pSpecies->setSteps(0, inSex, ssteps);
-
-				if (srules.densDep) {
-					pSpecies->setSettTraits(0, inSex, settleDD);
-				}
-				if (dem.stageStruct) { // model is structured - also set parameters for all stages
-					for (int i = 1; i < sstruct.nStages; i++) {
-						pSpecies->setSettRules(i, inSex, srules);
-						pSpecies->setSteps(i, inSex, ssteps);
-						if (srules.densDep && !sett.indVar) pSpecies->setSettTraits(i, inSex, settleDD);
-					}
-				}
-				break;
-
-			case 2: // stage-dependent
-				srules = pSpecies->getSettRules(inStage, 0);
-				if (inDensDep == 1) srules.densDep = true; else srules.densDep = false;
-				if (inFindMate == 1) srules.findMate = true; else srules.findMate = false;
-				pSpecies->setSettRules(inStage, 0, srules);
-				pSpecies->setSteps(inStage, 0, ssteps);
-				if (srules.densDep) {
-
-					pSpecies->setSettTraits(inStage, 0, settleDD);
-
-				}
-				if (dem.repType > 0) { // model is sexual - also set parameters for males
-					pSpecies->setSettRules(inStage, 1, srules);
-					pSpecies->setSteps(inStage, 1, ssteps);
-					if (srules.densDep) {
-						pSpecies->setSettTraits(inStage, 1, settleDD);
-					}
-				}
-				break;
-
-			case 3: // sex- & stage-dependent
-				srules = pSpecies->getSettRules(inStage, inSex);
-				if (inDensDep == 1) srules.densDep = true; else srules.densDep = false;
-				if (inFindMate == 1) srules.findMate = true; else srules.findMate = false;
-				pSpecies->setSettRules(inStage, inSex, srules);
-				pSpecies->setSteps(inStage, inSex, ssteps);
-				if (srules.densDep) {
-					pSpecies->setSettTraits(inStage, inSex, settleDD);
-				}
-				break;
+			pSpecies->setSettRules(stageToSet, sexToSet, srules);
+			pSpecies->setSteps(stageToSet, sexToSet, ssteps);
+			if (srules.densDep) {
+				pSpecies->setSettTraits(stageToSet, sexToSet, settleDD);
 			}
 
+			if (!sett.stgDep) {
+				if (!sett.sexDep) {
+					if (dem.stageStruct) { // model is structured - also set parameters for all stages
+						for (int stg = 1; stg < sstruct.nStages; stg++) {
+							pSpecies->setSettRules(stg, 0, srules);
+							pSpecies->setSteps(stg, 0, ssteps);
+							pSpecies->setSettTraits(stg, 0, settleDD);
+							if (hasMales) { // model is sexual - also set parameters for males
+								pSpecies->setSettRules(stg, 1, srules);
+								pSpecies->setSteps(stg, 1, ssteps);
+								if (srules.densDep && !sett.indVar) 
+									pSpecies->setSettTraits(stg, 1, settleDD);
+							}
+						}
+					}
+					else {
+						if (hasMales) { // model is sexual - also set parameters for males
+							pSpecies->setSettRules(0, 1, srules);
+							pSpecies->setSteps(0, 1, ssteps);
+							if (srules.densDep) {
+								pSpecies->setSettTraits(0, 1, settleDD);
+							}
+						}
+					}
+				}
+				else { // stage-dep but not sex-dep
+					if (dem.stageStruct) { // model is structured - also set parameters for all stages
+						for (int stg = 1; stg < sstruct.nStages; stg++) {
+							pSpecies->setSettRules(stg, sexToSet, srules);
+							pSpecies->setSteps(stg, sexToSet, ssteps);
+							if (srules.densDep && !sett.indVar) 
+								pSpecies->setSettTraits(stg, sexToSet, settleDD);
+						}
+					}
+				}
+			}
+			else { // not stage-dep
+				if (!sett.sexDep) {
+					if (hasMales) { // model is sexual - also set parameters for males
+						pSpecies->setSettRules(stageToSet, 1, srules);
+						pSpecies->setSteps(stageToSet, 1, ssteps);
+						if (srules.densDep) {
+							pSpecies->setSettTraits(stageToSet, 1, settleDD);
+						}
+					}
+				}
+			}
 		} // end of movement model
 		else { // dispersal kernel
 
 			bool hasMales = dem.repType > 0;
 			if (!hasMales && sett.sexDep)
-				error = 501;
+				errorCode = 501;
 			if (!dem.stageStruct && sett.stgDep)
-				error = 502;
+				errorCode = 502;
 			if (!sett.stgDep && (inSettleType == 1 || inSettleType == 3) && !dem.stageStruct)
-				error = 503;
+				errorCode = 503;
 			if (!sett.sexDep && mustFindMate && !hasMales)
-				error = 504;
+				errorCode = 504;
 
 			int stageToSet = sett.stgDep ? inStage : 0;
 			int sexToSet = sett.sexDep ? inSex : 0;
@@ -4983,14 +4954,13 @@ int ReadSettlement(int option)
 					pSpecies->setSettRules(stageToSet, 1, srules);
 				}
 			}
-
 		} // end of dispersal kernel
 
 		isFirstline = false;
 
 	} // end of for line loop
 
-	return error;
+	return errorCode;
 }
 
 
