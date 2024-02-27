@@ -2785,8 +2785,6 @@ int ParseGeneticsFile(string indir) {
 			}
 			if (bTraitsFile.is_open()) bTraitsFile.close();
 			bTraitsFile.clear();
-			//traitsParsed = true;
-		//}
 		}
 
 		// read next simulation
@@ -2927,15 +2925,9 @@ int ParseInitFile(string indir)
 
 		bInitFile >> minX >> maxX >> minY >> maxY >> nCells >> nSpCells;
 		if (seedtype == 0) {
-			//		if (minX < 0) {
-			//			BatchError(filetype,line,19,"minX"); errors++;
-			//		}
 			if (maxX < minX) {
 				BatchError(filetype, line, 2, "maxX", "minX"); errors++;
 			}
-			//		if (minY < 0) {
-			//			BatchError(filetype,line,19,"minY"); errors++;
-			//		}
 			if (maxY < minY) {
 				BatchError(filetype, line, 2, "maxY", "minY"); errors++;
 			}
@@ -3410,7 +3402,6 @@ void BatchError(string filename, int line, int option, string fieldname, string 
 	default:
 		batchlog << "*** Unspecified error regarding parameters " << fieldname
 			<< " and " << fieldname2;
-		;
 	}
 	if (option != 0) batchlog << endl;
 }
@@ -3419,7 +3410,6 @@ void CtrlFormatError(void)
 {
 	cout << "Format error in Control file" << endl;
 	batchlog << endl << "***" << endl << "*** Format error in Control file:"
-		//	<< " case-sensitive parameter and file names must match the specification exactly"
 		<< msgcase << " and file names" << msgmatch
 		<< endl
 		<< "***" << endl;
@@ -3427,8 +3417,6 @@ void CtrlFormatError(void)
 
 void ArchFormatError(void)
 {
-	//batchlog << "*** Format error in ArchFile: case-sensitive parameter names "
-	//	<< "must match the specification exactly" << endl;
 	batchlog << "*** Format error in ArchFile:" << msgcase << msgmatch << endl;
 }
 
@@ -3471,8 +3459,6 @@ void FileOK(string ftype, int n, int option)
 	default:
 		batchlog << "PROBLEMS = ";
 	}
-	//if (option == 0) batchlog << "simulations = ";
-	//else batchlog << "landscapes = ";
 	batchlog << n << endl;
 }
 
@@ -3490,11 +3476,6 @@ void SimulnCountError(string filename)
 //---------------------------------------------------------------------------
 int ReadLandFile(int option)
 {
-#if RSDEBUG
-	DEBUGLOG << "ReadLandFile(): option=" << option
-		<< " landFile=" << landFile << endl;
-#endif
-
 	if (option == 0) { // open file and read header line
 		landfile.open(landFile.c_str());
 		if (landfile.is_open()) {
@@ -3502,7 +3483,6 @@ int ReadLandFile(int option)
 			int nheaders;
 			if (landtype == 9) nheaders = 9; // artificial landscape
 			else { // imported raster map
-				//			nheaders = 6;
 				nheaders = 7;
 			}
 			for (int i = 0; i < nheaders; i++) landfile >> header;
@@ -3521,22 +3501,17 @@ int ReadLandFile(int option)
 //---------------------------------------------------------------------------
 int ReadLandFile(int option, Landscape* pLandscape)
 {
-#if RSDEBUG
-	DEBUGLOG << "ReadLandFile(): option=" << option << endl;
-#endif
 	landParams ppLand = pLandscape->getLandParams();
 	genLandParams ppGenLand = pLandscape->getGenLandParams();
 	simParams sim = paramsSim->getSim();
 
 	if (landtype == 9) { //artificial landscape
-#if RSDEBUG
-		DEBUGLOG << "ReadLandFile(): artificial: " << endl;
-#endif
 		ppLand.rasterType = 9;
 		landfile >> ppLand.landNum >> ppGenLand.fractal >> ppGenLand.continuous
 			>> ppLand.dimX >> ppLand.dimY >> ppGenLand.minPct >> ppGenLand.maxPct
 			>> ppGenLand.propSuit >> ppGenLand.hurst;
 		ppLand.maxX = ppLand.dimX - 1; ppLand.maxY = ppLand.dimY - 1;
+
 		if (ppGenLand.fractal && ppLand.maxX > ppLand.maxY) {
 			return -901;
 		}
@@ -3549,56 +3524,32 @@ int ReadLandFile(int option, Landscape* pLandscape)
 		// SCFP 26/9/13 - min and max habitat percentages need to be set for all types of
 		// fractal landscape (including discrete), as they are passed to the fractal generator
 		// NOTE that will not have been checked for a discrete landscape
-		if (ppGenLand.fractal && !ppGenLand.continuous) { ppGenLand.minPct = 1; ppGenLand.maxPct = 100; }
-		if (ppGenLand.continuous) ppLand.nHab = 2;
-		else ppLand.nHab = 1;
-#if RSDEBUG
-		DEBUGLOG << "ReadLandFile(): ppLand.landNum=" << ppLand.landNum
-			<< " continuous=" << ppGenLand.continuous << " ppLand.nHab=" << ppLand.nHab
-			<< " ppLand.dimX=" << ppLand.dimX << " ppLand.dimY=" << ppLand.dimY
-			<< " ppLand.maxX=" << ppLand.maxX << " ppLand.maxY=" << ppLand.maxY
-			<< " propSuit=" << ppGenLand.propSuit
-			<< endl;
-#endif
+		if (ppGenLand.fractal && !ppGenLand.continuous) { 
+			ppGenLand.minPct = 1; 
+			ppGenLand.maxPct = 100;
+		}
+		if (ppGenLand.continuous)
+			ppLand.nHab = 2;
+		else 
+			ppLand.nHab = 1;
 	}
 	else { // imported raster map
 		string dummy; // no longer necessary to read no. of habitats from landFile
-		//	landfile >> ppGenLand.landNum >> ppLand.nHab >> name_landscape >> name_patch >> name_sp_dist;
 		landfile >> ppLand.landNum >> dummy >> name_landscape >> name_patch;
 		landfile >> gNameCostFile >> name_dynland >> name_sp_dist;
-		if (landtype == 2) ppLand.nHab = 1; // habitat quality landscape has one habitat class
-#if RSDEBUG
-		DEBUGLOG << "ReadLandFile(): ppLand.landNum=" << ppLand.landNum
-			<< " name_landscape=" << name_landscape
-			<< " name_patch=" << name_patch
-			<< " name_costfile=" << gNameCostFile
-			<< " name_dynland=" << name_dynland
-			<< " name_sp_dist=" << name_sp_dist
-			<< endl;
-#endif
+		if (landtype == 2) 
+			ppLand.nHab = 1; // habitat quality landscape has one habitat class
 	}
 
 	pLandscape->setLandParams(ppLand, sim.batchMode);
 	pLandscape->setGenLandParams(ppGenLand);
-
-	//simParams sim = paramsSim->getSim();
-
-#if RSDEBUG
-//DEBUGLOG << "ReadLandFile(): NHab=" << ppLand.nHab << endl;
-	DEBUGLOG << "ReadLandFile(): ppLand.landNum=" << ppLand.landNum << endl;
-#endif
 
 	return ppLand.landNum;
 }
 
 //---------------------------------------------------------------------------
 int ReadDynLandFile(Landscape* pLandscape) {
-#if RSDEBUG
-	DEBUGLOG << "ReadDynLandFile(): pLandscape=" << pLandscape
-		<< " name_dynland=" << name_dynland
-		<< endl;
-#endif
-	//int change,year;
+
 	string landchangefile, patchchangefile, costchangefile;
 	int change, imported;
 	int nchanges = 0;
@@ -3610,7 +3561,8 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	if (dynlandfile.is_open()) {
 		string header;
 		int nheaders = 5;
-		for (int i = 0; i < nheaders; i++) dynlandfile >> header;
+		for (int i = 0; i < nheaders; i++) 
+			dynlandfile >> header;
 	}
 	else {
 		dynlandfile.clear();
@@ -3623,11 +3575,12 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	while (change != -98765) {
 		chg.chgnum = change;
 		dynlandfile >> chg.chgyear >> landchangefile >> patchchangefile >> costchangefile;
-		//	dynlandfile >> chg.chgyear >> chg.habfile >> chg.pchfile;
 		chg.habfile = paramsSim->getDir(1) + landchangefile;
 		chg.pchfile = paramsSim->getDir(1) + patchchangefile;
-		if (costchangefile == "NULL") chg.costfile = "none";
-		else chg.costfile = paramsSim->getDir(1) + costchangefile;
+		if (costchangefile == "NULL") 
+			chg.costfile = "none";
+		else 
+			chg.costfile = paramsSim->getDir(1) + costchangefile;
 		nchanges++;
 		pLandscape->addLandChange(chg);
 		// read first field on next line
@@ -3638,7 +3591,8 @@ int ReadDynLandFile(Landscape* pLandscape) {
 		}
 	}
 
-	dynlandfile.close(); dynlandfile.clear();
+	dynlandfile.close();
+	dynlandfile.clear();
 
 	// read landscape change maps
 	if (ppLand.patchModel) {
@@ -3648,8 +3602,10 @@ int ReadDynLandFile(Landscape* pLandscape) {
 		pLandscape->createCostsChgMatrix();
 	}
 	for (int i = 0; i < nchanges; i++) {
-		if (costchangefile == "NULL") imported = pLandscape->readLandChange(i, false);
-		else imported = pLandscape->readLandChange(i, true);
+		if (costchangefile == "NULL") 
+			imported = pLandscape->readLandChange(i, false);
+		else 
+			imported = pLandscape->readLandChange(i, true);
 		if (imported != 0) {
 			return imported;
 		}
@@ -3669,10 +3625,6 @@ int ReadDynLandFile(Landscape* pLandscape) {
 		pLandscape->recordCostChanges(0);
 		pLandscape->deleteCostsChgMatrix();
 	}
-
-#if RSDEBUG
-	DEBUGLOG << "ReadDynLandFile(): finished" << endl;
-#endif
 	return 0;
 }
 
@@ -3698,7 +3650,6 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 			while (std::getline(ss, value, '	'))
 			{
 				parameters.push_back(value);
-				//		std::cout << ", \"" << value << "\"";
 			}
 
 			if (stoi(parameters[0]) == simulationN) {
@@ -3759,7 +3710,6 @@ int readTraitsFile(int simulationN) {
 			while (std::getline(ss, value, '	'))
 			{
 				parameters.push_back(value);
-				//std::cout << ", \"" << value << "\"";
 			}
 
 			if (stoi(parameters[0]) == simulationN)
@@ -3782,11 +3732,6 @@ void setUpTrait(vector<string> parameters) {
 //---------------------------------------------------------------------------
 int ReadParameters(int option, Landscape* pLandscape)
 {
-#if RSDEBUG
-	DEBUGLOG << endl << "ReadParameters(): option=" << option
-		//	<< " parameters=" << parameters
-		<< endl;
-#endif
 	int iiii;
 	int error = 0;
 	landParams paramsLand = pLandscape->getLandParams();
@@ -3826,11 +3771,6 @@ int ReadParameters(int option, Landscape* pLandscape)
 	parameters >> sim.simulation >> sim.reps >> sim.years;
 	parameters >> iiii;
 	if (iiii == 1) sim.absorbing = true; else sim.absorbing = false;
-#if RSDEBUG
-	//DEBUGLOG << "ReadParameters(): paramsSim=" << paramsSim << endl;
-	DEBUGLOG << "ReadParameters(): simulation=" << sim.simulation
-		<< " reps=" << sim.reps << " years=" << sim.years << endl;
-#endif
 	parameters >> gradType;
 	parameters >> grad_inc >> opt_y >> f >> optEXT >> iiii >> shift_rate;
 	if (iiii == 1 && gradType != 0) shifting = true; else shifting = false;
@@ -3851,7 +3791,6 @@ int ReadParameters(int option, Landscape* pLandscape)
 	// as from v1.1, there is just one pair of min & max values,
 	// which are attributes of the species
 	// ULTIMATELY, THE PARAMETER FILE SHOULD HAVE ONLY TWO COLUMNS ...
-	//parameters >> env.ac >> env.std >> env.minR >> env.maxR >> env.minK >> env.maxK;
 	float minR, maxR, minK, maxK;
 	parameters >> env.ac >> env.std >> minR >> maxR >> minK >> maxK;
 	if (env.inK) {
@@ -3861,9 +3800,6 @@ int ReadParameters(int option, Landscape* pLandscape)
 		pSpecies->setMinMax(minKK, maxKK);
 	}
 	else pSpecies->setMinMax(minR, maxR);
-#if RSDEBUG
-	//DEBUGLOG << "ReadParameters(): minR=" << env.minR << " maxR=" << env.maxR << endl;
-#endif
 	parameters >> iiii;
 	if (iiii == 1) env.localExt = true; else env.localExt = false;
 	if (paramsLand.patchModel && env.localExt) error = 102;
@@ -3903,13 +3839,6 @@ int ReadParameters(int option, Landscape* pLandscape)
 		}
 	}
 
-#if RSDEBUG
-	DEBUGLOG << "ReadParameters(): dem.lambda=" << dem.lambda
-		<< " habK[0] = " << pSpecies->getHabK(0)
-		<< " nHabMax = " << paramsLand.nHabMax
-		<< endl;
-#endif
-
 	parameters >> sim.outStartPop >> sim.outStartInd
 		>> sim.outStartTraitCell >> sim.outStartTraitRow >> sim.outStartConn;
 	parameters >> sim.outIntRange >> sim.outIntOcc >> sim.outIntPop >> sim.outIntInd
@@ -3940,7 +3869,6 @@ int ReadParameters(int option, Landscape* pLandscape)
 	if (iiii == 0) sim.saveVisits = false;
 	else sim.saveVisits = true;
 	parameters >> iiii;
-	//sim.saveInitMap = false;
 	if (iiii == 0) sim.drawLoaded = false; else sim.drawLoaded = true;
 	parameters >> iiii;
 	if (iiii == 1) sim.fixReplicateSeed = true; else sim.fixReplicateSeed = false;
@@ -3963,9 +3891,6 @@ int ReadStageStructure(int option)
 		ssfile.open(stageStructFile.c_str());
 		string header;
 		int nheaders = 18;
-#if RSDEBUG
-		DEBUGLOG << "ReadStageStructure{}: nheaders=" << nheaders << endl;
-#endif
 		for (int i = 0; i < nheaders; i++) ssfile >> header;
 		return 0;
 	}
@@ -3976,10 +3901,6 @@ int ReadStageStructure(int option)
 		}
 		return 0;
 	}
-
-#if RSDEBUG
-	DEBUGLOG << "ReadStageStructure{}: sstruct.nStages=" << sstruct.nStages << endl;
-#endif
 
 	ssfile >> simulation;
 	ssfile >> postDestructn >> sstruct.probRep >> sstruct.repInterval >> sstruct.maxAge;
@@ -4025,24 +3946,16 @@ int ReadStageStructure(int option)
 //---------------------------------------------------------------------------
 int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season)
 {
-	//#if RS_CONTAIN
-	//int hab = 0; // TEMPORARY set suitable habitat to 0
-	//#endif // RS_CONTAIN 
 	int ii;
 	int minAge;
 	float ss, dd;
 	string header;
 	demogrParams dem = pSpecies->getDemogrParams();
-	//stageParams sstruct = pSpecies->getStage();
 
 	// read header line
-	//for (int i = 0; i < (sstruct.nStages*nsexesDem)+2; i++)
 	for (int i = 0; i < (nstages * nsexesDem) + 2; i++)
 	{
 		tmfile >> header;
-#if RSDEBUG
-		//DEBUGLOG << "Read_TransitionMatrix(): i= << i << " header=" << header << endl;
-#endif
 	}
 
 	if (matrix != NULL) {
@@ -4052,41 +3965,27 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 	}
 
 	if (dem.repType != 2) { // asexual or implicit sexual model
-#if RSDEBUG
-		//DEBUGLOG << "Read_TransitionMatrix(): asexual model, sstruct.nStages = " << sstruct.nStages << endl;
-#endif
 	// create a temporary matrix
 		matrix = new float* [nstages];
 		matrixsize = nstages;
 		for (int i = 0; i < nstages; i++)
 			matrix[i] = new float[nstages];
 
-		//	for (int i = 0; i < sstruct.nStages; i++) 
 		for (int i = 0; i < nstages; i++)
 		{ // i = row; j = coloumn
 			tmfile >> header;
-#if RSDEBUG
-			//DEBUGLOG << "Read_TransitionMatrix(): i=" << i << " header=" << header << endl;
-#endif
-//		for (int j = 0; j < sstruct.nStages; j++) 
 			for (int j = 0; j < nstages; j++)
 			{
 				tmfile >> matrix[j][i];
-#if RSDEBUG
-				//DEBUGLOG << "Read_TransitionMatrix(): j=" << j << " matrix[j][i]=" << matrix[j][i] << endl;
-#endif
 			}
 			tmfile >> minAge; pSpecies->setMinAge(i, 0, minAge);
 		}
 
-		//	for (int j = 1; j < sstruct.nStages; j++)
 		for (int j = 1; j < nstages; j++)
 			pSpecies->setFec(j, 0, matrix[j][0]);
-		//	for (int j = 0; j < sstruct.nStages; j++) 
 		for (int j = 0; j < nstages; j++)
 		{
 			ss = 0.0; dd = 0.0;
-			//		for (int i = 0; i < sstruct.nStages; i++) 
 			for (int i = 0; i < nstages; i++)
 			{
 				if (i == j) ss = matrix[j][i];
@@ -4100,51 +3999,31 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 		}
 	}
 	else { // complex sexual model
-#if RSDEBUG
-		//DEBUGLOG << "Read_TransitionMatrix(): complex sexual model, sstruct.nStages = "
-		//	<< sstruct.nStages << endl;
-#endif
-	// create a temporary matrix
-//	matrix = new float *[sstruct.nStages*2];
-//	matrixsize = sstruct.nStages*2;
-//	for (int j = 0; j < sstruct.nStages*2; j++)
-//		matrix[j] = new float [sstruct.nStages*2-1];
 		matrix = new float* [nstages * 2];
 		matrixsize = nstages * 2;
 		for (int j = 0; j < nstages * 2; j++)
 			matrix[j] = new float[nstages * 2 - 1];
 
-		//	for (int i = 0; i < sstruct.nStages*2-1; i++) 
 		for (int i = 0; i < nstages * 2 - 1; i++)
 		{ // i = row; j = coloumn
 			tmfile >> header;
-#if RSDEBUG
-			//DEBUGLOG << "Read_TransitionMatrix{}: i = " << i << " header = " << header << endl;
-#endif
-//		for (int j = 0; j < sstruct.nStages*2; j++) tmfile >> matrix[j][i];
-			for (int j = 0; j < nstages * 2; j++) tmfile >> matrix[j][i];
+			for (int j = 0; j < nstages * 2; j++) 
+				tmfile >> matrix[j][i];
 			if (i == 0) {
-				tmfile >> minAge; pSpecies->setMinAge(i, 0, minAge); pSpecies->setMinAge(i, 1, minAge);
+				tmfile >> minAge; 
+				pSpecies->setMinAge(i, 0, minAge); 
+				pSpecies->setMinAge(i, 1, minAge);
 			}
 			else {
 				tmfile >> minAge;
-				if (i % 2) pSpecies->setMinAge((i + 1) / 2, 1, minAge);	// odd lines  - males
-				else 		 pSpecies->setMinAge(i / 2, 0, minAge);			// even lines - females
+				if (i % 2) 
+					pSpecies->setMinAge((i + 1) / 2, 1, minAge);	// odd lines  - males
+				else
+					pSpecies->setMinAge(i / 2, 0, minAge);			// even lines - females
 			}
 		}
-#if RSDEBUG
-		//	DEBUGLOG << endl;
-		//for (int ii = 0; ii < sstruct.nStages*2-1; ii++) { // row (0 = juvs, 1,2 = stage 1)
-		//	for (int jj = 0; jj < sstruct.nStages*2; jj++) { // column (m f m f)
-		//		DEBUGLOG << matrix[jj][ii] << " " ;   // matrix[column][row]
-		//	}
-		//	DEBUGLOG << endl;
-		//}
-		//	DEBUGLOG << endl;
-#endif
 
 		ii = 1;
-		//	for (int j = 2; j < sstruct.nStages*2; j++) 
 		for (int j = 2; j < nstages * 2; j++)
 		{
 			if (j % 2 == 0)
@@ -4173,7 +4052,6 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 		{
 			ss = 0.0; dd = 0.0;
 			if (j % 2 == 0) { // males
-				//			for (int i = 0; i < sstruct.nStages*2-1; i++) 
 				for (int i = 0; i < nstages * 2 - 1; i++)
 				{
 					if (j == i + 1) ss = matrix[j][i];
@@ -4186,7 +4064,6 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 					pSpecies->setDev(ii, 1, 0.0);
 			}
 			else { // females
-				//			for (int i = 0; i < sstruct.nStages*2; i++) 
 				for (int i = 0; i < nstages * 2; i++)
 				{
 					if (j == i + 1) ss = matrix[j][i];
@@ -4200,19 +4077,14 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 				ii++;
 			}
 		}
-		//	for (int j = 0; j < sstruct.nStages*2; j++) delete[] matrix[j];
-		//	delete[] matrix;
 	}
 
-#if RSDEBUG
-	DEBUGLOG << "Read_TransitionMatrix(): matrix = " << matrix;
-	DEBUGLOG << " matrix[1][1] = " << matrix[1][1] << endl;
-#endif
-
 	if (matrix != NULL) {
-		for (int j = 0; j < matrixsize; j++) delete[] matrix[j];
+		for (int j = 0; j < matrixsize; j++)
+			delete[] matrix[j];
 		delete[] matrix;
-		matrix = NULL; matrixsize = 0;
+		matrix = NULL; 
+		matrixsize = 0;
 	}
 
 	return 0;
@@ -4227,20 +4099,16 @@ int ReadStageWeights(int option)
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
 
-	if (dem.repType != 2) n = sstruct.nStages;
-	else n = sstruct.nStages * maxNbSexes;
+	if (dem.repType != 2) 
+		n = sstruct.nStages;
+	else 
+		n = sstruct.nStages * maxNbSexes;
 
-#if RSDEBUG
-	DEBUGLOG << "Read_StageWeights(): option = " << option << " n = " << n << endl;
-#endif
 	switch (option) {
 
 	case 1: { // fecundity
 		// create stage weights matrix
 		pSpecies->createDDwtFec(n);
-#if RSDEBUG
-		DEBUGLOG << "Read_StageWeights(): completed fecundity matrix creation" << endl;
-#endif
 		for (i = 0; i < n + 1; i++) fdfile >> header;
 		// read coefficients
 		for (i = 0; i < n; i++) {
@@ -4249,18 +4117,12 @@ int ReadStageWeights(int option)
 				fdfile >> f; pSpecies->setDDwtFec(j, i, f);
 			}
 		}
-#if RSDEBUG
-		DEBUGLOG << "Read_StageWeights(): completed reading fecundity weights matrix " << endl;
-#endif
 		break;
 	}
 
 	case 2: { // development
 		//create stage weights matrix
 		pSpecies->createDDwtDev(n);
-#if RSDEBUG
-		DEBUGLOG << "Read_StageWeights(): completed development matrix creation" << endl;
-#endif
 		for (i = 0; i < n + 1; i++) ddfile >> header;
 		//read coefficients
 		for (i = 0; i < n; i++) {
@@ -4269,19 +4131,14 @@ int ReadStageWeights(int option)
 				ddfile >> f; pSpecies->setDDwtDev(j, i, f);
 			}
 		}
-#if RSDEBUG
-		DEBUGLOG << "Read_StageWeights(): completed reading development weights matrix " << endl;
-#endif
 		break;
 	}
 
 	case 3: { // sstruct.survival
 		//create stage weights matrix
 		pSpecies->createDDwtSurv(n);
-#if RSDEBUG
-		DEBUGLOG << "Read_StageWeights(): completed survival matrix creation" << endl;
-#endif
-		for (i = 0; i < n + 1; i++) sdfile >> header;
+		for (i = 0; i < n + 1; i++) 
+			sdfile >> header;
 		//read coefficients
 		for (i = 0; i < n; i++) {
 			sdfile >> header;
@@ -4289,9 +4146,6 @@ int ReadStageWeights(int option)
 				sdfile >> f; pSpecies->setDDwtSurv(j, i, f);
 			}
 		}
-#if RSDEBUG
-		DEBUGLOG << "Read_StageWeights(): completed reading survival weights matrix " << endl;
-#endif
 		break;
 	}
 
@@ -4963,7 +4817,6 @@ int ReadSettlement(int option)
 	return errorCode;
 }
 
-
 //---------------------------------------------------------------------------
 int ReadInitialisation(int option, Landscape* pLandscape)
 {
@@ -4971,10 +4824,10 @@ int ReadInitialisation(int option, Landscape* pLandscape)
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
 	initParams init = paramsInit->getInit();
-	string Inputs = paramsSim->getDir(1);
+	string inputDir = paramsSim->getDir(1);
 
-	int simulation, maxcells;
-	float check;
+	int simNb, maxcells;
+	float totalProps;
 	int error = 0;
 
 	if (option == 0) { // open file and read header line
@@ -4985,7 +4838,6 @@ int ReadInitialisation(int option, Landscape* pLandscape)
 		for (int i = 0; i < nheaders; i++) initFile >> header;
 		return 0;
 	}
-
 	if (option == 9) { // close file
 		if (initFile.is_open()) {
 			initFile.close(); initFile.clear();
@@ -4993,77 +4845,73 @@ int ReadInitialisation(int option, Landscape* pLandscape)
 		return 0;
 	}
 
-	initFile >> simulation >> init.seedType >> init.freeType >> init.spDistType;
-	if (init.seedType == 1 && paramsLand.spDist == false) error = 601;
-	if (paramsLand.patchModel) initFile >> init.initDens >> init.indsHa;
-	else initFile >> init.initDens >> init.indsCell;
-	initFile >> init.minSeedX >> init.maxSeedX >> init.minSeedY >> init.maxSeedY
+	initFile >> simNb >> init.seedType >> init.freeType >> init.spDistType;
+
+	if (init.seedType == 1 && !paramsLand.spDist) 
+		error = 601;
+
+	if (paramsLand.patchModel) 
+		initFile >> init.initDens >> init.indsHa;
+	else 
+		initFile >> init.initDens >> init.indsCell;
+
+	initFile >> init.minSeedX >> init.maxSeedX 
+		>> init.minSeedY >> init.maxSeedY
 		>> init.nSeedPatches >> init.nSpDistPatches
-		>> init.initFrzYr >> init.restrictRows >> init.restrictFreq >> init.finalFrzYr
+		>> init.initFrzYr >> init.restrictRows
+		>> init.restrictFreq >> init.finalFrzYr
 		>> init.indsFile;
-#if RSDEBUG
-	DEBUGLOG << "ReadInitialisation(): simulation=" << simulation
-		<< " seedType=" << init.seedType << " freeType=" << init.freeType
-		<< " spDistType=" << init.spDistType
-		<< " maxSeedX=" << init.maxSeedX << " maxSeedY=" << init.maxSeedY
-		<< " initFrzYr=" << init.initFrzYr << " restrictRows=" << init.restrictRows
-		<< " restrictFreq=" << init.restrictFreq << " finalFrzYr=" << init.finalFrzYr
-		<< " indsFile=" << init.indsFile
-		<< endl;
-#endif
-	init.restrictRange = false;
-	if (init.seedType == 0 && init.restrictRows > 0) init.restrictRange = true;
+
+	init.restrictRange = (init.seedType == 0 && init.restrictRows > 0);
 
 	if (dem.stageStruct) {
-		float p;
+		float propStage;
 		initFile >> init.initAge;
-		check = 0.0;
-		for (int i = 1; i < sstruct.nStages; i++) {
-			initFile >> p;
-			check += p;
-			paramsInit->setProp(i, p);
+		totalProps = 0.0;
+		for (int stg = 1; stg < sstruct.nStages; stg++) {
+			initFile >> propStage;
+			totalProps += propStage;
+			paramsInit->setProp(stg, propStage);
 		}
-		if (check < 1.0 || check > 1.0)
-		{ // this condition should not occur - WHAT COULD BE DONE?? ABORT WITH ERROR CODE ...
-#if RSDEBUG
-			DEBUGLOG << "ReadInitialisation(): check = " << check << endl;
-#endif
+		if (totalProps != 1.0)
+		{ 
+			throw logic_error("The proportion of initial individuals in each stage doesn not sum to 1.");
 		}
 	}
 
 	paramsInit->setInit(init);
+
 	switch (init.seedType) {
-	case 0: // // free initialisation
-		if (init.minSeedX < 0) init.minSeedX = 0;
-		if (init.minSeedY < 0) init.minSeedY = 0;
-		if (init.maxSeedX < 0) init.maxSeedX = paramsLand.maxX;
-		if (init.maxSeedY < 0) init.maxSeedY = paramsLand.maxY;
+	case 0: // free initialisation
+		if (init.minSeedX == gEmptyVal)
+			init.minSeedX = 0;
+		if (init.minSeedY == gEmptyVal)
+			init.minSeedY = 0;
+		if (init.maxSeedX == gEmptyVal) 
+			init.maxSeedX = paramsLand.maxX;
+		if (init.maxSeedY == gEmptyVal) 
+			init.maxSeedY = paramsLand.maxY;
 		if (init.minSeedY > init.maxSeedY || init.minSeedX > init.maxSeedX) {
-#if RSDEBUG
-			DEBUGLOG << "ReadInitialisation(): maxSeedX=" << init.maxSeedX
-				<< " paramsLand.maxX=" << paramsLand.maxX
-				<< " maxSeedY=" << init.maxSeedY
-				<< " paramsLand.maxY=" << paramsLand.maxY << endl;
-#endif
 			error = 603;
 		}
 		maxcells = (init.maxSeedY - init.minSeedY) * (init.maxSeedX - init.minSeedX);
-		if (init.freeType == 0 && init.nSeedPatches > maxcells) error = 602;
+		if (init.freeType == 0 && init.nSeedPatches > maxcells) 
+			error = 602;
 		break;
 	case 1: // from species distribution
+		// nothing to do here
 		break;
 	case 2: // from initial individuals file
 		if (init.indsFile != prevInitialIndsFile) {
 			// read and store the list of individuals to be initialised
-			ReadInitIndsFile(0, pLandscape, (Inputs + init.indsFile));
+			ReadInitIndsFile(0, pLandscape, (inputDir + init.indsFile));
 			prevInitialIndsFile = init.indsFile;
 		}
 		break;
 	default:
+		throw logic_error("SeedType must be 0, 1, or 2.");
 		break;
-		;
 	}
-
 	return error;
 }
 
@@ -5072,7 +4920,6 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 	string header;
 	landParams paramsLand = pLandscape->getLandParams();
 	demogrParams dem = pSpecies->getDemogrParams();
-	//stageParams sstruct = pSpecies->getStage();
 	initParams init = paramsInit->getInit();
 
 	if (option == 0) { // open file and read header line
@@ -5099,19 +4946,29 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 	initInd iind;
 	int ninds;
 	int totinds = 0;
-	iind.year = -98765;
+
+	iind.year = gEmptyVal;
 	initIndsFile >> iind.year;
-	while (iind.year != -98765) {
+	bool must_stop = (iind.year == gEmptyVal);
+
+	while (!must_stop) {
 		initIndsFile >> iind.species;
+
 		if (paramsLand.patchModel) {
-			initIndsFile >> iind.patchID; iind.x = iind.y = 0;
+			initIndsFile >> iind.patchID;
+			iind.x = iind.y = 0;
 		}
 		else {
-			initIndsFile >> iind.x >> iind.y; iind.patchID = 0;
+			initIndsFile >> iind.x >> iind.y; 
+			iind.patchID = 0;
 		}
 		initIndsFile >> ninds;
-		if (dem.repType > 0) initIndsFile >> iind.sex;
-		else iind.sex = 0;
+
+		if (dem.repType > 0) 
+			initIndsFile >> iind.sex;
+		else 
+			iind.sex = 0;
+
 		if (dem.stageStruct) {
 			initIndsFile >> iind.age >> iind.stage;
 		}
@@ -5123,9 +4980,10 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 			paramsInit->addInitInd(iind);
 		}
 
-		iind.year = -98765;
+		iind.year = gEmptyVal;
 		initIndsFile >> iind.year;
-		if (initIndsFile.eof()) iind.year = -98765;
+		if (iind.year == gEmptyVal || initIndsFile.eof())
+			must_stop = true;
 	} // end of while loop
 
 	if (initIndsFile.is_open()) initIndsFile.close();
