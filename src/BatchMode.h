@@ -64,7 +64,7 @@ struct batchfiles {
 	int repseasons;
 	int stagestruct, stages, transfer;
 	int sexesDem;		// no. of explicit sexes for demographic model
-	int gNbSexesDisp;	// no. of explicit sexes for dispersal model
+	int nbSexesDisp;	// no. of explicit sexes for dispersal model
 	string parameterFile;
 	string landFile;
 	string stageStructFile;

@@ -25,7 +25,7 @@
 #include "BatchMode.h"
 //---------------------------------------------------------------------------
 
-ifstream controlfile;
+ifstream controlFile;
 // Note - all batch files are prefixed 'b' here for reasons concerned with RS v1.0
 ifstream bParamFile, bLandFile, bDynLandFile;
 ifstream bSpDistFile, bStageStructFile, bTransMatrix;
@@ -34,7 +34,7 @@ ifstream bEmigrationFile, bTransferFile, bSettlementFile;
 ifstream bTraitsFile, bGeneticsFile;
 ifstream bInitFile, bInitIndsFile;
 
-ofstream batchlog;
+ofstream batchLog;
 
 ofstream rsLog; // performance log for recording simulation times, etc.
 
@@ -90,99 +90,102 @@ int power2check(int x) {
 }
 
 //---------------------------------------------------------------------------
-batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
+batchfiles ParseControlFile(string pathToControlFile, string indir, string outdir)
 {
 	batchfiles b;
 	int lines, nSimuls;
-	int errors = 0;
-	string paramname, filename, fname, logname, header;
-	string filetype = "Control file";
-	bool controlFormatError = false;
-	b.ok = true; b.nSimuls = 0; b.nLandscapes = 0;
+	int nbErrors = 0;
+	string paramname, filename, fname, batchLogPath, header;
+	string whichInputFile = "Control file";
+	bool anyFormatError = false;
+	b.ok = true; 
+	b.nSimuls = 0; 
+	b.nLandscapes = 0;
 
 	// open batch log file
-	logname = outdir + "BatchLog.txt";
-	batchlog.open(logname.c_str());
-	if (!batchlog.is_open()) {
-		//	MessageDlg("Error opening batch output log file",mtError, TMsgDlgButtons() << mbOK,0);
-		cout << "Error opening batch output log file " << logname << endl;
+	batchLogPath = outdir + "BatchLog.txt";
+	batchLog.open(batchLogPath.c_str());
+	if (!batchLog.is_open()) {
+		cout << "Error opening batch output log file " << batchLogPath << endl;
 		b.ok = false;
 		return b;
 	}
 
-	controlfile.open(ctrlfile.c_str());
+	controlFile.open(pathToControlFile.c_str());
 
-	if (!controlfile.is_open()) {
-		//	MessageDlg("Error opening Control file",mtError, TMsgDlgButtons() << mbOK,0);
-		cout << "Error opening Control file: " << ctrlfile << endl;
-		batchlog << "Error opening Control file: " << ctrlfile << endl;
+	if (!controlFile.is_open()) {
+		cout << "Error opening Control file: " << pathToControlFile << endl;
+		batchLog << "Error opening Control file: " << pathToControlFile << endl;
 		b.ok = false;
-		if (batchlog.is_open()) { batchlog.close(); batchlog.clear(); }
+		if (batchLog.is_open()) { 
+			batchLog.close(); 
+			batchLog.clear(); 
+		}
 		return b;
 	}
 	else {
-		batchlog << "Checking Control file " << ctrlfile << endl;
+		batchLog << "Checking Control file " << pathToControlFile << endl;
 	}
 
 	// Check fixed model parameters
 
-	controlfile >> paramname >> batchnum;
+	controlFile >> paramname >> batchnum;
 	if (paramname == "BatchNum") {
 		if (batchnum < 0) {
-			BatchError(filetype, -999, 19, "BatchNum"); errors++;
+			BatchError(whichInputFile, -999, 19, "BatchNum"); nbErrors++;
 		}
 		else b.batchNum = batchnum;
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
-	controlfile >> paramname >> patchmodel;
+	controlFile >> paramname >> patchmodel;
 	if (paramname == "PatchModel") {
-		if (patchmodel < 0 || patchmodel > 1) {
-			BatchError(filetype, -999, 1, "PatchModel"); errors++;
+		if (patchmodel != 0 && patchmodel != 1) {
+			BatchError(whichInputFile, -999, 1, "PatchModel"); nbErrors++;
 		}
 		else b.patchmodel = patchmodel;
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
-	controlfile >> paramname >> resolution;
+	controlFile >> paramname >> resolution;
 	if (paramname == "Resolution") {
 		if (resolution < 1) {
-			BatchError(filetype, -999, 11, "Resolution"); errors++;
+			BatchError(whichInputFile, -999, 11, "Resolution"); nbErrors++;
 		}
 		else b.resolution = resolution;
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
-	controlfile >> paramname >> landtype;
+	controlFile >> paramname >> landtype;
 	if (paramname == "LandType") {
 		if (landtype != 0 && landtype != 2 && landtype != 9) {
-			BatchError(filetype, -999, 0, "LandType");
-			batchlog << "LandType must be 0, 2 or 9" << endl;
-			errors++;
+			BatchError(whichInputFile, -999, 0, "LandType");
+			batchLog << "LandType must be 0, 2 or 9" << endl;
+			nbErrors++;
 		}
 		else {
 			if (landtype == 9 && patchmodel) {
-				BatchError(filetype, -999, 0, "LandType");
-				batchlog << "LandType may not be 9 for a patch-based model" << endl;
-				errors++;
+				BatchError(whichInputFile, -999, 0, "LandType");
+				batchLog << "LandType may not be 9 for a patch-based model" << endl;
+				nbErrors++;
 			}
 			else b.landtype = landtype;
 		}
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
-	controlfile >> paramname >> maxNhab;
+	controlFile >> paramname >> maxNhab;
 	if (paramname == "MaxHabitats") {
 		if (landtype == 0) { // raster with unique habitat codes
 			if (maxNhab < 2) {
-				BatchError(filetype, -999, 12, "MaxHabitats"); errors++;
+				BatchError(whichInputFile, -999, 12, "MaxHabitats"); nbErrors++;
 			}
 			else b.maxNhab = maxNhab;
 		}
 		else { // raster with habitat quality OR artificial landscape
 			if (maxNhab != 1) {
-				BatchError(filetype, -999, 0, " "); errors++;
-				batchlog << "MaxHabitats must be 1 for LandType = " << landtype << endl;
+				BatchError(whichInputFile, -999, 0, " "); nbErrors++;
+				batchLog << "MaxHabitats must be 1 for LandType = " << landtype << endl;
 			}
 			else {
 				if (landtype == 9) // artificial landscape
@@ -193,50 +196,50 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 			}
 		}
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
-	controlfile >> paramname >> speciesdist;
+	controlFile >> paramname >> speciesdist;
 	if (paramname == "SpeciesDist") {
-		if (speciesdist < 0 || speciesdist > 1) {
-			BatchError(filetype, -999, 1, "SpeciesDist"); errors++;
+		if (speciesdist != 0 && speciesdist != 1) {
+			BatchError(whichInputFile, -999, 1, "SpeciesDist"); nbErrors++;
 		}
 		else {
 			if (speciesdist != 0 && landtype == 9) {
-				BatchError(filetype, -999, 0, "SpeciesDist");
-				batchlog << "SpeciesDist must be 0 for an artificial landscape" << endl;
-				errors++;
+				BatchError(whichInputFile, -999, 0, "SpeciesDist");
+				batchLog << "SpeciesDist must be 0 for an artificial landscape" << endl;
+				nbErrors++;
 
 			}
 			else b.speciesdist = speciesdist;
 		}
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
-	controlfile >> paramname >> distresolution;
+	controlFile >> paramname >> distresolution;
 	if (paramname == "DistResolution") {
 		if (speciesdist == 1) { // distribution resolution is required
 			if (distresolution < resolution) {
-				BatchError(filetype, -999, 0, "DistResolution");
-				batchlog << "DistResolution may not be less than Resolution" << endl;
-				errors++;
+				BatchError(whichInputFile, -999, 0, "DistResolution");
+				batchLog << "DistResolution may not be less than Resolution" << endl;
+				nbErrors++;
 			}
 			else {
 				if (distresolution % resolution) {
-					BatchError(filetype, -999, 0, "DistResolution");
-					batchlog << "DistResolution must be an integer multiple of Resolution" << endl;
-					errors++;
+					BatchError(whichInputFile, -999, 0, "DistResolution");
+					batchLog << "DistResolution must be an integer multiple of Resolution" << endl;
+					nbErrors++;
 				}
 				else b.distresolution = distresolution;
 			}
 		}
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
-	controlfile >> paramname >> reproductn;
+	controlFile >> paramname >> reproductn;
 	sexesDem = gNbSexesDisp = 0;
 	if (paramname == "Reproduction") {
-		if (reproductn < 0 || reproductn > 2) {
-			BatchError(filetype, -999, 2, "Reproduction"); errors++;
+		if (reproductn != 0 && reproductn != 1 && reproductn != 2) {
+			BatchError(whichInputFile, -999, 2, "Reproduction"); nbErrors++;
 		}
 		else {
 			switch (reproductn) {
@@ -244,35 +247,37 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 			case 1: { sexesDem = 1; gNbSexesDisp = 2; break; }
 			case 2: { sexesDem = 2; gNbSexesDisp = 2; break; }
 			}
-			b.reproductn = reproductn; b.sexesDem = sexesDem; b.gNbSexesDisp = gNbSexesDisp;
+			b.reproductn = reproductn; 
+			b.sexesDem = sexesDem; 
+			b.nbSexesDisp = gNbSexesDisp;
 		}
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
-	controlfile >> paramname >> repseasons;
+	controlFile >> paramname >> repseasons;
 	if (paramname == "RepSeasons") {
 		if (repseasons < 1) {
-			BatchError(filetype, -999, 11, "RepSeasons"); errors++;
+			BatchError(whichInputFile, -999, 11, "RepSeasons"); nbErrors++;
 		}
 		else b.repseasons = repseasons;
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
-	controlfile >> paramname >> stagestruct;
+	controlFile >> paramname >> stagestruct;
 	if (paramname == "StageStruct") {
-		if (stagestruct < 0 || stagestruct > 1) {
-			BatchError(filetype, -999, 1, "StageStruct"); errors++;
+		if (stagestruct != 0 && stagestruct != 1) {
+			BatchError(whichInputFile, -999, 1, "StageStruct"); nbErrors++;
 		}
 		else b.stagestruct = stagestruct;
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
-	controlfile >> paramname >> stages;
+	controlFile >> paramname >> stages;
 	if (paramname == "Stages") {
 		if (stagestruct) {
 			if (stages < 2 || stages > 10) {
-				BatchError(filetype, -999, 0, " "); errors++;
-				batchlog << "Stages must be between 2 and 10" << endl;
+				BatchError(whichInputFile, -999, 0, " "); nbErrors++;
+				batchLog << "Stages must be between 2 and 10" << endl;
 			}
 			b.stages = stages;
 		}
@@ -280,35 +285,37 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 			b.stages = stages = 2;
 		}
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
-	controlfile >> paramname >> gTransferType;
+	controlFile >> paramname >> gTransferType;
 	if (paramname == "Transfer") {
 		if (gTransferType < 0 || gTransferType > 2) {
-			BatchError(filetype, -999, 2, "Transfer"); errors++;
+			BatchError(whichInputFile, -999, 2, "Transfer"); nbErrors++;
 		}
 		else b.transfer = gTransferType;
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
-	if (controlFormatError || errors > 0) { // terminate batch error checking
-		if (controlFormatError) {
+	if (anyFormatError || nbErrors > 0) { // terminate batch error checking
+		if (anyFormatError) {
 			CtrlFormatError();
 		}
-		batchlog << endl
+		batchLog << endl
 			<< "*** Model parameters in Control file must be corrected before further input file checks are conducted"
 			<< endl;
-		batchlog.close(); batchlog.clear();
+		batchLog.close(); 
+		batchLog.clear();
 		b.ok = false;
-		controlfile.close(); controlfile.clear();
+		controlFile.close(); 
+		controlFile.clear();
 		return b;
 	}
 
 	// Check parameter file
-	controlfile >> paramname >> filename;
-	if (paramname == "ParameterFile" && !controlFormatError) {
+	controlFile >> paramname >> filename;
+	if (paramname == "ParameterFile" && !anyFormatError) {
 		fname = indir + filename;
-		batchlog << endl << "Checking " << paramname << " " << fname << endl;
+		batchLog << endl << "Checking " << paramname << " " << fname << endl;
 		bParamFile.open(fname.c_str());
 		if (bParamFile.is_open()) {
 			b.nSimuls = ParseParameterFile();
@@ -327,31 +334,31 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 		}
 		bParamFile.clear();
 		if (!b.ok) {
-			batchlog << endl
+			batchLog << endl
 				<< "*** ParameterFile must be corrected before further input file checks are conducted"
 				<< endl;
-			batchlog.close(); batchlog.clear();
+			batchLog.close(); batchLog.clear();
 			b.ok = false;
-			controlfile.close(); controlfile.clear();
+			controlFile.close(); controlFile.clear();
 			return b;
 		}
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 	if (bParamFile.is_open()) bParamFile.close();
 	bParamFile.clear();
 
 	// Check land file
-	controlfile >> paramname >> filename;
-	if (paramname == "LandFile" && !controlFormatError) {
+	controlFile >> paramname >> filename;
+	if (paramname == "LandFile" && !anyFormatError) {
 		fname = indir + filename;
-		batchlog << endl << "Checking " << paramname << " " << fname << endl;
+		batchLog << endl << "Checking " << paramname << " " << fname << endl;
 		bLandFile.open(fname.c_str());
 		if (bLandFile.is_open()) {
 			lines = ParseLandFile(landtype, indir);
 			if (lines < 0) {
 				b.ok = false;
 				if (lines < -111)
-					batchlog << "*** Format error in " << paramname << endl;
+					batchLog << "*** Format error in " << paramname << endl;
 			}
 			else {
 				FileOK(paramname, lines, 1);
@@ -364,15 +371,15 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 		}
 		bLandFile.clear();
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
 	// Check stage structure file if required file
-	controlfile >> paramname >> filename;
-	batchlog << endl;
-	if (paramname == "StageStructFile" && !controlFormatError) {
+	controlFile >> paramname >> filename;
+	batchLog << endl;
+	if (paramname == "StageStructFile" && !anyFormatError) {
 		if (filename == "NULL") {
 			if (stagestruct) {
-				batchlog << "*** File name is required for " << paramname << endl;
+				batchLog << "*** File name is required for " << paramname << endl;
 				b.ok = false;
 			}
 			else b.stageStructFile = filename;
@@ -380,7 +387,7 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 		else { // filename is not NULL
 			if (stagestruct) { // check file only if it is required
 				fname = indir + filename;
-				batchlog << "Checking " << paramname << " " << fname << endl;
+				batchLog << "Checking " << paramname << " " << fname << endl;
 				bStageStructFile.open(fname.c_str());
 				if (bStageStructFile.is_open()) {
 					nSimuls = ParseStageFile(indir);
@@ -403,20 +410,20 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 			} // end of required
 			else { // file is not required, and filename should be NULL
 				if (filename != "NULL") {
-					batchlog << "*** File name for stageStructFile should be NULL as StageStruct = "
+					batchLog << "*** File name for stageStructFile should be NULL as StageStruct = "
 						<< stagestruct << endl;
 					b.ok = false;
 				}
 			}
 		}
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
 	// Check emigration file
-	controlfile >> paramname >> filename;
-	if (paramname == "EmigrationFile" && !controlFormatError) {
+	controlFile >> paramname >> filename;
+	if (paramname == "EmigrationFile" && !anyFormatError) {
 		fname = indir + filename;
-		batchlog << endl << "Checking " << paramname << " " << fname << endl;
+		batchLog << endl << "Checking " << paramname << " " << fname << endl;
 		bEmigrationFile.open(fname.c_str());
 		if (bEmigrationFile.is_open()) {
 			nSimuls = CheckEmigFile();
@@ -439,13 +446,13 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 		}
 		bEmigrationFile.clear();
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
 	// Check transfer file
-	controlfile >> paramname >> filename;
-	if (paramname == "TransferFile" && !controlFormatError) {
+	controlFile >> paramname >> filename;
+	if (paramname == "TransferFile" && !anyFormatError) {
 		fname = indir + filename;
-		batchlog << endl << "Checking " << paramname << " " << fname << endl;
+		batchLog << endl << "Checking " << paramname << " " << fname << endl;
 		bTransferFile.open(fname.c_str());
 		if (bTransferFile.is_open()) {
 			nSimuls = ParseTransferFile(indir);
@@ -466,13 +473,13 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 		}
 		bTransferFile.clear();
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
 	// Check settlement file
-	controlfile >> paramname >> filename;
-	if (paramname == "SettlementFile" && !controlFormatError) {
+	controlFile >> paramname >> filename;
+	if (paramname == "SettlementFile" && !anyFormatError) {
 		fname = indir + filename;
-		batchlog << endl << "Checking " << paramname << " " << fname << endl;
+		batchLog << endl << "Checking " << paramname << " " << fname << endl;
 		bSettlementFile.open(fname.c_str());
 		if (bSettlementFile.is_open()) {
 			nSimuls = ParseSettleFile();
@@ -493,20 +500,20 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 		}
 		bSettlementFile.clear();
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
 	// Check genetics file if required file
-	controlfile >> paramname >> filename;
-	batchlog << endl;
-	if (paramname == "GeneticsFile" && !controlFormatError) {
+	controlFile >> paramname >> filename;
+	batchLog << endl;
+	if (paramname == "GeneticsFile" && !anyFormatError) {
 		if (filename == "NULL") {
 
-			batchlog << "No genetics required " << paramname << endl;
+			batchLog << "No genetics required " << paramname << endl;
 
 		}
 		else { // filename is not NULL
 			fname = indir + filename;
-			batchlog << "Checking " << paramname << " " << fname << endl;
+			batchLog << "Checking " << paramname << " " << fname << endl;
 			bGeneticsFile.open(fname.c_str());
 			if (bGeneticsFile.is_open()) {
 				nSimuls = ParseGeneticsFile(indir);
@@ -528,13 +535,13 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 			bGeneticsFile.clear();
 		}
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
 	// Check initialisation file
-	controlfile >> paramname >> filename;
-	if (paramname == "InitialisationFile" && !controlFormatError) {
+	controlFile >> paramname >> filename;
+	if (paramname == "InitialisationFile" && !anyFormatError) {
 		fname = indir + filename;
-		batchlog << endl << "Checking " << paramname << " " << fname << endl;
+		batchLog << endl << "Checking " << paramname << " " << fname << endl;
 		bInitFile.open(fname.c_str());
 		if (bInitFile.is_open()) {
 			nSimuls = ParseInitFile(indir);
@@ -555,15 +562,15 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 		}
 		bInitFile.clear();
 	}
-	else controlFormatError = true; // wrong control file format
+	else anyFormatError = true; // wrong control file format
 
-	if (controlFormatError) {
+	if (anyFormatError) {
 		CtrlFormatError();
 		b.ok = false;
 	}
 
-	if (controlfile.is_open()) { controlfile.close(); controlfile.clear(); }
-	if (batchlog.is_open()) { batchlog.close(); batchlog.clear(); }
+	if (controlFile.is_open()) { controlFile.close(); controlFile.clear(); }
+	if (batchLog.is_open()) { batchLog.close(); batchLog.clear(); }
 
 	// NOTE: THE FOLLOWING ELEMENTS COULD BE REMOVED FROM b ...
 	parameterFile = b.parameterFile;
@@ -644,7 +651,7 @@ int ParseParameterFile(void)
 	bParamFile >> header; if (header != "FixReplicateSeed") errors++;
 	if (errors > 0 || Kerrors > 0) {
 		FormatError(filetype, errors);
-		batchlog << "*** Ensure column headers are correct to continue checking data" << endl;
+		batchLog << "*** Ensure column headers are correct to continue checking data" << endl;
 		if (Kerrors > 0) {
 			BatchError(filetype, -999, 333, "K");
 		}
@@ -657,7 +664,7 @@ int ParseParameterFile(void)
 	inint = -98765;
 	bParamFile >> inint; // first simulation number
 	if (inint < 0) {
-		batchlog << "*** Error in ParameterFile - first simulation number must be >= 0" << endl;
+		batchLog << "*** Error in ParameterFile - first simulation number must be >= 0" << endl;
 		errors++;
 	}
 	else {
@@ -673,7 +680,7 @@ int ParseParameterFile(void)
 		if (patchmodel) {
 			if (gradient != 0) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << "Gradient must be 0 for patch-based model" << endl;
+				batchLog << "Gradient must be 0 for patch-based model" << endl;
 				errors++;
 				gradient = 0; // to prevent checking of subsequent fields
 			}
@@ -682,7 +689,7 @@ int ParseParameterFile(void)
 		else { // cell-based model
 			if (gradient < 0 || gradient > 3) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << "Gradient must be between 0 and 3 for cell-based model" << endl;
+				batchLog << "Gradient must be between 0 and 3 for cell-based model" << endl;
 				errors++;
 			}
 		}
@@ -706,14 +713,14 @@ int ParseParameterFile(void)
 		bParamFile >> shiftend;
 		if (gradient && shifting && shiftend <= shiftstart) {
 			BatchError(filetype, line, 0, " ");
-			batchlog << "ShiftEnd must be greater than ShiftStart" << endl;
+			batchLog << "ShiftEnd must be greater than ShiftStart" << endl;
 			errors++;
 		}
 		bParamFile >> envstoch;
 		if (patchmodel == 0) { // cell-based model
 			if (envstoch < 0 || envstoch > 2) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << "EnvStoch must be 0, 1 or 2 for cell-based model" << endl;
+				batchLog << "EnvStoch must be 0, 1 or 2 for cell-based model" << endl;
 				errors++;
 				//			envstoch = 0; // to prevent checking of subsequent fields
 			}
@@ -721,7 +728,7 @@ int ParseParameterFile(void)
 		else { // patch-based model
 			if (envstoch < 0 || envstoch > 1) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << "EnvStoch must be 0 or 1 for patch-based model" << endl;
+				batchLog << "EnvStoch must be 0 or 1 for patch-based model" << endl;
 				errors++;
 				//			envstoch = 0; // to prevent checking of subsequent fields
 			}
@@ -739,7 +746,7 @@ int ParseParameterFile(void)
 		bParamFile >> maxR;
 		if (envstoch && stochtype == 0 && maxR <= minR) {
 			BatchError(filetype, line, 0, " ");
-			batchlog << "maxR must be greater than minR" << endl;
+			batchLog << "maxR must be greater than minR" << endl;
 			errors++;
 		}
 		bParamFile >> minK >> maxK;
@@ -747,7 +754,7 @@ int ParseParameterFile(void)
 			if (minK <= 0.0) { BatchError(filetype, line, 10, "minK"); errors++; }
 			if (maxK <= minK) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << "maxK must be greater than minK" << endl;
+				batchLog << "maxK must be greater than minK" << endl;
 				errors++;
 			}
 		}
@@ -761,7 +768,7 @@ int ParseParameterFile(void)
 				if (gradient == 4) { // gradient in local extinction probability
 					if (localext != 0) {
 						BatchError(filetype, line, 0, " ");
-						batchlog << "LocalExt must be zero if Gradient is 4" << endl;
+						batchLog << "LocalExt must be zero if Gradient is 4" << endl;
 						errors++;
 					}
 				}
@@ -770,7 +777,7 @@ int ParseParameterFile(void)
 		else { // patch-based model
 			if (localext != 0) {
 				BatchError(filetype, line, 0, "null");
-				batchlog << "LocalExt must be 0 for patch-based model" << endl;
+				batchLog << "LocalExt must be 0 for patch-based model" << endl;
 				errors++;
 			}
 		}
@@ -806,13 +813,13 @@ int ParseParameterFile(void)
 		}
 		if (sum_K <= 0.0) {
 			BatchError(filetype, line, 0, " "); errors++;
-			batchlog << "At least one K column must be non-zero" << endl;
+			batchLog << "At least one K column must be non-zero" << endl;
 		}
 		else {
 			if (envstoch && stochtype == 1) { // environmental stochasticity in K
 				if (min_K < minK || max_K > maxK) {
 					BatchError(filetype, line, 0, " "); errors++;
-					batchlog << "Non-zero K values must lie between minK and maxK" << endl;
+					batchLog << "Non-zero K values must lie between minK and maxK" << endl;
 				}
 			}
 		}
@@ -835,13 +842,13 @@ int ParseParameterFile(void)
 			if (landtype == 9) {
 				if (inint > 0) {
 					BatchError(filetype, line, 0, " "); errors++;
-					batchlog << "OutIntOcc must be zero for a generated landscape" << endl;
+					batchLog << "OutIntOcc must be zero for a generated landscape" << endl;
 				}
 			}
 			else {
 				if (replicates < 2 && inint > 0) {
 					BatchError(filetype, line, 0, " "); errors++;
-					batchlog << "OutIntOcc may be non-zero only if Replicates >= 2" << endl;
+					batchLog << "OutIntOcc may be non-zero only if Replicates >= 2" << endl;
 				}
 			}
 		}
@@ -858,7 +865,7 @@ int ParseParameterFile(void)
 		else {
 			if (patchmodel != 1 && inint > 0) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << "OutIntConn may be >0 only if PatchModel is 1" << endl;
+				batchLog << "OutIntConn may be >0 only if PatchModel is 1" << endl;
 				errors++;
 			}
 		}
@@ -935,7 +942,7 @@ int ParseLandFile(int landtype, string indir)
 		bLandFile >> header; if (header != "SpDistFile") errors++;
 		if (errors > 0) {
 			FormatError(filetype, 0);
-			batchlog << "*** Ensure format is correct for real landscape" << endl;
+			batchLog << "*** Ensure format is correct for real landscape" << endl;
 			return -111;
 		}
 		// Parse data lines
@@ -965,7 +972,7 @@ int ParseLandFile(int landtype, string indir)
 				}
 				if (inint > maxNhab) {
 					BatchError(filetype, line, 0, " ");
-					batchlog << "Nhabitats may not exceed MaxHabitats in Control file" << endl;
+					batchLog << "Nhabitats may not exceed MaxHabitats in Control file" << endl;
 					errors++;
 				}
 			}
@@ -977,10 +984,10 @@ int ParseLandFile(int landtype, string indir)
 			landraster = CheckRasterFile(fname);
 			if (landraster.ok) {
 				if (landraster.cellsize == resolution)
-					batchlog << ftype << " headers OK: " << fname << endl;
+					batchLog << ftype << " headers OK: " << fname << endl;
 				else {
 					errors++;
-					batchlog << msgresol0 << ftype << " " << fname
+					batchLog << msgresol0 << ftype << " " << fname
 						<< msgresol1 << endl;
 				}
 			}
@@ -998,7 +1005,7 @@ int ParseLandFile(int landtype, string indir)
 			if (intext == "NULL") {
 				if (patchmodel) {
 					BatchError(filetype, line, 0, " "); errors++;
-					batchlog << ftype << msgpatch << endl;
+					batchLog << ftype << msgpatch << endl;
 				}
 			}
 			else {
@@ -1012,16 +1019,16 @@ int ParseLandFile(int landtype, string indir)
 								&& patchraster.cellsize == landraster.cellsize
 								&& (int)patchraster.xllcorner == (int)landraster.xllcorner
 								&& (int)patchraster.yllcorner == (int)landraster.yllcorner) {
-								batchlog << ftype << " headers OK: " << fname << endl;
+								batchLog << ftype << " headers OK: " << fname << endl;
 							}
 							else {
-								batchlog << msghdrs0 << ftype << " " << fname
+								batchLog << msghdrs0 << ftype << " " << fname
 									<< msghdrs1 << endl;
 								errors++;
 							}
 						}
 						else {
-							batchlog << msgresol0 << ftype << " " << fname
+							batchLog << msgresol0 << ftype << " " << fname
 								<< msgresol1 << endl;
 							errors++;
 						}
@@ -1043,7 +1050,7 @@ int ParseLandFile(int landtype, string indir)
 				if (gTransferType == 1) { // SMS
 					if (landtype == 2) {
 						BatchError(filetype, line, 0, " "); errors++;
-						batchlog << ftype << " is required for a habitat quality landscape" << endl;
+						batchLog << ftype << " is required for a habitat quality landscape" << endl;
 					}
 				}
 			}
@@ -1058,16 +1065,16 @@ int ParseLandFile(int landtype, string indir)
 								&& costraster.cellsize == landraster.cellsize
 								&& (int)costraster.xllcorner == (int)landraster.xllcorner
 								&& (int)costraster.yllcorner == (int)landraster.yllcorner) {
-								batchlog << ftype << " headers OK: " << fname << endl;
+								batchLog << ftype << " headers OK: " << fname << endl;
 							}
 							else {
-								batchlog << msghdrs0 << ftype << " " << fname
+								batchLog << msghdrs0 << ftype << " " << fname
 									<< msghdrs1 << endl;
 								errors++;
 							}
 						}
 						else {
-							batchlog << msgresol0 << ftype << " " << fname
+							batchLog << msgresol0 << ftype << " " << fname
 								<< msgresol1 << endl;
 							errors++;
 						}
@@ -1082,7 +1089,7 @@ int ParseLandFile(int landtype, string indir)
 				}
 				else {
 					BatchError(filetype, line, 0, " "); errors++;
-					batchlog << ftype << " must be NULL if transfer model is not SMS" << endl;
+					batchLog << ftype << " must be NULL if transfer model is not SMS" << endl;
 				}
 			}
 
@@ -1091,7 +1098,7 @@ int ParseLandFile(int landtype, string indir)
 			bLandFile >> intext;
 			if (intext != "NULL") { // landscape is dynamic
 				fname = indir + intext;
-				batchlog << "Checking " << ftype << " " << fname << endl;
+				batchLog << "Checking " << ftype << " " << fname << endl;
 				bDynLandFile.open(fname.c_str());
 				if (bDynLandFile.is_open()) {
 					int something = ParseDynamicFile(indir, gNameCostFile);
@@ -1113,7 +1120,7 @@ int ParseLandFile(int landtype, string indir)
 			if (intext == "NULL") {
 				if (speciesdist) {
 					BatchError(filetype, line, 0, " "); errors++;
-					batchlog << ftype << " is required as SpeciesDist is 1 in Control file" << endl;
+					batchLog << ftype << " is required as SpeciesDist is 1 in Control file" << endl;
 				}
 			}
 			else {
@@ -1126,7 +1133,7 @@ int ParseLandFile(int landtype, string indir)
 								// check that extent matches landscape extent
 								if (spdistraster.ncols != landraster.ncols
 									|| spdistraster.nrows != landraster.nrows) {
-									batchlog << "*** Extent of " << ftype
+									batchLog << "*** Extent of " << ftype
 										<< " does not match extent of LandscapeFile" << endl;
 									errors++;
 								}
@@ -1134,10 +1141,10 @@ int ParseLandFile(int landtype, string indir)
 									// check origins match
 									if ((int)spdistraster.xllcorner == (int)landraster.xllcorner
 										&& (int)spdistraster.yllcorner == (int)landraster.yllcorner) {
-										batchlog << ftype << " headers OK: " << fname << endl;
+										batchLog << ftype << " headers OK: " << fname << endl;
 									}
 									else {
-										batchlog << "*** Origin co-ordinates of " << ftype
+										batchLog << "*** Origin co-ordinates of " << ftype
 											<< " do not match those of LandscapeFile" << endl;
 										errors++;
 									}
@@ -1147,17 +1154,17 @@ int ParseLandFile(int landtype, string indir)
 								// check origins match
 								if ((int)spdistraster.xllcorner == (int)landraster.xllcorner
 									&& (int)spdistraster.yllcorner == (int)landraster.yllcorner) {
-									batchlog << ftype << " headers OK: " << fname << endl;
+									batchLog << ftype << " headers OK: " << fname << endl;
 								}
 								else {
-									batchlog << "*** Origin co-ordinates of " << ftype
+									batchLog << "*** Origin co-ordinates of " << ftype
 										<< " do not match those of LandscapeFile" << endl;
 									errors++;
 								}
 							}
 						}
 						else {
-							batchlog << "*** Resolution of " << ftype << " " << fname
+							batchLog << "*** Resolution of " << ftype << " " << fname
 								<< " does not match DistResolution in Control file" << endl;
 							errors++;
 						}
@@ -1196,7 +1203,7 @@ int ParseLandFile(int landtype, string indir)
 			bLandFile >> header; if (header != "H") errors++;
 			if (errors > 0) {
 				FormatError(filetype, 0);
-				batchlog << "*** Ensure format is correct for artificial landscape" << endl;
+				batchLog << "*** Ensure format is correct for artificial landscape" << endl;
 				return -111;
 			}
 			// Parse data lines
@@ -1240,12 +1247,12 @@ int ParseLandFile(int landtype, string indir)
 				if (fractal == 1) {
 					if (Ydim < Xdim) {
 						BatchError(filetype, line, 0, " ");
-						batchlog << "Y dimension may not be less than X dimension" << endl; errors++;
+						batchLog << "Y dimension may not be less than X dimension" << endl; errors++;
 					}
 					if ((Xdim > 2 && power2check(Xdim - 1) != 1)
 						|| (Ydim > 2 && power2check(Ydim - 1) != 1)) {
 						BatchError(filetype, line, 0, " ");
-						batchlog << "X and Y dimensions must be a power of 2 plus 1" << endl; errors++;
+						batchLog << "X and Y dimensions must be a power of 2 plus 1" << endl; errors++;
 					}
 				}
 				bLandFile >> minhab >> maxhab;
@@ -1258,7 +1265,7 @@ int ParseLandFile(int landtype, string indir)
 					}
 					if (maxhab <= minhab) {
 						BatchError(filetype, line, 0, " ");
-						batchlog << "MaxHab must exceed MinHab" << endl; errors++;
+						batchLog << "MaxHab must exceed MinHab" << endl; errors++;
 					}
 				}
 				bLandFile >> infloat;
@@ -1278,7 +1285,7 @@ int ParseLandFile(int landtype, string indir)
 			} // end of while loop
 		} // end of artificial landscape
 		else { // ERROR condition which should not occur
-			batchlog << "*** Critical error in land file. "
+			batchLog << "*** Critical error in land file. "
 				<< "Invalid value of landscape type passed to function ParseLandFile()" << endl;
 			errors++;
 		}
@@ -1320,7 +1327,7 @@ int ParseDynamicFile(string indir, string costfile) {
 	change = -98765;
 	bDynLandFile >> change; // first change number
 	if (change != 1) {
-		batchlog << "*** Error in DynLandFile - first change number must be 1" << endl;
+		batchLog << "*** Error in DynLandFile - first change number must be 1" << endl;
 		errors++;
 	}
 	else {
@@ -1349,16 +1356,16 @@ int ParseDynamicFile(string indir, string costfile) {
 					&& landchgraster.cellsize == landraster.cellsize
 					&& (int)landchgraster.xllcorner == (int)landraster.xllcorner
 					&& (int)landchgraster.yllcorner == (int)landraster.yllcorner) {
-					batchlog << ftype << " headers OK: " << fname << endl;
+					batchLog << ftype << " headers OK: " << fname << endl;
 				}
 				else {
-					batchlog << msghdrs0 << ftype << " " << fname
+					batchLog << msghdrs0 << ftype << " " << fname
 						<< msghdrs1 << endl;
 					errors++;
 				}
 			else {
 				errors++;
-				batchlog << msgresol0 << ftype << " " << fname << msgresol1 << endl;
+				batchLog << msgresol0 << ftype << " " << fname << msgresol1 << endl;
 			}
 		}
 		else {
@@ -1375,7 +1382,7 @@ int ParseDynamicFile(string indir, string costfile) {
 		if (intext == "NULL") {
 			if (patchmodel) {
 				BatchError(filetype, line, 0, " "); errors++;
-				batchlog << ftype << msgpatch << endl;
+				batchLog << ftype << msgpatch << endl;
 			}
 		}
 		else {
@@ -1389,16 +1396,16 @@ int ParseDynamicFile(string indir, string costfile) {
 							&& patchchgraster.cellsize == landraster.cellsize
 							&& (int)patchchgraster.xllcorner == (int)landraster.xllcorner
 							&& (int)patchchgraster.yllcorner == (int)landraster.yllcorner) {
-							batchlog << ftype << " headers OK: " << fname << endl;
+							batchLog << ftype << " headers OK: " << fname << endl;
 						}
 						else {
-							batchlog << msghdrs0 << ftype << " " << fname
+							batchLog << msghdrs0 << ftype << " " << fname
 								<< msghdrs1 << endl;
 							errors++;
 						}
 					}
 					else {
-						batchlog << msgresol0 << ftype << " " << fname
+						batchLog << msgresol0 << ftype << " " << fname
 							<< msgresol1 << endl;
 						errors++;
 					}
@@ -1419,13 +1426,13 @@ int ParseDynamicFile(string indir, string costfile) {
 		if (intext == "NULL") {
 			if (costfile != "NULL") {
 				BatchError(filetype, line, 0, " "); errors++;
-				batchlog << ftype << " must be supplied " << endl;
+				batchLog << ftype << " must be supplied " << endl;
 			}
 		}
 		else {
 			if (costfile == "NULL") {
 				BatchError(filetype, line, 0, " "); errors++;
-				batchlog << ftype << " must be NULL to match LandFile " << endl;
+				batchLog << ftype << " must be NULL to match LandFile " << endl;
 			}
 			else {
 				fname = indir + intext;
@@ -1437,16 +1444,16 @@ int ParseDynamicFile(string indir, string costfile) {
 							&& costchgraster.cellsize == landraster.cellsize
 							&& (int)costchgraster.xllcorner == (int)landraster.xllcorner
 							&& (int)costchgraster.yllcorner == (int)landraster.yllcorner) {
-							batchlog << ftype << " headers OK: " << fname << endl;
+							batchLog << ftype << " headers OK: " << fname << endl;
 						}
 						else {
-							batchlog << msghdrs0 << ftype << " " << fname
+							batchLog << msghdrs0 << ftype << " " << fname
 								<< msghdrs1 << endl;
 							errors++;
 						}
 					}
 					else {
-						batchlog << msgresol0 << ftype << " " << fname
+						batchLog << msgresol0 << ftype << " " << fname
 							<< msgresol1 << endl;
 						errors++;
 					}
@@ -1471,7 +1478,7 @@ int ParseDynamicFile(string indir, string costfile) {
 		else { // check for valid change number
 			if (change != prevchange + 1) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << "Change numbers must be sequential integers" << endl;
+				batchLog << "Change numbers must be sequential integers" << endl;
 				errors++;
 			}
 			prevchange = change;
@@ -1553,12 +1560,12 @@ int ParseStageFile(string indir)
 		}
 		if (checkfile) {
 			if (filename == "NULL") {
-				batchlog << "*** " << ftype2 << " is compulsory for stage-structured model" << endl;
+				batchLog << "*** " << ftype2 << " is compulsory for stage-structured model" << endl;
 				errors++;
 			}
 			else {
 				fname = indir + filename;
-				batchlog << "Checking " << ftype2 << " " << fname << endl;
+				batchLog << "Checking " << ftype2 << " " << fname << endl;
 				bTransMatrix.open(fname.c_str());
 				if (bTransMatrix.is_open()) {
 					err = ParseTransitionFile(stages, sexesDem);
@@ -1591,7 +1598,7 @@ int ParseStageFile(string indir)
 		else {
 			if (fecstagewts != 0) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << "FecStageWts must be 0 if FecDensDep is 0" << endl; errors++;
+				batchLog << "FecStageWts must be 0 if FecDensDep is 0" << endl; errors++;
 				errors++; fecstagewts = 1;
 			}
 		}
@@ -1602,7 +1609,7 @@ int ParseStageFile(string indir)
 		if (filename == "NULL") {
 			if (fecstagewts) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << ftype2 << " is compulsory unless FecStageWts is 0" << endl;
+				batchLog << ftype2 << " is compulsory unless FecStageWts is 0" << endl;
 				errors++;
 			}
 		}
@@ -1613,7 +1620,7 @@ int ParseStageFile(string indir)
 			}
 			if (checkfile) {
 				fname = indir + filename;
-				batchlog << "Checking " << ftype2 << " " << fname << endl;
+				batchLog << "Checking " << ftype2 << " " << fname << endl;
 				bStageWeightsFile.open(fname.c_str());
 				if (bStageWeightsFile.is_open()) {
 					err = ParseWeightsFile(ftype2);
@@ -1646,7 +1653,7 @@ int ParseStageFile(string indir)
 		else {
 			if (devstagewts != 0) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << "DevStageWts must be 0 if DevDensDep is 0" << endl; errors++;
+				batchLog << "DevStageWts must be 0 if DevDensDep is 0" << endl; errors++;
 				errors++; devstagewts = 1;
 			}
 		}
@@ -1657,7 +1664,7 @@ int ParseStageFile(string indir)
 		if (filename == "NULL") {
 			if (devstagewts) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << ftype2 << " is compulsory unless DevStageWts is 0" << endl;
+				batchLog << ftype2 << " is compulsory unless DevStageWts is 0" << endl;
 				errors++;
 			}
 		}
@@ -1668,7 +1675,7 @@ int ParseStageFile(string indir)
 			}
 			if (checkfile) {
 				fname = indir + filename;
-				batchlog << "Checking " << ftype2 << " " << fname << endl;
+				batchLog << "Checking " << ftype2 << " " << fname << endl;
 				bStageWeightsFile.open(fname.c_str());
 				if (bStageWeightsFile.is_open()) {
 					err = ParseWeightsFile(ftype2);
@@ -1701,7 +1708,7 @@ int ParseStageFile(string indir)
 		else {
 			if (survstagewts != 0) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << "SurvStageWts must be 0 if SurvDensDep is 0" << endl; errors++;
+				batchLog << "SurvStageWts must be 0 if SurvDensDep is 0" << endl; errors++;
 				errors++; survstagewts = 1;
 			}
 		}
@@ -1712,7 +1719,7 @@ int ParseStageFile(string indir)
 		if (filename == "NULL") {
 			if (survstagewts) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << ftype2 << " is compulsory unless SurvStageWts is 0" << endl;
+				batchLog << ftype2 << " is compulsory unless SurvStageWts is 0" << endl;
 				errors++;
 			}
 		}
@@ -1723,7 +1730,7 @@ int ParseStageFile(string indir)
 			}
 			if (checkfile) {
 				fname = indir + filename;
-				batchlog << "Checking " << ftype2 << " " << fname << endl;
+				batchLog << "Checking " << ftype2 << " " << fname << endl;
 				bStageWeightsFile.open(fname.c_str());
 				if (bStageWeightsFile.is_open()) {
 					err = ParseWeightsFile(ftype2);
@@ -1806,7 +1813,7 @@ int ParseTransitionFile(short nstages, short nsexesDem)
 	bTransMatrix >> header;
 	if (header != "0") {
 		BatchError(filetype, line, 0, " ");
-		batchlog << "Invalid row header" << endl; errors++;
+		batchLog << "Invalid row header" << endl; errors++;
 	}
 	float totfecundity = 0.0;
 	for (i = 0; i < nstages; i++) {
@@ -1828,7 +1835,7 @@ int ParseTransitionFile(short nstages, short nsexesDem)
 	//				batchlog << "MINAGE = " << minage << endl;
 	if (minage != 0) {
 		BatchError(filetype, line, 0, " ");
-		batchlog << "MinAge must be zero for juvenile stage" << endl; errors++;
+		batchLog << "MinAge must be zero for juvenile stage" << endl; errors++;
 	}
 
 	// one row for each stage/sex combination
@@ -1844,7 +1851,7 @@ int ParseTransitionFile(short nstages, short nsexesDem)
 			}
 			if (header != hhh) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << "Invalid row header" << endl; errors++;
+				batchLog << "Invalid row header" << endl; errors++;
 			}
 			for (i = 0; i < nstages; i++) {
 				for (j = 0; j < nsexesDem; j++) {
@@ -1860,7 +1867,7 @@ int ParseTransitionFile(short nstages, short nsexesDem)
 			//				batchlog << "MINAGE = " << minage << endl;
 			if (stage == 1 && minage != 0) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << "MinAge must be zero for stage 1" << endl; errors++;
+				batchLog << "MinAge must be zero for stage 1" << endl; errors++;
 			}
 			if (stage > 1) {
 				if (minage < 0) {
@@ -1932,7 +1939,7 @@ int ParseWeightsFile(string filetype)
 			}
 			if (header != hhh) {
 				BatchError(filetype, line, 0, " ");
-				batchlog << "Invalid row header" << endl; errors++;
+				batchLog << "Invalid row header" << endl; errors++;
 			}
 			for (i = 0; i < stages; i++) {
 				for (j = 0; j < sexesDem; j++) {
@@ -2027,7 +2034,7 @@ int CheckEmigFile(void)
 		if (inDensDep == 1 && inUseFullKern != 0) {
 				BatchError(whichInputFile, lineNb, 0, "UseFullKern"); 
 				nbErrors++;
-				batchlog << "UseFullKern must be 0 if there is density-dependent emigration" << endl;
+				batchLog << "UseFullKern must be 0 if there is density-dependent emigration" << endl;
 		}
 		// validate emigration stage
 		if (stagestruct && !inStgDep && inIndVar == 1
@@ -2035,7 +2042,7 @@ int CheckEmigFile(void)
 			&& (inEmigStg < 0 || inEmigStg >= stages)) {
 			BatchError(whichInputFile, lineNb, 0, "EmigStage");
 			nbErrors++;
-			batchlog << "EmigStage must be from 0 to " << Int2Str(stages - 1) << endl;
+			batchLog << "EmigStage must be from 0 to " << Int2Str(stages - 1) << endl;
 		}
 		if (inStage == 0 && inSex == 0) { // first line of a simulation
 			// record whether density dependence and individual variability are applied
@@ -2048,7 +2055,7 @@ int CheckEmigFile(void)
 
 		if (isDensDep) {
 			if (inEP != gEmptyVal) {
-				batchlog << "*** Error in " << whichInputFile << ": "
+				batchLog << "*** Error in " << whichInputFile << ": "
 					<< "if density-dependence is enabled EP must be " << gEmptyVal << endl;
 				nbErrors++;
 			}
@@ -2071,17 +2078,17 @@ int CheckEmigFile(void)
 				nbErrors++;
 			}
 			if (inD0 != gEmptyVal) {
-				batchlog << "*** Error in " << whichInputFile << ": "
+				batchLog << "*** Error in " << whichInputFile << ": "
 					<< "if density-dependence is disabled D0 must be " << gEmptyVal << endl;
 				nbErrors++;
 			}
 			if (inAlpha != gEmptyVal) {
-				batchlog << "*** Error in " << whichInputFile << ": "
+				batchLog << "*** Error in " << whichInputFile << ": "
 					<< "if density-dependence is disabled alpha must be " << gEmptyVal << endl;
 				nbErrors++;
 			}
 			if (inAlpha != gEmptyVal) {
-				batchlog << "*** Error in " << whichInputFile << ": "
+				batchLog << "*** Error in " << whichInputFile << ": "
 					<< "if density-dependence is disabled beta must be " << gEmptyVal << endl;
 				nbErrors++;
 			}
@@ -2099,7 +2106,7 @@ int CheckEmigFile(void)
 	if (currentLine.simLines != currentLine.reqdSimLines) {
 		BatchError(whichInputFile, lineNb, 0, " "); 
 		nbErrors++;
-		batchlog << msgnlines << currentLine.simNb
+		batchLog << msgnlines << currentLine.simNb
 			<< msgshldbe << currentLine.reqdSimLines << endl;
 	}
 	if (!bEmigrationFile.eof()) {
@@ -2135,7 +2142,7 @@ int ParseTransferFile(string indir)
 	switch (gTransferType) {
 
 	case 0: { // negative exponential dispersal kernel
-		batchlog << "Checking dispersal kernel format file" << endl;
+		batchLog << "Checking dispersal kernel format file" << endl;
 		bTransferFile >> header; if (header != "StageDep") errors++;
 		bTransferFile >> header; if (header != "SexDep") errors++;
 		bTransferFile >> header; if (header != "KernelType") errors++;
@@ -2153,7 +2160,7 @@ int ParseTransferFile(string indir)
 	} // end of negative exponential dispersal kernel
 
 	case 1: { // SMS
-		batchlog << "Checking SMS format file ";
+		batchLog << "Checking SMS format file ";
 		bTransferFile >> header; if (header != "IndVar") errors++;
 		bTransferFile >> header; if (header != "PR") errors++;
 		bTransferFile >> header; if (header != "PRMethod") errors++;
@@ -2168,7 +2175,7 @@ int ParseTransferFile(string indir)
 		bTransferFile >> header; if (header != "SMconst") errors++;
 		switch (landtype) {
 		case 0: { // raster map with unique habitat codes
-			batchlog << "for LandType = 0" << endl;
+			batchLog << "for LandType = 0" << endl;
 			for (i = 0; i < maxNhab; i++) {
 				colheader = "MortHab" + Int2Str(i + 1);
 				bTransferFile >> header; if (header != colheader) morthaberrors++;
@@ -2180,11 +2187,11 @@ int ParseTransferFile(string indir)
 			break;
 		} // end of raster map with unique habitat codes
 		case 2: { // raster map with habitat quality
-			batchlog << "for LandType = 2" << endl;
+			batchLog << "for LandType = 2" << endl;
 			break;
 		} // end of raster map with habitat quality
 		case 9: { // artificial landscape
-			batchlog << "for LandType = 9" << endl;
+			batchLog << "for LandType = 9" << endl;
 			bTransferFile >> header; if (header != "MortHabitat") errors++;
 			bTransferFile >> header; if (header != "MortMatrix") errors++;
 			bTransferFile >> header; if (header != "CostHabitat") errors++;
@@ -2196,7 +2203,7 @@ int ParseTransferFile(string indir)
 	} // end of SMS
 
 	case 2: { // CRW
-		batchlog << "Checking CRW format file" << endl;
+		batchLog << "Checking CRW format file" << endl;
 		bTransferFile >> header; if (header != "IndVar") errors++;
 		bTransferFile >> header; if (header != "SL") errors++;
 		bTransferFile >> header; if (header != "Rho") errors++;
@@ -2310,7 +2317,7 @@ int ParseTransferFile(string indir)
 			}
 			if (memsize < 1 || memsize > 14) {
 				BatchError(filetype, line, 0, "MemSize"); errors++;
-				batchlog << "MemSize must be from 1 to 14" << endl;
+				batchLog << "MemSize must be from 1 to 14" << endl;
 			}
 			if (!indvar && gb < 1.0) {
 				BatchError(filetype, line, 11, "GB"); errors++;
@@ -2334,7 +2341,7 @@ int ParseTransferFile(string indir)
 			{ // must have constant mortality
 				if (smtype != 0) {
 					BatchError(filetype, line, 0, " "); errors++;
-					batchlog << "SMtype must be 0 for LandType 2" << endl;
+					batchLog << "SMtype must be 0 for LandType 2" << endl;
 				}
 			}
 			else {
@@ -2444,7 +2451,7 @@ int ParseTransferFile(string indir)
 			else { // real landscape with quality OR artificial landscape
 				if (smtype != 0) {
 					BatchError(filetype, line, 0, " "); errors++;
-					batchlog << "SMtype must be 0 for LandType 2 or 9" << endl;
+					batchLog << "SMtype must be 0 for LandType 2 or 9" << endl;
 				}
 				if (smconst < 0.0 || smtype >= 1.0) {
 					BatchError(filetype, line, 20, "SMconst"); errors++;
@@ -2465,7 +2472,7 @@ int ParseTransferFile(string indir)
 	if (gTransferType == 0 // no. of lines checked for dispersal kernel transfer method only
 		&& current.simLines != current.reqdSimLines) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchlog << msgnlines << current.simNb
+		batchLog << msgnlines << current.simNb
 			<< msgshldbe << current.reqdSimLines << endl;
 	}
 	if (!bTransferFile.eof()) {
@@ -2543,7 +2550,7 @@ int ParseSettleFile(void)
 			}
 			if (!stagestruct && (settletype == 1 || settletype == 3)) {
 				BatchError(filetype, line, 0, " "); errors++;
-				batchlog << "Invalid SettleType for a non-stage-structured population" << endl;
+				batchLog << "Invalid SettleType for a non-stage-structured population" << endl;
 			}
 			if (gNbSexesDisp > 1) {
 				if (findmate < 0 || findmate > 1) {
@@ -2564,7 +2571,7 @@ int ParseSettleFile(void)
 			if (densdep == 0) {
 				if (indvar != 0) {
 					BatchError(filetype, line, 0, " "); errors++;
-					batchlog << "IndVar must be 0 if DensDep is 0" << endl;
+					batchLog << "IndVar must be 0 if DensDep is 0" << endl;
 				}
 			}
 			if (reproductn != 0 && gNbSexesDisp > 1) {
@@ -2603,7 +2610,7 @@ int ParseSettleFile(void)
 	// check for correct number of lines for previous simulation
 	if (current.simLines != current.reqdSimLines) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchlog << msgnlines << current.simNb
+		batchLog << msgnlines << current.simNb
 			<< msgshldbe << current.reqdSimLines << endl;
 	}
 	if (!bSettlementFile.eof()) {
@@ -2686,7 +2693,7 @@ int ParseTraitsFile(string indir)
 	// check for correct number of lines for previous simulation
 	if (!(current.simLines >= current.reqdSimLines)) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchlog << msgnlines << current.simNb
+		batchLog << msgnlines << current.simNb
 			<< msgshldbe << current.reqdSimLines << endl;
 	}
 	if (!bTraitsFile.eof()) {
@@ -2766,14 +2773,14 @@ int ParseGeneticsFile(string indir) {
 		}
 
 		if (TraitsFile == "NULL") {
-			batchlog << "*** " << TraitsFile << " is compulsory for genetic models" << endl;
+			batchLog << "*** " << TraitsFile << " is compulsory for genetic models" << endl;
 			errors++;
 		}
 		else {
 			//if (!traitsParsed) { //only parse the first traits file for now, could have multiple different traits files if we want 
 			tfName = indir + TraitsFile;
 			ftype2 = "Traits file";
-			batchlog << "Checking " << ftype2 << " " << tfName << endl;
+			batchLog << "Checking " << ftype2 << " " << tfName << endl;
 			bTraitsFile.open(tfName.c_str());
 			if (bTraitsFile.is_open()) {
 				err = ParseTraitsFile(indir);
@@ -2796,7 +2803,7 @@ int ParseGeneticsFile(string indir) {
 	// check for correct number of lines for previous simulation
 	if (current.simLines != current.reqdSimLines) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchlog << msgnlines << current.simNb
+		batchLog << msgnlines << current.simNb
 			<< msgshldbe << current.reqdSimLines << endl;
 	}
 	if (!bGeneticsFile.eof()) {
@@ -2887,12 +2894,12 @@ int ParseInitFile(string indir)
 		}
 		if (landtype == 9 && seedtype != 0) {
 			BatchError(filetype, line, 0, " "); errors++;
-			batchlog << "SeedType must be 0 for an artificial landscape"
+			batchLog << "SeedType must be 0 for an artificial landscape"
 				<< endl;
 		}
 		if (!speciesdist && seedtype == 1) {
 			BatchError(filetype, line, 0, " "); errors++;
-			batchlog << "SeedType may not be 1 if there is no initial species distribution map"
+			batchLog << "SeedType may not be 1 if there is no initial species distribution map"
 				<< endl;
 		}
 		if (seedtype == 0) {
@@ -2940,7 +2947,7 @@ int ParseInitFile(string indir)
 			range_cells = (maxX - minX) * (maxY - minY);
 			if (nCells > range_cells) {
 				BatchError(filetype, line, 0, " "); errors++;
-				batchlog << "NCells may not be greater than the area specified (i.e. "
+				batchLog << "NCells may not be greater than the area specified (i.e. "
 					<< range_cells << " cells)" << endl;
 			}
 		}
@@ -2973,7 +2980,7 @@ int ParseInitFile(string indir)
 		if (filename == "NULL") {
 			if (seedtype == 2) {
 				BatchError(filetype, line, 0, " "); errors++;
-				batchlog << ftype2 << " is compulsory for SeedType 2" << endl;
+				batchLog << ftype2 << " is compulsory for SeedType 2" << endl;
 			}
 		}
 		else {
@@ -2986,7 +2993,7 @@ int ParseInitFile(string indir)
 				}
 				if (checkfile) {
 					fname = indir + filename;
-					batchlog << "Checking " << ftype2 << " " << fname << endl;
+					batchLog << "Checking " << ftype2 << " " << fname << endl;
 					bInitIndsFile.open(fname.c_str());
 					if (bInitIndsFile.is_open()) {
 						err = ParseInitIndsFile();
@@ -3003,7 +3010,7 @@ int ParseInitFile(string indir)
 			}
 			else {
 				BatchError(filetype, line, 0, " "); errors++;
-				batchlog << ftype2 << " must be NULL for SeedType "
+				batchLog << ftype2 << " must be NULL for SeedType "
 					<< seedtype << endl;
 			}
 		}
@@ -3025,7 +3032,7 @@ int ParseInitFile(string indir)
 			}
 			if (seedtype != 2 && (cumprop < 0.99999 || cumprop > 1.00001)) {
 				BatchError(filetype, line, 0, " "); errors++;
-				batchlog << "Initial proportions must sum to 1.0" << endl;
+				batchLog << "Initial proportions must sum to 1.0" << endl;
 			}
 		}
 
@@ -3038,7 +3045,7 @@ int ParseInitFile(string indir)
 	// check for correct number of lines for previous simulation
 	if (current.simLines != current.reqdSimLines) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchlog << msgnlines << current.simNb
+		batchLog << msgnlines << current.simNb
 			<< msgshldbe << current.reqdSimLines << endl;
 	}
 	if (!bInitFile.eof()) {
@@ -3102,7 +3109,7 @@ int ParseInitIndsFile(void) {
 		bInitIndsFile >> species;
 		if (species != 0) {
 			BatchError(filetype, line, 0, " "); errors++;
-			batchlog << "Species must be 0" << endl;
+			batchLog << "Species must be 0" << endl;
 		}
 		if (patchmodel) {
 			bInitIndsFile >> patchID;
@@ -3179,7 +3186,7 @@ simCheck CheckStageSex(string filetype, int line, int simNb, simCheck prev,
 		// check for correct number of lines for previous simulation
 		if (checklines && !(prev.simLines >= prev.reqdSimLines)) {
 			BatchError(filetype, line, 0, " "); current.errors++;
-			batchlog << "No. of lines for previous Simulation " << prev.simNb
+			batchLog << "No. of lines for previous Simulation " << prev.simNb
 				<< msgshldbe << prev.reqdSimLines << endl;
 		}
 	}
@@ -3195,7 +3202,7 @@ simCheck CheckStageSex(string filetype, int line, int simNb, simCheck prev,
 	else {
 		if (stagedep != 0) {
 			BatchError(filetype, line, 0, " "); current.errors++;
-			batchlog << "StageDep must be 0 for non-stage-structured model" << endl;
+			batchLog << "StageDep must be 0 for non-stage-structured model" << endl;
 			stagedep = 0; // to calculate required number of lines
 		}
 	}
@@ -3209,7 +3216,7 @@ simCheck CheckStageSex(string filetype, int line, int simNb, simCheck prev,
 	else {
 		if (sexdep != 0) {
 			BatchError(filetype, line, 0, " "); current.errors++;
-			batchlog << "SexDep must be 0 for asexual model" << endl;
+			batchLog << "SexDep must be 0 for asexual model" << endl;
 			sexdep = 0; // to calculate required number of lines
 		}
 	}
@@ -3231,33 +3238,33 @@ simCheck CheckStageSex(string filetype, int line, int simNb, simCheck prev,
 			if (current.simLines % 2) iii = (current.simLines + 1) / 2; else  iii = current.simLines / 2;
 			if (stage != iii - 1) {
 				BatchError(filetype, line, 0, " "); current.errors++;
-				batchlog << "Stages must be sequentially numbered from 0" << endl;
+				batchLog << "Stages must be sequentially numbered from 0" << endl;
 			}
 		}
 		else { // there must be 1 line for each stage
 			if (stage != current.simLines - 1) {
 				BatchError(filetype, line, 0, " "); current.errors++;
-				batchlog << "Stages must be sequentially numbered from 0" << endl;
+				batchLog << "Stages must be sequentially numbered from 0" << endl;
 			}
 		}
 	}
 	else { // no stage-dependent emigration
 		if (stage != 0) {
 			BatchError(filetype, line, 0, " "); current.errors++;
-			batchlog << "Stage must be 0 for non-stage-structured model" << endl;
+			batchLog << "Stage must be 0 for non-stage-structured model" << endl;
 		}
 	}
 	// validate sex
 	if (sexdep) {
 		if (sex != (current.simLines + 1) % 2) {
 			BatchError(filetype, line, 0, " "); current.errors++;
-			batchlog << "Sex must be alternately 0 and 1 if SexDep is 1" << endl;
+			batchLog << "Sex must be alternately 0 and 1 if SexDep is 1" << endl;
 		}
 	}
 	else {
 		if (sex != 0) {
 			BatchError(filetype, line, 0, " "); current.errors++;
-			batchlog << "Sex must be 0 if SexDep is 0" << endl;
+			batchLog << "Sex must be 0 if SexDep is 0" << endl;
 		}
 	}
 
@@ -3265,7 +3272,7 @@ simCheck CheckStageSex(string filetype, int line, int simNb, simCheck prev,
 	if (stagedep && !stgdepindvarok) {
 		if (indvar != 0) {
 			BatchError(filetype, line, 0, " "); current.errors++;
-			batchlog << "IndVar must be 0 if stage-dependent" << endl;
+			batchLog << "IndVar must be 0 if stage-dependent" << endl;
 		}
 	}
 	else {
@@ -3281,135 +3288,135 @@ simCheck CheckStageSex(string filetype, int line, int simNb, simCheck prev,
 void BatchError(string filename, int line, int option, string fieldname)
 {
 	if (line == -999) { // message does not cite line number
-		batchlog << "*** Error in " << filename << ": ";
+		batchLog << "*** Error in " << filename << ": ";
 	}
 	else {
-		batchlog << "*** Error in " << filename << " at line " << line << ": ";
+		batchLog << "*** Error in " << filename << " at line " << line << ": ";
 	}
 	switch (option) {
 	case 0:
 		break;
 	case 1:
-		batchlog << fieldname << " must be 0 or 1";
+		batchLog << fieldname << " must be 0 or 1";
 		break;
 	case 2:
-		batchlog << fieldname << " must be 0, 1 or 2";
+		batchLog << fieldname << " must be 0, 1 or 2";
 		break;
 	case 3:
-		batchlog << fieldname << " must be 0, 1, 2 or 3";
+		batchLog << fieldname << " must be 0, 1, 2 or 3";
 		break;
 	case 4:
-		batchlog << fieldname << " must be from 0 to 4";
+		batchLog << fieldname << " must be from 0 to 4";
 		break;
 	case 5:
-		batchlog << fieldname << " must be from 0 to 5";
+		batchLog << fieldname << " must be from 0 to 5";
 		break;
 	case 6:
-		batchlog << fieldname << " must be from 0 to 6";
+		batchLog << fieldname << " must be from 0 to 6";
 		break;
 	case 7:
-		batchlog << fieldname << " must be from 0 to 7";
+		batchLog << fieldname << " must be from 0 to 7";
 		break;
 	case 10:
-		batchlog << fieldname << " must be greater than zero";
+		batchLog << fieldname << " must be greater than zero";
 		break;
 	case 11:
-		batchlog << fieldname << " must be 1 or more";
+		batchLog << fieldname << " must be 1 or more";
 		break;
 	case 12:
-		batchlog << fieldname << " must be 2 or more";
+		batchLog << fieldname << " must be 2 or more";
 		break;
 	case 13:
-		batchlog << fieldname << " must be 3 or more";
+		batchLog << fieldname << " must be 3 or more";
 		break;
 	case 18:
-		batchlog << fieldname << " must be greater than 1.0";
+		batchLog << fieldname << " must be greater than 1.0";
 		break;
 	case 19:
-		batchlog << fieldname << " must be 0 or more";
+		batchLog << fieldname << " must be 0 or more";
 		break;
 	case 20:
-		batchlog << fieldname << " must be between 0 and 1";
+		batchLog << fieldname << " must be between 0 and 1";
 		break;
 	case 21:
-		batchlog << fieldname << " must be greater than 1";
+		batchLog << fieldname << " must be greater than 1";
 		break;
 	case 33:
-		batchlog << fieldname << " must be 1, 2 or 3";
+		batchLog << fieldname << " must be 1, 2 or 3";
 		break;
 	case 44:
-		batchlog << fieldname << " must be from 1 to 4";
+		batchLog << fieldname << " must be from 1 to 4";
 		break;
 	case 55:
-		batchlog << fieldname << " must be from 1 to 5";
+		batchLog << fieldname << " must be from 1 to 5";
 		break;
 	case 66:
-		batchlog << fieldname << " must be from 1 to 6";
+		batchLog << fieldname << " must be from 1 to 6";
 		break;
 	case 100:
-		batchlog << fieldname << " must be between 0 and 100";
+		batchLog << fieldname << " must be between 0 and 100";
 		break;
 	case 111:
-		batchlog << fieldname << " must match the first Simulation in ParameterFile";
+		batchLog << fieldname << " must match the first Simulation in ParameterFile";
 		break;
 	case 222:
-		batchlog << "Simulation numbers must be sequential integers";
+		batchLog << "Simulation numbers must be sequential integers";
 		break;
 	case 333:
-		batchlog << "No. of " << fieldname << " columns must equal max. no. of habitats ("
+		batchLog << "No. of " << fieldname << " columns must equal max. no. of habitats ("
 			<< maxNhab << ") and be sequentially numbered starting from 1";
 		break;
 	case 444:
-		batchlog << "No. of " << fieldname << " columns must be one fewer than no. of stages, i.e. "
+		batchLog << "No. of " << fieldname << " columns must be one fewer than no. of stages, i.e. "
 			<< stages - 1 << ", and be sequentially numbered starting from 1";
 		break;
 	case 555:
-		batchlog << "No. of " << fieldname << " columns must equal no. of stages, i.e. "
+		batchLog << "No. of " << fieldname << " columns must equal no. of stages, i.e. "
 			<< stages << ", and be sequentially numbered starting from 0";
 		break;
 	case 666:
-		batchlog << fieldname << " must be a unique positive integer";
+		batchLog << fieldname << " must be a unique positive integer";
 		break;
 	default:
-		batchlog << "*** Unspecified error regarding parameter " << fieldname;
+		batchLog << "*** Unspecified error regarding parameter " << fieldname;
 	}
-	if (option != 0) batchlog << endl;
+	if (option != 0) batchLog << endl;
 }
 
 void BatchError(string filename, int line, int option, string fieldname, string fieldname2)
 {
 	if (line == -999) { // message does not cite line number
-		batchlog << "*** Error in " << filename << ": ";
+		batchLog << "*** Error in " << filename << ": ";
 	}
 	else {
-		batchlog << "*** Error in " << filename << " at line " << line << ": ";
+		batchLog << "*** Error in " << filename << " at line " << line << ": ";
 	}
 	switch (option) {
 	case 0:
 		break;
 	case 1:
-		batchlog << fieldname << " must be greater than " << fieldname2;
+		batchLog << fieldname << " must be greater than " << fieldname2;
 		break;
 	case 2:
-		batchlog << fieldname << " must be greater than or equal to " << fieldname2;
+		batchLog << fieldname << " must be greater than or equal to " << fieldname2;
 		break;
 	case 3:
-		batchlog << fieldname << " must be less than or equal to " << fieldname2;
+		batchLog << fieldname << " must be less than or equal to " << fieldname2;
 		break;
 	case 4:
-		batchlog << fieldname << " must be less than " << fieldname2;
+		batchLog << fieldname << " must be less than " << fieldname2;
 		break;
 	default:
-		batchlog << "*** Unspecified error regarding parameters " << fieldname
+		batchLog << "*** Unspecified error regarding parameters " << fieldname
 			<< " and " << fieldname2;
 	}
-	if (option != 0) batchlog << endl;
+	if (option != 0) batchLog << endl;
 }
 
 void CtrlFormatError(void)
 {
 	cout << "Format error in Control file" << endl;
-	batchlog << endl << "***" << endl << "*** Format error in Control file:"
+	batchLog << endl << "***" << endl << "*** Format error in Control file:"
 		<< msgcase << " and file names" << msgmatch
 		<< endl
 		<< "***" << endl;
@@ -3417,59 +3424,59 @@ void CtrlFormatError(void)
 
 void ArchFormatError(void)
 {
-	batchlog << "*** Format error in ArchFile:" << msgcase << msgmatch << endl;
+	batchLog << "*** Format error in ArchFile:" << msgcase << msgmatch << endl;
 }
 
 void FormatError(string filename, int errors)
 {
-	batchlog << "*** Format error in header line of ";
+	batchLog << "*** Format error in header line of ";
 	if (errors == 0) {
-		batchlog << filename << endl;
+		batchLog << filename << endl;
 	}
 	else {
-		batchlog << filename << ": " << errors << " error";
-		if (errors > 1) batchlog << "s";
-		batchlog << " detected" << endl;
+		batchLog << filename << ": " << errors << " error";
+		if (errors > 1) batchLog << "s";
+		batchLog << " detected" << endl;
 	}
 }
 
 void OpenError(string ftype, string fname)
 {
-	batchlog << "*** Unable to open " << ftype << " " << fname << endl;
+	batchLog << "*** Unable to open " << ftype << " " << fname << endl;
 }
 
 void EOFerror(string filename)
 {
-	batchlog << "*** Failed to read to EOF in " << filename << endl;
+	batchLog << "*** Failed to read to EOF in " << filename << endl;
 }
 
 void FileOK(string ftype, int n, int option)
 {
-	batchlog << ftype << " OK: total no. of ";
+	batchLog << ftype << " OK: total no. of ";
 	switch (option) {
 	case 0:
-		batchlog << "simulations = ";
+		batchLog << "simulations = ";
 		break;
 	case 1:
-		batchlog << "landscapes = ";
+		batchLog << "landscapes = ";
 		break;
 	case 2:
-		batchlog << "parameters = ";
+		batchLog << "parameters = ";
 		break;
 	default:
-		batchlog << "PROBLEMS = ";
+		batchLog << "PROBLEMS = ";
 	}
-	batchlog << n << endl;
+	batchLog << n << endl;
 }
 
 void FileHeadersOK(string filename)
 {
-	batchlog << filename << " OK" << endl;
+	batchLog << filename << " OK" << endl;
 }
 
 void SimulnCountError(string filename)
 {
-	batchlog << "*** No. of simulations in " << filename
+	batchLog << "*** No. of simulations in " << filename
 		<< " does not match no. in ParameterFile" << endl;
 }
 

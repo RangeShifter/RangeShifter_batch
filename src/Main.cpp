@@ -123,7 +123,7 @@ paramsInit = new paramInit;
 paramsSim = new paramSim;                
 
 // set up working directory and control file name
-string cname;
+string pathToControlFile;
 #if LINUX_CLUSTER || RS_RCPP
 if (argc > 1) {
 	// full path name of directory passed as a parameter
@@ -158,11 +158,11 @@ if (__argc > 1) {
 	paramsSim->setDir(__argv[1]);
 	if (__argc > 2) {
 		// control file name also passed as a parameter
-		cname = paramsSim->getDir(0) + "Inputs\\" + __argv[2];
+		pathToControlFile = paramsSim->getDir(0) + "Inputs\\" + __argv[2];
 }
 	else {
 		// default name is CONTROL.txt
-		cname = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
+		pathToControlFile = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
 	}
 }
 else {
@@ -173,13 +173,13 @@ else {
 	dir = dir + "\\"; //Current directory path
 	paramsSim->setDir(dir);
 	// control file name is forced to be CONTROL.txt
-	cname = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
+	pathToControlFile = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
 }
 #endif
 #if RSDEBUG
 cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
 cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
-cout << endl << "Control file:      " << cname << endl << endl;
+cout << endl << "Control file:      " << pathToControlFile << endl << endl;
 #endif
 
 bool errorfolder = CheckDirectory();
@@ -217,7 +217,7 @@ transferRules trfr = pSpecies->getTransferRules();
 batchfiles b;
 string indir  = paramsSim->getDir(1);
 string outdir = paramsSim->getDir(2);
-b = ParseControlFile(cname,indir,outdir);       
+b = ParseControlFile(pathToControlFile, indir, outdir);       
 if (b.ok) { 
 	nSimuls = b.nSimuls;
 	nLandscapes = b.nLandscapes;
