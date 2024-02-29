@@ -161,7 +161,6 @@ void SimulnCountError(string);
 
 void RunBatch(int, int);
 int ReadParameters(int, Landscape*);
-void setUpTrait(vector<string>);
 int ReadLandFile(int);
 int ReadLandFile(int, Landscape*);
 int ReadDynLandFile(Landscape*);
@@ -183,6 +182,14 @@ int ReadInitialisation(int, Landscape*);
 int ReadInitIndsFile(int, Landscape*, string);
 int readGeneticsFile(int, Landscape*);
 int readTraitsFile(int);
+
+void setUpTrait(vector<string>);
+DistributionType stringToDistributionType(const std::string& str);
+ExpressionType stringToExpressionType(const std::string& str);
+map<parameter_t, float> stringToParameterMap(string parameters);
+set<int> selectRandomLociPositions(int noLoci, const int& genomeSize);
+set<int> stringToLoci(string pos, string nLoci, const int& genomeSize);
+TraitType stringToTraitType(const std::string& str, sex_t sex);
 
 #if RSDEBUG
 extern ofstream DEBUGLOG;

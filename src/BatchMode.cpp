@@ -3738,9 +3738,198 @@ int readTraitsFile(int simulationN) {
 }
 
 void setUpTrait(vector<string> parameters) {
-	SpeciesTrait* trait = new SpeciesTrait(parameters, pSpecies);
-	TraitType type = trait->stringToTraitType(parameters[1], stringToSex(parameters[2]));
-	pSpecies->addTrait(type, *trait);
+
+	const int genomeSize = pSpecies->getGenomeSize();
+
+	const sex_t sex = stringToSex(parameters[2]);
+	TraitType traitType = stringToTraitType(parameters[1], sex);
+	const set<int> positions = stringToLoci(parameters[3], parameters[4], genomeSize);
+	const ExpressionType expressionType = stringToExpressionType(parameters[5]);
+
+	// Initial distribution parameters
+	const DistributionType initDist = stringToDistributionType(parameters[6]);
+	const map<parameter_t, float> initParams = stringToParameterMap(parameters[7]);
+
+	// Dominance distribution parameters
+	const DistributionType dominanceDist = stringToDistributionType(parameters[8]);
+	const map<parameter_t, float> dominanceParams = stringToParameterMap(parameters[9]);
+
+	// Mutation parameters
+	bool isInherited = (parameters[10] == "true");
+	// should always be true if traitTYpe is SNP or ADAPTIVE
+
+	DistributionType mutationDistribution = isInherited ? 
+		stringToDistributionType(parameters[11]) : 
+		DistributionType::NONE;
+	map<parameter_t, float> mutationParameters;
+	float mutationRate = isInherited ? stof(parameters[13]) : 0;
+
+	if (isInherited) {
+		mutationParameters = stringToParameterMap(parameters[12]);
+	}
+
+	// error outputting for different traits
+	if (traitType == SNP) {
+		if (mutationDistribution != KAM && mutationDistribution != SSM)
+			throw logic_error("Traits file: ERROR - Neutral marker mutation distribution must be KAM or SSM (max = 256))");
+		 pSpecies->setNumberOfNeutralLoci(static_cast<int>(positions.size()));
+	}
+	SpeciesTrait* trait = new SpeciesTrait(
+		traitType, sex, 
+		positions, expressionType, 
+		initDist, initParams, 
+		dominanceDist, dominanceParams, 
+		isInherited, mutationRate, 
+		mutationDistribution, mutationParameters,
+		pSpecies
+	);
+	pSpecies->addTrait(traitType, *trait);
+}
+
+
+TraitType stringToTraitType(const std::string& str, sex_t sex) {
+
+	// Non-dispersal traits
+	if (str == "neutral") return SNP;
+	else if (str == "adaptive") return ADAPTIVE;
+	// Sex-invariant dispersal traits
+	else if (str == "sms_directionalPersistence") return SMS_DP;
+	else if (str == "sms_goalBias") return SMS_GB;
+	else if (str == "sms_alphaDB") return SMS_ALPHADB;
+	else if (str == "sms_betaDB") return SMS_BETADB;
+	// Sex-specific dispersal traits
+	else if (sex == MAL) {
+		if (str == "emigration_d0") return E_D0_M;
+		else if (str == "emigration_alpha") return E_ALPHA_M;
+		else if (str == "emigration_beta") return E_BETA_M;
+		else if (str == "settlement_s0") return S_S0_M;
+		else if (str == "settlement_alpha") return S_ALPHA_M;
+		else if (str == "settlement_beta") return S_BETA_M;
+		else if (str == "kernel_meanDistance1") return KERNEL_MEANDIST_1_M;
+		else if (str == "kernel_meanDistance2") return KERNEL_MEANDIST_2_M;
+		else if (str == "kernel_probability") return KERNEL_PROBABILITY_M;
+		else if (str == "crw_stepLength") return CRW_STEPLENGTH_M;
+		else if (str == "crw_stepCorrelation") return CRW_STEPCORRELATION_M;
+		else throw logic_error(str + " is not a valid trait type.");
+	}
+	else {
+		if (str == "emigration_d0") return E_D0_F;
+		else if (str == "emigration_alpha") return E_ALPHA_F;
+		else if (str == "emigration_beta") return E_BETA_F;
+		else if (str == "settlement_s0") return S_S0_F;
+		else if (str == "settlement_alpha") return S_ALPHA_F;
+		else if (str == "settlement_beta") return S_BETA_F;
+		else if (str == "kernel_meanDistance1") return KERNEL_MEANDIST_1_F;
+		else if (str == "kernel_meanDistance2") return KERNEL_MEANDIST_2_F;
+		else if (str == "kernel_probability") return KERNEL_PROBABILITY_F;
+		else if (str == "crw_stepLength") return CRW_STEPLENGTH_F;
+		else if (str == "crw_stepCorrelation") return CRW_STEPCORRELATION_F;
+		else throw logic_error(str + " is not a valid trait type.");
+	}
+}
+
+ExpressionType stringToExpressionType(const std::string& str) {
+	if (str == "average") return AVERAGE;
+	else if (str == "additive") return ADDITIVE;
+	else if (str == "multiplicative") return MULTIPLICATIVE;
+	else if (str == "#") return NEUTRAL;
+	else throw logic_error(str + " is not a valid gene expression type.");
+}
+
+DistributionType stringToDistributionType(const std::string& str) {
+	if (str == "#") return NONE;
+	else if (str == "uniform") return UNIFORM;
+	else if (str == "normal") return NORMAL;
+	else if (str == "gamma") return GAMMA;
+	else if (str == "scaled") return SCALED;
+	else if (str == "negExp") return NEGEXP;
+	else if (str == "KAM") return KAM;
+	else if (str == "SSM") return SSM;
+	else throw logic_error(str + " is not a valid distribution type.");
+}
+
+map<parameter_t, float> stringToParameterMap(string parameters) {
+
+	map<parameter_t, float> paramMap;
+	if (parameters != "#") {
+		parameters.erase(remove(parameters.begin(), parameters.end(), '\"'), parameters.end());
+		stringstream ss(parameters);
+
+		string value, valueWithin;
+		while (std::getline(ss, value, ',')) {
+			stringstream sss(value);
+			vector<string> paramValue;
+			while (std::getline(sss, valueWithin, '=')) {
+				paramValue.push_back(valueWithin);
+			}
+
+			if (paramValue.size() == 2) {
+				parameter_t parameterT = paramValue[0];
+				float value = stof(paramValue[1]);
+				paramMap.emplace(parameterT, value);
+			}
+			else
+				cout << endl << "Traits file: ERROR - parameter values for a distribution missing, should be e.g. 'mean=0,standard_deviation=0.5' or if not applicable put #" << endl;
+		}
+	}
+	return paramMap;
+}
+
+set<int> selectRandomLociPositions(int nbLoci, const int& genomeSize) {
+
+	set<int> positions;
+	for (int i = 0; i < nbLoci; ++i)
+		positions.insert(pRandom->IRandom(0, genomeSize));
+	return positions;
+}
+
+set<int> stringToLoci(string pos, string nLoci, const int& genomeSize) {
+
+	set<int> positions;
+
+	if (pos != "random") {
+
+		// Parse comma-separated list from input string
+		stringstream ss(pos);
+		string value, valueWithin;
+		// Read comma-separated positions
+		while (std::getline(ss, value, ',')) {
+			stringstream sss(value);
+			vector<int> positionRange;
+			// Read single positions and dash-separated ranges
+			while (std::getline(sss, valueWithin, '-')) {
+				positionRange.push_back(stoi(valueWithin));
+			}
+			switch (positionRange.size())
+			{
+			case 1: // single position
+				if (positionRange[0] > genomeSize)
+					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
+				positions.insert(positionRange[0]);
+				break;
+			case 2: // dash-separated range
+				if (positionRange[0] > genomeSize || positionRange[1] > genomeSize) {
+					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
+				}
+				for (int i = positionRange[0]; i < positionRange[1] + 1; ++i) {
+					positions.insert(i);
+				}
+				break;
+			default: // zero or more than 2 values between commas: error
+				throw logic_error("Traits file: ERROR - incorrectly formatted position range.");
+				break;
+			}
+		}
+
+		for (auto position : positions) {
+			if (position > genomeSize)
+				cout << endl << "Traits file: ERROR - trait positions " << position << " must not exceed genome size" << endl;
+		}
+	}
+	else {
+		positions = selectRandomLociPositions(stoi(nLoci), genomeSize);
+	}
+	return positions;
 }
 
 //---------------------------------------------------------------------------
