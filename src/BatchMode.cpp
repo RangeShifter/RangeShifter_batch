@@ -65,15 +65,15 @@ string stageStructFile, transMatrix;
 string emigrationFile, transferFile, settleFile, geneticsFile, traitsFile, initialFile;
 string prevInitialIndsFile = " ";
 
-string msgnlines = "No. of lines for final Simulation ";
-string msgshldbe = " should be ";
-string msgresol0 = "*** Resolution of ";
-string msgresol1 = " does not match Resolution in Control file ";
-string msghdrs0 = "*** Headers of ";
-string msghdrs1 = " do not match headers of LandscapeFile";
-string msgpatch = " is required for patch-based model";
-string msgmatch = " must match the specification exactly";
-string msgcase = " case-sensitive parameter names";
+const string gNbLinesStr = "No. of lines for final Simulation ";
+const string gShouldBeStr = " should be ";
+const string gResolOfStr = "*** Resolution of ";
+const string gResolNotMatchStr = " does not match Resolution in Control file ";
+const string gHeadersOfStr = "*** Headers of ";
+const string gHeadersNotMatchStr = " do not match headers of LandscapeFile";
+const string gPatchReqdStr = " is required for patch-based model";
+const string gSpecMustMatchStr = " must match the specification exactly";
+const string gCaseSensitiveStr = " case-sensitive parameter names";
 
 float** matrix = NULL;	// temporary matrix used in batch mode
 int matrixsize = 0; 		// size of temporary matrix
@@ -977,8 +977,8 @@ int CheckLandFile(int landtype, string indir)
 					batchLog << ftype << " headers OK: " << fname << endl;
 				else {
 					errors++;
-					batchLog << msgresol0 << ftype << " " << fname
-						<< msgresol1 << endl;
+					batchLog << gResolOfStr << ftype << " " << fname
+						<< gResolNotMatchStr << endl;
 				}
 			}
 			else {
@@ -995,7 +995,7 @@ int CheckLandFile(int landtype, string indir)
 			if (intext == "NULL") {
 				if (patchmodel) {
 					BatchError(filetype, line, 0, " "); errors++;
-					batchLog << ftype << msgpatch << endl;
+					batchLog << ftype << gPatchReqdStr << endl;
 				}
 			}
 			else {
@@ -1012,14 +1012,14 @@ int CheckLandFile(int landtype, string indir)
 								batchLog << ftype << " headers OK: " << fname << endl;
 							}
 							else {
-								batchLog << msghdrs0 << ftype << " " << fname
-									<< msghdrs1 << endl;
+								batchLog << gHeadersOfStr << ftype << " " << fname
+									<< gHeadersNotMatchStr << endl;
 								errors++;
 							}
 						}
 						else {
-							batchLog << msgresol0 << ftype << " " << fname
-								<< msgresol1 << endl;
+							batchLog << gResolOfStr << ftype << " " << fname
+								<< gResolNotMatchStr << endl;
 							errors++;
 						}
 					}
@@ -1058,14 +1058,14 @@ int CheckLandFile(int landtype, string indir)
 								batchLog << ftype << " headers OK: " << fname << endl;
 							}
 							else {
-								batchLog << msghdrs0 << ftype << " " << fname
-									<< msghdrs1 << endl;
+								batchLog << gHeadersOfStr << ftype << " " << fname
+									<< gHeadersNotMatchStr << endl;
 								errors++;
 							}
 						}
 						else {
-							batchLog << msgresol0 << ftype << " " << fname
-								<< msgresol1 << endl;
+							batchLog << gResolOfStr << ftype << " " << fname
+								<< gResolNotMatchStr << endl;
 							errors++;
 						}
 					}
@@ -1349,13 +1349,13 @@ int CheckDynamicFile(string indir, string costfile) {
 					batchLog << ftype << " headers OK: " << fname << endl;
 				}
 				else {
-					batchLog << msghdrs0 << ftype << " " << fname
-						<< msghdrs1 << endl;
+					batchLog << gHeadersOfStr << ftype << " " << fname
+						<< gHeadersNotMatchStr << endl;
 					errors++;
 				}
 			else {
 				errors++;
-				batchLog << msgresol0 << ftype << " " << fname << msgresol1 << endl;
+				batchLog << gResolOfStr << ftype << " " << fname << gResolNotMatchStr << endl;
 			}
 		}
 		else {
@@ -1372,7 +1372,7 @@ int CheckDynamicFile(string indir, string costfile) {
 		if (intext == "NULL") {
 			if (patchmodel) {
 				BatchError(filetype, line, 0, " "); errors++;
-				batchLog << ftype << msgpatch << endl;
+				batchLog << ftype << gPatchReqdStr << endl;
 			}
 		}
 		else {
@@ -1389,14 +1389,14 @@ int CheckDynamicFile(string indir, string costfile) {
 							batchLog << ftype << " headers OK: " << fname << endl;
 						}
 						else {
-							batchLog << msghdrs0 << ftype << " " << fname
-								<< msghdrs1 << endl;
+							batchLog << gHeadersOfStr << ftype << " " << fname
+								<< gHeadersNotMatchStr << endl;
 							errors++;
 						}
 					}
 					else {
-						batchLog << msgresol0 << ftype << " " << fname
-							<< msgresol1 << endl;
+						batchLog << gResolOfStr << ftype << " " << fname
+							<< gResolNotMatchStr << endl;
 						errors++;
 					}
 				}
@@ -1437,14 +1437,14 @@ int CheckDynamicFile(string indir, string costfile) {
 							batchLog << ftype << " headers OK: " << fname << endl;
 						}
 						else {
-							batchLog << msghdrs0 << ftype << " " << fname
-								<< msghdrs1 << endl;
+							batchLog << gHeadersOfStr << ftype << " " << fname
+								<< gHeadersNotMatchStr << endl;
 							errors++;
 						}
 					}
 					else {
-						batchLog << msgresol0 << ftype << " " << fname
-							<< msgresol1 << endl;
+						batchLog << gResolOfStr << ftype << " " << fname
+							<< gResolNotMatchStr << endl;
 						errors++;
 					}
 				}
@@ -2096,8 +2096,8 @@ int CheckEmigFile(void)
 	if (currentLine.simLines != currentLine.reqdSimLines) {
 		BatchError(whichInputFile, lineNb, 0, " "); 
 		nbErrors++;
-		batchLog << msgnlines << currentLine.simNb
-			<< msgshldbe << currentLine.reqdSimLines << endl;
+		batchLog << gNbLinesStr << currentLine.simNb
+			<< gShouldBeStr << currentLine.reqdSimLines << endl;
 	}
 	if (!bEmigrationFile.eof()) {
 		EOFerror(whichInputFile);
@@ -2123,12 +2123,17 @@ int CheckTransferFile(string indir)
 
 	vector <string> costsfiles;
 
-	int errors = 0; int morthaberrors = 0; int costerrors = 0; int hrerrors = 0;
+	int errors = 0; 
+	int morthaberrors = 0; 
+	int costerrors = 0; 
+	int hrerrors = 0;
 	int simuls = 0;
 	string filetype = "TransferFile";
 
 	// Parse header line;
-	bTransferFile >> header; if (header != "Simulation") errors++;
+	bTransferFile >> header; 
+	if (header != "Simulation") errors++;
+
 	switch (gTransferType) {
 
 	case 0: { // negative exponential dispersal kernel
@@ -2377,7 +2382,6 @@ int CheckTransferFile(string indir)
 			} // end of raster map with habitat quality
 
 			case 9: { // artificial landscape
-				//			batchlog << "for LandType = 9" << endl;
 				bTransferFile >> morthab >> mortmatrix;
 				bTransferFile >> costhab >> costmatrix;
 				if (smtype) { // validate habitat-dependent mortality
@@ -2462,8 +2466,8 @@ int CheckTransferFile(string indir)
 	if (gTransferType == 0 // no. of lines checked for dispersal kernel transfer method only
 		&& current.simLines != current.reqdSimLines) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchLog << msgnlines << current.simNb
-			<< msgshldbe << current.reqdSimLines << endl;
+		batchLog << gNbLinesStr << current.simNb
+			<< gShouldBeStr << current.reqdSimLines << endl;
 	}
 	if (!bTransferFile.eof()) {
 		EOFerror(filetype);
@@ -2600,8 +2604,8 @@ int CheckSettleFile(void)
 	// check for correct number of lines for previous simulation
 	if (current.simLines != current.reqdSimLines) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchLog << msgnlines << current.simNb
-			<< msgshldbe << current.reqdSimLines << endl;
+		batchLog << gNbLinesStr << current.simNb
+			<< gShouldBeStr << current.reqdSimLines << endl;
 	}
 	if (!bSettlementFile.eof()) {
 		EOFerror(filetype);
@@ -2618,82 +2622,92 @@ int CheckTraitsFile(string indir)
 {
 	string header, colheader;
 	int simNb;
-	string filename, TraitType, Sex, initialDistribution, initialParameters,
-		dominanceDistribution, dominanceParameters, isInherited, mutationDistribution, mutationParameters, positions, NbrOfPositions, expressionType, mutationRate;
-	int errors = 0;
-	int simuls = 0;
+	string filename, inTraitType, inSex, initialDistribution, initialParameters,
+		inDominanceDist, inDominanceParams, inIsInherited, inMutationDist, 
+		inMutationParams, inPositions, inNbPositions, inExpressionType, inMutationRate;
+	int nbErrors = 0;
+	int nbSims = 0;
 	vector <string> archfiles;
-	const string filetype = "TraitsFile";
+	const string whichInputFile = "TraitsFile";
 
-	// Parse header line;
-	bTraitsFile >> header; if (header != "Simulation") errors++;
-	bTraitsFile >> header; if (header != "TraitType") errors++;
-	bTraitsFile >> header; if (header != "Sex") errors++;
-	bTraitsFile >> header; if (header != "Positions") errors++;
-	bTraitsFile >> header; if (header != "NbrOfPositions") errors++;
-	bTraitsFile >> header; if (header != "ExpressionType") errors++;
-	bTraitsFile >> header; if (header != "InitialDistribution") errors++;
-	bTraitsFile >> header; if (header != "InitialParameters") errors++;
-	bTraitsFile >> header; if (header != "DominanceDistribution") errors++;
-	bTraitsFile >> header; if (header != "DominanceParameters") errors++;
-	bTraitsFile >> header; if (header != "IsInherited") errors++;
-	bTraitsFile >> header; if (header != "MutationDistribution") errors++;
-	bTraitsFile >> header; if (header != "MutationParameters") errors++;
-	bTraitsFile >> header; if (header != "MutationRate") errors++;
+	// Parse header line
+	bTraitsFile >> header; if (header != "Simulation") nbErrors++;
+	bTraitsFile >> header; if (header != "TraitType") nbErrors++;
+	bTraitsFile >> header; if (header != "Sex") nbErrors++;
+	bTraitsFile >> header; if (header != "Positions") nbErrors++;
+	bTraitsFile >> header; if (header != "NbrOfPositions") nbErrors++;
+	bTraitsFile >> header; if (header != "ExpressionType") nbErrors++;
+	bTraitsFile >> header; if (header != "InitialDistribution") nbErrors++;
+	bTraitsFile >> header; if (header != "InitialParameters") nbErrors++;
+	bTraitsFile >> header; if (header != "DominanceDistribution") nbErrors++;
+	bTraitsFile >> header; if (header != "DominanceParameters") nbErrors++;
+	bTraitsFile >> header; if (header != "IsInherited") nbErrors++;
+	bTraitsFile >> header; if (header != "MutationDistribution") nbErrors++;
+	bTraitsFile >> header; if (header != "MutationParameters") nbErrors++;
+	bTraitsFile >> header; if (header != "MutationRate") nbErrors++;
 
-	if (errors > 0) {
-		FormatError(filetype, errors);
+	if (nbErrors > 0) {
+		FormatError(whichInputFile, nbErrors);
 		return -111;
 	}
 
 	// Parse data lines
-	int line = 1;
-	simCheck current, prev;
-	simNb = -98765;
+	int whichLine = 1;
+	simCheck current, prev;		
+	constexpr int simNbNotRead = -98765;
+	simNb = simNbNotRead;
 	prev.simNb = -999;
 	prev.simLines = prev.reqdSimLines = 0;
 	bTraitsFile >> simNb;
+
+	bool stopReading = (simNb == simNbNotRead);
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
-		BatchError(filetype, line, 111, "Simulation"); errors++;
+		BatchError(whichInputFile, whichLine, 111, "Simulation"); nbErrors++;
 	}
-	while (simNb != -98765) {
+	while (!stopReading) {
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
-		bTraitsFile >> TraitType >> Sex >> positions >> NbrOfPositions >> expressionType >> initialDistribution >> initialParameters
-			>> dominanceDistribution >> dominanceParameters >> isInherited >> mutationDistribution >> mutationParameters
-			>> mutationRate;
+		bTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions >> inExpressionType >> initialDistribution >> initialParameters
+			>> inDominanceDist >> inDominanceParams >> inIsInherited >> inMutationDist >> inMutationParams
+			>> inMutationRate;
 
-		current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, 0, true, false);
-		if (current.isNewSim) simuls++;
-		errors += current.errors;
+		current = CheckStageSex(whichInputFile, whichLine, simNb, prev, 0, 0, 0, 0, 0, true, false);
+		if (current.isNewSim) nbSims++;
+		nbErrors += current.errors;
 		prev = current;
 
 		// validate parameters
-		if ((isInherited == "true" || isInherited == "True" || isInherited == "TRUE") 
-			&& (stof(mutationRate) < 0.0 || stof(mutationRate) > 1.0)) {
-			BatchError(filetype, line, 20, "mutationRate"); errors++;
+		if ((inIsInherited == "true" || inIsInherited == "True" || inIsInherited == "TRUE") 
+			&& (stof(inMutationRate) < 0.0 || stof(inMutationRate) > 1.0)) {
+			BatchError(whichInputFile, whichLine, 20, "mutationRate"); 
+			nbErrors++;
 		}
 
+
+
 		// read next simulation
-		line++;
-		simNb = -98765;
+		whichLine++;
+		simNb = simNbNotRead;
 		bTraitsFile >> simNb;
-		if (bTraitsFile.eof()) simNb = -98765;
+		if (simNb == simNbNotRead || bTraitsFile.eof())
+			stopReading = true;
 	} // end of while loop
+
 	// check for correct number of lines for previous simulation
 	if (!(current.simLines >= current.reqdSimLines)) {
-		BatchError(filetype, line, 0, " "); errors++;
-		batchLog << msgnlines << current.simNb
-			<< msgshldbe << current.reqdSimLines << endl;
+		BatchError(whichInputFile, whichLine, 0, " "); nbErrors++;
+		batchLog << gNbLinesStr << current.simNb
+			<< gShouldBeStr << current.reqdSimLines << endl;
 	}
 	if (!bTraitsFile.eof()) {
-		EOFerror(filetype);
-		errors++;
+		EOFerror(whichInputFile);
+		nbErrors++;
 	}
 
-	if (errors > 0) return -111;
-	else return simuls;
-
+	if (nbErrors > 0) 
+		return -111;
+	else 
+		return nbSims;
 }
 
 //---------------------------------------------------------------------------
@@ -2793,8 +2807,8 @@ int CheckGeneticsFile(string indir) {
 	// check for correct number of lines for previous simulation
 	if (current.simLines != current.reqdSimLines) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchLog << msgnlines << current.simNb
-			<< msgshldbe << current.reqdSimLines << endl;
+		batchLog << gNbLinesStr << current.simNb
+			<< gShouldBeStr << current.reqdSimLines << endl;
 	}
 	if (!bGeneticsFile.eof()) {
 		EOFerror(filetype);
@@ -3035,8 +3049,8 @@ int CheckInitFile(string indir)
 	// check for correct number of lines for previous simulation
 	if (current.simLines != current.reqdSimLines) {
 		BatchError(filetype, line, 0, " "); errors++;
-		batchLog << msgnlines << current.simNb
-			<< msgshldbe << current.reqdSimLines << endl;
+		batchLog << gNbLinesStr << current.simNb
+			<< gShouldBeStr << current.reqdSimLines << endl;
 	}
 	if (!bInitFile.eof()) {
 		EOFerror(filetype);
@@ -3155,119 +3169,123 @@ Check that the number of records for a simulation matches the stage-
 and sex-dependency settings (unless checklines is false).
 Validate the IIV field (if present).
 */
-simCheck CheckStageSex(string filetype, int line, int simNb, simCheck prev,
-	int stagedep, int sexdep, int stage, int sex, int indvar,
-	bool checklines, bool stgdepindvarok)
+simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, simCheck prev,
+	int isStageDep, int isSexDep, int stage, int sex, int isIndVar,
+	bool mustCheckLines, bool mustCheckStgDepWithIndVar)
 {
 	simCheck current;
 	current.errors = 0;
-	int iii;
+	int expectedStage;
 
 	// has there been a change of simulation number?;
 	if (simNb == prev.simNb) { // no
-		current.isNewSim = false; current.simLines = prev.simLines + 1;
+		current.isNewSim = false; 
+		current.simLines = prev.simLines + 1;
 	}
 	else { // yes
 		// check for valid simulation number
 		current.isNewSim = true; current.simLines = 1;
-		if (line > 1 && simNb != prev.simNb + 1) {
-			BatchError(filetype, line, 222, " "); current.errors++;
+		if (whichLine > 1 && simNb != prev.simNb + 1) {
+			BatchError(whichInputFile, whichLine, 222, " "); current.errors++;
 		}
 		// check for correct number of lines for previous simulation
-		if (checklines && !(prev.simLines >= prev.reqdSimLines)) {
-			BatchError(filetype, line, 0, " "); current.errors++;
+		if (mustCheckLines && !(prev.simLines >= prev.reqdSimLines)) {
+			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
 			batchLog << "No. of lines for previous Simulation " << prev.simNb
-				<< msgshldbe << prev.reqdSimLines << endl;
+				<< gShouldBeStr << prev.reqdSimLines << endl;
 		}
 	}
 	current.simNb = simNb;
 
 	// validate stagedep
 	if (stagestruct) {
-		if (stagedep != 0 && stagedep != 1) {
-			BatchError(filetype, line, 1, "StageDep"); current.errors++;
-			stagedep = 1; // to calculate required number of lines
+		if (isStageDep != 0 && isStageDep != 1) {
+			BatchError(whichInputFile, whichLine, 1, "StageDep"); current.errors++;
+			isStageDep = 1; // to calculate required number of lines
 		}
 	}
 	else {
-		if (stagedep != 0) {
-			BatchError(filetype, line, 0, " "); current.errors++;
+		if (isStageDep != 0) {
+			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
 			batchLog << "StageDep must be 0 for non-stage-structured model" << endl;
-			stagedep = 0; // to calculate required number of lines
+			isStageDep = 0; // to calculate required number of lines
 		}
 	}
 	// validate sexdep
 	if (gNbSexesDisp == 2) {
-		if (sexdep != 0 && sexdep != 1) {
-			BatchError(filetype, line, 1, "SexDep"); current.errors++;
-			sexdep = 1; // to calculate required number of lines
+		if (isSexDep != 0 && isSexDep != 1) {
+			BatchError(whichInputFile, whichLine, 1, "SexDep"); current.errors++;
+			isSexDep = 1; // to calculate required number of lines
 		}
 	}
 	else {
-		if (sexdep != 0) {
-			BatchError(filetype, line, 0, " "); current.errors++;
+		if (isSexDep != 0) {
+			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
 			batchLog << "SexDep must be 0 for asexual model" << endl;
-			sexdep = 0; // to calculate required number of lines
+			isSexDep = 0; // to calculate required number of lines
 		}
 	}
 	if (current.isNewSim) { // set required number of lines
-		if (stagedep) {
-			if (sexdep) current.reqdSimLines = stages * gNbSexesDisp;
-			else current.reqdSimLines = stages;
+		if (isStageDep) {
+			current.reqdSimLines = stages;
+			if (isSexDep) current.reqdSimLines *= gNbSexesDisp;
 		}
 		else {
-			if (sexdep) current.reqdSimLines = gNbSexesDisp;
-			else current.reqdSimLines = 1;
+			current.reqdSimLines = isSexDep ? gNbSexesDisp : 1;
 		}
 	}
 	else current.reqdSimLines = prev.reqdSimLines;
 
 	// validate stage
-	if (stagedep) { // there must be 1 or 2 lines for each stage
-		if (sexdep) { // there must be 2 lines for each stage
-			if (current.simLines % 2) iii = (current.simLines + 1) / 2; else  iii = current.simLines / 2;
-			if (stage != iii - 1) {
-				BatchError(filetype, line, 0, " "); current.errors++;
+	if (isStageDep) { // there must be 1 or 2 lines for each stage
+		if (isSexDep) { // there must be 2 lines for each stage
+			expectedStage = current.simLines % 2 ? 
+				(current.simLines + 1) / 2: 
+				current.simLines / 2;
+			if (stage != expectedStage - 1) {
+				BatchError(whichInputFile, whichLine, 0, " "); 
+				current.errors++;
 				batchLog << "Stages must be sequentially numbered from 0" << endl;
 			}
 		}
 		else { // there must be 1 line for each stage
 			if (stage != current.simLines - 1) {
-				BatchError(filetype, line, 0, " "); current.errors++;
+				BatchError(whichInputFile, whichLine, 0, " "); 
+				current.errors++;
 				batchLog << "Stages must be sequentially numbered from 0" << endl;
 			}
 		}
 	}
 	else { // no stage-dependent emigration
 		if (stage != 0) {
-			BatchError(filetype, line, 0, " "); current.errors++;
+			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
 			batchLog << "Stage must be 0 for non-stage-structured model" << endl;
 		}
 	}
 	// validate sex
-	if (sexdep) {
+	if (isSexDep) {
 		if (sex != (current.simLines + 1) % 2) {
-			BatchError(filetype, line, 0, " "); current.errors++;
+			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
 			batchLog << "Sex must be alternately 0 and 1 if SexDep is 1" << endl;
 		}
 	}
 	else {
 		if (sex != 0) {
-			BatchError(filetype, line, 0, " "); current.errors++;
+			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
 			batchLog << "Sex must be 0 if SexDep is 0" << endl;
 		}
 	}
 
 	// validate indvar
-	if (stagedep && !stgdepindvarok) {
-		if (indvar != 0) {
-			BatchError(filetype, line, 0, " "); current.errors++;
+	if (isStageDep && !mustCheckStgDepWithIndVar) {
+		if (isIndVar != 0) {
+			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
 			batchLog << "IndVar must be 0 if stage-dependent" << endl;
 		}
 	}
 	else {
-		if (indvar < 0 || indvar > 1) {
-			BatchError(filetype, line, 1, "IndVar"); current.errors++;
+		if (isIndVar < 0 || isIndVar > 1) {
+			BatchError(whichInputFile, whichLine, 1, "IndVar"); current.errors++;
 		}
 	}
 	return current;
@@ -3407,14 +3425,14 @@ void CtrlFormatError(void)
 {
 	cout << "Format error in Control file" << endl;
 	batchLog << endl << "***" << endl << "*** Format error in Control file:"
-		<< msgcase << " and file names" << msgmatch
+		<< gCaseSensitiveStr << " and file names" << gSpecMustMatchStr
 		<< endl
 		<< "***" << endl;
 }
 
 void ArchFormatError(void)
 {
-	batchLog << "*** Format error in ArchFile:" << msgcase << msgmatch << endl;
+	batchLog << "*** Format error in ArchFile:" << gCaseSensitiveStr << gSpecMustMatchStr << endl;
 }
 
 void FormatError(string filename, int errors)
@@ -3698,21 +3716,20 @@ int readTraitsFile(int simulationN) {
 
 	if (inFile.is_open()) {
 		//read first header line
-		string headerLine, line, value;
+		string headerLine, strLine, entry;
 		std::getline(inFile, headerLine);
 
-		while (std::getline(inFile, line)) {
-			stringstream ss(line);
+		while (std::getline(inFile, strLine)) {
+			stringstream inLine(strLine);
 			vector<string> parameters;
-			while (std::getline(ss, value, '	'))
+			while (std::getline(inLine, entry, '	'))
 			{
-				parameters.push_back(value);
+				parameters.push_back(entry);
 			}
 
 			if (stoi(parameters[0]) == simulationN)
 				setUpTrait(parameters);
 			//create trait with parameters 
-
 		}
 		inFile.close();
 		inFile.clear();
