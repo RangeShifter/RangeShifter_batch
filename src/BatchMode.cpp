@@ -318,7 +318,7 @@ batchfiles ParseControlFile(string pathToControlFile, string indir, string outdi
 		batchLog << endl << "Checking " << paramname << " " << fname << endl;
 		bParamFile.open(fname.c_str());
 		if (bParamFile.is_open()) {
-			b.nSimuls = ParseParameterFile();
+			b.nSimuls = CheckParameterFile();
 			if (b.nSimuls < 0) {
 				b.ok = false;
 			}
@@ -354,7 +354,7 @@ batchfiles ParseControlFile(string pathToControlFile, string indir, string outdi
 		batchLog << endl << "Checking " << paramname << " " << fname << endl;
 		bLandFile.open(fname.c_str());
 		if (bLandFile.is_open()) {
-			lines = ParseLandFile(landtype, indir);
+			lines = CheckLandFile(landtype, indir);
 			if (lines < 0) {
 				b.ok = false;
 				if (lines < -111)
@@ -390,7 +390,7 @@ batchfiles ParseControlFile(string pathToControlFile, string indir, string outdi
 				batchLog << "Checking " << paramname << " " << fname << endl;
 				bStageStructFile.open(fname.c_str());
 				if (bStageStructFile.is_open()) {
-					nSimuls = ParseStageFile(indir);
+					nSimuls = CheckStageFile(indir);
 					if (nSimuls < 0) {
 						b.ok = false;
 					}
@@ -455,7 +455,7 @@ batchfiles ParseControlFile(string pathToControlFile, string indir, string outdi
 		batchLog << endl << "Checking " << paramname << " " << fname << endl;
 		bTransferFile.open(fname.c_str());
 		if (bTransferFile.is_open()) {
-			nSimuls = ParseTransferFile(indir);
+			nSimuls = CheckTransferFile(indir);
 			if (nSimuls < 0) {
 				b.ok = false;
 			}
@@ -482,7 +482,7 @@ batchfiles ParseControlFile(string pathToControlFile, string indir, string outdi
 		batchLog << endl << "Checking " << paramname << " " << fname << endl;
 		bSettlementFile.open(fname.c_str());
 		if (bSettlementFile.is_open()) {
-			nSimuls = ParseSettleFile();
+			nSimuls = CheckSettleFile();
 			if (nSimuls < 0) {
 				b.ok = false;
 			}
@@ -516,7 +516,7 @@ batchfiles ParseControlFile(string pathToControlFile, string indir, string outdi
 			batchLog << "Checking " << paramname << " " << fname << endl;
 			bGeneticsFile.open(fname.c_str());
 			if (bGeneticsFile.is_open()) {
-				nSimuls = ParseGeneticsFile(indir);
+				nSimuls = CheckGeneticsFile(indir);
 				if (nSimuls < 0) {
 					b.ok = false;
 				}
@@ -544,7 +544,7 @@ batchfiles ParseControlFile(string pathToControlFile, string indir, string outdi
 		batchLog << endl << "Checking " << paramname << " " << fname << endl;
 		bInitFile.open(fname.c_str());
 		if (bInitFile.is_open()) {
-			nSimuls = ParseInitFile(indir);
+			nSimuls = CheckInitFile(indir);
 			if (nSimuls < 0) {
 				b.ok = false;
 			}
@@ -587,7 +587,7 @@ batchfiles ParseControlFile(string pathToControlFile, string indir, string outdi
 }
 
 //---------------------------------------------------------------------------
-int ParseParameterFile(void)
+int CheckParameterFile(void)
 {
 	string header, Kheader, intext;
 	int i, inint, replicates, years;
@@ -599,7 +599,6 @@ int ParseParameterFile(void)
 	int Kerrors = 0;
 	string filetype = "ParameterFile";
 
-	//batchlog << "ParseParametersFile(): starting " << endl;
 	// Parse header line;
 	bParamFile >> header; if (header != "Simulation") errors++;
 	bParamFile >> header; if (header != "Replicates") errors++;
@@ -630,7 +629,8 @@ int ParseParameterFile(void)
 	bParamFile >> header; if (header != "Rmax") errors++;
 	for (i = 0; i < maxNhab; i++) {
 		Kheader = "K" + Int2Str(i + 1);
-		bParamFile >> header; if (header != Kheader) Kerrors++;
+		bParamFile >> header; 
+		if (header != Kheader) Kerrors++;
 	}
 	bParamFile >> header; if (header != "OutStartPop") errors++;
 	bParamFile >> header; if (header != "OutStartInd") errors++;
@@ -722,7 +722,6 @@ int ParseParameterFile(void)
 				BatchError(filetype, line, 0, " ");
 				batchLog << "EnvStoch must be 0, 1 or 2 for cell-based model" << endl;
 				errors++;
-				//			envstoch = 0; // to prevent checking of subsequent fields
 			}
 		}
 		else { // patch-based model
@@ -730,7 +729,6 @@ int ParseParameterFile(void)
 				BatchError(filetype, line, 0, " ");
 				batchLog << "EnvStoch must be 0 or 1 for patch-based model" << endl;
 				errors++;
-				//			envstoch = 0; // to prevent checking of subsequent fields
 			}
 		}
 		bParamFile >> stochtype;
@@ -904,7 +902,6 @@ int ParseParameterFile(void)
 			}
 			prevsimul = inint; nSimuls++;
 		}
-		//	batchlog << "ParseParametersFile(): First item of next line = " << inint << endl;
 	} // end of while loop
 	if (!bParamFile.eof()) {
 		EOFerror(filetype);
@@ -915,25 +912,20 @@ int ParseParameterFile(void)
 	else return nSimuls;
 }
 
-int ParseLandFile(int landtype, string indir)
+int CheckLandFile(int landtype, string indir)
 {
-	//string fname,header,intext,ftype,costfile;
 	string fname, header, intext, ftype;
 	int j, inint, line;
 	float infloat;
 	rasterdata patchraster, spdistraster, costraster;
 	int errors = 0;
-	//int Kerrors = 0;
 	int totlines = 0;
-	//bool errorshown = false;
 	vector <int> landlist;
 	string filetype = "LandFile";
 
-	//batchlog << "ParseLandFile(): starting " << endl;
 	if (landtype == 0 || landtype == 2) { // real landscape
 		// Parse header line;
 		bLandFile >> header; if (header != "LandNum") errors++;
-		//	batchlog << "ParseLandFile(): header = " << header << endl;
 		bLandFile >> header; if (header != "Nhabitats") errors++;
 		bLandFile >> header; if (header != "LandscapeFile") errors++;
 		bLandFile >> header; if (header != "PatchFile") errors++;
@@ -961,8 +953,6 @@ int ParseLandFile(int landtype, string indir)
 						BatchError(filetype, line, 666, "LandNum"); j = (int)landlist.size() + 1; errors++;
 					}
 				}
-				//		batchlog << "ParseLandFile(): Adding landscape no. " << inint
-				//			<< " to landscape list" << endl;
 				landlist.push_back(inint);
 			}
 			bLandFile >> inint;
@@ -1101,7 +1091,7 @@ int ParseLandFile(int landtype, string indir)
 				batchLog << "Checking " << ftype << " " << fname << endl;
 				bDynLandFile.open(fname.c_str());
 				if (bDynLandFile.is_open()) {
-					int something = ParseDynamicFile(indir, gNameCostFile);
+					int something = CheckDynamicFile(indir, gNameCostFile);
 					if (something < 0) {
 						errors++;
 					}
@@ -1300,7 +1290,7 @@ int ParseLandFile(int landtype, string indir)
 
 }
 
-int ParseDynamicFile(string indir, string costfile) {
+int CheckDynamicFile(string indir, string costfile) {
 #if RSDEBUG
 	DEBUGLOG << "ParseDynamicFile(): costfile=" << costfile << endl;
 #endif
@@ -1491,7 +1481,7 @@ int ParseDynamicFile(string indir, string costfile) {
 }
 
 //---------------------------------------------------------------------------
-int ParseStageFile(string indir)
+int CheckStageFile(string indir)
 {
 	string header, filename, fname, ftype2;
 	int inint, i, err, fecdensdep, fecstagewts, devdensdep, devstagewts, survdensdep, survstagewts;
@@ -1568,7 +1558,7 @@ int ParseStageFile(string indir)
 				batchLog << "Checking " << ftype2 << " " << fname << endl;
 				bTransMatrix.open(fname.c_str());
 				if (bTransMatrix.is_open()) {
-					err = ParseTransitionFile(stages, sexesDem);
+					err = CheckTransitionFile(stages, sexesDem);
 					if (err == 0) FileHeadersOK(ftype2); else errors++;
 					bTransMatrix.close();
 				}
@@ -1623,7 +1613,7 @@ int ParseStageFile(string indir)
 				batchLog << "Checking " << ftype2 << " " << fname << endl;
 				bStageWeightsFile.open(fname.c_str());
 				if (bStageWeightsFile.is_open()) {
-					err = ParseWeightsFile(ftype2);
+					err = CheckWeightsFile(ftype2);
 					if (err == 0) FileHeadersOK(ftype2); else errors++;
 					bStageWeightsFile.close();
 				}
@@ -1678,7 +1668,7 @@ int ParseStageFile(string indir)
 				batchLog << "Checking " << ftype2 << " " << fname << endl;
 				bStageWeightsFile.open(fname.c_str());
 				if (bStageWeightsFile.is_open()) {
-					err = ParseWeightsFile(ftype2);
+					err = CheckWeightsFile(ftype2);
 					if (err == 0) FileHeadersOK(ftype2); else errors++;
 					bStageWeightsFile.close();
 				}
@@ -1733,7 +1723,7 @@ int ParseStageFile(string indir)
 				batchLog << "Checking " << ftype2 << " " << fname << endl;
 				bStageWeightsFile.open(fname.c_str());
 				if (bStageWeightsFile.is_open()) {
-					err = ParseWeightsFile(ftype2);
+					err = CheckWeightsFile(ftype2);
 					if (err == 0) FileHeadersOK(ftype2); else errors++;
 					bStageWeightsFile.close();
 				}
@@ -1776,7 +1766,7 @@ int ParseStageFile(string indir)
 
 //---------------------------------------------------------------------------
 // Check transition matrix file
-int ParseTransitionFile(short nstages, short nsexesDem)
+int CheckTransitionFile(short nstages, short nsexesDem)
 {
 	string header, hhh;
 	int i, j, stage, sex, line, minage;
@@ -1900,7 +1890,7 @@ int ParseTransitionFile(short nstages, short nsexesDem)
 
 //---------------------------------------------------------------------------
 // Check stage weights matrix file
-int ParseWeightsFile(string filetype)
+int CheckWeightsFile(string filetype)
 {
 	string header, hhh;
 	int i, j, stage, sex, line;
@@ -2118,7 +2108,7 @@ int CheckEmigFile(void)
 }
 
 //---------------------------------------------------------------------------
-int ParseTransferFile(string indir)
+int CheckTransferFile(string indir)
 {
 	string header, colheader, intext, fname, ftype;
 	int i, simNb, stagedep, sexdep, kerneltype, distmort, indvar, stage, sex;
@@ -2487,7 +2477,7 @@ int ParseTransferFile(string indir)
 }
 
 //---------------------------------------------------------------------------
-int ParseSettleFile(void)
+int CheckSettleFile(void)
 {
 	string header;
 	int simNb, stagedep, sexdep, stage, sex, settletype;
@@ -2624,7 +2614,7 @@ int ParseSettleFile(void)
 }
 
 //---------------------------------------------------------------------------
-int ParseTraitsFile(string indir)
+int CheckTraitsFile(string indir)
 {
 	string header, colheader;
 	int simNb;
@@ -2708,7 +2698,7 @@ int ParseTraitsFile(string indir)
 
 //---------------------------------------------------------------------------
 
-int ParseGeneticsFile(string indir) {
+int CheckGeneticsFile(string indir) {
 
 	string header, colheader, tfName, ftype2;
 	int i, simNb, err, NbrPatchesToSample, nIndividualsToSample;
@@ -2783,7 +2773,7 @@ int ParseGeneticsFile(string indir) {
 			batchLog << "Checking " << ftype2 << " " << tfName << endl;
 			bTraitsFile.open(tfName.c_str());
 			if (bTraitsFile.is_open()) {
-				err = ParseTraitsFile(indir);
+				err = CheckTraitsFile(indir);
 				if (err >= 0) FileHeadersOK(ftype2); else errors++;
 				bTraitsFile.close();
 			}
@@ -2817,7 +2807,7 @@ int ParseGeneticsFile(string indir) {
 }
 
 //---------------------------------------------------------------------------
-int ParseInitFile(string indir)
+int CheckInitFile(string indir)
 {
 	string header, colheader;
 	int i, simNb;
@@ -2996,7 +2986,7 @@ int ParseInitFile(string indir)
 					batchLog << "Checking " << ftype2 << " " << fname << endl;
 					bInitIndsFile.open(fname.c_str());
 					if (bInitIndsFile.is_open()) {
-						err = ParseInitIndsFile();
+						err = CheckInitIndsFile();
 						if (err == 0) FileHeadersOK(ftype2); else errors++;
 						bInitIndsFile.close();
 					}
@@ -3059,7 +3049,7 @@ int ParseInitFile(string indir)
 }
 
 //---------------------------------------------------------------------------
-int ParseInitIndsFile(void) {
+int CheckInitIndsFile(void) {
 	string header;
 	int year, species, patchID, x, y, ninds, sex, age, stage, prevyear;
 

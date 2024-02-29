@@ -84,18 +84,18 @@ struct simCheck {
 };
 
 batchfiles ParseControlFile(string, string, string);
-int ParseParameterFile(void);
-int ParseLandFile(int, string);
-int ParseGeneticsFile(string);
-int ParseDynamicFile(string, string);
-int ParseStageFile(string);
-int ParseTransitionFile(short, short);
-int ParseWeightsFile(string);
+int CheckParameterFile(void);
+int CheckLandFile(int, string);
+int CheckGeneticsFile(string);
+int CheckDynamicFile(string, string);
+int CheckStageFile(string);
+int CheckTransitionFile(short, short);
+int CheckWeightsFile(string);
 int CheckEmigFile(void);
-int ParseTransferFile(string);
-int ParseSettleFile(void);
-int ParseInitFile(string);
-int ParseInitIndsFile(void);
+int CheckTransferFile(string);
+int CheckSettleFile(void);
+int CheckInitFile(string);
+int CheckInitIndsFile(void);
 simCheck CheckStageSex(string, int, int, simCheck, int, int, int, int, int, bool, bool);
 
 void BatchError(
