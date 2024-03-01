@@ -207,8 +207,6 @@ else
 #endif
 
 // set up species
-// FOR MULTI-SPECIES MODEL, THERE WILL BE AN ARRAY OF SPECIES POINTERS
-// OR A COMMUNITY CLASS TO HOLD THE SPECIES
 pSpecies = new Species;
 demogrParams dem = pSpecies->getDemogrParams();
 stageParams sstruct = pSpecies->getStageParams();
@@ -217,16 +215,18 @@ transferRules trfr = pSpecies->getTransferRules();
 batchfiles b;
 string indir  = paramsSim->getDir(1);
 string outdir = paramsSim->getDir(2);
-b = ParseControlFile(pathToControlFile, indir, outdir);       
+b = ParseControlAndCheckInputFiles(pathToControlFile, indir, outdir);       
 if (b.ok) { 
 	nSimuls = b.nSimuls;
 	nLandscapes = b.nLandscapes;
 	dem.repType = b.reproductn;
 	dem.repSeasons = b.repseasons;
-	if (b.stagestruct == 0) dem.stageStruct = false; 
+	if (b.stagestruct == 0) 
+		dem.stageStruct = false; 
 	else dem.stageStruct = true;
 	sstruct.nStages = b.stages;
-	if (b.transfer == 0) trfr.usesMovtProc = false;
+	if (b.transfer == 0) 
+		trfr.usesMovtProc = false;
 	else {
 		trfr.usesMovtProc = true;
 		trfr.moveType = b.transfer;
@@ -243,9 +243,6 @@ if (b.ok) {
 else {
 	cout << endl << "Error in parsing batch input files - see BatchLog file for details" << endl;
 }
-#if RSDEBUG
-DEBUGLOG << "Main(): dem.repType = " << dem.repType << endl;
-#endif
 
 // set up random number class
 #if RS_RCPP

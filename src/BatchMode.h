@@ -83,7 +83,7 @@ struct simCheck {
 	int simNb, simLines, reqdSimLines, errors;
 };
 
-batchfiles ParseControlFile(string, string, string);
+batchfiles ParseControlAndCheckInputFiles(string, string, string);
 int CheckParameterFile(void);
 int CheckLandFile(int, string);
 int CheckGeneticsFile(string);
