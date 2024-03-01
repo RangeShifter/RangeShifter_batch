@@ -1660,8 +1660,6 @@ int CheckStageFile(string indir)
 		checkfile = true;
 		for (i = 0; i < (int)transfiles.size(); i++) {
 			if (filename == transfiles[i]) { // file has already been checked
-				//			batchlog << "*** line = " << line << " i = " << i << " filename = " << filename
-				//				<< " transfiles[i] = " << transfiles[i] << endl;
 				checkfile = false;
 			}
 		}
@@ -2750,7 +2748,7 @@ int CheckTraitsFile(string indir)
 	// Parse header line
 	bTraitsFile >> header; if (header != "Simulation") nbErrors++;
 	bTraitsFile >> header; if (header != "TraitType") nbErrors++;
-	bTraitsFile >> header; if (header != "Sex") nbErrors++;
+	bTraitsFile >> header; if (header != "ExprSex") nbErrors++;
 	bTraitsFile >> header; if (header != "Positions") nbErrors++;
 	bTraitsFile >> header; if (header != "NbrOfPositions") nbErrors++;
 	bTraitsFile >> header; if (header != "ExpressionType") nbErrors++;
@@ -2795,6 +2793,21 @@ int CheckTraitsFile(string indir)
 		prev = current;
 
 		// validate parameters
+
+		// check sex is valid first
+		sex_t sex = stringToSex(inSex);
+
+		if (sex == sex_t::INVALID_SEX) {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << inSex << " is invalid: sex must be either female, male, or n/a.";
+			nbErrors++;
+		}
+		if (stringToTraitType(inTraitType, sex) == TraitType::INVALID_TRAIT) {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << inTraitType << " is not a valid TraitType.";
+			nbErrors++;
+		}
+
 		if ((inIsInherited == "true" || inIsInherited == "True" || inIsInherited == "TRUE") 
 			&& (stof(inMutationRate) < 0.0 || stof(inMutationRate) > 1.0)) {
 			BatchError(whichInputFile, whichLine, 20, "mutationRate"); 
@@ -3905,14 +3918,28 @@ void setUpTrait(vector<string> parameters) {
 
 TraitType stringToTraitType(const std::string& str, sex_t sex) {
 
-	// Non-dispersal traits
-	if (str == "neutral") return SNP;
-	else if (str == "genetic_load") return GENETIC_LOAD;
-	// Sex-invariant dispersal traits
-	else if (str == "sms_directionalPersistence") return SMS_DP;
-	else if (str == "sms_goalBias") return SMS_GB;
-	else if (str == "sms_alphaDB") return SMS_ALPHADB;
-	else if (str == "sms_betaDB") return SMS_BETADB;
+	if (sex == NA) {
+		// Non-dispersal traits
+		if (str == "neutral") return SNP;
+		else if (str == "genetic_load") return GENETIC_LOAD;
+		// Sex-invariant dispersal traits
+		else if (str == "emigration_d0") return E_D0;
+		else if (str == "emigration_alpha") return E_ALPHA;
+		else if (str == "emigration_beta") return E_BETA;
+		else if (str == "settlement_s0") return S_S0;
+		else if (str == "settlement_alpha") return S_ALPHA;
+		else if (str == "settlement_beta") return S_BETA;
+		else if (str == "kernel_meanDistance1") return KERNEL_MEANDIST_1;
+		else if (str == "kernel_meanDistance2") return KERNEL_MEANDIST_2;
+		else if (str == "kernel_probability") return KERNEL_PROBABILITY;
+		else if (str == "crw_stepLength") return CRW_STEPLENGTH;
+		else if (str == "crw_stepCorrelation") return CRW_STEPCORRELATION;
+		else if (str == "sms_directionalPersistence") return SMS_DP;
+		else if (str == "sms_goalBias") return SMS_GB;
+		else if (str == "sms_alphaDB") return SMS_ALPHADB;
+		else if (str == "sms_betaDB") return SMS_BETADB;
+		else return INVALID_TRAIT;
+	}
 	// Sex-specific dispersal traits
 	else if (sex == MAL) {
 		if (str == "emigration_d0") return E_D0_M;
@@ -3926,7 +3953,7 @@ TraitType stringToTraitType(const std::string& str, sex_t sex) {
 		else if (str == "kernel_probability") return KERNEL_PROBABILITY_M;
 		else if (str == "crw_stepLength") return CRW_STEPLENGTH_M;
 		else if (str == "crw_stepCorrelation") return CRW_STEPCORRELATION_M;
-		else throw logic_error(str + " is not a valid trait type.");
+		else return INVALID_TRAIT;
 	}
 	else {
 		if (str == "emigration_d0") return E_D0_F;
@@ -3940,7 +3967,7 @@ TraitType stringToTraitType(const std::string& str, sex_t sex) {
 		else if (str == "kernel_probability") return KERNEL_PROBABILITY_F;
 		else if (str == "crw_stepLength") return CRW_STEPLENGTH_F;
 		else if (str == "crw_stepCorrelation") return CRW_STEPCORRELATION_F;
-		else throw logic_error(str + " is not a valid trait type.");
+		else return INVALID_TRAIT;
 	}
 }
 
