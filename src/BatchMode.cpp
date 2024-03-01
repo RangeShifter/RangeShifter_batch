@@ -2780,7 +2780,8 @@ int CheckTraitsFile(string indir)
 	bool stopReading = (simNb == simNbNotRead);
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
-		BatchError(whichInputFile, whichLine, 111, "Simulation"); nbErrors++;
+		BatchError(whichInputFile, whichLine, 111, "Simulation"); 
+		nbErrors++;
 	}
 	while (!stopReading) {
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
@@ -3871,7 +3872,7 @@ void setUpTrait(vector<string> parameters) {
 
 	// Mutation parameters
 	bool isInherited = (parameters[10] == "true");
-	// should always be true if traitTYpe is SNP or ADAPTIVE
+	// should always be true if traitTYpe is SNP or GENETIC_LOAD
 
 	DistributionType mutationDistribution = isInherited ? 
 		stringToDistributionType(parameters[11]) : 
@@ -3906,7 +3907,7 @@ TraitType stringToTraitType(const std::string& str, sex_t sex) {
 
 	// Non-dispersal traits
 	if (str == "neutral") return SNP;
-	else if (str == "adaptive") return ADAPTIVE;
+	else if (str == "genetic_load") return GENETIC_LOAD;
 	// Sex-invariant dispersal traits
 	else if (str == "sms_directionalPersistence") return SMS_DP;
 	else if (str == "sms_goalBias") return SMS_GB;
