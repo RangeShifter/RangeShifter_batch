@@ -46,6 +46,7 @@ ifstream emigFile, transFile, settFile, initFile, initIndsFile;
 ifstream landfile, dynlandfile;
 
 // global variables passed between parsing functions...
+// should be removed eventually, maybe share variables through members of a class
 int batchnum;
 int patchmodel, resolution, landtype, maxNhab, speciesdist, distresolution;
 int reproductn;
@@ -55,7 +56,9 @@ int sexesDem;		// no. of explicit sexes for demographic model
 int gNbSexesDisp;	// no. of explicit sexes for dispersal model
 int gFirstSimNb = 0; // not great, globals should not be modified.
 int fileNtraits; // no. of traits defined in genetic architecture file
-//rasterdata landraster,patchraster,spdistraster;
+
+DispersalTraitInputOptions gDispTraitOpt;
+
 rasterdata landraster;
 // ...including names of the input files
 string parameterFile;
@@ -2131,6 +2134,20 @@ int CheckEmigFile(void)
 			BatchError(whichInputFile, lineNb, 1, "DensDep"); 
 			nbErrors++;
 		}
+		else {
+			gDispTraitOpt.isEmigDensDep = (inDensDep == 1);
+		}
+
+		// validate individual variation
+		if (inIndVar != 0 && inIndVar != 1) {
+			BatchError(whichInputFile, lineNb, 1, "IndVar");
+			nbErrors++;
+		}
+		else {
+			gDispTraitOpt.isEmigIndVar = (inIndVar == 1);
+		}
+
+
 		// validate use full kernel
 		if (inUseFullKern != 0 && inUseFullKern != 1) {
 			BatchError(whichInputFile, lineNb, 1, "UseFullKern"); 
@@ -2149,6 +2166,14 @@ int CheckEmigFile(void)
 			nbErrors++;
 			batchLog << "EmigStage must be from 0 to " << Int2Str(stages - 1) << endl;
 		}
+		if (inSexDep != 0 && inSexDep != 1) {
+			BatchError(whichInputFile, lineNb, 1, "SexDep");
+			nbErrors++;
+		} 
+		else {
+			gDispTraitOpt.isEmigSexDep = (inIndVar == 1);
+		}
+
 		if (inStage == 0 && inSex == 0) { // first line of a simulation
 			// record whether density dependence and individual variability are applied
 			isDensDep = (inDensDep == 1);
@@ -2226,15 +2251,15 @@ int CheckEmigFile(void)
 int CheckTransferFile(string indir)
 {
 	string header, colheader, intext, fname, ftype;
-	int i, simNb, stagedep, sexdep, kerneltype, distmort, indvar, stage, sex;
-	int	prMethod, smtype, inStraightenPath;
-	float pr, dp, smconst;
-	int goaltype, memsize, betaDB; float gb, alphaDB;
+	int i, simNb, inStageDep, inSexDep, inKernelType, inDistMort, inIndVar, inStage, inSex;
+	int	inPercRangeMethod, inSMType, inStraightenPath;
+	float inPerceptualRange, inDirPersistence, inSMConst;
+	int inGoalType, inMemSize, inBetaDispBias; float inGoalBias, inAlphaDispBias;
 	float meanDistI, meanDistII, ProbKernelI;
 	float mortProb, slope, inflPoint;
 	float morthab, mortmatrix;
 	int costhab, costmatrix;
-	float SL, rho;
+	float inStepLength, inStepCorr;
 
 	vector <string> costsfiles;
 
@@ -2243,7 +2268,7 @@ int CheckTransferFile(string indir)
 	int costerrors = 0; 
 	int hrerrors = 0;
 	int simuls = 0;
-	string filetype = "TransferFile";
+	string whichFile = "TransferFile";
 
 	// Parse header line;
 	bTransferFile >> header; 
@@ -2332,15 +2357,15 @@ int CheckTransferFile(string indir)
 	} // end of switch (transfer)
 	// report any errors in headers, and if so, terminate validation
 	if (errors > 0 || morthaberrors > 0 || costerrors > 0 || hrerrors > 0) {
-		FormatError(filetype, errors + morthaberrors + costerrors);
-		if (morthaberrors > 0) BatchError(filetype, -999, 333, "MortHab");
-		if (costerrors > 0) BatchError(filetype, -999, 333, "CostHab");
-		if (hrerrors > 0) BatchError(filetype, -999, 444, "Hr");
+		FormatError(whichFile, errors + morthaberrors + costerrors);
+		if (morthaberrors > 0) BatchError(whichFile, -999, 333, "MortHab");
+		if (costerrors > 0) BatchError(whichFile, -999, 333, "CostHab");
+		if (hrerrors > 0) BatchError(whichFile, -999, 444, "Hr");
 		return -111;
 	}
 
 	// Parse data lines
-	int line = 1;
+	int whichLine = 1;
 	simCheck current, prev;
 	simNb = -98765;
 	prev.simNb = -999;
@@ -2348,7 +2373,7 @@ int CheckTransferFile(string indir)
 	bTransferFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
-		BatchError(filetype, line, 111, "Simulation"); errors++;
+		BatchError(whichFile, whichLine, 111, "Simulation"); errors++;
 	}
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
@@ -2357,49 +2382,70 @@ int CheckTransferFile(string indir)
 
 		case 0: { // negative exponential dispersal kernel
 			// read and validate columns relating to stage and sex-dependency and to IIV
-			bTransferFile >> stagedep >> sexdep >> kerneltype >> distmort;
-			bTransferFile >> indvar >> stage >> sex;
-			current = CheckStageSex(filetype, line, simNb, prev, stagedep, sexdep, stage, sex, indvar, true, false);
+			bTransferFile >> inStageDep >> inSexDep >> inKernelType >> inDistMort;
+			bTransferFile >> inIndVar >> inStage >> inSex;
+			current = CheckStageSex(whichFile, whichLine, simNb, prev, inStageDep, inSexDep, inStage, inSex, inIndVar, true, false);
 			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
 			// validate kernel type
-			if (kerneltype < 0 || kerneltype > 1) {
-				BatchError(filetype, line, 1, "KernelType"); errors++;
+			if (inKernelType != 0 && inKernelType != 1) {
+				BatchError(whichFile, whichLine, 1, "KernelType"); errors++;
+			}
+			else {
+				gDispTraitOpt.usesTwoKernels = (inKernelType == 1);
 			}
 			// validate mortality
-			if (distmort < 0 || distmort > 1) {
-				BatchError(filetype, line, 1, "DistMort"); errors++;
+			if (inDistMort != 0 && inDistMort != 1) {
+				BatchError(whichFile, whichLine, 1, "DistMort"); errors++;
 			}
 			// read remaining columns of the current record
 			bTransferFile >> meanDistI >> meanDistII >> ProbKernelI;
 			bTransferFile >> mortProb >> slope >> inflPoint;
 
+			if (inIndVar != 0 && inIndVar != 1) {
+				BatchError(whichFile, whichLine, 1, "IndVar"); errors++;
+			}
+			else {
+				gDispTraitOpt.isKernTransfIndVar = (inIndVar == 1);
+			}
 
-			if (!indvar) {
+			if (inSexDep != 0 && inSexDep != 1) {
+				BatchError(whichFile, whichLine, 1, "SexDep"); errors++;
+			}
+			else {
+				gDispTraitOpt.isKernTransfSexDep = (inSexDep == 1);
+			}
+
+			// validate mortality
+			if (inDistMort != 0 && inDistMort != 1) {
+				BatchError(whichFile, whichLine, 1, "DistMort"); errors++;
+			}
+
+			if (!inIndVar) {
 				if (meanDistI < resolution) {
 					// NOTE - should also check whether emigration prob is constant and equal to 1
 					//but checks across diffferent input files are not yet implemented
-					BatchError(filetype, line, 2, "meanDistI", "Resolution"); errors++;
+					BatchError(whichFile, whichLine, 2, "meanDistI", "Resolution"); errors++;
 				}
-				if (kerneltype != 0) {
+				if (inKernelType != 0) {
 					if (meanDistII < resolution) {
 						// NOTE - DITTO
-						BatchError(filetype, line, 2, "meanDistII", "Resolution"); errors++;
+						BatchError(whichFile, whichLine, 2, "meanDistII", "Resolution"); errors++;
 					}
 					if (ProbKernelI <= 0.0 || ProbKernelI >= 1.0) {
-						BatchError(filetype, line, 20, "ProbKernelI"); errors++;
+						BatchError(whichFile, whichLine, 20, "ProbKernelI"); errors++;
 					}
 				}
 			}
 
-			if (stage == 0 && sex == 0) {
-				if (distmort) { // distance-dependent mortality
+			if (inStage == 0 && inSex == 0) {
+				if (inDistMort) { // distance-dependent mortality
 					// WHAT CONDITIONS APPLY TO MORTALITY SLOPE AND INFLECTION POINT?
 				}
 				else { // constant mortality
 					if (mortProb < 0.0 || mortProb >= 1.0) {
-						BatchError(filetype, line, 20, "MortProb"); errors++;
+						BatchError(whichFile, whichLine, 20, "MortProb"); errors++;
 					}
 				}
 			}
@@ -2408,61 +2454,73 @@ int CheckTransferFile(string indir)
 		} // end of negative exponential dispersal kernel
 
 		case 1: { // SMS
-			bTransferFile >> indvar;
-			bTransferFile >> pr >> prMethod >> dp;
-			bTransferFile >> memsize >> gb >> goaltype >> alphaDB >> betaDB;
-			current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, 0, true, false);
+			bTransferFile >> inIndVar;
+			bTransferFile >> inPerceptualRange >> inPercRangeMethod >> inDirPersistence;
+			bTransferFile >> inMemSize >> inGoalBias >> inGoalType >> inAlphaDispBias >> inBetaDispBias;
+			current = CheckStageSex(whichFile, whichLine, simNb, prev, 0, 0, 0, 0, 0, true, false);
 			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
+
+			if (inIndVar != 0 && inIndVar != 1) {
+				BatchError(whichFile, whichLine, 1, "IndVar"); errors++;
+			}
+			else {
+				gDispTraitOpt.isSMSTransfIndVar = (inIndVar == 1);
+			}
+
 			// validate SMS movement parameters
-			if (pr < 1) {
-				BatchError(filetype, line, 11, "PR"); errors++;
+			if (inPerceptualRange < 1) {
+				BatchError(whichFile, whichLine, 11, "PR"); errors++;
 			}
-			if (prMethod < 1 || prMethod > 3) {
-				BatchError(filetype, line, 33, "PRmethod"); errors++;
+			if (inPercRangeMethod < 1 || inPercRangeMethod > 3) {
+				BatchError(whichFile, whichLine, 33, "PRmethod"); errors++;
 			}
-			if (!indvar && dp < 1.0) {
-				BatchError(filetype, line, 11, "DP"); errors++;
+			if (!inIndVar && inDirPersistence < 1.0) {
+				BatchError(whichFile, whichLine, 11, "DP"); errors++;
 			}
-			if (memsize < 1 || memsize > 14) {
-				BatchError(filetype, line, 0, "MemSize"); errors++;
+			if (inMemSize < 1 || inMemSize > 14) {
+				BatchError(whichFile, whichLine, 0, "MemSize"); errors++;
 				batchLog << "MemSize must be from 1 to 14" << endl;
 			}
-			if (!indvar && gb < 1.0) {
-				BatchError(filetype, line, 11, "GB"); errors++;
+			if (!inIndVar && inGoalBias < 1.0) {
+				BatchError(whichFile, whichLine, 11, "GB"); errors++;
 			}
-			if (goaltype < 0 || goaltype > 2) {
-				BatchError(filetype, line, 2, "GoalType"); errors++;
+			if (inGoalType != 0 && inGoalType != 2) {
+				BatchError(whichFile, whichLine, 2, "GoalType"); errors++;
 			}
-			if (!indvar && goaltype == 2) { // dispersal bias
-				if (alphaDB <= 0.0) {
-					BatchError(filetype, line, 10, "AlphaDB"); errors++;
+			else {
+				gDispTraitOpt.usesSMSGoalBias = (inGoalType == 2);
+			}
+
+			if (!inIndVar && inGoalType == 2) { // dispersal bias
+				if (inAlphaDispBias <= 0.0) {
+					BatchError(whichFile, whichLine, 10, "AlphaDB"); errors++;
 				}
-				if (betaDB <= 0.0) {
-					BatchError(filetype, line, 10, "BetaDB"); errors++;
+				if (inBetaDispBias <= 0.0) {
+					BatchError(whichFile, whichLine, 10, "BetaDB"); errors++;
 				}
 			}
-			bTransferFile >> inStraightenPath >> smtype >> smconst;
-			if (inStraightenPath < 0 || inStraightenPath > 1) {
-				BatchError(filetype, line, 1, "StraightenPath"); errors++;
+			bTransferFile >> inStraightenPath >> inSMType >> inSMConst;
+			if (inStraightenPath != 0 && inStraightenPath != 1) {
+				BatchError(whichFile, whichLine, 1, "StraightenPath"); errors++;
 			}
 			if (landtype == 2) // habitat quality landscape 
 			{ // must have constant mortality
-				if (smtype != 0) {
-					BatchError(filetype, line, 0, " "); errors++;
+				if (inSMType != 0) {
+					BatchError(whichFile, whichLine, 0, " "); errors++;
 					batchLog << "SMtype must be 0 for LandType 2" << endl;
 				}
 			}
 			else {
-				if (smtype < 0 || smtype > 1) {
-					BatchError(filetype, line, 1, "SMtype"); errors++;
+				if (inSMType != 0 && inSMType != 1) {
+					BatchError(whichFile, whichLine, 1, "SMtype"); errors++;
 				}
 			}
-			if (smtype == 0)
+			if (inSMType == 0)
 			{
-				if (smconst < 0.0 || smconst >= 1.0) {
-					BatchError(filetype, line, 20, "SMconst"); errors++;
+				if (inSMConst < 0.0 || inSMConst >= 1.0) {
+					BatchError(whichFile, whichLine, 20, "SMconst"); errors++;
 				}
 			}
 			switch (landtype) {
@@ -2471,11 +2529,11 @@ int CheckTransferFile(string indir)
 				//			batchlog << "for LandType = 0" << endl;
 				for (i = 0; i < maxNhab; i++) {
 					bTransferFile >> morthab;
-					if (smtype == 1)
+					if (inSMType == 1)
 					{
 						if (morthab < 0.0 || morthab >= 1.0) {
 							colheader = "MortHab" + Int2Str(i + 1);
-							BatchError(filetype, line, 20, colheader); errors++;
+							BatchError(whichFile, whichLine, 20, colheader); errors++;
 						}
 					}
 				}
@@ -2484,7 +2542,7 @@ int CheckTransferFile(string indir)
 					if (gNameCostFile == "NULL") {
 						if (costhab < 1) {
 							colheader = "CostHab" + Int2Str(i + 1);
-							BatchError(filetype, line, 11, colheader); errors++;
+							BatchError(whichFile, whichLine, 11, colheader); errors++;
 						}
 					}
 				}
@@ -2492,26 +2550,26 @@ int CheckTransferFile(string indir)
 			} // end of raster map with unique habitat codes
 
 			case 2: { // raster map with habitat quality
-				//			batchlog << "for LandType = 2" << endl;
+
 				break;
 			} // end of raster map with habitat quality
 
 			case 9: { // artificial landscape
 				bTransferFile >> morthab >> mortmatrix;
 				bTransferFile >> costhab >> costmatrix;
-				if (smtype) { // validate habitat-dependent mortality
+				if (inSMType) { // validate habitat-dependent mortality
 					if (morthab < 0.0 || morthab >= 1.0) {
-						BatchError(filetype, line, 20, "MortHabitat"); errors++;
+						BatchError(whichFile, whichLine, 20, "MortHabitat"); errors++;
 					}
 					if (mortmatrix < 0.0 || mortmatrix >= 1.0) {
-						BatchError(filetype, line, 20, "MortMatrix"); errors++;
+						BatchError(whichFile, whichLine, 20, "MortMatrix"); errors++;
 					}
 				}
 				if (costhab < 1) {
-					BatchError(filetype, line, 11, "CostHabitat"); errors++;
+					BatchError(whichFile, whichLine, 11, "CostHabitat"); errors++;
 				}
 				if (costmatrix < 1) {
-					BatchError(filetype, line, 11, "CostMatrix"); errors++;
+					BatchError(whichFile, whichLine, 11, "CostMatrix"); errors++;
 				}
 				break;
 			} // end of artificial landscape
@@ -2523,47 +2581,54 @@ int CheckTransferFile(string indir)
 		} // end of SMS
 
 		case 2: { // CRW
-			bTransferFile >> indvar >> SL >> rho >> inStraightenPath >> smtype >> smconst;
-			current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, indvar, true, false);
+			bTransferFile >> inIndVar >> inStepLength >> inStepCorr >> inStraightenPath >> inSMType >> inSMConst;
+			current = CheckStageSex(whichFile, whichLine, simNb, prev, 0, 0, 0, 0, inIndVar, true, false);
 			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
 
-			if (SL <= 0.0) {
-				BatchError(filetype, line, 10, "SL"); errors++;
+			if (inIndVar != 0 && inIndVar != 1) {
+				BatchError(whichFile, whichLine, 1, "IndVar"); errors++;
 			}
-			if (rho <= 0.0 || rho >= 1.0) {
-				BatchError(filetype, line, 20, "Rho"); errors++;
+			else {
+				gDispTraitOpt.isCRWTransfIndVar = (inIndVar == 1);
 			}
-			if (inStraightenPath < 0 || inStraightenPath > 1) {
-				BatchError(filetype, line, 1, "StraightenPath"); errors++;
+
+			if (inStepLength <= 0.0) {
+				BatchError(whichFile, whichLine, 10, "SL"); errors++;
+			}
+			if (inStepCorr <= 0.0 || inStepCorr >= 1.0) {
+				BatchError(whichFile, whichLine, 20, "Rho"); errors++;
+			}
+			if (inStraightenPath != 0 && inStraightenPath != 1) {
+				BatchError(whichFile, whichLine, 1, "StraightenPath"); errors++;
 			}
 			if (landtype == 0) { // real landscape with habitat types
-				if (smtype < 0 || smtype > 1) {
-					BatchError(filetype, line, 1, "SMtype"); errors++;
+				if (inSMType != 0 && inSMType != 1) {
+					BatchError(whichFile, whichLine, 1, "SMtype"); errors++;
 				}
-				if (!smtype) {
-					if (smconst < 0.0 || smconst >= 1.0) {
-						BatchError(filetype, line, 20, "SMconst"); errors++;
+				if (!inSMType) {
+					if (inSMConst < 0.0 || inSMConst >= 1.0) {
+						BatchError(whichFile, whichLine, 20, "SMconst"); errors++;
 					}
 				}
 				for (int i = 0; i < maxNhab; i++) {
 					bTransferFile >> morthab;
-					if (smtype) {
+					if (inSMType) {
 						if (morthab < 0.0 || morthab >= 1.0) {
 							colheader = "MortHab" + Int2Str(i + 1);
-							BatchError(filetype, line, 20, colheader); errors++;
+							BatchError(whichFile, whichLine, 20, colheader); errors++;
 						}
 					}
 				}
 			}
 			else { // real landscape with quality OR artificial landscape
-				if (smtype != 0) {
-					BatchError(filetype, line, 0, " "); errors++;
+				if (inSMType != 0) {
+					BatchError(whichFile, whichLine, 0, " "); errors++;
 					batchLog << "SMtype must be 0 for LandType 2 or 9" << endl;
 				}
-				if (smconst < 0.0 || smtype >= 1.0) {
-					BatchError(filetype, line, 20, "SMconst"); errors++;
+				if (inSMConst < 0.0 || inSMType >= 1.0) {
+					BatchError(whichFile, whichLine, 20, "SMconst"); errors++;
 				}
 			}
 			break;
@@ -2572,7 +2637,7 @@ int CheckTransferFile(string indir)
 		} // end of switch (transfer)
 
 		// read next simulation
-		line++;
+		whichLine++;
 		simNb = -98765;
 		bTransferFile >> simNb;
 		if (bTransferFile.eof()) simNb = -98765;
@@ -2580,12 +2645,12 @@ int CheckTransferFile(string indir)
 	// check for correct number of lines for previous simulation
 	if (gTransferType == 0 // no. of lines checked for dispersal kernel transfer method only
 		&& current.simLines != current.reqdSimLines) {
-		BatchError(filetype, line, 0, " "); errors++;
+		BatchError(whichFile, whichLine, 0, " "); errors++;
 		batchLog << gNbLinesStr << current.simNb
 			<< gShouldBeStr << current.reqdSimLines << endl;
 	}
 	if (!bTransferFile.eof()) {
-		EOFerror(filetype);
+		EOFerror(whichFile);
 		errors++;
 	}
 	costsfiles.clear();
@@ -2737,7 +2802,7 @@ int CheckTraitsFile(string indir)
 {
 	string header, colheader;
 	int simNb;
-	string filename, inTraitType, inSex, initialDistribution, initialParameters,
+	string filename, inTraitType, inSex, inInitDist, inInitParams,
 		inDominanceDist, inDominanceParams, inIsInherited, inMutationDist, 
 		inMutationParams, inPositions, inNbPositions, inExpressionType, inMutationRate;
 	int nbErrors = 0;
@@ -2783,7 +2848,7 @@ int CheckTraitsFile(string indir)
 	}
 	while (!stopReading) {
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
-		bTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions >> inExpressionType >> initialDistribution >> initialParameters
+		bTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions >> inExpressionType >> inInitDist >> inInitParams
 			>> inDominanceDist >> inDominanceParams >> inIsInherited >> inMutationDist >> inMutationParams
 			>> inMutationRate;
 
@@ -2799,16 +2864,51 @@ int CheckTraitsFile(string indir)
 
 		if (sex == sex_t::INVALID_SEX) {
 			BatchError(whichInputFile, whichLine, 0, " ");
-			batchLog << inSex << " is invalid: sex must be either female, male, or n/a.";
+			batchLog << inSex << " is invalid: sex must be either female, male, or # (not applicable).";
 			nbErrors++;
 		}
-		if (stringToTraitType(inTraitType, sex) == TraitType::INVALID_TRAIT) {
+
+		TraitType tr = stringToTraitType(inTraitType);
+
+		if (tr == TraitType::INVALID_TRAIT) {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << inTraitType << " is not a valid TraitType.";
 			nbErrors++;
 		}
 
-		if ((inIsInherited == "true" || inIsInherited == "True" || inIsInherited == "TRUE") 
+		const bool canBeSexDep = tr == E_D0 || tr == E_ALPHA || tr == E_BETA
+			|| tr == S_S0 || tr == S_ALPHA || tr == S_BETA
+			|| tr == KERNEL_MEANDIST_1 || tr == KERNEL_MEANDIST_2
+			|| tr == KERNEL_PROBABILITY;
+			
+		if (!canBeSexDep && (sex == FEM || sex == MAL)) {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << inTraitType << " cannot be sex-dependent so must be left blank (#).";
+			nbErrors++;
+		}
+
+		if (gDispTraitOpt.isEmigIndVar)
+		{
+			if (!gDispTraitOpt.isEmigDensDep && (tr == E_ALPHA || tr == E_BETA)) {
+				BatchError(whichInputFile, whichLine, 0, " ");
+				batchLog << "Found " << inTraitType << " but emigration is not density-dependent.";
+				nbErrors++;
+			}
+		}
+		else if (tr == E_D0 || tr == E_ALPHA || tr == E_BETA) {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << "Found " << inTraitType << " but emigration is not variable.";
+			nbErrors++;
+		}
+
+		if (sex != NA) addSexDepToTrait(tr, sex);
+		gAllReadTraits.push_back(tr);
+
+		// if sexDep both male and female entries must be provided
+		// cannot have more than one entry of the same sex, including #
+		// unless genetic load which cannot have more than five entries
+
+		if ((inIsInherited == "true") 
 			&& (stof(inMutationRate) < 0.0 || stof(inMutationRate) > 1.0)) {
 			BatchError(whichInputFile, whichLine, 20, "mutationRate"); 
 			nbErrors++;
@@ -2821,6 +2921,127 @@ int CheckTraitsFile(string indir)
 		if (simNb == simNbNotRead || bTraitsFile.eof())
 			stopReading = true;
 	} // end of while loop
+
+
+	// Check that all reqd traits are here, e.g. if emig is DD must have E_ALPHA
+	// 
+	// Emigration traits
+	bool hasEPorD0 = (traitExists(E_D0) || traitExists(E_D0_F) || traitExists(E_D0_M));
+	bool hasEmigAlpha = (traitExists(E_ALPHA) || traitExists(E_ALPHA_F) || traitExists(E_ALPHA_M));
+	bool hasEmigBeta = (traitExists(E_BETA) || traitExists(E_BETA_F) || traitExists(E_BETA_M));
+	if (gDispTraitOpt.isEmigIndVar) {
+		if (!hasEPorD0) {
+			BatchError(whichInputFile, -999, 0, " ");
+			batchLog << "EP or d0 is missing.";
+			nbErrors++;
+		} 
+		if (gDispTraitOpt.isEmigDensDep) {
+			if (!hasEmigAlpha) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Emigration alpha is missing.";
+				nbErrors++;
+			}
+			if (!hasEmigBeta) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Emigration beta is missing.";
+				nbErrors++;
+			}
+		}
+		else {
+			if (hasEmigAlpha) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Specified emigration alpha, but emigration is not density-dependent.";
+				nbErrors++;
+			}
+			if (hasEmigBeta) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Specified emigration beta, but emigration is not variable.";
+				nbErrors++;
+			}
+		}
+	}
+	else if (hasEPorD0 || hasEmigAlpha || hasEmigBeta) {
+		BatchError(whichInputFile, -999, 0, " ");
+		batchLog << "Specified emigration trait, but emigration is not variable.";
+		nbErrors++;
+	}
+
+	// Transfer traits
+	/// Kernels
+	bool hasKern1 = traitExists(KERNEL_MEANDIST_1) || traitExists(KERNEL_MEANDIST_1_F) || traitExists(KERNEL_MEANDIST_1_M);
+	bool hasKern2 = traitExists(KERNEL_MEANDIST_2) || traitExists(KERNEL_MEANDIST_2_F) || traitExists(KERNEL_MEANDIST_2_M);
+	bool hasKernProb = traitExists(KERNEL_PROBABILITY) || traitExists(KERNEL_PROBABILITY_F) || traitExists(KERNEL_PROBABILITY_M);
+	
+	if (gDispTraitOpt.isKernTransfIndVar) {
+		if (!hasKern1) {
+			BatchError(whichInputFile, -999, 0, " ");
+			batchLog << "(First) kernel mean is missing.";
+			nbErrors++;
+		}
+		if (gDispTraitOpt.usesTwoKernels) {
+			if (!hasKern2) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Second kernel mean is missing.";
+				nbErrors++;
+			}
+			if (!hasKernProb) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Kernel probability is missing.";
+				nbErrors++;
+			}
+		}
+		else {
+			if (hasKern2) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Specified second kernel, but only one kernel is used.";
+				nbErrors++;
+			}
+			if (hasKernProb) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Specified kernel probability, but only one kernel is used.";
+				nbErrors++;
+			}
+		}
+	}
+	else if (hasKern1 || hasKern2 || hasKernProb) {
+		BatchError(whichInputFile, -999, 0, " ");
+		batchLog << "Specified kernel transfer trait, but kernel transfer is not variable.";
+		nbErrors++;
+	}
+
+	/// SMS
+	if (gDispTraitOpt.isSMSTransfIndVar) {
+		if (gDispTraitOpt.usesSMSGoalBias) {
+
+		}
+		else {
+
+		}
+	}
+	else if () {
+
+	}
+
+	/// CRW
+	if (gDispTraitOpt.isCRWTransfIndVar) {
+		
+	}
+	else if () {
+
+	}
+
+	// Settlement traits
+	if (gDispTraitOpt.isSettIndVar) {
+		if (gDispTraitOpt.isSettDensDep) {
+
+		}
+		else {
+
+		}
+	}
+	else if () {
+
+	}
 
 	// check for correct number of lines for previous simulation
 	if (!(current.simLines >= current.reqdSimLines)) {
@@ -2838,6 +3059,39 @@ int CheckTraitsFile(string indir)
 	else 
 		return nbSims;
 }
+
+bool traitExists(const TraitType& tr) {
+	return std::find(gAllReadTraits.begin(), gAllReadTraits.end(), tr) != gAllReadTraits.end();
+}
+
+void addSexDepToTrait(TraitType& t, const sex_t& sex) {
+	if (sex == FEM) {
+		if (t == E_D0) t = E_D0_F; // EP uses d0 for trait data
+		else if (t == E_ALPHA) t = E_ALPHA_F;
+		else if (t == E_BETA) t = E_BETA_F;
+		else if (t == S_S0) t = S_S0_F;
+		else if (t == S_ALPHA) t = S_ALPHA_F;
+		else if (t == S_BETA) t = S_BETA_F;
+		else if (t == KERNEL_MEANDIST_1) t = KERNEL_MEANDIST_1_F;
+		else if (t == KERNEL_MEANDIST_2) t = KERNEL_MEANDIST_2_F;
+		else if (t == KERNEL_PROBABILITY) t = KERNEL_PROBABILITY_F;
+		else t = INVALID_TRAIT;
+	}
+	else if (sex == MAL) {
+		if (t == E_D0) t = E_D0_M; // EP uses d0 for trait data
+		else if (t == E_ALPHA) t = E_ALPHA_M;
+		else if (t == E_BETA) t = E_BETA_M;
+		else if (t == S_S0) t = S_S0_M;
+		else if (t == S_ALPHA) t = S_ALPHA_M;
+		else if (t == S_BETA) t = S_BETA_M;
+		else if (t == KERNEL_MEANDIST_1) t = KERNEL_MEANDIST_1_M;
+		else if (t == KERNEL_MEANDIST_2) t = KERNEL_MEANDIST_2_M;
+		else if (t == KERNEL_PROBABILITY) t = KERNEL_PROBABILITY_M;
+		else t = INVALID_TRAIT;
+	}
+	else t = INVALID_TRAIT;
+}
+
 
 //---------------------------------------------------------------------------
 
@@ -2899,7 +3153,6 @@ int CheckGeneticsFile(string indir) {
 		prev = current;
 
 		// validate parameters
-
 
 		if (GenomeSize < 0) {
 			BatchError(filetype, line, 10, "GenomeSize"); errors++;
@@ -3326,7 +3579,7 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, simCheck
 	}
 	current.simNb = simNb;
 
-	// validate stagedep
+	// validate inStageDep
 	if (stagestruct) {
 		if (isStageDep != 0 && isStageDep != 1) {
 			BatchError(whichInputFile, whichLine, 1, "StageDep"); current.errors++;
@@ -3340,7 +3593,7 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, simCheck
 			isStageDep = 0; // to calculate required number of lines
 		}
 	}
-	// validate sexdep
+	// validate inSexDep
 	if (gNbSexesDisp == 2) {
 		if (isSexDep != 0 && isSexDep != 1) {
 			BatchError(whichInputFile, whichLine, 1, "SexDep"); current.errors++;
@@ -3405,7 +3658,7 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, simCheck
 		}
 	}
 
-	// validate indvar
+	// validate inIndVar
 	if (isStageDep && !mustCheckStgDepWithIndVar) {
 		if (isIndVar != 0) {
 			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
@@ -3916,59 +4169,28 @@ void setUpTrait(vector<string> parameters) {
 }
 
 
-TraitType stringToTraitType(const std::string& str, sex_t sex) {
-
-	if (sex == NA) {
-		// Non-dispersal traits
-		if (str == "neutral") return SNP;
-		else if (str == "genetic_load") return GENETIC_LOAD;
-		// Sex-invariant dispersal traits
-		else if (str == "emigration_d0") return E_D0;
-		else if (str == "emigration_alpha") return E_ALPHA;
-		else if (str == "emigration_beta") return E_BETA;
-		else if (str == "settlement_s0") return S_S0;
-		else if (str == "settlement_alpha") return S_ALPHA;
-		else if (str == "settlement_beta") return S_BETA;
-		else if (str == "kernel_meanDistance1") return KERNEL_MEANDIST_1;
-		else if (str == "kernel_meanDistance2") return KERNEL_MEANDIST_2;
-		else if (str == "kernel_probability") return KERNEL_PROBABILITY;
-		else if (str == "crw_stepLength") return CRW_STEPLENGTH;
-		else if (str == "crw_stepCorrelation") return CRW_STEPCORRELATION;
-		else if (str == "sms_directionalPersistence") return SMS_DP;
-		else if (str == "sms_goalBias") return SMS_GB;
-		else if (str == "sms_alphaDB") return SMS_ALPHADB;
-		else if (str == "sms_betaDB") return SMS_BETADB;
-		else return INVALID_TRAIT;
-	}
-	// Sex-specific dispersal traits
-	else if (sex == MAL) {
-		if (str == "emigration_d0") return E_D0_M;
-		else if (str == "emigration_alpha") return E_ALPHA_M;
-		else if (str == "emigration_beta") return E_BETA_M;
-		else if (str == "settlement_s0") return S_S0_M;
-		else if (str == "settlement_alpha") return S_ALPHA_M;
-		else if (str == "settlement_beta") return S_BETA_M;
-		else if (str == "kernel_meanDistance1") return KERNEL_MEANDIST_1_M;
-		else if (str == "kernel_meanDistance2") return KERNEL_MEANDIST_2_M;
-		else if (str == "kernel_probability") return KERNEL_PROBABILITY_M;
-		else if (str == "crw_stepLength") return CRW_STEPLENGTH_M;
-		else if (str == "crw_stepCorrelation") return CRW_STEPCORRELATION_M;
-		else return INVALID_TRAIT;
-	}
-	else {
-		if (str == "emigration_d0") return E_D0_F;
-		else if (str == "emigration_alpha") return E_ALPHA_F;
-		else if (str == "emigration_beta") return E_BETA_F;
-		else if (str == "settlement_s0") return S_S0_F;
-		else if (str == "settlement_alpha") return S_ALPHA_F;
-		else if (str == "settlement_beta") return S_BETA_F;
-		else if (str == "kernel_meanDistance1") return KERNEL_MEANDIST_1_F;
-		else if (str == "kernel_meanDistance2") return KERNEL_MEANDIST_2_F;
-		else if (str == "kernel_probability") return KERNEL_PROBABILITY_F;
-		else if (str == "crw_stepLength") return CRW_STEPLENGTH_F;
-		else if (str == "crw_stepCorrelation") return CRW_STEPCORRELATION_F;
-		else return INVALID_TRAIT;
-	}
+TraitType stringToTraitType(const std::string& str) {
+	// Non-dispersal traits
+	if (str == "neutral") return SNP;
+	else if (str == "genetic_load") return GENETIC_LOAD;
+	// Sex-invariant dispersal traits
+	else if (str == "emigration_ep") return E_D0; // EP uses d0 for trait data
+	else if (str == "emigration_d0") return E_D0;
+	else if (str == "emigration_alpha") return E_ALPHA;
+	else if (str == "emigration_beta") return E_BETA;
+	else if (str == "settlement_s0") return S_S0;
+	else if (str == "settlement_alpha") return S_ALPHA;
+	else if (str == "settlement_beta") return S_BETA;
+	else if (str == "kernel_meanDistance1") return KERNEL_MEANDIST_1;
+	else if (str == "kernel_meanDistance2") return KERNEL_MEANDIST_2;
+	else if (str == "kernel_probability") return KERNEL_PROBABILITY;
+	else if (str == "crw_stepLength") return CRW_STEPLENGTH;
+	else if (str == "crw_stepCorrelation") return CRW_STEPCORRELATION;
+	else if (str == "sms_directionalPersistence") return SMS_DP;
+	else if (str == "sms_goalBias") return SMS_GB;
+	else if (str == "sms_alphaDB") return SMS_ALPHADB;
+	else if (str == "sms_betaDB") return SMS_BETADB;
+	else return INVALID_TRAIT;
 }
 
 ExpressionType stringToExpressionType(const std::string& str) {

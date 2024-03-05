@@ -75,6 +75,29 @@ struct batchfiles {
 	string initFile;
 };
 
+struct DispersalTraitInputOptions {
+	bool isEmigIndVar = false;
+	bool isEmigDensDep = false;
+	bool isEmigSexDep = false;
+
+	bool isSettIndVar = false;
+	bool isSettDensDep = false;
+	bool isSettSexDep = false;
+
+	bool isKernTransfIndVar = false;
+	bool isKernTransfSexDep = false;
+	bool usesTwoKernels = false;
+
+	bool isSMSTransfIndVar = false;
+	bool usesSMSGoalBias = false;
+
+	bool isCRWTransfIndVar = false;
+};
+
+vector <TraitType> gAllReadTraits;
+bool traitExists(const TraitType& tr);
+void addSexDepToTrait(TraitType& t, const sex_t& sex);
+
 constexpr int gEmptyVal = -9;
 constexpr int nHeadersEmig = 13;
 
