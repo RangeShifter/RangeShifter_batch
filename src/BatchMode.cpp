@@ -3010,37 +3010,117 @@ int CheckTraitsFile(string indir)
 	}
 
 	/// SMS
+	bool hasDP = traitExists(SMS_DP);
+	bool hasGB = traitExists(SMS_GB);
+	bool hasSMSAlpha = traitExists(SMS_ALPHADB);
+	bool hasSMSBeta = traitExists(SMS_BETADB);
 	if (gDispTraitOpt.isSMSTransfIndVar) {
+		if (!hasDP) {
+			BatchError(whichInputFile, -999, 0, " ");
+			batchLog << "SMS directional persistence trait is missing.";
+			nbErrors++;
+		}
 		if (gDispTraitOpt.usesSMSGoalBias) {
-
+			if (!hasGB) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "SMS goal bias trait is missing.";
+				nbErrors++;
+			}
+			if (!hasSMSAlpha) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "SMS alpha direction bias trait is missing.";
+				nbErrors++;
+			}
+			if (!hasSMSBeta) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "SMS beta direction bias trait is missing.";
+				nbErrors++;
+			}
 		}
 		else {
-
+			if (hasGB) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "SMS goal bias trait supplied, but SMS GoalType not set to option 2.";
+				nbErrors++;
+			}
+			if (hasSMSAlpha) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "SMS alpha direction bias trait supplied, but SMS GoalType not set to option 2.";
+				nbErrors++;
+			}
+			if (hasSMSBeta) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "SMS beta direction bias trait supplied, but SMS GoalType not set to option 2.";
+				nbErrors++;
+			}
 		}
 	}
-	else if () {
-
+	else if (hasDP || hasGB || hasSMSAlpha || hasSMSBeta) {
+		BatchError(whichInputFile, -999, 0, " ");
+		batchLog << "Specified SMS trait, but SMS not set to be variable.";
+		nbErrors++;
 	}
 
 	/// CRW
+	bool hasStepLen = traitExists(CRW_STEPLENGTH);
+	bool hasRho = traitExists(CRW_STEPCORRELATION);
 	if (gDispTraitOpt.isCRWTransfIndVar) {
-		
+		if (!hasStepLen) {
+			BatchError(whichInputFile, -999, 0, " ");
+			batchLog << "CRW step length trait is missing.";
+			nbErrors++;
+		}
+		if (!hasRho) {
+			BatchError(whichInputFile, -999, 0, " ");
+			batchLog << "CRW step correlation trait is missing.";
+			nbErrors++;
+		}
 	}
-	else if () {
-
+	else if (hasStepLen || hasRho) {
+		BatchError(whichInputFile, -999, 0, " ");
+		batchLog << "Specified CRW trait, but CRW not set to be variable.";
+		nbErrors++;
 	}
 
 	// Settlement traits
+	bool hasS0 = traitExists(S_S0) || traitExists(S_S0_F) || traitExists(S_S0_M);
+	bool hasSettAlpha = traitExists(S_ALPHA) || traitExists(S_ALPHA_F) || traitExists(S_ALPHA_M);
+	bool hasSettBeta = traitExists(S_BETA) || traitExists(S_BETA_F) || traitExists(S_BETA_M);
 	if (gDispTraitOpt.isSettIndVar) {
+		if (!hasS0) {
+			BatchError(whichInputFile, -999, 0, " ");
+			batchLog << "Settlement probability trait is missing.";
+			nbErrors++;
+		}
 		if (gDispTraitOpt.isSettDensDep) {
-
+			if (!hasSettAlpha) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Settlement alpha trait is missing.";
+				nbErrors++;
+			}
+			if (!hasSMSBeta) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Settlement beta trait is missing.";
+				nbErrors++;
+			}
 		}
 		else {
-
+			if (hasSettAlpha) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Settlement alpha trait supplied, but settlement not density-dependent.";
+				nbErrors++;
+			}
+			if (hasSettBeta) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "SMS beta direction bias trait supplied, but settlement not density-dependent.";
+				nbErrors++;
+			}
 		}
 	}
-	else if () {
-
+	else if (hasS0 || hasSettAlpha || hasSettBeta) {
+		BatchError(whichInputFile, -999, 0, " ");
+		batchLog << "Specified settlement trait, but settlement not set to be variable.";
+		nbErrors++;
 	}
 
 	// check for correct number of lines for previous simulation
