@@ -96,7 +96,7 @@ struct DispersalTraitInputOptions {
 
 vector <TraitType> gAllReadTraits;
 bool traitExists(const TraitType& tr);
-void addSexDepToTrait(TraitType& t, const sex_t& sex);
+TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex);
 
 constexpr int gEmptyVal = -9;
 constexpr int nHeadersEmig = 13;

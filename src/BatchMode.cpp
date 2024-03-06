@@ -2807,6 +2807,7 @@ int CheckTraitsFile(string indir)
 		inMutationParams, inPositions, inNbPositions, inExpressionType, inMutationRate;
 	int nbErrors = 0;
 	int nbSims = 0;
+	int nbGenLoadTraits = 0;
 	vector <string> archfiles;
 	const string whichInputFile = "TraitsFile";
 
@@ -2859,7 +2860,7 @@ int CheckTraitsFile(string indir)
 
 		// validate parameters
 
-		// check sex is valid first
+		// check sex is valid
 		sex_t sex = stringToSex(inSex);
 
 		if (sex == sex_t::INVALID_SEX) {
@@ -2887,21 +2888,22 @@ int CheckTraitsFile(string indir)
 			nbErrors++;
 		}
 
-		if (gDispTraitOpt.isEmigIndVar)
-		{
-			if (!gDispTraitOpt.isEmigDensDep && (tr == E_ALPHA || tr == E_BETA)) {
+		if (sex != NA) // add sex to trait if present
+			tr = addSexDepToTrait(tr, sex);
+
+		if (tr == GENETIC_LOAD) {
+			nbGenLoadTraits++;
+			if (nbGenLoadTraits > 5) {
 				BatchError(whichInputFile, whichLine, 0, " ");
-				batchLog << "Found " << inTraitType << " but emigration is not density-dependent.";
+				batchLog << "There cannot be more than 5 genetic load traits.";
 				nbErrors++;
 			}
 		}
-		else if (tr == E_D0 || tr == E_ALPHA || tr == E_BETA) {
+		else if (traitExists(tr)) {
 			BatchError(whichInputFile, whichLine, 0, " ");
-			batchLog << "Found " << inTraitType << " but emigration is not variable.";
+			batchLog << "Trait " << tr << " is supplied multiple times.";
 			nbErrors++;
 		}
-
-		if (sex != NA) addSexDepToTrait(tr, sex);
 		gAllReadTraits.push_back(tr);
 
 		// if sexDep both male and female entries must be provided
@@ -2921,20 +2923,64 @@ int CheckTraitsFile(string indir)
 		if (simNb == simNbNotRead || bTraitsFile.eof())
 			stopReading = true;
 	} // end of while loop
+	
+	// for E_D0, E_ALPHA, E_BETA, 
+	// KERNEL_MEANDIST1, KERNEL_MEANDIST2, KERNEL_PROBABILITY,
+	// S_S0, S_ALPHA, S_BETA
+	// if TRAIT_M exists, TRAIT_F must also exist
+	// if TRAIT_F exists, TRAIT_M must also exist
+	// if TRAIT exists, TRAIT_F and TRAIT_M must not exist
 
+	// if sexDep, corresponding trait must exist
+	// else, must not exist
 
-	// Check that all reqd traits are here, e.g. if emig is DD must have E_ALPHA
-	// 
+	// corresponding sexDep entry must be enabled
+	// if sexDep is enabled, must have either sex
+	
 	// Emigration traits
-	bool hasEPorD0 = (traitExists(E_D0) || traitExists(E_D0_F) || traitExists(E_D0_M));
+	bool hasD0 = traitExists(E_D0) || traitExists(E_D0_F) || traitExists(E_D0_M);
 	bool hasEmigAlpha = (traitExists(E_ALPHA) || traitExists(E_ALPHA_F) || traitExists(E_ALPHA_M));
 	bool hasEmigBeta = (traitExists(E_BETA) || traitExists(E_BETA_F) || traitExists(E_BETA_M));
+
+	bool anyEmigNeitherSex = traitExists(E_D0) || traitExists(E_ALPHA) || traitExists(E_BETA);
+	bool eitherSexD0 = traitExists(E_D0_F) || traitExists(E_D0_M);
+	bool bothSexesD0 = traitExists(E_D0_F) && traitExists(E_D0_M);
+	bool eitherSexEmigAlpha = traitExists(E_ALPHA_F) || traitExists(E_ALPHA_M);
+	bool bothSexesEmigAlpha = traitExists(E_ALPHA_F) && traitExists(E_ALPHA_M);
+	bool eitherSexEmigBeta = traitExists(E_BETA_F) || traitExists(E_BETA_M);
+	bool bothSexesEmigBeta = traitExists(E_BETA_F) && traitExists(E_BETA_M);
+	bool anyEmigSexDep = eitherSexD0 || eitherSexEmigAlpha || eitherSexEmigBeta;
+
+	// if sexDep
+	// must not have anyNeither
+	// for all must have both sexes
+	// else 
+	// must not have any with either sex
+	// all neitherSex must be present
+
 	if (gDispTraitOpt.isEmigIndVar) {
-		if (!hasEPorD0) {
+		if (!hasD0) {
 			BatchError(whichInputFile, -999, 0, " ");
 			batchLog << "EP or d0 is missing.";
 			nbErrors++;
 		} 
+		if (gDispTraitOpt.isEmigSexDep) {
+			if (anyEmigNeitherSex) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Emigration SexDep is on but a trait has been supplied without a sex.";
+				nbErrors++;
+			}
+			if (!bothSexesD0) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Either sex is missing for D0 trait.";
+				nbErrors++;
+			}
+		} else if (anyEmigSexDep) {
+			BatchError(whichInputFile, -999, 0, " ");
+			batchLog << "Emigration SexDep is off but a trait has been supplied with a sex.";
+			nbErrors++;
+		}
+
 		if (gDispTraitOpt.isEmigDensDep) {
 			if (!hasEmigAlpha) {
 				BatchError(whichInputFile, -999, 0, " ");
@@ -2946,6 +2992,18 @@ int CheckTraitsFile(string indir)
 				batchLog << "Emigration beta is missing.";
 				nbErrors++;
 			}
+			if (gDispTraitOpt.isEmigSexDep) {
+				if (!bothSexesEmigAlpha) {
+					BatchError(whichInputFile, -999, 0, " ");
+					batchLog << "Either sex is missing for emigration alpha trait.";
+					nbErrors++;
+				}
+				if (!bothSexesEmigBeta) {
+					BatchError(whichInputFile, -999, 0, " ");
+					batchLog << "Either sex is missing for emigration beta trait.";
+					nbErrors++;
+				}
+			}
 		}
 		else {
 			if (hasEmigAlpha) {
@@ -2955,12 +3013,12 @@ int CheckTraitsFile(string indir)
 			}
 			if (hasEmigBeta) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Specified emigration beta, but emigration is not variable.";
+				batchLog << "Specified emigration beta, but emigration is not density-dependent.";
 				nbErrors++;
 			}
 		}
 	}
-	else if (hasEPorD0 || hasEmigAlpha || hasEmigBeta) {
+	else if (hasD0 || hasEmigAlpha || hasEmigBeta) {
 		BatchError(whichInputFile, -999, 0, " ");
 		batchLog << "Specified emigration trait, but emigration is not variable.";
 		nbErrors++;
@@ -2972,10 +3030,36 @@ int CheckTraitsFile(string indir)
 	bool hasKern2 = traitExists(KERNEL_MEANDIST_2) || traitExists(KERNEL_MEANDIST_2_F) || traitExists(KERNEL_MEANDIST_2_M);
 	bool hasKernProb = traitExists(KERNEL_PROBABILITY) || traitExists(KERNEL_PROBABILITY_F) || traitExists(KERNEL_PROBABILITY_M);
 	
+	bool anyKernelNeitherSex = traitExists(KERNEL_MEANDIST_1) || traitExists(KERNEL_MEANDIST_2) || traitExists(KERNEL_PROBABILITY);
+	bool eitherSexMeanDist1 = traitExists(KERNEL_MEANDIST_1_F) || traitExists(KERNEL_MEANDIST_1_M);
+	bool bothSexesMeanDist1 = traitExists(KERNEL_MEANDIST_1_F) && traitExists(KERNEL_MEANDIST_1_M);
+	bool eitherSexMeanDist2 = traitExists(KERNEL_MEANDIST_2_F) || traitExists(KERNEL_MEANDIST_2_M);
+	bool bothSexesMeanDist2 = traitExists(KERNEL_MEANDIST_2_F) && traitExists(KERNEL_MEANDIST_2_F);
+	bool eitherSexKernProb = traitExists(KERNEL_PROBABILITY_F) || traitExists(KERNEL_PROBABILITY_M);
+	bool bothSexesKernProb = traitExists(KERNEL_PROBABILITY_F) && traitExists(KERNEL_PROBABILITY_M);
+	bool anyKernelSexDep = eitherSexMeanDist1 || eitherSexMeanDist2 || eitherSexKernProb;
+
 	if (gDispTraitOpt.isKernTransfIndVar) {
 		if (!hasKern1) {
 			BatchError(whichInputFile, -999, 0, " ");
 			batchLog << "(First) kernel mean is missing.";
+			nbErrors++;
+		}
+		if (gDispTraitOpt.isKernTransfSexDep) {
+			if (anyKernelNeitherSex) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Kernel SexDep is on but a trait has been supplied without a sex.";
+				nbErrors++;
+			}
+			if (!bothSexesMeanDist1) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Either sex is missing for first kernel mean trait.";
+				nbErrors++;
+			}
+		}
+		else if (anyKernelSexDep) {
+			BatchError(whichInputFile, -999, 0, " ");
+			batchLog << "Kernel SexDep is off but a trait has been supplied with a sex.";
 			nbErrors++;
 		}
 		if (gDispTraitOpt.usesTwoKernels) {
@@ -2988,6 +3072,18 @@ int CheckTraitsFile(string indir)
 				BatchError(whichInputFile, -999, 0, " ");
 				batchLog << "Kernel probability is missing.";
 				nbErrors++;
+			}
+			if (gDispTraitOpt.isKernTransfSexDep) {
+				if (!bothSexesMeanDist2) {
+					BatchError(whichInputFile, -999, 0, " ");
+					batchLog << "Either sex is missing for second kernel mean trait.";
+					nbErrors++;
+				}
+				if (!bothSexesKernProb) {
+					BatchError(whichInputFile, -999, 0, " ");
+					batchLog << "Either sex is missing for kernel probability trait.";
+					nbErrors++;
+				}
 			}
 		}
 		else {
@@ -3086,10 +3182,37 @@ int CheckTraitsFile(string indir)
 	bool hasS0 = traitExists(S_S0) || traitExists(S_S0_F) || traitExists(S_S0_M);
 	bool hasSettAlpha = traitExists(S_ALPHA) || traitExists(S_ALPHA_F) || traitExists(S_ALPHA_M);
 	bool hasSettBeta = traitExists(S_BETA) || traitExists(S_BETA_F) || traitExists(S_BETA_M);
+
+	bool anySettNeitherSex = traitExists(S_S0) || traitExists(S_ALPHA) || traitExists(S_BETA);
+	bool eitherSexS0 = traitExists(S_S0_F) || traitExists(S_S0_M);
+	bool bothSexesS0 = traitExists(S_S0_F) && traitExists(S_S0_M);
+	bool eitherSexSettAlpha = traitExists(S_ALPHA_F) || traitExists(S_ALPHA_M);
+	bool bothSexesSettAlpha = traitExists(S_ALPHA_F) && traitExists(S_ALPHA_M);
+	bool eitherSexSettBeta = traitExists(S_BETA_F) || traitExists(S_BETA_M);
+	bool bothSexesSettBeta = traitExists(S_BETA_F) && traitExists(S_BETA_M);
+	bool anySettSexDep = eitherSexS0 || eitherSexSettAlpha || eitherSexSettBeta;
+
 	if (gDispTraitOpt.isSettIndVar) {
 		if (!hasS0) {
 			BatchError(whichInputFile, -999, 0, " ");
 			batchLog << "Settlement probability trait is missing.";
+			nbErrors++;
+		}
+		if (gDispTraitOpt.isSettSexDep) {
+			if (anySettNeitherSex) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Settlement SexDep is on but a trait has been supplied without a sex.";
+				nbErrors++;
+			}
+			if (!bothSexesS0) {
+				BatchError(whichInputFile, -999, 0, " ");
+				batchLog << "Either sex is missing for settlement probabibility trait.";
+				nbErrors++;
+			}
+		}
+		else if (anySettSexDep) {
+			BatchError(whichInputFile, -999, 0, " ");
+			batchLog << "Settlement SexDep is off but a trait has been supplied with a sex.";
 			nbErrors++;
 		}
 		if (gDispTraitOpt.isSettDensDep) {
@@ -3102,6 +3225,18 @@ int CheckTraitsFile(string indir)
 				BatchError(whichInputFile, -999, 0, " ");
 				batchLog << "Settlement beta trait is missing.";
 				nbErrors++;
+			}
+			if (gDispTraitOpt.isSettSexDep) {
+				if (!bothSexesSettAlpha) {
+					BatchError(whichInputFile, -999, 0, " ");
+					batchLog << "Either sex is missing for settlement alpha trait.";
+					nbErrors++;
+				}
+				if (!bothSexesSettBeta) {
+					BatchError(whichInputFile, -999, 0, " ");
+					batchLog << "Either sex is missing for settlement beta trait.";
+					nbErrors++;
+				}
 			}
 		}
 		else {
@@ -3144,32 +3279,32 @@ bool traitExists(const TraitType& tr) {
 	return std::find(gAllReadTraits.begin(), gAllReadTraits.end(), tr) != gAllReadTraits.end();
 }
 
-void addSexDepToTrait(TraitType& t, const sex_t& sex) {
+TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex) {
 	if (sex == FEM) {
-		if (t == E_D0) t = E_D0_F; // EP uses d0 for trait data
-		else if (t == E_ALPHA) t = E_ALPHA_F;
-		else if (t == E_BETA) t = E_BETA_F;
-		else if (t == S_S0) t = S_S0_F;
-		else if (t == S_ALPHA) t = S_ALPHA_F;
-		else if (t == S_BETA) t = S_BETA_F;
-		else if (t == KERNEL_MEANDIST_1) t = KERNEL_MEANDIST_1_F;
-		else if (t == KERNEL_MEANDIST_2) t = KERNEL_MEANDIST_2_F;
-		else if (t == KERNEL_PROBABILITY) t = KERNEL_PROBABILITY_F;
-		else t = INVALID_TRAIT;
+		if (t == E_D0) return E_D0_F; // EP uses d0 for trait data
+		else if (t == E_ALPHA) return E_ALPHA_F;
+		else if (t == E_BETA) return E_BETA_F;
+		else if (t == S_S0) return S_S0_F;
+		else if (t == S_ALPHA) return S_ALPHA_F;
+		else if (t == S_BETA) return S_BETA_F;
+		else if (t == KERNEL_MEANDIST_1) return KERNEL_MEANDIST_1_F;
+		else if (t == KERNEL_MEANDIST_2) return KERNEL_MEANDIST_2_F;
+		else if (t == KERNEL_PROBABILITY) return KERNEL_PROBABILITY_F;
+		else return INVALID_TRAIT;
 	}
 	else if (sex == MAL) {
-		if (t == E_D0) t = E_D0_M; // EP uses d0 for trait data
-		else if (t == E_ALPHA) t = E_ALPHA_M;
-		else if (t == E_BETA) t = E_BETA_M;
-		else if (t == S_S0) t = S_S0_M;
-		else if (t == S_ALPHA) t = S_ALPHA_M;
-		else if (t == S_BETA) t = S_BETA_M;
-		else if (t == KERNEL_MEANDIST_1) t = KERNEL_MEANDIST_1_M;
-		else if (t == KERNEL_MEANDIST_2) t = KERNEL_MEANDIST_2_M;
-		else if (t == KERNEL_PROBABILITY) t = KERNEL_PROBABILITY_M;
-		else t = INVALID_TRAIT;
+		if (t == E_D0) return E_D0_M; // EP uses d0 for trait data
+		else if (t == E_ALPHA) return E_ALPHA_M;
+		else if (t == E_BETA) return E_BETA_M;
+		else if (t == S_S0) return S_S0_M;
+		else if (t == S_ALPHA) return S_ALPHA_M;
+		else if (t == S_BETA) return S_BETA_M;
+		else if (t == KERNEL_MEANDIST_1) return KERNEL_MEANDIST_1_M;
+		else if (t == KERNEL_MEANDIST_2) return KERNEL_MEANDIST_2_M;
+		else if (t == KERNEL_PROBABILITY) return KERNEL_PROBABILITY_M;
+		else return INVALID_TRAIT;
 	}
-	else t = INVALID_TRAIT;
+	else return INVALID_TRAIT;
 }
 
 
