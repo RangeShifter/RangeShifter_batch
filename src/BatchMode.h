@@ -81,7 +81,6 @@ struct DispersalTraitInputOptions {
 	bool isEmigSexDep = false;
 
 	bool isSettIndVar = false;
-	bool isSettDensDep = false;
 	bool isSettSexDep = false;
 
 	bool isKernTransfIndVar = false;
@@ -94,8 +93,7 @@ struct DispersalTraitInputOptions {
 	bool isCRWTransfIndVar = false;
 };
 
-vector <TraitType> gAllReadTraits;
-bool traitExists(const TraitType& tr);
+bool traitExists(const TraitType& tr, const vector<TraitType>& existingTraits);
 TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex);
 
 constexpr int gEmptyVal = -9;
@@ -212,7 +210,7 @@ ExpressionType stringToExpressionType(const std::string& str);
 map<parameter_t, float> stringToParameterMap(string parameters);
 set<int> selectRandomLociPositions(int noLoci, const int& genomeSize);
 set<int> stringToLoci(string pos, string nLoci, const int& genomeSize);
-TraitType stringToTraitType(const std::string& str, sex_t sex);
+TraitType stringToTraitType(const std::string& str);
 
 #if RSDEBUG
 extern ofstream DEBUGLOG;

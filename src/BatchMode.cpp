@@ -2171,7 +2171,7 @@ int CheckEmigFile(void)
 			nbErrors++;
 		} 
 		else {
-			gDispTraitOpt.isEmigSexDep = (inIndVar == 1);
+			gDispTraitOpt.isEmigSexDep = (inSexDep == 1);
 		}
 
 		if (inStage == 0 && inSex == 0) { // first line of a simulation
@@ -2664,42 +2664,42 @@ int CheckTransferFile(string indir)
 int CheckSettleFile(void)
 {
 	string header;
-	int simNb, stagedep, sexdep, stage, sex, settletype;
-	int densdep, indvar, findmate, minSteps, maxSteps, maxStepsYear;
-	float s0, alphaS, betaS;
-	int errors = 0;
-	int simuls = 0;
-	string filetype = "SettlementFile";
+	int simNb, inStageDep, inSexDep, inStage, inSex, inSettleType;
+	int inDensDep, inIndVar, inFindMate, inMinSteps, inMaxSteps, inMaxStepsYear;
+	float inS0, inAlphaS, inBetaS;
+	int nbErrors = 0;
+	int nbSims = 0;
+	string whichFile = "SettlementFile";
 
 	// Parse header line;
-	bSettlementFile >> header; if (header != "Simulation") errors++;
-	bSettlementFile >> header; if (header != "StageDep") errors++;
-	bSettlementFile >> header; if (header != "SexDep") errors++;
-	bSettlementFile >> header; if (header != "Stage") errors++;
-	bSettlementFile >> header; if (header != "Sex") errors++;
+	bSettlementFile >> header; if (header != "Simulation") nbErrors++;
+	bSettlementFile >> header; if (header != "StageDep") nbErrors++;
+	bSettlementFile >> header; if (header != "SexDep") nbErrors++;
+	bSettlementFile >> header; if (header != "Stage") nbErrors++;
+	bSettlementFile >> header; if (header != "Sex") nbErrors++;
 	if (gTransferType == 0)
 	{ // dispersal kernel
-		bSettlementFile >> header; if (header != "SettleType") errors++;
-		bSettlementFile >> header; if (header != "FindMate") errors++;
+		bSettlementFile >> header; if (header != "SettleType") nbErrors++;
+		bSettlementFile >> header; if (header != "FindMate") nbErrors++;
 	}
 	else { // movement method
-		bSettlementFile >> header; if (header != "DensDep") errors++;
-		bSettlementFile >> header; if (header != "IndVar") errors++;
-		bSettlementFile >> header; if (header != "FindMate") errors++;
-		bSettlementFile >> header; if (header != "MinSteps") errors++;
-		bSettlementFile >> header; if (header != "MaxSteps") errors++;
-		bSettlementFile >> header; if (header != "MaxStepsYear") errors++;
-		bSettlementFile >> header; if (header != "S0") errors++;
-		bSettlementFile >> header; if (header != "AlphaS") errors++;
-		bSettlementFile >> header; if (header != "BetaS") errors++;
+		bSettlementFile >> header; if (header != "DensDep") nbErrors++;
+		bSettlementFile >> header; if (header != "IndVar") nbErrors++;
+		bSettlementFile >> header; if (header != "FindMate") nbErrors++;
+		bSettlementFile >> header; if (header != "MinSteps") nbErrors++;
+		bSettlementFile >> header; if (header != "MaxSteps") nbErrors++;
+		bSettlementFile >> header; if (header != "MaxStepsYear") nbErrors++;
+		bSettlementFile >> header; if (header != "S0") nbErrors++;
+		bSettlementFile >> header; if (header != "AlphaS") nbErrors++;
+		bSettlementFile >> header; if (header != "BetaS") nbErrors++;
 	}
-	if (errors > 0) {
-		FormatError(filetype, errors);
+	if (nbErrors > 0) {
+		FormatError(whichFile, nbErrors);
 		return -111;
 	}
 
 	// Parse data lines
-	int line = 1;
+	int whichLine = 1;
 	simCheck current, prev;
 	simNb = -98765;
 	prev.simNb = -999;
@@ -2707,93 +2707,117 @@ int CheckSettleFile(void)
 	bSettlementFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
-		BatchError(filetype, line, 111, "Simulation"); errors++;
+		BatchError(whichFile, whichLine, 111, "Simulation"); nbErrors++;
 	}
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
 		if (gTransferType == 0)
 		{ // dispersal kernel
 			// read and validate columns relating to stage and sex-dependency (NB no IIV here)
-			bSettlementFile >> stagedep >> sexdep >> stage >> sex >> settletype >> findmate;
-			current = CheckStageSex(filetype, line, simNb, prev, stagedep, sexdep, stage, sex, 0, true, false);
-			if (current.isNewSim) simuls++;
-			errors += current.errors;
+			bSettlementFile >> inStageDep >> inSexDep >> inStage >> inSex >> inSettleType >> inFindMate;
+			current = CheckStageSex(whichFile, whichLine, simNb, prev, inStageDep, inSexDep, inStage, inSex, 0, true, false);
+			if (current.isNewSim) nbSims++;
+			nbErrors += current.errors;
 			prev = current;
-			if (settletype < 0 || settletype > 3) {
-				BatchError(filetype, line, 3, "SettleType"); errors++;
+			if (inSettleType < 0 || inSettleType > 3) {
+				BatchError(whichFile, whichLine, 3, "SettleType"); nbErrors++;
 			}
-			if (!stagestruct && (settletype == 1 || settletype == 3)) {
-				BatchError(filetype, line, 0, " "); errors++;
+			if (!stagestruct && (inSettleType == 1 || inSettleType == 3)) {
+				BatchError(whichFile, whichLine, 0, " "); nbErrors++;
 				batchLog << "Invalid SettleType for a non-stage-structured population" << endl;
 			}
 			if (gNbSexesDisp > 1) {
-				if (findmate < 0 || findmate > 1) {
-					BatchError(filetype, line, 1, "FindMate"); errors++;
+				if (inFindMate < 0 || inFindMate > 1) {
+					BatchError(whichFile, whichLine, 1, "FindMate"); nbErrors++;
 				}
 			}
 		}
 		else { // movement method
 			// read and validate columns relating to stage and sex-dependency (IIV psossible)
-			bSettlementFile >> stagedep >> sexdep >> stage >> sex >> densdep >> indvar >> findmate;
-			current = CheckStageSex(filetype, line, simNb, prev, stagedep, sexdep, stage, sex, indvar, true, false);
-			if (current.isNewSim) simuls++;
-			errors += current.errors;
+			bSettlementFile >> inStageDep >> inSexDep >> inStage >> inSex >> inDensDep >> inIndVar >> inFindMate;
+			current = CheckStageSex(whichFile, whichLine, simNb, prev, inStageDep, inSexDep, inStage, inSex, inIndVar, true, false);
+			if (current.isNewSim) nbSims++;
+			nbErrors += current.errors;
 			prev = current;
-			if (densdep < 0 || densdep > 1) {
-				BatchError(filetype, line, 1, "DensDep"); errors++;
+
+			if (inDensDep != 0 && inDensDep != 1) {
+				BatchError(whichFile, whichLine, 1, "DensDep");
+				nbErrors++;
 			}
-			if (densdep == 0) {
-				if (indvar != 0) {
-					BatchError(filetype, line, 0, " "); errors++;
-					batchLog << "IndVar must be 0 if DensDep is 0" << endl;
-				}
+			if (inIndVar != 0 && inIndVar != 1) {
+				BatchError(whichFile, whichLine, 1, "IndVar");
+				nbErrors++;
 			}
+
+			if (inDensDep == 0 && inIndVar != 0) {
+				BatchError(whichFile, whichLine, 0, " ");
+				nbErrors++;
+				batchLog << "IndVar must be 0 if DensDep is 0" << endl;
+			}
+			else {
+				gDispTraitOpt.isSettIndVar = inIndVar == 1;
+			}
+
+			if (inSexDep != 0 && inSexDep != 1) {
+				BatchError(whichFile, whichLine, 1, "SexDep");
+				nbErrors++;
+			}
+			else {
+				gDispTraitOpt.isSettSexDep = inSexDep == 1;
+			}
+
 			if (reproductn != 0 && gNbSexesDisp > 1) {
-				if (findmate < 0 || findmate > 1) {
-					BatchError(filetype, line, 1, "FindMate"); errors++;
+				if (inFindMate != 0 && inFindMate != 1) {
+					BatchError(whichFile, whichLine, 1, "FindMate"); 
+					nbErrors++;
 				}
 			}
-			bSettlementFile >> minSteps >> maxSteps >> maxStepsYear;
-			if (stage == 0 && sex == 0) {
-				if (minSteps < 0) {
-					BatchError(filetype, line, 19, "MinSteps"); errors++;
+			bSettlementFile >> inMinSteps >> inMaxSteps >> inMaxStepsYear;
+			if (inStage == 0 && inSex == 0) {
+				if (inMinSteps < 0) {
+					BatchError(whichFile, whichLine, 19, "MinSteps"); 
+					nbErrors++;
 				}
-				if (maxSteps < 0) {
-					BatchError(filetype, line, 19, "MaxSteps"); errors++;
+				if (inMaxSteps < 0) {
+					BatchError(whichFile, whichLine, 19, "MaxSteps");
+					nbErrors++;
 				}
 			}
-			if (maxStepsYear < 0) {
-				BatchError(filetype, line, 19, "MaxStepsYear"); errors++;
+			if (inMaxStepsYear < 0) {
+				BatchError(whichFile, whichLine, 19, "MaxStepsYear");
+				nbErrors++;
 			}
-			bSettlementFile >> s0 >> alphaS >> betaS;
+			bSettlementFile >> inS0 >> inAlphaS >> inBetaS;
 
-			if (densdep == 1) {
+			if (inDensDep == 1) {
 
-				if (s0 <= 0.0 || s0 > 1.0) {
-					BatchError(filetype, line, 20, "S0"); errors++;
+				if (inS0 <= 0.0 || inS0 > 1.0) {
+					BatchError(whichFile, whichLine, 20, "S0"); 
+					nbErrors++;
 				}
 				// NOTE: alphaS and betaS can take any value
 			}
 		}
 		// read next simulation
-		line++;
+		whichLine++;
 		simNb = -98765;
 		bSettlementFile >> simNb;
 		if (bSettlementFile.eof()) simNb = -98765;
 	} // end of while loop
 	// check for correct number of lines for previous simulation
+
 	if (current.simLines != current.reqdSimLines) {
-		BatchError(filetype, line, 0, " "); errors++;
+		BatchError(whichFile, whichLine, 0, " "); nbErrors++;
 		batchLog << gNbLinesStr << current.simNb
 			<< gShouldBeStr << current.reqdSimLines << endl;
 	}
 	if (!bSettlementFile.eof()) {
-		EOFerror(filetype);
-		errors++;
+		EOFerror(whichFile);
+		nbErrors++;
 	}
 
-	if (errors > 0) return -111;
-	else return simuls;
+	if (nbErrors > 0) return -111;
+	else return nbSims;
 
 }
 
@@ -2810,6 +2834,7 @@ int CheckTraitsFile(string indir)
 	int nbGenLoadTraits = 0;
 	vector <string> archfiles;
 	const string whichInputFile = "TraitsFile";
+	vector <TraitType> allReadTraits;
 
 	// Parse header line
 	bTraitsFile >> header; if (header != "Simulation") nbErrors++;
@@ -2899,16 +2924,12 @@ int CheckTraitsFile(string indir)
 				nbErrors++;
 			}
 		}
-		else if (traitExists(tr)) {
+		else if (traitExists(tr, allReadTraits)) {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << "Trait " << tr << " is supplied multiple times.";
 			nbErrors++;
 		}
-		gAllReadTraits.push_back(tr);
-
-		// if sexDep both male and female entries must be provided
-		// cannot have more than one entry of the same sex, including #
-		// unless genetic load which cannot have more than five entries
+		allReadTraits.push_back(tr);
 
 		if ((inIsInherited == "true") 
 			&& (stof(inMutationRate) < 0.0 || stof(inMutationRate) > 1.0)) {
@@ -2923,40 +2944,21 @@ int CheckTraitsFile(string indir)
 		if (simNb == simNbNotRead || bTraitsFile.eof())
 			stopReading = true;
 	} // end of while loop
-	
-	// for E_D0, E_ALPHA, E_BETA, 
-	// KERNEL_MEANDIST1, KERNEL_MEANDIST2, KERNEL_PROBABILITY,
-	// S_S0, S_ALPHA, S_BETA
-	// if TRAIT_M exists, TRAIT_F must also exist
-	// if TRAIT_F exists, TRAIT_M must also exist
-	// if TRAIT exists, TRAIT_F and TRAIT_M must not exist
 
-	// if sexDep, corresponding trait must exist
-	// else, must not exist
-
-	// corresponding sexDep entry must be enabled
-	// if sexDep is enabled, must have either sex
 	
 	// Emigration traits
-	bool hasD0 = traitExists(E_D0) || traitExists(E_D0_F) || traitExists(E_D0_M);
-	bool hasEmigAlpha = (traitExists(E_ALPHA) || traitExists(E_ALPHA_F) || traitExists(E_ALPHA_M));
-	bool hasEmigBeta = (traitExists(E_BETA) || traitExists(E_BETA_F) || traitExists(E_BETA_M));
+	bool hasD0 = traitExists(E_D0, allReadTraits) || traitExists(E_D0_F, allReadTraits) || traitExists(E_D0_M, allReadTraits);
+	bool hasEmigAlpha = (traitExists(E_ALPHA, allReadTraits) || traitExists(E_ALPHA_F, allReadTraits) || traitExists(E_ALPHA_M, allReadTraits));
+	bool hasEmigBeta = (traitExists(E_BETA, allReadTraits) || traitExists(E_BETA_F, allReadTraits) || traitExists(E_BETA_M, allReadTraits));
 
-	bool anyEmigNeitherSex = traitExists(E_D0) || traitExists(E_ALPHA) || traitExists(E_BETA);
-	bool eitherSexD0 = traitExists(E_D0_F) || traitExists(E_D0_M);
-	bool bothSexesD0 = traitExists(E_D0_F) && traitExists(E_D0_M);
-	bool eitherSexEmigAlpha = traitExists(E_ALPHA_F) || traitExists(E_ALPHA_M);
-	bool bothSexesEmigAlpha = traitExists(E_ALPHA_F) && traitExists(E_ALPHA_M);
-	bool eitherSexEmigBeta = traitExists(E_BETA_F) || traitExists(E_BETA_M);
-	bool bothSexesEmigBeta = traitExists(E_BETA_F) && traitExists(E_BETA_M);
+	bool anyEmigNeitherSex = traitExists(E_D0, allReadTraits) || traitExists(E_ALPHA, allReadTraits) || traitExists(E_BETA, allReadTraits);
+	bool eitherSexD0 = traitExists(E_D0_F, allReadTraits) || traitExists(E_D0_M, allReadTraits);
+	bool bothSexesD0 = traitExists(E_D0_F, allReadTraits) && traitExists(E_D0_M, allReadTraits);
+	bool eitherSexEmigAlpha = traitExists(E_ALPHA_F, allReadTraits) || traitExists(E_ALPHA_M, allReadTraits);
+	bool bothSexesEmigAlpha = traitExists(E_ALPHA_F, allReadTraits) && traitExists(E_ALPHA_M, allReadTraits);
+	bool eitherSexEmigBeta = traitExists(E_BETA_F, allReadTraits) || traitExists(E_BETA_M, allReadTraits);
+	bool bothSexesEmigBeta = traitExists(E_BETA_F, allReadTraits) && traitExists(E_BETA_M, allReadTraits);
 	bool anyEmigSexDep = eitherSexD0 || eitherSexEmigAlpha || eitherSexEmigBeta;
-
-	// if sexDep
-	// must not have anyNeither
-	// for all must have both sexes
-	// else 
-	// must not have any with either sex
-	// all neitherSex must be present
 
 	if (gDispTraitOpt.isEmigIndVar) {
 		if (!hasD0) {
@@ -3026,17 +3028,17 @@ int CheckTraitsFile(string indir)
 
 	// Transfer traits
 	/// Kernels
-	bool hasKern1 = traitExists(KERNEL_MEANDIST_1) || traitExists(KERNEL_MEANDIST_1_F) || traitExists(KERNEL_MEANDIST_1_M);
-	bool hasKern2 = traitExists(KERNEL_MEANDIST_2) || traitExists(KERNEL_MEANDIST_2_F) || traitExists(KERNEL_MEANDIST_2_M);
-	bool hasKernProb = traitExists(KERNEL_PROBABILITY) || traitExists(KERNEL_PROBABILITY_F) || traitExists(KERNEL_PROBABILITY_M);
+	bool hasKern1 = traitExists(KERNEL_MEANDIST_1, allReadTraits) || traitExists(KERNEL_MEANDIST_1_F, allReadTraits) || traitExists(KERNEL_MEANDIST_1_M, allReadTraits);
+	bool hasKern2 = traitExists(KERNEL_MEANDIST_2, allReadTraits) || traitExists(KERNEL_MEANDIST_2_F, allReadTraits) || traitExists(KERNEL_MEANDIST_2_M, allReadTraits);
+	bool hasKernProb = traitExists(KERNEL_PROBABILITY, allReadTraits) || traitExists(KERNEL_PROBABILITY_F, allReadTraits) || traitExists(KERNEL_PROBABILITY_M, allReadTraits);
 	
-	bool anyKernelNeitherSex = traitExists(KERNEL_MEANDIST_1) || traitExists(KERNEL_MEANDIST_2) || traitExists(KERNEL_PROBABILITY);
-	bool eitherSexMeanDist1 = traitExists(KERNEL_MEANDIST_1_F) || traitExists(KERNEL_MEANDIST_1_M);
-	bool bothSexesMeanDist1 = traitExists(KERNEL_MEANDIST_1_F) && traitExists(KERNEL_MEANDIST_1_M);
-	bool eitherSexMeanDist2 = traitExists(KERNEL_MEANDIST_2_F) || traitExists(KERNEL_MEANDIST_2_M);
-	bool bothSexesMeanDist2 = traitExists(KERNEL_MEANDIST_2_F) && traitExists(KERNEL_MEANDIST_2_F);
-	bool eitherSexKernProb = traitExists(KERNEL_PROBABILITY_F) || traitExists(KERNEL_PROBABILITY_M);
-	bool bothSexesKernProb = traitExists(KERNEL_PROBABILITY_F) && traitExists(KERNEL_PROBABILITY_M);
+	bool anyKernelNeitherSex = traitExists(KERNEL_MEANDIST_1, allReadTraits) || traitExists(KERNEL_MEANDIST_2, allReadTraits) || traitExists(KERNEL_PROBABILITY, allReadTraits);
+	bool eitherSexMeanDist1 = traitExists(KERNEL_MEANDIST_1_F, allReadTraits) || traitExists(KERNEL_MEANDIST_1_M, allReadTraits);
+	bool bothSexesMeanDist1 = traitExists(KERNEL_MEANDIST_1_F, allReadTraits) && traitExists(KERNEL_MEANDIST_1_M, allReadTraits);
+	bool eitherSexMeanDist2 = traitExists(KERNEL_MEANDIST_2_F, allReadTraits) || traitExists(KERNEL_MEANDIST_2_M, allReadTraits);
+	bool bothSexesMeanDist2 = traitExists(KERNEL_MEANDIST_2_F, allReadTraits) && traitExists(KERNEL_MEANDIST_2_F, allReadTraits);
+	bool eitherSexKernProb = traitExists(KERNEL_PROBABILITY_F, allReadTraits) || traitExists(KERNEL_PROBABILITY_M, allReadTraits);
+	bool bothSexesKernProb = traitExists(KERNEL_PROBABILITY_F, allReadTraits) && traitExists(KERNEL_PROBABILITY_M, allReadTraits);
 	bool anyKernelSexDep = eitherSexMeanDist1 || eitherSexMeanDist2 || eitherSexKernProb;
 
 	if (gDispTraitOpt.isKernTransfIndVar) {
@@ -3106,10 +3108,10 @@ int CheckTraitsFile(string indir)
 	}
 
 	/// SMS
-	bool hasDP = traitExists(SMS_DP);
-	bool hasGB = traitExists(SMS_GB);
-	bool hasSMSAlpha = traitExists(SMS_ALPHADB);
-	bool hasSMSBeta = traitExists(SMS_BETADB);
+	bool hasDP = traitExists(SMS_DP, allReadTraits);
+	bool hasGB = traitExists(SMS_GB, allReadTraits);
+	bool hasSMSAlpha = traitExists(SMS_ALPHADB, allReadTraits);
+	bool hasSMSBeta = traitExists(SMS_BETADB, allReadTraits);
 	if (gDispTraitOpt.isSMSTransfIndVar) {
 		if (!hasDP) {
 			BatchError(whichInputFile, -999, 0, " ");
@@ -3158,8 +3160,8 @@ int CheckTraitsFile(string indir)
 	}
 
 	/// CRW
-	bool hasStepLen = traitExists(CRW_STEPLENGTH);
-	bool hasRho = traitExists(CRW_STEPCORRELATION);
+	bool hasStepLen = traitExists(CRW_STEPLENGTH, allReadTraits);
+	bool hasRho = traitExists(CRW_STEPCORRELATION, allReadTraits);
 	if (gDispTraitOpt.isCRWTransfIndVar) {
 		if (!hasStepLen) {
 			BatchError(whichInputFile, -999, 0, " ");
@@ -3179,17 +3181,17 @@ int CheckTraitsFile(string indir)
 	}
 
 	// Settlement traits
-	bool hasS0 = traitExists(S_S0) || traitExists(S_S0_F) || traitExists(S_S0_M);
-	bool hasSettAlpha = traitExists(S_ALPHA) || traitExists(S_ALPHA_F) || traitExists(S_ALPHA_M);
-	bool hasSettBeta = traitExists(S_BETA) || traitExists(S_BETA_F) || traitExists(S_BETA_M);
+	bool hasS0 = traitExists(S_S0, allReadTraits) || traitExists(S_S0_F, allReadTraits) || traitExists(S_S0_M, allReadTraits);
+	bool hasSettAlpha = traitExists(S_ALPHA, allReadTraits) || traitExists(S_ALPHA_F, allReadTraits) || traitExists(S_ALPHA_M, allReadTraits);
+	bool hasSettBeta = traitExists(S_BETA, allReadTraits) || traitExists(S_BETA_F, allReadTraits) || traitExists(S_BETA_M, allReadTraits);
 
-	bool anySettNeitherSex = traitExists(S_S0) || traitExists(S_ALPHA) || traitExists(S_BETA);
-	bool eitherSexS0 = traitExists(S_S0_F) || traitExists(S_S0_M);
-	bool bothSexesS0 = traitExists(S_S0_F) && traitExists(S_S0_M);
-	bool eitherSexSettAlpha = traitExists(S_ALPHA_F) || traitExists(S_ALPHA_M);
-	bool bothSexesSettAlpha = traitExists(S_ALPHA_F) && traitExists(S_ALPHA_M);
-	bool eitherSexSettBeta = traitExists(S_BETA_F) || traitExists(S_BETA_M);
-	bool bothSexesSettBeta = traitExists(S_BETA_F) && traitExists(S_BETA_M);
+	bool anySettNeitherSex = traitExists(S_S0, allReadTraits) || traitExists(S_ALPHA, allReadTraits) || traitExists(S_BETA, allReadTraits);
+	bool eitherSexS0 = traitExists(S_S0_F, allReadTraits) || traitExists(S_S0_M, allReadTraits);
+	bool bothSexesS0 = traitExists(S_S0_F, allReadTraits) && traitExists(S_S0_M, allReadTraits);
+	bool eitherSexSettAlpha = traitExists(S_ALPHA_F, allReadTraits) || traitExists(S_ALPHA_M, allReadTraits);
+	bool bothSexesSettAlpha = traitExists(S_ALPHA_F, allReadTraits) && traitExists(S_ALPHA_M, allReadTraits);
+	bool eitherSexSettBeta = traitExists(S_BETA_F, allReadTraits) || traitExists(S_BETA_M, allReadTraits);
+	bool bothSexesSettBeta = traitExists(S_BETA_F, allReadTraits) && traitExists(S_BETA_M, allReadTraits);
 	bool anySettSexDep = eitherSexS0 || eitherSexSettAlpha || eitherSexSettBeta;
 
 	if (gDispTraitOpt.isSettIndVar) {
@@ -3215,39 +3217,26 @@ int CheckTraitsFile(string indir)
 			batchLog << "Settlement SexDep is off but a trait has been supplied with a sex.";
 			nbErrors++;
 		}
-		if (gDispTraitOpt.isSettDensDep) {
-			if (!hasSettAlpha) {
-				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Settlement alpha trait is missing.";
-				nbErrors++;
-			}
-			if (!hasSMSBeta) {
-				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Settlement beta trait is missing.";
-				nbErrors++;
-			}
-			if (gDispTraitOpt.isSettSexDep) {
-				if (!bothSexesSettAlpha) {
-					BatchError(whichInputFile, -999, 0, " ");
-					batchLog << "Either sex is missing for settlement alpha trait.";
-					nbErrors++;
-				}
-				if (!bothSexesSettBeta) {
-					BatchError(whichInputFile, -999, 0, " ");
-					batchLog << "Either sex is missing for settlement beta trait.";
-					nbErrors++;
-				}
-			}
+		// if settlement is IndVar, it is always density-dependent
+		if (!hasSettAlpha) {
+			BatchError(whichInputFile, -999, 0, " ");
+			batchLog << "Settlement alpha trait is missing.";
+			nbErrors++;
 		}
-		else {
-			if (hasSettAlpha) {
+		if (!hasSMSBeta) {
+			BatchError(whichInputFile, -999, 0, " ");
+			batchLog << "Settlement beta trait is missing.";
+			nbErrors++;
+		}
+		if (gDispTraitOpt.isSettSexDep) {
+			if (!bothSexesSettAlpha) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Settlement alpha trait supplied, but settlement not density-dependent.";
+				batchLog << "Either sex is missing for settlement alpha trait.";
 				nbErrors++;
 			}
-			if (hasSettBeta) {
+			if (!bothSexesSettBeta) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "SMS beta direction bias trait supplied, but settlement not density-dependent.";
+				batchLog << "Either sex is missing for settlement beta trait.";
 				nbErrors++;
 			}
 		}
@@ -3275,8 +3264,8 @@ int CheckTraitsFile(string indir)
 		return nbSims;
 }
 
-bool traitExists(const TraitType& tr) {
-	return std::find(gAllReadTraits.begin(), gAllReadTraits.end(), tr) != gAllReadTraits.end();
+bool traitExists(const TraitType& tr, const vector<TraitType>& existingTraits) {
+	return std::find(existingTraits.begin(), existingTraits.end(), tr) != existingTraits.end();
 }
 
 TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex) {
@@ -4339,7 +4328,8 @@ void setUpTrait(vector<string> parameters) {
 	const int genomeSize = pSpecies->getGenomeSize();
 
 	const sex_t sex = stringToSex(parameters[2]);
-	TraitType traitType = stringToTraitType(parameters[1], sex);
+	TraitType traitType = stringToTraitType(parameters[1]);
+	if (sex != NA) traitType = addSexDepToTrait(traitType, sex);
 	const set<int> positions = stringToLoci(parameters[3], parameters[4], genomeSize);
 	const ExpressionType expressionType = stringToExpressionType(parameters[5]);
 
