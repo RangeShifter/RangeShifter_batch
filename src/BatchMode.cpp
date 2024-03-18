@@ -2931,7 +2931,13 @@ int CheckTraitsFile(string indir)
 		}
 		allReadTraits.push_back(tr);
 
-		if ((inIsInherited == "true") 
+		if (inIsInherited != "TRUE" && inIsInherited != "FALSE") {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << "IsInherited can only be TRUE or FALSE.";
+			nbErrors++;
+		}
+
+		if ((inIsInherited == "TRUE") 
 			&& (stof(inMutationRate) < 0.0 || stof(inMutationRate) > 1.0)) {
 			BatchError(whichInputFile, whichLine, 20, "mutationRate"); 
 			nbErrors++;
@@ -4342,7 +4348,7 @@ void setUpTrait(vector<string> parameters) {
 	const map<parameter_t, float> dominanceParams = stringToParameterMap(parameters[9]);
 
 	// Mutation parameters
-	bool isInherited = (parameters[10] == "true");
+	bool isInherited = (parameters[10] == "TRUE");
 	// should always be true if traitTYpe is SNP or GENETIC_LOAD
 
 	DistributionType mutationDistribution = isInherited ? 
