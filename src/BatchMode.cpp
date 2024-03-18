@@ -2928,6 +2928,29 @@ int CheckTraitsFile(string indir)
 		}
 		allReadTraits.push_back(tr);
 
+		// Check Positions and NbrOfPositions
+		const regex patternPositions{ "^\"?(([0-9]+-)?[0-9]+,)*([0-9]+-)?[0-9]+\"?$" };
+		bool isMatch = regex_search(inPositions, patternPositions);
+		if (!isMatch && inPositions != "random") {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << "Positions must be either a comma-separated list of integer ranges, or random." << endl;
+			nbErrors++;
+		}
+		// should also check that no value in the string exceeds pSpecies->getGenomeSize
+		if (inPositions == "random") {
+			if (stoi(inNbPositions) <= 0) {
+				BatchError(whichInputFile, whichLine, 0, " ");
+				batchLog << "NbrOfPositions must be a strictly positive integrer." << endl;
+				nbErrors++;
+			}
+		}
+		else if (inNbPositions != "#") {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << "If Positions is not random NbrOfPositions must be blank (#)." << endl;
+			nbErrors++;
+		}
+
+
 		const bool isQTL = tr != SNP && tr != GENETIC_LOAD && tr != INVALID_TRAIT;
 
 		// Check ExpressionType
@@ -2969,7 +2992,6 @@ int CheckTraitsFile(string indir)
 		const regex patternParamsGamma{ "^\"?shape=[-]?([0-9]*[.])?[0-9]+,scale=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsNegExp{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsSNP{ "^\"?max=[0-9]+\"?$" }; // need also check value is <256
-		bool isMatch;
 
 		// Check InitialParameters
 		if (tr == SNP) {
