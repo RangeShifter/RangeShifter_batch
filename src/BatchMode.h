@@ -45,6 +45,7 @@
 #include <string>
 #include <fstream>
 #include <algorithm>
+#include <regex>
 using namespace std;
 
 #include "./RScore/Parameters.h"

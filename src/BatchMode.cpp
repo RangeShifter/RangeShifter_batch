@@ -2950,7 +2950,7 @@ int CheckTraitsFile(string indir)
 		// Check InitialDistribution
 		if (tr == SNP && inInitDist != "#" && inInitDist != "uniform") {
 			BatchError(whichInputFile, whichLine, 0, " ");
-			batchLog << "InitialDistribution must be either additive or left blank (#) for the neutral trait." << endl;
+			batchLog << "InitialDistribution must be either uniform or left blank (#) for the neutral trait." << endl;
 			nbErrors++;
 		}
 		if (tr == GENETIC_LOAD && inInitDist != "#") {
@@ -2960,13 +2960,62 @@ int CheckTraitsFile(string indir)
 		}
 		if (isQTL && inInitDist != "normal" && inInitDist != "uniform") {
 			BatchError(whichInputFile, whichLine, 0, " ");
-			batchLog << "InitialDistribution must be normal or uniform for dispersal traits." << endl;
+			batchLog << "InitialDistribution must be either normal or uniform for dispersal traits." << endl;
 			nbErrors++;
 		}
 
+		const regex patternParamsUnif{ "^\"?min=[-]?([0-9]*[.])?[0-9]+,max=[-]?([0-9]*[.])?[0-9]+\"?$" };
+		const regex patternParamsNormal{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+,sd=[-]?([0-9]*[.])?[0-9]+\"?$" };
+		const regex patternParamsGamma{ "^\"?shape=[-]?([0-9]*[.])?[0-9]+,scale=[-]?([0-9]*[.])?[0-9]+\"?$" };
+		const regex patternParamsNegExp{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+\"?$" };
+		const regex patternParamsSNP{ "^\"?max=[0-9]+\"?$" }; // need also check value is <256
+		bool isMatch;
+
 		// Check InitialParameters
+		if (tr == SNP) {
+			if (inInitDist == "uniform") {
+				isMatch = regex_search(inInitParams, patternParamsSNP);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For neutral trait with uniform initialisation, InitialParameters must have form max=int" << endl;
+					nbErrors++;
+				}
+			}
+			// if not uniform then initDist must be blank, no params
+			else if (inInitParams != "#") {
+				BatchError(whichInputFile, whichLine, 0, " ");
+				batchLog << "For neutral trait with no initialisation, InitialParameters must be blank (#)" << endl;
+				nbErrors++;
+			}
+		}
+		if (tr == GENETIC_LOAD && inInitParams != "#") {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << "For genetic load traits, InitialParameters must be blank (#)" << endl;
+			nbErrors++;
+		}
+		if (isQTL) {
+			if (inInitDist == "uniform") {
+				isMatch = regex_search(inInitParams, patternParamsUnif);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For dispersal trait uniform initialisation, InitialParameters must have form min=float,max=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inInitDist == "normal") {
+				isMatch = regex_search(inInitParams, patternParamsNormal);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For normal initialisation, InitialParameters must have form mean=float,sd=float" << endl;
+					nbErrors++;
+				}
+			}
+		}
 
-
+		if (inInitParams != "#") {
+			auto isMatch = regex_search(inInitParams, patternParamsUnif);
+			cout << endl;
+		}
 
 		if (inIsInherited != "TRUE" && inIsInherited != "FALSE") {
 			BatchError(whichInputFile, whichLine, 0, " ");
@@ -4476,14 +4525,14 @@ map<parameter_t, float> stringToParameterMap(string parameterString) {
 		string singleParamString, valueWithin;
 		while (std::getline(ss, singleParamString, ',')) {
 			stringstream sss(singleParamString);
-			vector<string> paramValue;
+			vector<string> paramNameAndVal;
 			while (std::getline(sss, valueWithin, '=')) {
-				paramValue.push_back(valueWithin);
+				paramNameAndVal.push_back(valueWithin);
 			}
 
-			if (paramValue.size() == 2) {
-				parameter_t parameterT = paramValue[0];
-				float value = stof(paramValue[1]);
+			if (paramNameAndVal.size() == 2) {
+				parameter_t parameterT = paramNameAndVal[0];
+				float value = stof(paramNameAndVal[1]);
 				paramMap.emplace(parameterT, value);
 			}
 			else
