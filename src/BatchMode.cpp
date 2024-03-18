@@ -2890,7 +2890,7 @@ int CheckTraitsFile(string indir)
 
 		if (sex == sex_t::INVALID_SEX) {
 			BatchError(whichInputFile, whichLine, 0, " ");
-			batchLog << inSex << " is invalid: sex must be either female, male, or # (not applicable).";
+			batchLog << inSex << " is invalid: sex must be either female, male, or # (not applicable)." << endl;
 			nbErrors++;
 		}
 
@@ -2898,7 +2898,7 @@ int CheckTraitsFile(string indir)
 
 		if (tr == TraitType::INVALID_TRAIT) {
 			BatchError(whichInputFile, whichLine, 0, " ");
-			batchLog << inTraitType << " is not a valid TraitType.";
+			batchLog << inTraitType << " is not a valid TraitType." << endl;
 			nbErrors++;
 		}
 
@@ -2906,10 +2906,12 @@ int CheckTraitsFile(string indir)
 			|| tr == S_S0 || tr == S_ALPHA || tr == S_BETA
 			|| tr == KERNEL_MEANDIST_1 || tr == KERNEL_MEANDIST_2
 			|| tr == KERNEL_PROBABILITY;
-			
+
+		const bool isQTL = tr != SNP && tr != GENETIC_LOAD && tr != INVALID_TRAIT;
+
 		if (!canBeSexDep && (sex == FEM || sex == MAL)) {
 			BatchError(whichInputFile, whichLine, 0, " ");
-			batchLog << inTraitType << " cannot be sex-dependent so must be left blank (#).";
+			batchLog << inTraitType << " cannot be sex-dependent so must be left blank (#)." << endl;
 			nbErrors++;
 		}
 
@@ -2920,20 +2922,38 @@ int CheckTraitsFile(string indir)
 			nbGenLoadTraits++;
 			if (nbGenLoadTraits > 5) {
 				BatchError(whichInputFile, whichLine, 0, " ");
-				batchLog << "There cannot be more than 5 genetic load traits.";
+				batchLog << "There cannot be more than 5 genetic load traits." << endl;
 				nbErrors++;
 			}
 		}
 		else if (traitExists(tr, allReadTraits)) {
 			BatchError(whichInputFile, whichLine, 0, " ");
-			batchLog << "Trait " << tr << " is supplied multiple times.";
+			batchLog << "Trait " << tr << " is supplied multiple times." << endl;
 			nbErrors++;
 		}
 		allReadTraits.push_back(tr);
 
+		// Check ExpressionType
+		if (tr == SNP && inExpressionType != "#") {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << "ExpressionType must be left blank (#) for the neutral trait." << endl;
+			nbErrors++;
+		}
+		if (tr == GENETIC_LOAD && inExpressionType != "multiplicative") {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << "ExpressionType must be \"multiplicative\" for genetic load traits." << endl;
+			nbErrors++;
+		}
+		if (isQTL && inExpressionType != "additive" && inExpressionType != "average") {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << "ExpressionType must be \"additive\" or \"average\" for dispersal traits." << endl;
+			nbErrors++;
+		}
+
+
 		if (inIsInherited != "TRUE" && inIsInherited != "FALSE") {
 			BatchError(whichInputFile, whichLine, 0, " ");
-			batchLog << "IsInherited can only be TRUE or FALSE.";
+			batchLog << "IsInherited can only be TRUE or FALSE." << endl;
 			nbErrors++;
 		}
 
@@ -4263,6 +4283,8 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 
 				int genomeSize = stoi(parameters[1]);
 
+
+				// BUG HERE when expected value is correctly capitalised
 				outputWCFstat = (parameters[4] == "true");
 				outputPerLocusWCFstat = (parameters[5] == "true");
 				outputPairwiseFst = (parameters[6] == "true");
@@ -4408,7 +4430,7 @@ ExpressionType stringToExpressionType(const std::string& str) {
 	if (str == "average") return AVERAGE;
 	else if (str == "additive") return ADDITIVE;
 	else if (str == "multiplicative") return MULTIPLICATIVE;
-	else if (str == "#") return NEUTRAL;
+	else if (str == "#") return NOTEXPR;
 	else throw logic_error(str + " is not a valid gene expression type.");
 }
 
