@@ -2980,6 +2980,14 @@ int CheckTraitsFile(string indir)
 					batchLog << "For neutral trait with uniform initialisation, InitialParameters must have form max=int" << endl;
 					nbErrors++;
 				}
+				else {
+					const int maxVal = stoi(inInitParams.substr(4));
+					if (maxVal > 255) {
+						BatchError(whichInputFile, whichLine, 0, " ");
+						batchLog << "For neutral trait with uniform initialisation, max parameter must be between 0 and 255." << endl;
+						nbErrors++;
+					}
+				}
 			}
 			// if not uniform then initDist must be blank, no params
 			else if (inInitParams != "#") {
@@ -3084,7 +3092,7 @@ int CheckTraitsFile(string indir)
 			}
 		}
 
-		// Check isInherited
+		// Check isInherited and MutationRate
 		if ((tr == SNP || tr == GENETIC_LOAD) && inIsInherited != "TRUE") {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << "isInherited must always be TRUE for neutral and genetic load traits." << endl;
@@ -3097,6 +3105,16 @@ int CheckTraitsFile(string indir)
 				nbErrors++;
 			}
 		}
+		if ((inIsInherited == "TRUE") 
+			&& (stof(inMutationRate) < 0.0 || stof(inMutationRate) > 1.0)) {
+			BatchError(whichInputFile, whichLine, 20, "mutationRate"); 
+			nbErrors++;
+		}
+		else if (inIsInherited == "FALSE" && inMutationRate != "#") {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << "If isInherited if off, mutationRate must be blank (#)." << endl;
+			nbErrors++;
+		}
 
 		// Check MutationDistribution and MutationParameters
 		if (tr == SNP) {
@@ -3104,8 +3122,16 @@ int CheckTraitsFile(string indir)
 				isMatch = regex_search(inMutationParams, patternParamsSNP);
 				if (!isMatch) {
 					BatchError(whichInputFile, whichLine, 0, " ");
-					batchLog << "For a neutral trait, mutationParams must have form max=int, with int<256." << endl;
+					batchLog << "For a neutral trait, mutationParams must have form max=int." << endl;
 					nbErrors++;
+				}
+				else {
+					const int maxVal = stoi(inInitParams.substr(4));
+					if (maxVal > 255) {
+						BatchError(whichInputFile, whichLine, 0, " ");
+						batchLog << "For the neutral trait mutation max parameter must be between 0 and 255." << endl;
+						nbErrors++;
+					}
 				}
 			}
 			else {
@@ -3115,26 +3141,35 @@ int CheckTraitsFile(string indir)
 			}
 		}
 		if (isQTL) {
-			if (inMutationDist == "uniform") {
-				isMatch = regex_search(inMutationParams, patternParamsUnif);
-				if (!isMatch) {
+			if (inIsInherited == "TRUE") {
+				if (inMutationDist == "uniform") {
+					isMatch = regex_search(inMutationParams, patternParamsUnif);
+					if (!isMatch) {
+						BatchError(whichInputFile, whichLine, 0, " ");
+						batchLog << "For a uniform distribution, mutationParams must have form min=float,max=float." << endl;
+						nbErrors++;
+					}
+				}
+				else if (inMutationDist == "normal") {
+					isMatch = regex_search(inMutationParams, patternParamsNormal);
+					if (!isMatch) {
+						BatchError(whichInputFile, whichLine, 0, " ");
+						batchLog << "For a normal distribution, mutationParams must have form mean=float,sd=float." << endl;
+						nbErrors++;
+					}
+				}
+				else {
 					BatchError(whichInputFile, whichLine, 0, " ");
-					batchLog << "For a uniform distribution, mutationParams must have form min=float,max=float." << endl;
+					batchLog << "For dispersal traits, mutationDistribution must be either uniform or normal" << endl;
 					nbErrors++;
 				}
 			}
-			else if (inMutationDist == "normal") {
-				isMatch = regex_search(inMutationParams, patternParamsNormal);
-				if (!isMatch) {
+			else { // not inherited
+				if (inMutationDist != "#" || inMutationParams != "#") {
 					BatchError(whichInputFile, whichLine, 0, " ");
-					batchLog << "For a normal distribution, mutationParams must have form mean=float,sd=float." << endl;
+					batchLog << "If isInherited is turned off, mutationDistribution and mutationParameters must be left blank (#)." << endl;
 					nbErrors++;
 				}
-			}
-			else {
-				BatchError(whichInputFile, whichLine, 0, " ");
-				batchLog << "For dispersal traits, mutationDistribution must be either uniform or normal" << endl;
-				nbErrors++;
 			}
 		}
 		if (tr == GENETIC_LOAD) {
@@ -3175,12 +3210,6 @@ int CheckTraitsFile(string indir)
 				batchLog << "For genetic load traits, mutationDistribution must be either uniform, gamma, negExp or normal" << endl;
 				nbErrors++;
 			}
-		}
-
-		if ((inIsInherited == "TRUE") 
-			&& (stof(inMutationRate) < 0.0 || stof(inMutationRate) > 1.0)) {
-			BatchError(whichInputFile, whichLine, 20, "mutationRate"); 
-			nbErrors++;
 		}
 
 		// read next simulation
