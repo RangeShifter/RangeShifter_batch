@@ -3084,11 +3084,22 @@ int CheckTraitsFile(string indir)
 			}
 		}
 
-		if (inIsInherited != "TRUE" && inIsInherited != "FALSE") {
+		// Check isInherited
+		if ((tr == SNP || tr == GENETIC_LOAD) && inIsInherited != "TRUE") {
 			BatchError(whichInputFile, whichLine, 0, " ");
-			batchLog << "IsInherited can only be TRUE or FALSE." << endl;
+			batchLog << "isInherited must always be TRUE for neutral and genetic load traits." << endl;
 			nbErrors++;
 		}
+		else if (isQTL) {
+			if (inIsInherited != "TRUE" && inIsInherited != "FALSE") {
+				BatchError(whichInputFile, whichLine, 0, " ");
+				batchLog << "IsInherited must be either TRUE or FALSEfor dispersal traits." << endl;
+				nbErrors++;
+			}
+		}
+
+		// Check MutationDistribution and MutationParameters
+
 
 		if ((inIsInherited == "TRUE") 
 			&& (stof(inMutationRate) < 0.0 || stof(inMutationRate) > 1.0)) {
