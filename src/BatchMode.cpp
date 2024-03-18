@@ -2883,38 +2883,33 @@ int CheckTraitsFile(string indir)
 		nbErrors += current.errors;
 		prev = current;
 
-		// validate parameters
+		////  Validate parameters
 
-		// check sex is valid
+		// Check sex is valid
 		sex_t sex = stringToSex(inSex);
-
 		if (sex == sex_t::INVALID_SEX) {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << inSex << " is invalid: sex must be either female, male, or # (not applicable)." << endl;
 			nbErrors++;
 		}
 
+		// Check trait type is legal
 		TraitType tr = stringToTraitType(inTraitType);
-
 		if (tr == TraitType::INVALID_TRAIT) {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << inTraitType << " is not a valid TraitType." << endl;
 			nbErrors++;
 		}
-
 		const bool canBeSexDep = tr == E_D0 || tr == E_ALPHA || tr == E_BETA
 			|| tr == S_S0 || tr == S_ALPHA || tr == S_BETA
 			|| tr == KERNEL_MEANDIST_1 || tr == KERNEL_MEANDIST_2
 			|| tr == KERNEL_PROBABILITY;
-
-		const bool isQTL = tr != SNP && tr != GENETIC_LOAD && tr != INVALID_TRAIT;
 
 		if (!canBeSexDep && (sex == FEM || sex == MAL)) {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << inTraitType << " cannot be sex-dependent so must be left blank (#)." << endl;
 			nbErrors++;
 		}
-
 		if (sex != NA) // add sex to trait if present
 			tr = addSexDepToTrait(tr, sex);
 
@@ -2933,6 +2928,8 @@ int CheckTraitsFile(string indir)
 		}
 		allReadTraits.push_back(tr);
 
+		const bool isQTL = tr != SNP && tr != GENETIC_LOAD && tr != INVALID_TRAIT;
+
 		// Check ExpressionType
 		if (tr == SNP && inExpressionType != "#") {
 			BatchError(whichInputFile, whichLine, 0, " ");
@@ -2949,6 +2946,26 @@ int CheckTraitsFile(string indir)
 			batchLog << "ExpressionType must be \"additive\" or \"average\" for dispersal traits." << endl;
 			nbErrors++;
 		}
+
+		// Check InitialDistribution
+		if (tr == SNP && inInitDist != "#" && inInitDist != "uniform") {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << "InitialDistribution must be either additive or left blank (#) for the neutral trait." << endl;
+			nbErrors++;
+		}
+		if (tr == GENETIC_LOAD && inInitDist != "#") {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << "InitialDistribution must be blank (#) for genetic load traits." << endl;
+			nbErrors++;
+		}
+		if (isQTL && inInitDist != "normal" && inInitDist != "uniform") {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << "InitialDistribution must be normal or uniform for dispersal traits." << endl;
+			nbErrors++;
+		}
+
+		// Check InitialParameters
+
 
 
 		if (inIsInherited != "TRUE" && inIsInherited != "FALSE") {
@@ -2971,6 +2988,8 @@ int CheckTraitsFile(string indir)
 			stopReading = true;
 	} // end of while loop
 
+	//// Check QTL traits and sex-dependencies are complete 
+	// and consistent with parameters in dispersal input files
 	
 	// Emigration traits
 	bool hasD0 = traitExists(E_D0, allReadTraits) || traitExists(E_D0_F, allReadTraits) || traitExists(E_D0_M, allReadTraits);
@@ -4446,16 +4465,17 @@ DistributionType stringToDistributionType(const std::string& str) {
 	else throw logic_error(str + " is not a valid distribution type.");
 }
 
-map<parameter_t, float> stringToParameterMap(string parameters) {
+map<parameter_t, float> stringToParameterMap(string parameterString) {
 
 	map<parameter_t, float> paramMap;
-	if (parameters != "#") {
-		parameters.erase(remove(parameters.begin(), parameters.end(), '\"'), parameters.end());
-		stringstream ss(parameters);
+	if (parameterString != "#") {
+		// drop quotation marks
+		parameterString.erase(remove(parameterString.begin(), parameterString.end(), '\"'), parameterString.end());
+		stringstream ss(parameterString);
 
-		string value, valueWithin;
-		while (std::getline(ss, value, ',')) {
-			stringstream sss(value);
+		string singleParamString, valueWithin;
+		while (std::getline(ss, singleParamString, ',')) {
+			stringstream sss(singleParamString);
 			vector<string> paramValue;
 			while (std::getline(sss, valueWithin, '=')) {
 				paramValue.push_back(valueWithin);
