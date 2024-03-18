@@ -3099,7 +3099,83 @@ int CheckTraitsFile(string indir)
 		}
 
 		// Check MutationDistribution and MutationParameters
-
+		if (tr == SNP) {
+			if (inMutationDist == "KAM" || inMutationDist == "SSM") {
+				isMatch = regex_search(inMutationParams, patternParamsSNP);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For a neutral trait, mutationParams must have form max=int, with int<256." << endl;
+					nbErrors++;
+				}
+			}
+			else {
+				BatchError(whichInputFile, whichLine, 0, " ");
+				batchLog << "For a neutral trait, mutationDistribution must be either KAM or SSM." << endl;
+				nbErrors++;
+			}
+		}
+		if (isQTL) {
+			if (inMutationDist == "uniform") {
+				isMatch = regex_search(inMutationParams, patternParamsUnif);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For a uniform distribution, mutationParams must have form min=float,max=float." << endl;
+					nbErrors++;
+				}
+			}
+			else if (inMutationDist == "normal") {
+				isMatch = regex_search(inMutationParams, patternParamsNormal);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For a normal distribution, mutationParams must have form mean=float,sd=float." << endl;
+					nbErrors++;
+				}
+			}
+			else {
+				BatchError(whichInputFile, whichLine, 0, " ");
+				batchLog << "For dispersal traits, mutationDistribution must be either uniform or normal" << endl;
+				nbErrors++;
+			}
+		}
+		if (tr == GENETIC_LOAD) {
+			if (inMutationDist == "uniform") {
+				isMatch = regex_search(inMutationParams, patternParamsUnif);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For a uniform distribution, mutationParams must have form min=float,max=float." << endl;
+					nbErrors++;
+				}
+			}
+			else if (inMutationDist == "normal") {
+				isMatch = regex_search(inMutationParams, patternParamsNormal);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For a normal distribution, mutationParams must have form mean=float,sd=float." << endl;
+					nbErrors++;
+				}
+			}
+			else if (inMutationDist == "gamma") {
+				isMatch = regex_search(inMutationParams, patternParamsGamma);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For a Gamma distribution, mutationParams must have form shape=float,scale=float." << endl;
+					nbErrors++;
+				}
+			}
+			else if (inMutationDist == "negExp") {
+				isMatch = regex_search(inMutationParams, patternParamsNegExp);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For a negative exponential distribution, mutationParams must have form mean=float." << endl;
+					nbErrors++;
+				}
+			}
+			else {
+				BatchError(whichInputFile, whichLine, 0, " ");
+				batchLog << "For genetic load traits, mutationDistribution must be either uniform, gamma, negExp or normal" << endl;
+				nbErrors++;
+			}
+		}
 
 		if ((inIsInherited == "TRUE") 
 			&& (stof(inMutationRate) < 0.0 || stof(inMutationRate) > 1.0)) {
