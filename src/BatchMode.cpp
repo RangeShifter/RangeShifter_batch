@@ -3012,9 +3012,76 @@ int CheckTraitsFile(string indir)
 			}
 		}
 
-		if (inInitParams != "#") {
-			auto isMatch = regex_search(inInitParams, patternParamsUnif);
-			cout << endl;
+		// Check DominanceDistribution and DominanceParameters
+		if (tr == SNP) {
+			if (inDominanceDist != "#") {
+				BatchError(whichInputFile, whichLine, 0, " ");
+				batchLog << "DominanceDistribution must be left blank (#) for the neutral trait." << endl;
+				nbErrors++;
+			}
+			if (inDominanceParams != "#") {
+				BatchError(whichInputFile, whichLine, 0, " ");
+				batchLog << "DominanceParameters must be left blank (#) for the neutral trait." << endl;
+				nbErrors++;
+			}
+		}
+		if (isQTL) {
+			if (inDominanceDist != "#") {
+				BatchError(whichInputFile, whichLine, 0, " ");
+				batchLog << "DominanceDistribution must be left blank (#) for dispersal traits." << endl;
+				nbErrors++;
+			}
+			if (inDominanceParams != "#") {
+				BatchError(whichInputFile, whichLine, 0, " ");
+				batchLog << "DominanceParameters must be left blank (#) for dispersal traits." << endl;
+				nbErrors++;
+			}
+		}
+		if (tr == GENETIC_LOAD) {
+			if (inDominanceDist == "normal") {
+				isMatch = regex_search(inDominanceParams, patternParamsNormal);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For a normal dominance distribution, DominanceParams must have form mean=float,sd=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inDominanceDist == "gamma") {
+				isMatch = regex_search(inDominanceParams, patternParamsGamma);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For a Gamma dominance distribution, DominanceParams must have form shape=float,scale=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inDominanceDist == "uniform") {
+				isMatch = regex_search(inDominanceParams, patternParamsUnif);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For a uniform dominance distribution, DominanceParams must have form min=float,max=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inDominanceDist == "negExp") {
+				isMatch = regex_search(inDominanceParams, patternParamsGamma);
+				if (!isMatch) {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For a negative exponential dominance distribution, DominanceParams must have form mean=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inDominanceDist == "scaled") {
+				if (inDominanceParams != "#") {
+					BatchError(whichInputFile, whichLine, 0, " ");
+					batchLog << "For a scaled dominance distribution, DominanceParams must be left blank (#)" << endl;
+					nbErrors++;
+				}
+			}
+			else {
+				BatchError(whichInputFile, whichLine, 0, " ");
+				batchLog << "DominanceDistribution must be either normal, gamma, uniform, negExp or scaled for genetic load traits." << endl;
+				nbErrors++;
+			}
 		}
 
 		if (inIsInherited != "TRUE" && inIsInherited != "FALSE") {
