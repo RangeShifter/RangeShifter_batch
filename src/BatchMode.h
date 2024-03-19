@@ -212,6 +212,10 @@ map<parameter_t, float> stringToParameterMap(string parameters);
 set<int> selectRandomLociPositions(int noLoci, const int& genomeSize);
 set<int> stringToLoci(string pos, string nLoci, const int& genomeSize);
 TraitType stringToTraitType(const std::string& str);
+const sex_t stringToSex(const std::string& str);
+set<int> stringToPatches(const string&, const int&, const vector<int>&);
+set<int> stringToStages(const string&, const int&);
+set<int> stringToChromosomeEnds(string, const int&);
 
 #if RSDEBUG
 extern ofstream DEBUGLOG;

@@ -3656,12 +3656,26 @@ int CheckGeneticsFile(string inputDirectory) {
 		prev = current;
 
 		//// Validate parameters
-
+		
+		// Check GenomeSize
 		if (inGenomeSize < 0) {
 			BatchError(whichFile, whichLine, 10, "GenomeSize");
 			nbErrors++;
 		}
+		
+		// Check ChromosomeEnds
+		const regex patternIntList{ "^\"?([0-9]+,)*[0-9]+\"?$" };
+		bool isMatch = regex_search(inChromosomeEnds, patternIntList);
+		
+		if (!isMatch && inChromosomeEnds != "#") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "ChromosomeEnds must be either a comma-separated list of integers, or blank (#)." << endl;
+			nbErrors++;
+		}
+		// should also check that any max integer <= genomeSize
+		// and no repeat in the sequence?
 
+		// Check TraitsFile
 		if (inTraitsFile == "NULL") {
 			batchLog << "*** " << inTraitsFile << " is compulsory for genetic models" << endl;
 			nbErrors++;
@@ -4576,7 +4590,7 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 
 				if (pLandscape->getLandParams().patchModel) {// patch-based
 					const vector<int> existingPatches = pLandscape->getTruePatchNums();
-					patchList = convertStringToPatches(patches, stoi(n), existingPatches);
+					patchList = stringToPatches(patches, stoi(n), existingPatches);
 				}
 				else { // cell-based
 					if (patches == "all") nSampleCellsFst = "all";
@@ -4584,9 +4598,9 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 					else throw logic_error("Genetics File - ERROR: PatchList must be either 'all' or 'random' for cell-based landscapes.");
 				}
 				const int nbStages = pSpecies->getStageParams().nStages;
-				set<int> stagesToSampleFrom = convertStringToStages(parameters[11], nbStages);
+				set<int> stagesToSampleFrom = stringToStages(parameters[11], nbStages);
 
-				pSpecies->setGeneticParameters(convertStringToChromosomeEnds(parameters[2], genomeSize), genomeSize, stof(parameters[3]),
+				pSpecies->setGeneticParameters(stringToChromosomeEnds(parameters[2], genomeSize), genomeSize, stof(parameters[3]),
 					patchList, parameters[10], stagesToSampleFrom, nSampleCellsFst);
 
 				paramsSim->setGeneticSim(outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputGeneticInterval);
@@ -4750,6 +4764,110 @@ map<parameter_t, float> stringToParameterMap(string parameterString) {
 		}
 	}
 	return paramMap;
+}
+
+
+const sex_t stringToSex(const std::string& str) {
+	if (str == "female") return FEM;
+	else if (str == "male") return MAL;
+	else if (str == "#") return NA;
+	else return INVALID_SEX;
+}
+
+set<int> stringToPatches(const string& str, const int& nb_rnd_patches, const vector<int>& existingPatches) {
+
+	set<int> patches;
+
+	if (str == "random") {
+		if (nb_rnd_patches > existingPatches.size()) {
+			throw logic_error("Genetics file: ERROR - Nb of patches to randomly sample exceeds nb of existing patches.");
+		}
+		else {
+			// Sample without replacement
+			std::sample(
+				existingPatches.begin(),
+				existingPatches.end(),
+				std::inserter(patches, patches.end()),
+				nb_rnd_patches,
+				pRandom->getRNG()
+			);
+		}
+	}
+	else if (str == "all") {
+		// Copy all patches into sampled patches
+		std::copy(existingPatches.begin(),
+			existingPatches.end(),
+			std::inserter(patches, patches.end())
+		);
+	}
+	else {
+		// comma-separated list of patches
+		stringstream ss(str);
+		string strPch;
+		int pch;
+		bool patchExists;
+		// Read comma-separated values
+		while (std::getline(ss, strPch, ',')) {
+			pch = std::stoi(strPch);
+			patchExists = std::find(existingPatches.begin(), existingPatches.end(), pch) != existingPatches.end();
+			if (!patchExists)
+				throw logic_error("Genetics file: ERROR - sampled patch does not exist.");
+			else {
+				patches.insert(pch);
+			}
+		}
+	}
+	return patches;
+}
+
+set<int> stringToStages(const string& str, const int& nbStages) {
+	set<int> stages;
+	if (str == "all") {
+		for (int stg = 0; stg < nbStages; ++stg) {
+			stages.insert(stg);
+		}
+	}
+	else {
+		// Parse comma-separated list from input string
+		stringstream ss(str);
+		string strStg;
+		int stg;
+		// Read comma-separated values
+		while (std::getline(ss, strStg, ',')) {
+			stg = std::stoi(strStg);
+			if (stg > nbStages - 1)
+				throw logic_error("Genetics file: ERROR - sampled stage exceeds number of stages.");
+			else {
+				stages.insert(stg);
+			}
+		}
+	}
+	return stages;
+}
+
+set<int> stringToChromosomeEnds(string str, const int& genomeSize) {
+	set<int> chromosomeEnds;
+	if (str == "#")
+		chromosomeEnds.insert(genomeSize - 1); // last position in genome
+	else {
+		// Parse comma-separated list from input string
+		// drop quotation marks
+		str.erase(remove(str.begin(), str.end(), '\"'), str.end());
+		stringstream ss(str);
+
+		string strPos;
+		int pos;
+		// Read comma-separated positions
+		while (std::getline(ss, strPos, ',')) {
+			pos = std::stoi(strPos);
+			if (pos > genomeSize)
+				throw logic_error("Genetics file: ERROR - chromosome ends must not exceed genome size.");
+			else {
+				chromosomeEnds.insert(pos);
+			}
+		}
+	}
+	return chromosomeEnds;
 }
 
 set<int> selectRandomLociPositions(int nbLoci, const int& genomeSize) {
