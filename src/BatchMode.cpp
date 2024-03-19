@@ -3598,42 +3598,40 @@ TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex) {
 
 //---------------------------------------------------------------------------
 
-int CheckGeneticsFile(string indir) {
+int CheckGeneticsFile(string inputDirectory) {
 
-	string header, colheader, tfName, ftype2;
-	int i, simNb, err, NbrPatchesToSample, nIndividualsToSample;
-	string filename, ChromosomeEnds, TraitsFile, PatchList, Stages,
-		OutputNeutralStatistics, OutputPerLocusWCFstat, OutputPairwiseFst;
-	int GenomeSize, OutputInterval;
-	float RecombinationRate;
-	bool traitsParsed = false;
-	int errors = 0;
-	int simuls = 0;
-	vector <string> archfiles;
-	string filetype = "GeneticsFile";
+	string header, traitFileName, traitFileStr;
+	int simNb, errCode, inNbrPatchesToSample, inNIndsToSample;
+	string inChromosomeEnds, inTraitsFile, inPatchList, inStages,
+		inOutputNeutralStatistics, inOutputPerLocusWCFstat, inOutputPairwiseFst;
+	int inGenomeSize, inOutputInterval;
+	float inRecombinationRate;
+	int nbErrors = 0;
+	int nbSims = 0;
+	string whichFile = "GeneticsFile";
 
 	// Parse header line;
-	bGeneticsFile >> header; if (header != "Simulation") errors++;
-	bGeneticsFile >> header; if (header != "GenomeSize") errors++;
-	bGeneticsFile >> header; if (header != "ChromosomeEnds") errors++;
-	bGeneticsFile >> header; if (header != "RecombinationRate") errors++;
-	bGeneticsFile >> header; if (header != "OutputNeutralStatistics") errors++;
-	bGeneticsFile >> header; if (header != "OutputPerLocusWCFstat") errors++;
-	bGeneticsFile >> header; if (header != "OutputPairwiseFst") errors++;
-	bGeneticsFile >> header; if (header != "OutputInterval") errors++;
-	bGeneticsFile >> header; if (header != "PatchList") errors++;
-	bGeneticsFile >> header; if (header != "NbrPatchesToSample") errors++;
-	bGeneticsFile >> header; if (header != "nIndividualsToSample") errors++;
-	bGeneticsFile >> header; if (header != "Stages") errors++;
-	bGeneticsFile >> header; if (header != "TraitsFile") errors++;
+	bGeneticsFile >> header; if (header != "Simulation") nbErrors++;
+	bGeneticsFile >> header; if (header != "GenomeSize") nbErrors++;
+	bGeneticsFile >> header; if (header != "ChromosomeEnds") nbErrors++;
+	bGeneticsFile >> header; if (header != "RecombinationRate") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputNeutralStatistics") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputPerLocusWCFstat") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputPairwiseFst") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputInterval") nbErrors++;
+	bGeneticsFile >> header; if (header != "PatchList") nbErrors++;
+	bGeneticsFile >> header; if (header != "NbrPatchesToSample") nbErrors++;
+	bGeneticsFile >> header; if (header != "nIndividualsToSample") nbErrors++;
+	bGeneticsFile >> header; if (header != "Stages") nbErrors++;
+	bGeneticsFile >> header; if (header != "TraitsFile") nbErrors++;
 
-	if (errors > 0) {
-		FormatError(filetype, errors);
+	if (nbErrors > 0) {
+		FormatError(whichFile, nbErrors);
 		return -111;
 	}
 
 	// Parse data lines
-	int line = 1;
+	int whichLine = 1;
 	simCheck current, prev;
 	simNb = -98765;
 	prev.simNb = -999;
@@ -3641,67 +3639,74 @@ int CheckGeneticsFile(string indir) {
 	bGeneticsFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
-		BatchError(filetype, line, 111, "Simulation"); errors++;
+		BatchError(whichFile, whichLine, 111, "Simulation"); 
+		nbErrors++;
 	}
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
-		bGeneticsFile >> GenomeSize >> ChromosomeEnds >> RecombinationRate >> OutputNeutralStatistics >>
-			OutputPerLocusWCFstat >> OutputPairwiseFst >> OutputInterval >> PatchList >> NbrPatchesToSample
-			>> nIndividualsToSample >> Stages >> TraitsFile;
+		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutputNeutralStatistics >>
+			inOutputPerLocusWCFstat >> inOutputPairwiseFst >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
+			>> inNIndsToSample >> inStages >> inTraitsFile;
 
-		current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, 0, true, false);
-		if (current.isNewSim) simuls++;
-		errors += current.errors;
+		current = CheckStageSex(whichFile, whichLine, simNb, prev, 0, 0, 0, 0, 0, true, false);
+		if (current.isNewSim) 
+			nbSims++;
+		nbErrors += current.errors;
 		prev = current;
 
-		// validate parameters
+		//// Validate parameters
 
-		if (GenomeSize < 0) {
-			BatchError(filetype, line, 10, "GenomeSize"); errors++;
+		if (inGenomeSize < 0) {
+			BatchError(whichFile, whichLine, 10, "GenomeSize");
+			nbErrors++;
 		}
 
-		if (TraitsFile == "NULL") {
-			batchLog << "*** " << TraitsFile << " is compulsory for genetic models" << endl;
-			errors++;
+		if (inTraitsFile == "NULL") {
+			batchLog << "*** " << inTraitsFile << " is compulsory for genetic models" << endl;
+			nbErrors++;
 		}
 		else {
-			//if (!traitsParsed) { //only parse the first traits file for now, could have multiple different traits files if we want 
-			tfName = indir + TraitsFile;
-			ftype2 = "Traits file";
-			batchLog << "Checking " << ftype2 << " " << tfName << endl;
-			bTraitsFile.open(tfName.c_str());
+			traitFileName = inputDirectory + inTraitsFile;
+			traitFileStr = "Traits file";
+			batchLog << "Checking " << traitFileStr << " " << traitFileName << endl;
+			bTraitsFile.open(traitFileName.c_str());
 			if (bTraitsFile.is_open()) {
-				err = CheckTraitsFile(indir);
-				if (err >= 0) FileHeadersOK(ftype2); else errors++;
+				errCode = CheckTraitsFile(inputDirectory);
+				if (errCode >= 0) 
+					FileHeadersOK(traitFileStr); 
+				else 
+					nbErrors++;
 				bTraitsFile.close();
 			}
 			else {
-				OpenError(ftype2, tfName); errors++;
+				OpenError(traitFileStr, traitFileName); 
+				nbErrors++;
 			}
 			if (bTraitsFile.is_open()) bTraitsFile.close();
 			bTraitsFile.clear();
 		}
 
 		// read next simulation
-		line++;
+		whichLine++;
 		simNb = -98765;
 		bGeneticsFile >> simNb;
 		if (bGeneticsFile.eof()) simNb = -98765;
 	} // end of while loop
 	// check for correct number of lines for previous simulation
 	if (current.simLines != current.reqdSimLines) {
-		BatchError(filetype, line, 0, " "); errors++;
+		BatchError(whichFile, whichLine, 0, " "); 
+		nbErrors++;
 		batchLog << gNbLinesStr << current.simNb
 			<< gShouldBeStr << current.reqdSimLines << endl;
 	}
 	if (!bGeneticsFile.eof()) {
-		EOFerror(filetype);
-		errors++;
+		EOFerror(whichFile);
+		nbErrors++;
 	}
 
-	if (errors > 0) return -111;
-	else return simuls;
+	if (nbErrors > 0) return -111;
+	else return nbSims;
 
 }
 
