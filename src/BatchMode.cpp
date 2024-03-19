@@ -3672,8 +3672,13 @@ int CheckGeneticsFile(string inputDirectory) {
 			batchLog << "ChromosomeEnds must be either a comma-separated list of integers, or blank (#)." << endl;
 			nbErrors++;
 		}
-		// should also check that any max integer <= genomeSize
-		// and no repeat in the sequence?
+		set<int> chrEnds = stringToChromosomeEnds(inChromosomeEnds, inGenomeSize);
+		const int maxVal = *chrEnds.rbegin();
+		if (maxVal >= inGenomeSize) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "Positions for ChromosomeEnds cannot exceed GenomeSize." << endl;
+			nbErrors++;
+		}
 
 		// Check TraitsFile
 		if (inTraitsFile == "NULL") {
@@ -4860,11 +4865,7 @@ set<int> stringToChromosomeEnds(string str, const int& genomeSize) {
 		// Read comma-separated positions
 		while (std::getline(ss, strPos, ',')) {
 			pos = std::stoi(strPos);
-			if (pos > genomeSize)
-				throw logic_error("Genetics file: ERROR - chromosome ends must not exceed genome size.");
-			else {
-				chromosomeEnds.insert(pos);
-			}
+			chromosomeEnds.insert(pos);
 		}
 	}
 	return chromosomeEnds;
