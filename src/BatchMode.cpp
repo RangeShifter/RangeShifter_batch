@@ -3602,10 +3602,9 @@ int CheckGeneticsFile(string inputDirectory) {
 
 	string header, traitFileName, traitFileStr;
 	int simNb, errCode, inNbrPatchesToSample, inNIndsToSample;
-	string inChromosomeEnds, inTraitsFile, inPatchList, inStages,
+	string inChromosomeEnds, inRecombinationRate, inTraitsFile, inPatchList, inStages,
 		inOutputNeutralStatistics, inOutputPerLocusWCFstat, inOutputPairwiseFst;
 	int inGenomeSize, inOutputInterval;
-	float inRecombinationRate;
 	int nbErrors = 0;
 	int nbSims = 0;
 	string whichFile = "GeneticsFile";
@@ -3678,6 +3677,15 @@ int CheckGeneticsFile(string inputDirectory) {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLog << "Positions for ChromosomeEnds cannot exceed GenomeSize." << endl;
 			nbErrors++;
+		}
+
+		// Check RecombinationRate
+		if (inRecombinationRate != "#") {
+			float recombinationRate = stof(inRecombinationRate);
+			if (recombinationRate < 0.0 || recombinationRate > 1.0) {
+				BatchError(whichFile, whichLine, 20, "RecombinationRate");
+				nbErrors++;
+			}
 		}
 
 		// Check TraitsFile
@@ -4605,7 +4613,9 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 				const int nbStages = pSpecies->getStageParams().nStages;
 				set<int> stagesToSampleFrom = stringToStages(parameters[11], nbStages);
 
-				pSpecies->setGeneticParameters(stringToChromosomeEnds(parameters[2], genomeSize), genomeSize, stof(parameters[3]),
+				float recombinationRate = parameters[3] == "#" ? 0.0 : stof(parameters[3]);
+
+				pSpecies->setGeneticParameters(stringToChromosomeEnds(parameters[2], genomeSize), genomeSize, recombinationRate,
 					patchList, parameters[10], stagesToSampleFrom, nSampleCellsFst);
 
 				paramsSim->setGeneticSim(outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputGeneticInterval);
