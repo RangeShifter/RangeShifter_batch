@@ -3614,10 +3614,10 @@ TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex) {
 int CheckGeneticsFile(string inputDirectory) {
 
 	string header, traitFileName, traitFileStr;
-	int simNb, errCode, inNbrPatchesToSample, inNIndsToSample;
+	int simNb, errCode;
 	string inChromosomeEnds, inRecombinationRate, inTraitsFile, inPatchList, inStages,
 		inOutputNeutralStatistics, inOutputPerLocusWCFstat, inOutputPairwiseFst,
-		inOutputInterval;
+		inOutputInterval, inNbrPatchesToSample, inNIndsToSample;
 	int inGenomeSize;
 	int nbErrors = 0;
 	int nbSims = 0;
@@ -3766,10 +3766,68 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 
 		// Check NbrPatchesToSample
+		if (inPatchList == "random") {
+			if (inNbrPatchesToSample == "#" || inNbrPatchesToSample == "0") {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "NbrPatchesToSample cannot be blank (#) or 0 if PatchList is random." << endl;
+				nbErrors++;
+			}
+			else {
+				int nbPatches = stoi(inNbrPatchesToSample);
+				if (nbPatches <= 0) {
+					BatchError(whichFile, whichLine, 10, "NbrPatchesToSample");
+					nbErrors++;
+				}
+			}
+		}
+		else if (inNbrPatchesToSample != "#" && inNbrPatchesToSample != "0") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "NbrPatchesToSample must be blank (#) or zero if PatchList is not \"random\"." << endl;
+			nbErrors++;
+		}
 
 		// Check IndividualsToSample
+		if (anyNeutralStatsOutput) {
+			if (inNIndsToSample == "#" || inNIndsToSample == "0") {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "NIndsToSample cannot be blank (#) or zero if any neutral statistics option is TRUE." << endl;
+				nbErrors++;
+			}
+			else if (inNIndsToSample != "all") {
+				int nIndsToSample = stoi(inNIndsToSample);
+				if (nIndsToSample <= 0) {
+					BatchError(whichFile, whichLine, 10, "nIndsToSample");
+					nbErrors++;
+				}
+			}
+		}
+		else if (inNIndsToSample != "#" && inNIndsToSample != "0") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "NIndsToSample must be blank (#) or zero if all neutral statistics options are FALSE." << endl;
+			nbErrors++;
+		}
 
 		// Check Stages
+		if (anyNeutralStatsOutput) {
+			if (inStages == "#") {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "Stages cannot be blank (#) if any neutral statistics option is TRUE." << endl;
+				nbErrors++;
+			}
+			else {
+				isMatch = regex_search(inStages, patternIntList);
+				if (!isMatch && inStages != "all") {
+					BatchError(whichFile, whichLine, 0, " ");
+					batchLog << "Stages must be either a comma-separated list of integers, or \"all\"." << endl;
+					nbErrors++;
+				}
+			}
+		}
+		else if (inStages != "#") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "Stages must be blank (#) if all neutral statistics options are FALSE." << endl;
+			nbErrors++;
+		}
 
 		// Check TraitsFile
 		if (inTraitsFile == "NULL") {
