@@ -2822,7 +2822,7 @@ int CheckSettleFile(void)
 }
 
 //---------------------------------------------------------------------------
-int CheckTraitsFile(string indir)
+int CheckTraitsFile(string indir, const bool& anyNeutralStatsOutput)
 {
 	string header, colheader;
 	int simNb;
@@ -2920,6 +2920,11 @@ int CheckTraitsFile(string indir)
 				batchLog << "There cannot be more than 5 genetic load traits." << endl;
 				nbErrors++;
 			}
+		}
+		else if (!anyNeutralStatsOutput && tr == SNP) {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			batchLog << "A neutral trait should not be specified if all neutral stats outputs are turned off in the genetics file." << endl;
+			nbErrors++;
 		}
 		else if (traitExists(tr, allReadTraits)) {
 			BatchError(whichInputFile, whichLine, 0, " ");
@@ -3242,6 +3247,14 @@ int CheckTraitsFile(string indir)
 			stopReading = true;
 	} // end of while loop
 
+	// Check neutral trait is consistent with genetics file
+	bool hasNeutral = traitExists(SNP, allReadTraits);
+	if (anyNeutralStatsOutput && !hasNeutral) {
+		BatchError(whichInputFile, -999, 0, " ");
+		batchLog << "A neutral stats output option is turned on in genetics file but no neutral trait is specified in traits file." << endl;
+		nbErrors++;
+	}
+
 	//// Check QTL traits and sex-dependencies are complete 
 	// and consistent with parameters in dispersal input files
 	
@@ -3262,46 +3275,46 @@ int CheckTraitsFile(string indir)
 	if (gDispTraitOpt.isEmigIndVar) {
 		if (!hasD0) {
 			BatchError(whichInputFile, -999, 0, " ");
-			batchLog << "EP or d0 is missing.";
+			batchLog << "EP or d0 is missing." << endl;
 			nbErrors++;
 		} 
 		if (gDispTraitOpt.isEmigSexDep) {
 			if (anyEmigNeitherSex) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Emigration SexDep is on but a trait has been supplied without a sex.";
+				batchLog << "Emigration SexDep is on but a trait has been supplied without a sex." << endl;
 				nbErrors++;
 			}
 			if (!bothSexesD0) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Either sex is missing for D0 trait.";
+				batchLog << "Either sex is missing for D0 trait." << endl;
 				nbErrors++;
 			}
 		} else if (anyEmigSexDep) {
 			BatchError(whichInputFile, -999, 0, " ");
-			batchLog << "Emigration SexDep is off but a trait has been supplied with a sex.";
+			batchLog << "Emigration SexDep is off but a trait has been supplied with a sex." << endl;
 			nbErrors++;
 		}
 
 		if (gDispTraitOpt.isEmigDensDep) {
 			if (!hasEmigAlpha) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Emigration alpha is missing.";
+				batchLog << "Emigration alpha is missing." << endl;
 				nbErrors++;
 			}
 			if (!hasEmigBeta) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Emigration beta is missing.";
+				batchLog << "Emigration beta is missing." << endl;
 				nbErrors++;
 			}
 			if (gDispTraitOpt.isEmigSexDep) {
 				if (!bothSexesEmigAlpha) {
 					BatchError(whichInputFile, -999, 0, " ");
-					batchLog << "Either sex is missing for emigration alpha trait.";
+					batchLog << "Either sex is missing for emigration alpha trait." << endl;
 					nbErrors++;
 				}
 				if (!bothSexesEmigBeta) {
 					BatchError(whichInputFile, -999, 0, " ");
-					batchLog << "Either sex is missing for emigration beta trait.";
+					batchLog << "Either sex is missing for emigration beta trait." << endl;
 					nbErrors++;
 				}
 			}
@@ -3309,19 +3322,19 @@ int CheckTraitsFile(string indir)
 		else {
 			if (hasEmigAlpha) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Specified emigration alpha, but emigration is not density-dependent.";
+				batchLog << "Specified emigration alpha, but emigration is not density-dependent." << endl;
 				nbErrors++;
 			}
 			if (hasEmigBeta) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Specified emigration beta, but emigration is not density-dependent.";
+				batchLog << "Specified emigration beta, but emigration is not density-dependent." << endl;
 				nbErrors++;
 			}
 		}
 	}
 	else if (hasD0 || hasEmigAlpha || hasEmigBeta) {
 		BatchError(whichInputFile, -999, 0, " ");
-		batchLog << "Specified emigration trait, but emigration is not variable.";
+		batchLog << "Specified emigration trait, but emigration is not variable." << endl;
 		nbErrors++;
 	}
 
@@ -3343,46 +3356,46 @@ int CheckTraitsFile(string indir)
 	if (gDispTraitOpt.isKernTransfIndVar) {
 		if (!hasKern1) {
 			BatchError(whichInputFile, -999, 0, " ");
-			batchLog << "(First) kernel mean is missing.";
+			batchLog << "(First) kernel mean is missing." << endl;
 			nbErrors++;
 		}
 		if (gDispTraitOpt.isKernTransfSexDep) {
 			if (anyKernelNeitherSex) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Kernel SexDep is on but a trait has been supplied without a sex.";
+				batchLog << "Kernel SexDep is on but a trait has been supplied without a sex." << endl;
 				nbErrors++;
 			}
 			if (!bothSexesMeanDist1) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Either sex is missing for first kernel mean trait.";
+				batchLog << "Either sex is missing for first kernel mean trait." << endl;
 				nbErrors++;
 			}
 		}
 		else if (anyKernelSexDep) {
 			BatchError(whichInputFile, -999, 0, " ");
-			batchLog << "Kernel SexDep is off but a trait has been supplied with a sex.";
+			batchLog << "Kernel SexDep is off but a trait has been supplied with a sex." << endl;
 			nbErrors++;
 		}
 		if (gDispTraitOpt.usesTwoKernels) {
 			if (!hasKern2) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Second kernel mean is missing.";
+				batchLog << "Second kernel mean is missing." << endl;
 				nbErrors++;
 			}
 			if (!hasKernProb) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Kernel probability is missing.";
+				batchLog << "Kernel probability is missing." << endl;
 				nbErrors++;
 			}
 			if (gDispTraitOpt.isKernTransfSexDep) {
 				if (!bothSexesMeanDist2) {
 					BatchError(whichInputFile, -999, 0, " ");
-					batchLog << "Either sex is missing for second kernel mean trait.";
+					batchLog << "Either sex is missing for second kernel mean trait." << endl;
 					nbErrors++;
 				}
 				if (!bothSexesKernProb) {
 					BatchError(whichInputFile, -999, 0, " ");
-					batchLog << "Either sex is missing for kernel probability trait.";
+					batchLog << "Either sex is missing for kernel probability trait." << endl;
 					nbErrors++;
 				}
 			}
@@ -3390,19 +3403,19 @@ int CheckTraitsFile(string indir)
 		else {
 			if (hasKern2) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Specified second kernel, but only one kernel is used.";
+				batchLog << "Specified second kernel, but only one kernel is used." << endl;
 				nbErrors++;
 			}
 			if (hasKernProb) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Specified kernel probability, but only one kernel is used.";
+				batchLog << "Specified kernel probability, but only one kernel is used." << endl;
 				nbErrors++;
 			}
 		}
 	}
 	else if (hasKern1 || hasKern2 || hasKernProb) {
 		BatchError(whichInputFile, -999, 0, " ");
-		batchLog << "Specified kernel transfer trait, but kernel transfer is not variable.";
+		batchLog << "Specified kernel transfer trait, but kernel transfer is not variable." << endl;
 		nbErrors++;
 	}
 
@@ -3414,47 +3427,47 @@ int CheckTraitsFile(string indir)
 	if (gDispTraitOpt.isSMSTransfIndVar) {
 		if (!hasDP) {
 			BatchError(whichInputFile, -999, 0, " ");
-			batchLog << "SMS directional persistence trait is missing.";
+			batchLog << "SMS directional persistence trait is missing." << endl;
 			nbErrors++;
 		}
 		if (gDispTraitOpt.usesSMSGoalBias) {
 			if (!hasGB) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "SMS goal bias trait is missing.";
+				batchLog << "SMS goal bias trait is missing." << endl;
 				nbErrors++;
 			}
 			if (!hasSMSAlpha) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "SMS alpha direction bias trait is missing.";
+				batchLog << "SMS alpha direction bias trait is missing." << endl;
 				nbErrors++;
 			}
 			if (!hasSMSBeta) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "SMS beta direction bias trait is missing.";
+				batchLog << "SMS beta direction bias trait is missing." << endl;
 				nbErrors++;
 			}
 		}
 		else {
 			if (hasGB) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "SMS goal bias trait supplied, but SMS GoalType not set to option 2.";
+				batchLog << "SMS goal bias trait supplied, but SMS GoalType not set to option 2." << endl;
 				nbErrors++;
 			}
 			if (hasSMSAlpha) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "SMS alpha direction bias trait supplied, but SMS GoalType not set to option 2.";
+				batchLog << "SMS alpha direction bias trait supplied, but SMS GoalType not set to option 2." << endl;
 				nbErrors++;
 			}
 			if (hasSMSBeta) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "SMS beta direction bias trait supplied, but SMS GoalType not set to option 2.";
+				batchLog << "SMS beta direction bias trait supplied, but SMS GoalType not set to option 2." << endl;
 				nbErrors++;
 			}
 		}
 	}
 	else if (hasDP || hasGB || hasSMSAlpha || hasSMSBeta) {
 		BatchError(whichInputFile, -999, 0, " ");
-		batchLog << "Specified SMS trait, but SMS not set to be variable.";
+		batchLog << "Specified SMS trait, but SMS not set to be variable." << endl;
 		nbErrors++;
 	}
 
@@ -3464,18 +3477,18 @@ int CheckTraitsFile(string indir)
 	if (gDispTraitOpt.isCRWTransfIndVar) {
 		if (!hasStepLen) {
 			BatchError(whichInputFile, -999, 0, " ");
-			batchLog << "CRW step length trait is missing.";
+			batchLog << "CRW step length trait is missing." << endl;
 			nbErrors++;
 		}
 		if (!hasRho) {
 			BatchError(whichInputFile, -999, 0, " ");
-			batchLog << "CRW step correlation trait is missing.";
+			batchLog << "CRW step correlation trait is missing." << endl;
 			nbErrors++;
 		}
 	}
 	else if (hasStepLen || hasRho) {
 		BatchError(whichInputFile, -999, 0, " ");
-		batchLog << "Specified CRW trait, but CRW not set to be variable.";
+		batchLog << "Specified CRW trait, but CRW not set to be variable." << endl;
 		nbErrors++;
 	}
 
@@ -3496,53 +3509,53 @@ int CheckTraitsFile(string indir)
 	if (gDispTraitOpt.isSettIndVar) {
 		if (!hasS0) {
 			BatchError(whichInputFile, -999, 0, " ");
-			batchLog << "Settlement probability trait is missing.";
+			batchLog << "Settlement probability trait is missing." << endl;
 			nbErrors++;
 		}
 		if (gDispTraitOpt.isSettSexDep) {
 			if (anySettNeitherSex) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Settlement SexDep is on but a trait has been supplied without a sex.";
+				batchLog << "Settlement SexDep is on but a trait has been supplied without a sex." << endl;
 				nbErrors++;
 			}
 			if (!bothSexesS0) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Either sex is missing for settlement probabibility trait.";
+				batchLog << "Either sex is missing for settlement probabibility trait." << endl;
 				nbErrors++;
 			}
 		}
 		else if (anySettSexDep) {
 			BatchError(whichInputFile, -999, 0, " ");
-			batchLog << "Settlement SexDep is off but a trait has been supplied with a sex.";
+			batchLog << "Settlement SexDep is off but a trait has been supplied with a sex." << endl;
 			nbErrors++;
 		}
 		// if settlement is IndVar, it is always density-dependent
 		if (!hasSettAlpha) {
 			BatchError(whichInputFile, -999, 0, " ");
-			batchLog << "Settlement alpha trait is missing.";
+			batchLog << "Settlement alpha trait is missing." << endl;
 			nbErrors++;
 		}
 		if (!hasSMSBeta) {
 			BatchError(whichInputFile, -999, 0, " ");
-			batchLog << "Settlement beta trait is missing.";
+			batchLog << "Settlement beta trait is missing." << endl;
 			nbErrors++;
 		}
 		if (gDispTraitOpt.isSettSexDep) {
 			if (!bothSexesSettAlpha) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Either sex is missing for settlement alpha trait.";
+				batchLog << "Either sex is missing for settlement alpha trait." << endl;
 				nbErrors++;
 			}
 			if (!bothSexesSettBeta) {
 				BatchError(whichInputFile, -999, 0, " ");
-				batchLog << "Either sex is missing for settlement beta trait.";
+				batchLog << "Either sex is missing for settlement beta trait." << endl;
 				nbErrors++;
 			}
 		}
 	}
 	else if (hasS0 || hasSettAlpha || hasSettBeta) {
 		BatchError(whichInputFile, -999, 0, " ");
-		batchLog << "Specified settlement trait, but settlement not set to be variable.";
+		batchLog << "Specified settlement trait, but settlement not set to be variable." << endl;
 		nbErrors++;
 	}
 
@@ -3603,11 +3616,15 @@ int CheckGeneticsFile(string inputDirectory) {
 	string header, traitFileName, traitFileStr;
 	int simNb, errCode, inNbrPatchesToSample, inNIndsToSample;
 	string inChromosomeEnds, inRecombinationRate, inTraitsFile, inPatchList, inStages,
-		inOutputNeutralStatistics, inOutputPerLocusWCFstat, inOutputPairwiseFst;
-	int inGenomeSize, inOutputInterval;
+		inOutputNeutralStatistics, inOutputPerLocusWCFstat, inOutputPairwiseFst,
+		inOutputInterval;
+	int inGenomeSize;
 	int nbErrors = 0;
 	int nbSims = 0;
 	string whichFile = "GeneticsFile";
+
+	const regex patternIntList{ "^\"?([0-9]+,)*[0-9]+\"?$" }; // comma-separated integer list
+	bool isMatch = false;
 
 	// Parse header line;
 	bGeneticsFile >> header; if (header != "Simulation") nbErrors++;
@@ -3663,9 +3680,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 		
 		// Check ChromosomeEnds
-		const regex patternIntList{ "^\"?([0-9]+,)*[0-9]+\"?$" };
-		bool isMatch = regex_search(inChromosomeEnds, patternIntList);
-		
+		isMatch = regex_search(inChromosomeEnds, patternIntList);
 		if (!isMatch && inChromosomeEnds != "#") {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLog << "ChromosomeEnds must be either a comma-separated list of integers, or blank (#)." << endl;
@@ -3682,11 +3697,79 @@ int CheckGeneticsFile(string inputDirectory) {
 		// Check RecombinationRate
 		if (inRecombinationRate != "#") {
 			float recombinationRate = stof(inRecombinationRate);
-			if (recombinationRate < 0.0 || recombinationRate > 1.0) {
-				BatchError(whichFile, whichLine, 20, "RecombinationRate");
-				nbErrors++;
+			if (recombinationRate < 0.0 || recombinationRate > 0.5) {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "RecombinationRate must be positive cannot exceed 0.5." << endl;
 			}
 		}
+
+		// Check Output fields
+		if (inOutputNeutralStatistics != "TRUE" && inOutputNeutralStatistics != "FALSE") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "OutputNeutralStatistics must be either TRUE or FALSE" << endl;
+			nbErrors++;
+		}
+		if (inOutputPerLocusWCFstat != "TRUE" && inOutputPerLocusWCFstat != "FALSE") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "OutputPerLocusWCFstat must be either TRUE or FALSE" << endl;
+			nbErrors++;
+		}
+		if (inOutputPairwiseFst != "TRUE" && inOutputPairwiseFst != "FALSE") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "OutputPairwiseFst must be either TRUE or FALSE" << endl;
+			nbErrors++;
+		}
+		bool anyNeutralStatsOutput = inOutputNeutralStatistics == "TRUE"
+			|| inOutputPerLocusWCFstat == "TRUE"
+			|| inOutputPairwiseFst == "TRUE";
+
+		if (anyNeutralStatsOutput) {
+			if (inOutputInterval == "#" || inOutputInterval == "0") {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "OutputInterval cannot be left blank (#) or 0 if any genetic output option is TRUE." << endl;
+				nbErrors++;
+			}
+			else {
+				int outputInterval = stoi(inOutputInterval);
+				if (outputInterval < 0) {
+					BatchError(whichFile, whichLine, 10, "OutputInterval");
+					nbErrors++;
+				}
+			}
+		}
+		else if (inOutputInterval != "#" && inOutputInterval != "0") {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "OutputInterval should be blank (#) or 0 if all genetic output options are FALSE." << endl;
+				nbErrors++;
+		}
+
+		// Check PatchList
+		if (anyNeutralStatsOutput) {
+			if (inPatchList == "#") {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "PatchList cannot be left blank (#) if any neutral statistics option is TRUE." << endl;
+				nbErrors++;
+			}
+			else {
+				isMatch = regex_search(inPatchList, patternIntList);
+				if (!isMatch && inPatchList != "random" && inPatchList != "all") {
+					BatchError(whichFile, whichLine, 0, " ");
+					batchLog << "PatchList must be either a comma-separated list of integers, random, or all." << endl;
+					nbErrors++;
+				}
+			}
+		}
+		else if (inPatchList != "#") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "PatchList should be blank (#) if all neutral statistics options are FALSE." << endl;
+			nbErrors++;
+		}
+
+		// Check NbrPatchesToSample
+
+		// Check IndividualsToSample
+
+		// Check Stages
 
 		// Check TraitsFile
 		if (inTraitsFile == "NULL") {
@@ -3699,7 +3782,7 @@ int CheckGeneticsFile(string inputDirectory) {
 			batchLog << "Checking " << traitFileStr << " " << traitFileName << endl;
 			bTraitsFile.open(traitFileName.c_str());
 			if (bTraitsFile.is_open()) {
-				errCode = CheckTraitsFile(inputDirectory);
+				errCode = CheckTraitsFile(inputDirectory, anyNeutralStatsOutput);
 				if (errCode >= 0) 
 					FileHeadersOK(traitFileStr); 
 				else 
@@ -4588,11 +4671,9 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 
 				int genomeSize = stoi(parameters[1]);
 
-
-				// BUG HERE when expected value is correctly capitalised
-				outputWCFstat = (parameters[4] == "true");
-				outputPerLocusWCFstat = (parameters[5] == "true");
-				outputPairwiseFst = (parameters[6] == "true");
+				outputWCFstat = (parameters[4] == "TRUE");
+				outputPerLocusWCFstat = (parameters[5] == "TRUE");
+				outputPairwiseFst = (parameters[6] == "TRUE");
 				outputGeneticInterval = stoi(parameters[7]);
 				set<int> patchList;
 
@@ -4610,6 +4691,7 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 					else if (patches == "random") nSampleCellsFst = n;
 					else throw logic_error("Genetics File - ERROR: PatchList must be either 'all' or 'random' for cell-based landscapes.");
 				}
+				// TODO - ensure that list of patches is valid: > 0 and all patches exist
 				const int nbStages = pSpecies->getStageParams().nStages;
 				set<int> stagesToSampleFrom = stringToStages(parameters[11], nbStages);
 
