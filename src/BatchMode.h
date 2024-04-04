@@ -202,8 +202,8 @@ int ReadTransferCRW(transferRules, const landParams&);
 int ReadSettlement(int);
 int ReadInitialisation(int, Landscape*);
 int ReadInitIndsFile(int, Landscape*, string);
-int readGeneticsFile(int, Landscape*);
-int readTraitsFile(int);
+int ReadGeneticsFile(int, Landscape*);
+int ReadTraitsFile(int);
 
 void setUpTrait(vector<string>);
 DistributionType stringToDistributionType(const std::string& str);
@@ -213,7 +213,7 @@ set<int> selectRandomLociPositions(int noLoci, const int& genomeSize);
 set<int> stringToLoci(string pos, string nLoci, const int& genomeSize);
 TraitType stringToTraitType(const std::string& str);
 const sex_t stringToSex(const std::string& str);
-set<int> stringToPatches(const string&, const int&, const vector<int>&);
+set<int> stringToPatches(const string&);
 set<int> stringToStages(const string&, const int&);
 set<int> stringToChromosomeEnds(string, const int&);
 

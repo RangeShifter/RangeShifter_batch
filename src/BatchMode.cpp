@@ -4703,7 +4703,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 
 //--------------------------------------------------------------------------
 
-int readGeneticsFile(int simulationN, Landscape* pLandscape) {
+int ReadGeneticsFile(int simulationN, Landscape* pLandscape) {
 
 	string indir = paramsSim->getDir(1);
 	ifstream inFile(geneticsFile.c_str());
@@ -4733,33 +4733,30 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 				outputPerLocusWCFstat = (parameters[5] == "TRUE");
 				outputPairwiseFst = (parameters[6] == "TRUE");
 				outputGeneticInterval = stoi(parameters[7]);
+
 				set<int> patchList;
+				string inPatches = parameters[8];
+				string patchSamplingOption;
+				int nPatchesToSample = stoi(parameters[9]);
 
-				string nSampleCellsFst; //number of patches to sample for neutral markers in cell based landscape, not used in patch based landscape
-
-				string patches = parameters[8];
-				string n = parameters[9];
-
-				if (pLandscape->getLandParams().patchModel) {// patch-based
-					const vector<int> existingPatches = pLandscape->getTruePatchNums();
-					patchList = stringToPatches(patches, stoi(n), existingPatches);
+				if (inPatches != "all" && inPatches != "random") {
+					// then must be a list of indices
+					patchSamplingOption = "list";
+					patchList = stringToPatches(inPatches);
 				}
-				else { // cell-based
-					if (patches == "all") nSampleCellsFst = "all";
-					else if (patches == "random") nSampleCellsFst = n;
-					else throw logic_error("Genetics File - ERROR: PatchList must be either 'all' or 'random' for cell-based landscapes.");
+				else {
+					patchSamplingOption = inPatches;
+					// patchList remains empty, filled just prior to sampling
 				}
-				// TODO - ensure that list of patches is valid: > 0 and all patches exist
+
 				const int nbStages = pSpecies->getStageParams().nStages;
 				set<int> stagesToSampleFrom = stringToStages(parameters[11], nbStages);
 
 				float recombinationRate = parameters[3] == "#" ? 0.0 : stof(parameters[3]);
 
 				pSpecies->setGeneticParameters(stringToChromosomeEnds(parameters[2], genomeSize), genomeSize, recombinationRate,
-					patchList, parameters[10], stagesToSampleFrom, nSampleCellsFst);
-
-				paramsSim->setGeneticSim(outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputGeneticInterval);
-
+					patchList, parameters[10], stagesToSampleFrom, nPatchesToSample);
+				paramsSim->setGeneticSim(patchSamplingOption, outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputGeneticInterval);
 				traitsFile = indir + parameters[12];
 			}
 		}
@@ -4769,7 +4766,7 @@ int readGeneticsFile(int simulationN, Landscape* pLandscape) {
 	return 0; //this is for error reporting, need to do error input checks in this function 
 }
 
-int readTraitsFile(int simulationN) {
+int ReadTraitsFile(int simulationN) {
 
 	pSpecies->clearTraitTable();
 
@@ -4929,10 +4926,10 @@ const sex_t stringToSex(const std::string& str) {
 	else return INVALID_SEX;
 }
 
-set<int> stringToPatches(const string& str, const int& nb_rnd_patches, const vector<int>& existingPatches) {
+set<int> stringToPatches(const string& str) {
 
 	set<int> patches;
-
+	/*
 	if (str == "random") {
 		if (nb_rnd_patches > existingPatches.size()) {
 			throw logic_error("Genetics file: ERROR - Nb of patches to randomly sample exceeds nb of existing patches.");
@@ -4955,22 +4952,16 @@ set<int> stringToPatches(const string& str, const int& nb_rnd_patches, const vec
 			std::inserter(patches, patches.end())
 		);
 	}
-	else {
-		// comma-separated list of patches
-		stringstream ss(str);
-		string strPch;
-		int pch;
-		bool patchExists;
-		// Read comma-separated values
-		while (std::getline(ss, strPch, ',')) {
-			pch = std::stoi(strPch);
-			patchExists = std::find(existingPatches.begin(), existingPatches.end(), pch) != existingPatches.end();
-			if (!patchExists)
-				throw logic_error("Genetics file: ERROR - sampled patch does not exist.");
-			else {
-				patches.insert(pch);
-			}
-		}
+	else { 	// comma-separated list of patches }
+	*/
+	stringstream ss(str);
+	string strPch;
+	int pch;
+	bool patchExists;
+	// Read comma-separated values
+	while (std::getline(ss, strPch, ',')) {
+		pch = std::stoi(strPch);
+		patches.insert(pch);
 	}
 	return patches;
 }
@@ -6527,13 +6518,13 @@ void RunBatch(int nSimuls, int nLandscapes)
 					params_ok = false;
 				}
 
-				read_error = readGeneticsFile(i + 1, pLandscape); //simulations numbered >= 1 not 0
+				read_error = ReadGeneticsFile(i + 1, pLandscape); //simulations numbered >= 1 not 0
 				if (read_error) {
 					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
 
-				read_error = readTraitsFile(i + 1); //simulations numbered >= 1 not 0
+				read_error = ReadTraitsFile(i + 1); //simulations numbered >= 1 not 0
 				if (read_error) {
 					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
