@@ -4746,7 +4746,7 @@ int ReadGeneticsFile(int simulationN, Landscape* pLandscape) {
 				}
 				else {
 					patchSamplingOption = inPatches;
-					// patchList remains empty, filled just prior to sampling
+					// patchList remains empty, filled when patches are sampled every gen
 				}
 
 				const int nbStages = pSpecies->getStageParams().nStages;
@@ -4918,7 +4918,6 @@ map<parameter_t, float> stringToParameterMap(string parameterString) {
 	return paramMap;
 }
 
-
 const sex_t stringToSex(const std::string& str) {
 	if (str == "female") return FEM;
 	else if (str == "male") return MAL;
@@ -4929,31 +4928,6 @@ const sex_t stringToSex(const std::string& str) {
 set<int> stringToPatches(const string& str) {
 
 	set<int> patches;
-	/*
-	if (str == "random") {
-		if (nb_rnd_patches > existingPatches.size()) {
-			throw logic_error("Genetics file: ERROR - Nb of patches to randomly sample exceeds nb of existing patches.");
-		}
-		else {
-			// Sample without replacement
-			std::sample(
-				existingPatches.begin(),
-				existingPatches.end(),
-				std::inserter(patches, patches.end()),
-				nb_rnd_patches,
-				pRandom->getRNG()
-			);
-		}
-	}
-	else if (str == "all") {
-		// Copy all patches into sampled patches
-		std::copy(existingPatches.begin(),
-			existingPatches.end(),
-			std::inserter(patches, patches.end())
-		);
-	}
-	else { 	// comma-separated list of patches }
-	*/
 	stringstream ss(str);
 	string strPch;
 	int pch;
