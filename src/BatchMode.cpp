@@ -4831,7 +4831,6 @@ void setUpTrait(vector<string> parameters) {
 	if (traitType == SNP) {
 		if (mutationDistribution != KAM && mutationDistribution != SSM)
 			throw logic_error("Traits file: ERROR - Neutral marker mutation distribution must be KAM or SSM (max = 256))");
-		 pSpecies->setNumberOfNeutralLoci(static_cast<int>(positions.size()));
 	}
 	SpeciesTrait* trait = new SpeciesTrait(
 		traitType, sex, 
