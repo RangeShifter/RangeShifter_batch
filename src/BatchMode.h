@@ -208,7 +208,7 @@ int ReadTraitsFile(int);
 void setUpTrait(vector<string>);
 DistributionType stringToDistributionType(const std::string& str);
 ExpressionType stringToExpressionType(const std::string& str);
-map<parameter_t, float> stringToParameterMap(string parameters);
+map<GenParamType, float> stringToParameterMap(string parameters);
 set<int> selectRandomLociPositions(int noLoci, const int& genomeSize);
 set<int> stringToLoci(string pos, string nLoci, const int& genomeSize);
 TraitType stringToTraitType(const std::string& str);
@@ -216,6 +216,7 @@ const sex_t stringToSex(const std::string& str);
 set<int> stringToPatches(const string&);
 set<int> stringToStages(const string&, const int&);
 set<int> stringToChromosomeEnds(string, const int&);
+GenParamType strToGenParamType(const string& str);
 
 #if RSDEBUG
 extern ofstream DEBUGLOG;

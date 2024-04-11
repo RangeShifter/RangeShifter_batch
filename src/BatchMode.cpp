@@ -4807,11 +4807,11 @@ void setUpTrait(vector<string> parameters) {
 
 	// Initial distribution parameters
 	const DistributionType initDist = stringToDistributionType(parameters[6]);
-	const map<parameter_t, float> initParams = stringToParameterMap(parameters[7]);
+	const map<GenParamType, float> initParams = stringToParameterMap(parameters[7]);
 
 	// Dominance distribution parameters
 	const DistributionType dominanceDist = stringToDistributionType(parameters[8]);
-	const map<parameter_t, float> dominanceParams = stringToParameterMap(parameters[9]);
+	const map<GenParamType, float> dominanceParams = stringToParameterMap(parameters[9]);
 
 	// Mutation parameters
 	bool isInherited = (parameters[10] == "TRUE");
@@ -4820,7 +4820,7 @@ void setUpTrait(vector<string> parameters) {
 	DistributionType mutationDistribution = isInherited ? 
 		stringToDistributionType(parameters[11]) : 
 		DistributionType::NONE;
-	map<parameter_t, float> mutationParameters;
+	map<GenParamType, float> mutationParameters;
 	float mutationRate = isInherited ? stof(parameters[13]) : 0;
 
 	if (isInherited) {
@@ -4889,9 +4889,9 @@ DistributionType stringToDistributionType(const std::string& str) {
 	else throw logic_error(str + " is not a valid distribution type.");
 }
 
-map<parameter_t, float> stringToParameterMap(string parameterString) {
+map<GenParamType, float> stringToParameterMap(string parameterString) {
 
-	map<parameter_t, float> paramMap;
+	map<GenParamType, float> paramMap;
 	if (parameterString != "#") {
 		// drop quotation marks
 		parameterString.erase(remove(parameterString.begin(), parameterString.end(), '\"'), parameterString.end());
@@ -4906,7 +4906,9 @@ map<parameter_t, float> stringToParameterMap(string parameterString) {
 			}
 
 			if (paramNameAndVal.size() == 2) {
-				parameter_t parameterT = paramNameAndVal[0];
+				GenParamType parameterT = strToGenParamType(paramNameAndVal[0]);
+				if (parameterT == INVALID)
+					throw logic_error("Invalid genetic parameter name.");
 				float value = stof(paramNameAndVal[1]);
 				paramMap.emplace(parameterT, value);
 			}
@@ -5040,6 +5042,22 @@ set<int> stringToLoci(string pos, string nLoci, const int& genomeSize) {
 		positions = selectRandomLociPositions(stoi(nLoci), genomeSize);
 	}
 	return positions;
+}
+
+GenParamType strToGenParamType(const string& str) {
+	if (str == "mean")
+		return MEAN;
+	else if (str == "sd")
+		return SD;
+	else if (str == "min")
+		return MIN;
+	else if (str == "max")
+		return MAX;
+	else if (str == "shape")
+		return SHAPE;
+	else if (str == "scale")
+		return SCALE;
+	else return INVALID;
 }
 
 //---------------------------------------------------------------------------
