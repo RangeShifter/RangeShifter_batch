@@ -4821,7 +4821,7 @@ void setUpTrait(vector<string> parameters) {
 		stringToDistributionType(parameters[11]) : 
 		DistributionType::NONE;
 	map<GenParamType, float> mutationParameters;
-	float mutationRate = isInherited ? stof(parameters[13]) : 0;
+	float mutationRate = isInherited ? stof(parameters[13]) : 0.0;
 
 	if (isInherited) {
 		mutationParameters = stringToParameterMap(parameters[12]);
