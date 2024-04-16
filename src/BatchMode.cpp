@@ -3608,7 +3608,6 @@ TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex) {
 	else return INVALID_TRAIT;
 }
 
-
 //---------------------------------------------------------------------------
 
 int CheckGeneticsFile(string inputDirectory) {
@@ -3616,8 +3615,8 @@ int CheckGeneticsFile(string inputDirectory) {
 	string header, traitFileName, traitFileStr;
 	int simNb, errCode;
 	string inChromosomeEnds, inRecombinationRate, inTraitsFile, inPatchList, inStages,
-		inOutputNeutralStatistics, inOutputPerLocusWCFstat, inOutputPairwiseFst,
-		inOutputInterval, inNbrPatchesToSample, inNIndsToSample;
+		inOutGeneValues, inOutputNeutralStatistics, inOutputPerLocusWCFstat, inOutputPairwiseFst,
+		inOutStartGenetics, inOutputInterval, inNbrPatchesToSample, inNIndsToSample;
 	int inGenomeSize;
 	int nbErrors = 0;
 	int nbSims = 0;
@@ -3631,9 +3630,11 @@ int CheckGeneticsFile(string inputDirectory) {
 	bGeneticsFile >> header; if (header != "GenomeSize") nbErrors++;
 	bGeneticsFile >> header; if (header != "ChromosomeEnds") nbErrors++;
 	bGeneticsFile >> header; if (header != "RecombinationRate") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputGeneValues") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputNeutralStatistics") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputPerLocusWCFstat") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputPairwiseFst") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputStartGenetics") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputInterval") nbErrors++;
 	bGeneticsFile >> header; if (header != "PatchList") nbErrors++;
 	bGeneticsFile >> header; if (header != "NbrPatchesToSample") nbErrors++;
@@ -3661,8 +3662,8 @@ int CheckGeneticsFile(string inputDirectory) {
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
-		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutputNeutralStatistics >>
-			inOutputPerLocusWCFstat >> inOutputPairwiseFst >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
+		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutputNeutralStatistics >>
+			inOutputPerLocusWCFstat >> inOutputPairwiseFst >> inOutStartGenetics >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
 			>> inNIndsToSample >> inStages >> inTraitsFile;
 
 		current = CheckStageSex(whichFile, whichLine, simNb, prev, 0, 0, 0, 0, 0, true, false);
@@ -3704,6 +3705,11 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 
 		// Check Output fields
+		if (inOutGeneValues != "TRUE" && inOutGeneValues != "FALSE") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "OutGeneValues must be either TRUE or FALSE" << endl;
+			nbErrors++;
+		}
 		if (inOutputNeutralStatistics != "TRUE" && inOutputNeutralStatistics != "FALSE") {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLog << "OutputNeutralStatistics must be either TRUE or FALSE" << endl;
@@ -3724,6 +3730,18 @@ int CheckGeneticsFile(string inputDirectory) {
 			|| inOutputPairwiseFst == "TRUE";
 
 		if (anyNeutralStatsOutput) {
+			if (inOutStartGenetics == "#" || inOutStartGenetics == "0") {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "OutStartGenetics cannot be left blank (#) or 0 if any genetic output option is TRUE." << endl;
+				nbErrors++;
+			}
+			else {
+				int outStartGenetics = stoi(inOutStartGenetics);
+				if (outStartGenetics < 0) {
+					BatchError(whichFile, whichLine, 10, "OutStartGenetics");
+					nbErrors++;
+				}
+			}
 			if (inOutputInterval == "#" || inOutputInterval == "0") {
 				BatchError(whichFile, whichLine, 0, " ");
 				batchLog << "OutputInterval cannot be left blank (#) or 0 if any genetic output option is TRUE." << endl;
@@ -3736,11 +3754,18 @@ int CheckGeneticsFile(string inputDirectory) {
 					nbErrors++;
 				}
 			}
-		}
-		else if (inOutputInterval != "#" && inOutputInterval != "0") {
+		} // no genetics output
+		else {
+			if (inOutStartGenetics != "#" && inOutStartGenetics != "0") {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "OutStartGenetics should be blank (#) or 0 if all genetic output options are FALSE." << endl;
+				nbErrors++;
+			}
+			if (inOutputInterval != "#" && inOutputInterval != "0") {
 				BatchError(whichFile, whichLine, 0, " ");
 				batchLog << "OutputInterval should be blank (#) or 0 if all genetic output options are FALSE." << endl;
 				nbErrors++;
+			}
 		}
 
 		// Check PatchList
