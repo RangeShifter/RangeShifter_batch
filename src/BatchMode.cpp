@@ -3730,9 +3730,9 @@ int CheckGeneticsFile(string inputDirectory) {
 			|| inOutputPairwiseFst == "TRUE";
 
 		if (anyNeutralStatsOutput) {
-			if (inOutStartGenetics == "#" || inOutStartGenetics == "0") {
+			if (inOutStartGenetics == "#") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutStartGenetics cannot be left blank (#) or 0 if any genetic output option is TRUE." << endl;
+				batchLog << "OutStartGenetics cannot be left blank (#) if any genetic output option is TRUE." << endl;
 				nbErrors++;
 			}
 			else {
@@ -3756,9 +3756,9 @@ int CheckGeneticsFile(string inputDirectory) {
 			}
 		} // no genetics output
 		else {
-			if (inOutStartGenetics != "#" && inOutStartGenetics != "0") {
+			if (inOutStartGenetics != "#") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutStartGenetics should be blank (#) or 0 if all genetic output options are FALSE." << endl;
+				batchLog << "OutStartGenetics should be blank (#) if all genetic output options are FALSE." << endl;
 				nbErrors++;
 			}
 			if (inOutputInterval != "#" && inOutputInterval != "0") {
@@ -4732,7 +4732,8 @@ int ReadGeneticsFile(int simulationN, Landscape* pLandscape) {
 
 	string indir = paramsSim->getDir(1);
 	ifstream inFile(geneticsFile.c_str());
-	bool outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputGeneticInterval;
+	bool outputGeneValues, outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst;
+	int outputStartGenetics, outputGeneticInterval;
 
 	//not ideal to reset these in here 
 	pSpecies->resetGeneticParameters();
@@ -4754,15 +4755,18 @@ int ReadGeneticsFile(int simulationN, Landscape* pLandscape) {
 
 				int genomeSize = stoi(parameters[1]);
 
-				outputWCFstat = (parameters[4] == "TRUE");
-				outputPerLocusWCFstat = (parameters[5] == "TRUE");
-				outputPairwiseFst = (parameters[6] == "TRUE");
-				outputGeneticInterval = stoi(parameters[7]);
+				outputGeneValues = (parameters[4] == "TRUE");
+				outputWCFstat = (parameters[5] == "TRUE");
+				outputPerLocusWCFstat = (parameters[6] == "TRUE");
+				outputPairwiseFst = (parameters[7] == "TRUE");
+
+				outputStartGenetics = stoi(parameters[8]);
+				outputGeneticInterval = stoi(parameters[9]);
 
 				set<int> patchList;
-				string inPatches = parameters[8];
+				string inPatches = parameters[10];
 				string patchSamplingOption;
-				int nPatchesToSample = stoi(parameters[9]);
+				int nPatchesToSample = stoi(parameters[11]);
 
 				if (inPatches != "all" && inPatches != "random") {
 					// then must be a list of indices
@@ -4775,14 +4779,14 @@ int ReadGeneticsFile(int simulationN, Landscape* pLandscape) {
 				}
 
 				const int nbStages = pSpecies->getStageParams().nStages;
-				set<int> stagesToSampleFrom = stringToStages(parameters[11], nbStages);
+				set<int> stagesToSampleFrom = stringToStages(parameters[13], nbStages);
 
 				float recombinationRate = parameters[3] == "#" ? 0.0 : stof(parameters[3]);
 
 				pSpecies->setGeneticParameters(stringToChromosomeEnds(parameters[2], genomeSize), genomeSize, recombinationRate,
-					patchList, parameters[10], stagesToSampleFrom, nPatchesToSample);
-				paramsSim->setGeneticSim(patchSamplingOption, outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputGeneticInterval);
-				traitsFile = indir + parameters[12];
+					patchList, parameters[12], stagesToSampleFrom, nPatchesToSample);
+				paramsSim->setGeneticSim(patchSamplingOption, outputGeneValues, outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputStartGenetics, outputGeneticInterval);
+				traitsFile = indir + parameters[14];
 			}
 		}
 		inFile.close();
