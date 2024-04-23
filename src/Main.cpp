@@ -270,7 +270,14 @@ DEBUGLOG << "Main(): dem.repType = " << dem.repType << endl;
 randomCheck();
 #else
 if (b.ok) {
-	RunBatch(nSimuls, nLandscapes);
+	try
+	{
+		RunBatch(nSimuls, nLandscapes);
+	}
+	catch (const std::exception& e)
+	{
+		cerr << endl << "Error: " << e.what() << endl;
+	}
 }
 #endif
 
