@@ -205,7 +205,8 @@ int ReadInitIndsFile(int, Landscape*, string);
 int ReadGeneticsFile(int, Landscape*);
 int ReadTraitsFile(int);
 
-void setUpTrait(vector<string>);
+// Helper functions to ReadGenetics and ReadTraits
+void setUpSpeciesTrait(vector<string>);
 DistributionType stringToDistributionType(const std::string& str);
 ExpressionType stringToExpressionType(const std::string& str);
 map<GenParamType, float> stringToParameterMap(string parameters);
