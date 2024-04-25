@@ -3728,9 +3728,9 @@ int CheckGeneticsFile(string inputDirectory) {
 		bool anyNeutralGenetics = inOutputNeutralStatistics == "TRUE"
 			|| inOutputPerLocusWCFstat == "TRUE"
 			|| inOutputPairwiseFst == "TRUE";
-		bool anyNeutralGenetics = inOutGeneValues == "TRUE" || anyNeutralGenetics;
+		bool anyGeneticsOutput = inOutGeneValues == "TRUE" || anyNeutralGenetics;
 
-		if (anyNeutralGenetics) {
+		if (anyGeneticsOutput) {
 			if (inOutStartGenetics == "#") {
 				BatchError(whichFile, whichLine, 0, " ");
 				batchLog << "OutStartGenetics cannot be left blank (#) if any genetic output option is TRUE." << endl;
@@ -3771,7 +3771,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 
 		// Check PatchList
-		if (anyNeutralGenetics) {
+		if (anyGeneticsOutput) {
 			if (inPatchList == "#") {
 				BatchError(whichFile, whichLine, 0, " ");
 				batchLog << "PatchList cannot be left blank (#) if any genetic output option is TRUE." << endl;
@@ -3814,7 +3814,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 
 		// Check IndividualsToSample
-		if (anyNeutralGenetics) {
+		if (anyGeneticsOutput) {
 			if (inNIndsToSample == "#" || inNIndsToSample == "0") {
 				BatchError(whichFile, whichLine, 0, " ");
 				batchLog << "NIndsToSample cannot be blank (#) or zero if any genetics output option is TRUE." << endl;
@@ -3835,7 +3835,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 
 		// Check Stages
-		if (anyNeutralGenetics) {
+		if (anyGeneticsOutput) {
 			if (inStages == "#") {
 				BatchError(whichFile, whichLine, 0, " ");
 				batchLog << "Stages cannot be blank (#) if any genetic output option is TRUE." << endl;
