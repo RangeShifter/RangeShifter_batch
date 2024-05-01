@@ -3674,7 +3674,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		//// Validate parameters
 		
 		// Check GenomeSize
-		if (inGenomeSize < 0) {
+		if (inGenomeSize <= 0) {
 			BatchError(whichFile, whichLine, 10, "GenomeSize");
 			nbErrors++;
 		}
