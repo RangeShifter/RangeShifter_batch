@@ -42,6 +42,7 @@ Author: Steve Palmer, University of Aberdeen
 #include <iomanip>
 #include <stdlib.h>
 #include <cassert>
+#include <SFML/Graphics.hpp>
 
 using namespace std;
 
@@ -104,6 +105,23 @@ int main(int argc, char* argv[])
 int _tmain(int argc, _TCHAR* argv[])
 #endif
 {
+	// Temporary test of SFML
+	auto window = sf::RenderWindow{ { 1920u, 1080u }, "CMake SFML Project" };
+	window.setFramerateLimit(144);
+
+	while (window.isOpen())
+	{
+		for (auto event = sf::Event{}; window.pollEvent(event);)
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				window.close();
+			}
+		}
+
+		window.clear();
+		window.display();
+	}
 
 #if RSDEBUG
 	cout << "RangeShifter Debug Mode" << endl;
