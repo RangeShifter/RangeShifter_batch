@@ -42,7 +42,6 @@ Author: Steve Palmer, University of Aberdeen
 #include <iomanip>
 #include <stdlib.h>
 #include <cassert>
-#include <SFML/Graphics.hpp>
 
 using namespace std;
 
@@ -63,6 +62,8 @@ using namespace std;
 #include <io.h>
 #include <direct.h>
 #endif
+
+#include <SFML/Graphics.hpp>
 
 void MemoLine(string msg) {
 // dummy function for batch version
