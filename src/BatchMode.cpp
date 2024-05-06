@@ -4880,8 +4880,7 @@ TraitType stringToTraitType(const std::string& str) {
 	if (str == "neutral") return SNP;
 	else if (str == "genetic_load") return GENETIC_LOAD;
 	// Sex-invariant dispersal traits
-	else if (str == "emigration_ep") return E_D0; // EP uses d0 for trait data
-	else if (str == "emigration_d0") return E_D0;
+	else if (str == "emigration_d0") return E_D0; // EP uses d0 for trait data
 	else if (str == "emigration_alpha") return E_ALPHA;
 	else if (str == "emigration_beta") return E_BETA;
 	else if (str == "settlement_s0") return S_S0;
