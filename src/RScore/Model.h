@@ -55,6 +55,10 @@ Last updated: 26 October 2021 by Steve Palmer
 #include "SubCommunity.h"
 #include "Species.h"
 
+#ifdef BATCH_VIEW
+#include "../BatchView.h"
+#endif
+
 #if !RS_EMBARCADERO && !LINUX_CLUSTER && !RS_RCPP
 #include <filesystem>
 using namespace std::filesystem;

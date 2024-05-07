@@ -87,6 +87,11 @@ int RunModel(Landscape* pLandscape, int seqsim)
 	Rcpp::List list_outPop;
 #endif
 
+#ifdef BATCH_VIEW
+	// Initialise batch view
+	BatchView bView;
+#endif
+
 	// Loop through replicates
 	for (int rep = 0; rep < sim.reps; rep++) {
 #if RSDEBUG
