@@ -63,8 +63,6 @@ using namespace std;
 #include <direct.h>
 #endif
 
-#include <SFML/Graphics.hpp>
-
 void MemoLine(string msg) {
 // dummy function for batch version
 }

@@ -18,14 +18,13 @@ FetchContent_MakeAvailable(SFML)
 
 # add RScore to source search path
 set(batchmode ON) # don't config RScore as standalone
+set(batchview ON) # tell RScore to enable BATCH_VIEW macro
 add_subdirectory(src/RScore)
 
 # declare target executable
 add_executable(RangeShifter src/Main.cpp src/BatchMode.cpp src/BatchView.cpp)
 
 target_compile_definitions(RangeShifter PRIVATE RSWIN64)
-
-add_compile_definitions(BATCH_VIEW)
 
 # enable LINUX_CLUSTER macro on Linux + macOS
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")

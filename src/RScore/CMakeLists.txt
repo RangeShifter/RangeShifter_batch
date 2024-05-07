@@ -10,6 +10,10 @@ if (NOT batchmode) # that is, RScore as a standalone
 	add_executable(RScore Main.cpp Species.cpp Cell.cpp Community.cpp FractalGenerator.cpp Genome.cpp Individual.cpp Landscape.cpp Model.cpp Parameters.cpp Patch.cpp Population.cpp RandomCheck.cpp RSrandom.cpp SubCommunity.cpp Utils.cpp)
 else() # that is, RScore compiled as library within RangeShifter_batch
 	add_library(RScore Species.cpp Cell.cpp Community.cpp FractalGenerator.cpp Genome.cpp Individual.cpp Landscape.cpp Model.cpp Parameters.cpp Patch.cpp Population.cpp RandomCheck.cpp RSrandom.cpp SubCommunity.cpp Utils.cpp)
+	if(batchview) # we want batch graphics
+		add_compile_definitions(BATCH_VIEW)
+		target_link_libraries(RScore PRIVATE sfml-graphics) # link SFML
+	endif()
 endif()
 
 # pass config definitions to compiler
