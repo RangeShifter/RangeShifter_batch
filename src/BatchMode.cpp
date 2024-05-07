@@ -65,7 +65,7 @@ string parameterFile;
 string landFile;
 string name_landscape, name_patch, name_dynland, name_sp_dist, gNameCostFile;
 string stageStructFile, transMatrix;
-string emigrationFile, transferFile, settleFile, geneticsFile, traitsFile, initialFile;
+string emigrationFile, transferFile, settleFile, geneticsFile, gPathToTraitsFile, initialFile;
 string prevInitialIndsFile = " ";
 
 const string gNbLinesStr = "No. of lines for final Simulation ";
@@ -2822,7 +2822,7 @@ int CheckSettleFile(void)
 }
 
 //---------------------------------------------------------------------------
-int CheckTraitsFile(string indir, const bool& anyNeutralStatsOutput)
+int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 {
 	string header, colheader;
 	int simNb;
@@ -2889,7 +2889,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralStatsOutput)
 		sex_t sex = stringToSex(inSex);
 		if (sex == sex_t::INVALID_SEX) {
 			BatchError(whichInputFile, whichLine, 0, " ");
-			batchLog << inSex << " is invalid: sex must be either female, male, or # (not applicable)." << endl;
+			batchLog << inSex << " is invalid: ExprSex must be either female, male, or # (if not applicable)." << endl;
 			nbErrors++;
 		}
 
@@ -2900,19 +2900,20 @@ int CheckTraitsFile(string indir, const bool& anyNeutralStatsOutput)
 			batchLog << inTraitType << " is not a valid TraitType." << endl;
 			nbErrors++;
 		}
+		// Can trait be sex-dependent?
 		const bool canBeSexDep = tr == E_D0 || tr == E_ALPHA || tr == E_BETA
 			|| tr == S_S0 || tr == S_ALPHA || tr == S_BETA
 			|| tr == KERNEL_MEANDIST_1 || tr == KERNEL_MEANDIST_2
 			|| tr == KERNEL_PROBABILITY;
-
 		if (!canBeSexDep && (sex == FEM || sex == MAL)) {
 			BatchError(whichInputFile, whichLine, 0, " ");
-			batchLog << inTraitType << " cannot be sex-dependent so must be left blank (#)." << endl;
+			batchLog << inTraitType << " cannot be sex-dependent so ExprSex must be left blank (#)." << endl;
 			nbErrors++;
 		}
 		if (sex != NA) // add sex to trait if present
 			tr = addSexDepToTrait(tr, sex);
 
+		// There can be up to 5 genetic load traits
 		if (tr == GENETIC_LOAD) {
 			nbGenLoadTraits++;
 			if (nbGenLoadTraits > 5) {
@@ -2921,7 +2922,8 @@ int CheckTraitsFile(string indir, const bool& anyNeutralStatsOutput)
 				nbErrors++;
 			}
 		}
-		else if (!anyNeutralStatsOutput && tr == SNP) {
+		// SNP traits without enabling output is an error
+		else if (!anyNeutralGenetics && tr == SNP) {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << "A neutral trait should not be specified if all neutral stats outputs are turned off in the genetics file." << endl;
 			nbErrors++;
@@ -2941,7 +2943,6 @@ int CheckTraitsFile(string indir, const bool& anyNeutralStatsOutput)
 			batchLog << "Positions must be either a comma-separated list of integer ranges, or random." << endl;
 			nbErrors++;
 		}
-		// should also check that no value in the string exceeds pSpecies->getGenomeSize
 		if (inPositions == "random") {
 			if (stoi(inNbPositions) <= 0) {
 				BatchError(whichInputFile, whichLine, 0, " ");
@@ -2955,9 +2956,6 @@ int CheckTraitsFile(string indir, const bool& anyNeutralStatsOutput)
 			nbErrors++;
 		}
 
-
-		const bool isQTL = tr != SNP && tr != GENETIC_LOAD && tr != INVALID_TRAIT;
-
 		// Check ExpressionType
 		if (tr == SNP && inExpressionType != "#") {
 			BatchError(whichInputFile, whichLine, 0, " ");
@@ -2969,6 +2967,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralStatsOutput)
 			batchLog << "ExpressionType must be \"multiplicative\" for genetic load traits." << endl;
 			nbErrors++;
 		}
+		const bool isQTL = tr != SNP && tr != GENETIC_LOAD && tr != INVALID_TRAIT;
 		if (isQTL && inExpressionType != "additive" && inExpressionType != "average") {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << "ExpressionType must be \"additive\" or \"average\" for dispersal traits." << endl;
@@ -2992,13 +2991,13 @@ int CheckTraitsFile(string indir, const bool& anyNeutralStatsOutput)
 			nbErrors++;
 		}
 
+		// Check InitialParameters
 		const regex patternParamsUnif{ "^\"?min=[-]?([0-9]*[.])?[0-9]+,max=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsNormal{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+,sd=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsGamma{ "^\"?shape=[-]?([0-9]*[.])?[0-9]+,scale=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsNegExp{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+\"?$" };
-		const regex patternParamsSNP{ "^\"?max=[0-9]+\"?$" }; // need also check value is <256
+		const regex patternParamsSNP{ "^\"?max=[0-9]+\"?$" };
 
-		// Check InitialParameters
 		if (tr == SNP) {
 			if (inInitDist == "uniform") {
 				isMatch = regex_search(inInitParams, patternParamsSNP);
@@ -3247,9 +3246,9 @@ int CheckTraitsFile(string indir, const bool& anyNeutralStatsOutput)
 			stopReading = true;
 	} // end of while loop
 
-	// Check neutral trait is consistent with genetics file
+	// If genetic output is enabled, a neutral trait must exists
 	bool hasNeutral = traitExists(SNP, allReadTraits);
-	if (anyNeutralStatsOutput && !hasNeutral) {
+	if (anyNeutralGenetics && !hasNeutral) {
 		BatchError(whichInputFile, -999, 0, " ");
 		batchLog << "A neutral stats output option is turned on in genetics file but no neutral trait is specified in traits file." << endl;
 		nbErrors++;
@@ -3675,7 +3674,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		//// Validate parameters
 		
 		// Check GenomeSize
-		if (inGenomeSize < 0) {
+		if (inGenomeSize <= 0) {
 			BatchError(whichFile, whichLine, 10, "GenomeSize");
 			nbErrors++;
 		}
@@ -3704,7 +3703,7 @@ int CheckGeneticsFile(string inputDirectory) {
 			}
 		}
 
-		// Check Output fields
+		// Check genetic output fields
 		if (inOutGeneValues != "TRUE" && inOutGeneValues != "FALSE") {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLog << "OutGeneValues must be either TRUE or FALSE" << endl;
@@ -3725,11 +3724,13 @@ int CheckGeneticsFile(string inputDirectory) {
 			batchLog << "OutputPairwiseFst must be either TRUE or FALSE" << endl;
 			nbErrors++;
 		}
-		bool anyNeutralStatsOutput = inOutputNeutralStatistics == "TRUE"
+
+		bool anyNeutralGenetics = inOutputNeutralStatistics == "TRUE"
 			|| inOutputPerLocusWCFstat == "TRUE"
 			|| inOutputPairwiseFst == "TRUE";
+		bool anyGeneticsOutput = inOutGeneValues == "TRUE" || anyNeutralGenetics;
 
-		if (anyNeutralStatsOutput) {
+		if (anyGeneticsOutput) {
 			if (inOutStartGenetics == "#") {
 				BatchError(whichFile, whichLine, 0, " ");
 				batchLog << "OutStartGenetics cannot be left blank (#) if any genetic output option is TRUE." << endl;
@@ -3743,6 +3744,7 @@ int CheckGeneticsFile(string inputDirectory) {
 				}
 			}
 			if (inOutputInterval == "#" || inOutputInterval == "0") {
+				// Minimum interval is 1, not 0
 				BatchError(whichFile, whichLine, 0, " ");
 				batchLog << "OutputInterval cannot be left blank (#) or 0 if any genetic output option is TRUE." << endl;
 				nbErrors++;
@@ -3769,10 +3771,10 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 
 		// Check PatchList
-		if (anyNeutralStatsOutput) {
+		if (anyGeneticsOutput) {
 			if (inPatchList == "#") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "PatchList cannot be left blank (#) if any neutral statistics option is TRUE." << endl;
+				batchLog << "PatchList cannot be left blank (#) if any genetic output option is TRUE." << endl;
 				nbErrors++;
 			}
 			else {
@@ -3786,7 +3788,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 		else if (inPatchList != "#") {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "PatchList should be blank (#) if all neutral statistics options are FALSE." << endl;
+			batchLog << "PatchList should be blank (#) if all genetic output options are FALSE." << endl;
 			nbErrors++;
 		}
 
@@ -3812,10 +3814,10 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 
 		// Check IndividualsToSample
-		if (anyNeutralStatsOutput) {
+		if (anyGeneticsOutput) {
 			if (inNIndsToSample == "#" || inNIndsToSample == "0") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "NIndsToSample cannot be blank (#) or zero if any neutral statistics option is TRUE." << endl;
+				batchLog << "NIndsToSample cannot be blank (#) or zero if any genetics output option is TRUE." << endl;
 				nbErrors++;
 			}
 			else if (inNIndsToSample != "all") {
@@ -3828,15 +3830,15 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 		else if (inNIndsToSample != "#" && inNIndsToSample != "0") {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "NIndsToSample must be blank (#) or zero if all neutral statistics options are FALSE." << endl;
+			batchLog << "NIndsToSample must be blank (#) or zero if all genetics output options are FALSE." << endl;
 			nbErrors++;
 		}
 
 		// Check Stages
-		if (anyNeutralStatsOutput) {
+		if (anyGeneticsOutput) {
 			if (inStages == "#") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "Stages cannot be blank (#) if any neutral statistics option is TRUE." << endl;
+				batchLog << "Stages cannot be blank (#) if any genetic output option is TRUE." << endl;
 				nbErrors++;
 			}
 			else {
@@ -3850,7 +3852,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 		else if (inStages != "#") {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "Stages must be blank (#) if all neutral statistics options are FALSE." << endl;
+			batchLog << "Stages must be blank (#) if all genetic output options are FALSE." << endl;
 			nbErrors++;
 		}
 
@@ -3865,7 +3867,7 @@ int CheckGeneticsFile(string inputDirectory) {
 			batchLog << "Checking " << traitFileStr << " " << traitFileName << endl;
 			bTraitsFile.open(traitFileName.c_str());
 			if (bTraitsFile.is_open()) {
-				errCode = CheckTraitsFile(inputDirectory, anyNeutralStatsOutput);
+				errCode = CheckTraitsFile(inputDirectory, anyNeutralGenetics);
 				if (errCode >= 0) 
 					FileHeadersOK(traitFileStr); 
 				else 
@@ -4734,6 +4736,7 @@ int ReadGeneticsFile(int simulationN, Landscape* pLandscape) {
 	ifstream inFile(geneticsFile.c_str());
 	bool outputGeneValues, outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst;
 	int outputStartGenetics, outputGeneticInterval;
+	set<int> patchList;
 
 	//not ideal to reset these in here 
 	pSpecies->resetGeneticParameters();
@@ -4744,30 +4747,31 @@ int ReadGeneticsFile(int simulationN, Landscape* pLandscape) {
 		std::getline(inFile, headerLine);
 
 		while (std::getline(inFile, line)) {
+
+			// Convert input parameters to string vector
 			stringstream ss(line);
 			vector<string> parameters;
 			while (std::getline(ss, value, '	'))
-			{
 				parameters.push_back(value);
+
+			if (stoi(parameters[0]) != simulationN) {
+				throw logic_error("Simulation number in genetics file is incorrect.");
 			}
-
-			if (stoi(parameters[0]) == simulationN) {
-
+			else {
+				// Assumes all input is correct after errors being handled by CheckGenetics
 				int genomeSize = stoi(parameters[1]);
-
+				set<int> chrEnds = stringToChromosomeEnds(parameters[2], genomeSize);
+				float recombinationRate = parameters[3] == "#" ? 0.0 : stof(parameters[3]);
 				outputGeneValues = (parameters[4] == "TRUE");
 				outputWCFstat = (parameters[5] == "TRUE");
 				outputPerLocusWCFstat = (parameters[6] == "TRUE");
 				outputPairwiseFst = (parameters[7] == "TRUE");
-
 				outputStartGenetics = stoi(parameters[8]);
 				outputGeneticInterval = stoi(parameters[9]);
 
-				set<int> patchList;
 				string inPatches = parameters[10];
 				string patchSamplingOption;
 				int nPatchesToSample = stoi(parameters[11]);
-
 				if (inPatches != "all" && inPatches != "random") {
 					// then must be a list of indices
 					patchSamplingOption = "list";
@@ -4777,46 +4781,16 @@ int ReadGeneticsFile(int simulationN, Landscape* pLandscape) {
 					patchSamplingOption = inPatches;
 					// patchList remains empty, filled when patches are sampled every gen
 				}
-
+				const string strNbInds = parameters[12];
 				const int nbStages = pSpecies->getStageParams().nStages;
 				set<int> stagesToSampleFrom = stringToStages(parameters[13], nbStages);
 
-				float recombinationRate = parameters[3] == "#" ? 0.0 : stof(parameters[3]);
-
-				pSpecies->setGeneticParameters(stringToChromosomeEnds(parameters[2], genomeSize), genomeSize, recombinationRate,
-					patchList, parameters[12], stagesToSampleFrom, nPatchesToSample);
+				pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate,
+					patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
 				paramsSim->setGeneticSim(patchSamplingOption, outputGeneValues, outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputStartGenetics, outputGeneticInterval);
-				traitsFile = indir + parameters[14];
+				
+				gPathToTraitsFile = indir + parameters[14];
 			}
-		}
-		inFile.close();
-		inFile.clear();
-	}
-	return 0; //this is for error reporting, need to do error input checks in this function 
-}
-
-int ReadTraitsFile(int simulationN) {
-
-	pSpecies->clearTraitTable();
-
-	ifstream inFile(traitsFile.c_str());
-
-	if (inFile.is_open()) {
-		//read first header line
-		string headerLine, strLine, entry;
-		std::getline(inFile, headerLine);
-
-		while (std::getline(inFile, strLine)) {
-			stringstream inLine(strLine);
-			vector<string> parameters;
-			while (std::getline(inLine, entry, '	'))
-			{
-				parameters.push_back(entry);
-			}
-
-			if (stoi(parameters[0]) == simulationN)
-				setUpTrait(parameters);
-			//create trait with parameters 
 		}
 		inFile.close();
 		inFile.clear();
@@ -4824,12 +4798,46 @@ int ReadTraitsFile(int simulationN) {
 	return 0;
 }
 
-void setUpTrait(vector<string> parameters) {
+int ReadTraitsFile(int simulationN) {
+
+	pSpecies->clearTraitTable();
+
+	ifstream inFile(gPathToTraitsFile.c_str());
+
+	if (inFile.is_open()) {
+		//read first header line
+		string headerLine, strLine, entry;
+		std::getline(inFile, headerLine);
+
+		while (std::getline(inFile, strLine)) {
+
+			// Read input parameters as strings
+			stringstream inLine(strLine);
+			vector<string> parameters;
+			while (std::getline(inLine, entry, '	'))
+			{
+				parameters.push_back(entry);
+			}
+
+			if (stoi(parameters[0]) != simulationN)
+				throw logic_error("Simulation number in TraitsFile is invalid.");
+			else
+				// Create trait from parameters 
+				setUpSpeciesTrait(parameters);
+		}
+		inFile.close();
+		inFile.clear();
+	}
+	return 0;
+}
+
+// Set up a trait from input parameters and add it Species
+void setUpSpeciesTrait(vector<string> parameters) {
+	// Assumes all input is correct, errors have been handled by CheckTraits
 
 	const int genomeSize = pSpecies->getGenomeSize();
-
-	const sex_t sex = stringToSex(parameters[2]);
 	TraitType traitType = stringToTraitType(parameters[1]);
+	const sex_t sex = stringToSex(parameters[2]);
 	if (sex != NA) traitType = addSexDepToTrait(traitType, sex);
 	const set<int> positions = stringToLoci(parameters[3], parameters[4], genomeSize);
 	const ExpressionType expressionType = stringToExpressionType(parameters[5]);
@@ -4844,23 +4852,16 @@ void setUpTrait(vector<string> parameters) {
 
 	// Mutation parameters
 	bool isInherited = (parameters[10] == "TRUE");
-	// should always be true if traitTYpe is SNP or GENETIC_LOAD
-
 	DistributionType mutationDistribution = isInherited ? 
 		stringToDistributionType(parameters[11]) : 
 		DistributionType::NONE;
 	map<GenParamType, float> mutationParameters;
 	float mutationRate = isInherited ? stof(parameters[13]) : 0.0;
-
 	if (isInherited) {
 		mutationParameters = stringToParameterMap(parameters[12]);
 	}
 
-	// error outputting for different traits
-	if (traitType == SNP) {
-		if (mutationDistribution != KAM && mutationDistribution != SSM)
-			throw logic_error("Traits file: ERROR - Neutral marker mutation distribution must be KAM or SSM (max = 256))");
-	}
+	// Create species trait
 	SpeciesTrait* trait = new SpeciesTrait(
 		traitType, sex, 
 		positions, expressionType, 
@@ -4873,14 +4874,13 @@ void setUpTrait(vector<string> parameters) {
 	pSpecies->addTrait(traitType, *trait);
 }
 
-
+// Convert string to corresponding TraitType value, if valid
 TraitType stringToTraitType(const std::string& str) {
 	// Non-dispersal traits
 	if (str == "neutral") return SNP;
 	else if (str == "genetic_load") return GENETIC_LOAD;
 	// Sex-invariant dispersal traits
-	else if (str == "emigration_ep") return E_D0; // EP uses d0 for trait data
-	else if (str == "emigration_d0") return E_D0;
+	else if (str == "emigration_d0") return E_D0; // EP uses d0 for trait data
 	else if (str == "emigration_alpha") return E_ALPHA;
 	else if (str == "emigration_beta") return E_BETA;
 	else if (str == "settlement_s0") return S_S0;
@@ -4898,6 +4898,7 @@ TraitType stringToTraitType(const std::string& str) {
 	else return INVALID_TRAIT;
 }
 
+// Convert string to corresponding ExpressionType value, if valid
 ExpressionType stringToExpressionType(const std::string& str) {
 	if (str == "average") return AVERAGE;
 	else if (str == "additive") return ADDITIVE;
@@ -4906,6 +4907,7 @@ ExpressionType stringToExpressionType(const std::string& str) {
 	else throw logic_error(str + " is not a valid gene expression type.");
 }
 
+// Convert string to corresponding DistributionType value, if valid
 DistributionType stringToDistributionType(const std::string& str) {
 	if (str == "#") return NONE;
 	else if (str == "uniform") return UNIFORM;
@@ -4918,6 +4920,7 @@ DistributionType stringToDistributionType(const std::string& str) {
 	else throw logic_error(str + " is not a valid distribution type.");
 }
 
+// Convert distribution parameters field into appropriate type
 map<GenParamType, float> stringToParameterMap(string parameterString) {
 
 	map<GenParamType, float> paramMap;
@@ -4941,13 +4944,13 @@ map<GenParamType, float> stringToParameterMap(string parameterString) {
 				float value = stof(paramNameAndVal[1]);
 				paramMap.emplace(parameterT, value);
 			}
-			else
-				cout << endl << "Traits file: ERROR - parameter values for a distribution missing, should be e.g. 'mean=0,standard_deviation=0.5' or if not applicable put #" << endl;
+			else throw logic_error("Traits file: ERROR - parameter values for a distribution missing, should be e.g. 'mean=0,standard_deviation=0.5' or if not applicable put #");
 		}
 	}
 	return paramMap;
 }
 
+// Convert string to corresponding SexType value, if valid
 const sex_t stringToSex(const std::string& str) {
 	if (str == "female") return FEM;
 	else if (str == "male") return MAL;
@@ -4955,13 +4958,13 @@ const sex_t stringToSex(const std::string& str) {
 	else return INVALID_SEX;
 }
 
+// Convert patches input parameter string into set of patch indices
 set<int> stringToPatches(const string& str) {
 
 	set<int> patches;
 	stringstream ss(str);
 	string strPch;
 	int pch;
-	bool patchExists;
 	// Read comma-separated values
 	while (std::getline(ss, strPch, ',')) {
 		pch = std::stoi(strPch);
@@ -4970,6 +4973,7 @@ set<int> stringToPatches(const string& str) {
 	return patches;
 }
 
+// Convert stages input parameter string into set of stage numbers
 set<int> stringToStages(const string& str, const int& nbStages) {
 	set<int> stages;
 	if (str == "all") {
@@ -4995,6 +4999,7 @@ set<int> stringToStages(const string& str, const int& nbStages) {
 	return stages;
 }
 
+// Convert ChromosomeEnds input parameter string into set of positions
 set<int> stringToChromosomeEnds(string str, const int& genomeSize) {
 	set<int> chromosomeEnds;
 	if (str == "#")
@@ -5017,7 +5022,6 @@ set<int> stringToChromosomeEnds(string str, const int& genomeSize) {
 }
 
 set<int> selectRandomLociPositions(int nbLoci, const int& genomeSize) {
-
 	set<int> positions;
 	for (int i = 0; i < nbLoci; ++i)
 		positions.insert(pRandom->IRandom(0, genomeSize));
@@ -5067,7 +5071,7 @@ set<int> stringToLoci(string pos, string nLoci, const int& genomeSize) {
 				cout << endl << "Traits file: ERROR - trait positions " << position << " must not exceed genome size" << endl;
 		}
 	}
-	else {
+	else { // random
 		positions = selectRandomLociPositions(stoi(nLoci), genomeSize);
 	}
 	return positions;
