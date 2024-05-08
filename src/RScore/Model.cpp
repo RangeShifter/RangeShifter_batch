@@ -89,7 +89,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 
 #ifdef BATCH_VIEW
 	// Initialise batch view
-	BatchView bView;
+	BatchView bView(pLandscape, pComm);
 #endif
 
 	// Loop through replicates
@@ -576,6 +576,10 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				if (sim.outGenetics && yr >= sim.outStartGenetic && yr % sim.outIntGenetic == 0)
 					pComm->outGenetics(rep, yr, gen, -1);
 
+				// Display
+				bView.collectUserInput(); // e.g. if close was clicked
+				bView.drawCommunity();
+
 				// survival part 1
 				if (dem.stageStruct) {
 					pComm->survival(1, 0, 1);
@@ -731,6 +735,9 @@ int RunModel(Landscape* pLandscape, int seqsim)
 #endif
 
 	} // end of the replicates loop
+
+	// Close batch view if still open
+	if (bView.isOpen()) bView.close();
 
 	if (sim.outConnect && ppLand.patchModel) {
 		pLandscape->deleteConnectMatrix();

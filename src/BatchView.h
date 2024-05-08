@@ -9,7 +9,12 @@ using namespace std;
 
 class BatchView {
 public:
-	BatchView::BatchView();
+	BatchView::BatchView(Landscape* pLand, Community* pCommunity);
+	bool isOpen() const { return window.isOpen(); }
+	void close() { window.close(); }
+	void collectUserInput();
+	void drawLandscape();
+	void drawCommunity();
 
 private:
 	sf::RenderWindow window;
