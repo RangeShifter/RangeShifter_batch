@@ -3779,9 +3779,9 @@ int CheckGeneticsFile(string inputDirectory) {
 			}
 			else {
 				isMatch = regex_search(inPatchList, patternIntList);
-				if (!isMatch && inPatchList != "random" && inPatchList != "all") {
+				if (!isMatch && inPatchList != "random" && inPatchList != "all" && inPatchList != "random_occupied") {
 					BatchError(whichFile, whichLine, 0, " ");
-					batchLog << "PatchList must be either a comma-separated list of integers, random, or all." << endl;
+					batchLog << "PatchList must be either a comma-separated list of integers, random, random_occupied or all." << endl;
 					nbErrors++;
 				}
 			}
@@ -3793,10 +3793,10 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 
 		// Check NbrPatchesToSample
-		if (inPatchList == "random") {
+		if (inPatchList == "random" || inPatchList == "random_occupied") {
 			if (inNbrPatchesToSample == "#" || inNbrPatchesToSample == "0") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "NbrPatchesToSample cannot be blank (#) or 0 if PatchList is random." << endl;
+				batchLog << "NbrPatchesToSample cannot be blank (#) or 0 if PatchList is random or random_occupied." << endl;
 				nbErrors++;
 			}
 			else {
@@ -3809,7 +3809,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 		else if (inNbrPatchesToSample != "#" && inNbrPatchesToSample != "0") {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "NbrPatchesToSample must be blank (#) or zero if PatchList is not \"random\"." << endl;
+			batchLog << "NbrPatchesToSample must be blank (#) or zero if PatchList is not random or random_occupied." << endl;
 			nbErrors++;
 		}
 
@@ -4634,8 +4634,8 @@ int ReadLandFile(int option, Landscape* pLandscape)
 			ppLand.nHab = 1;
 	}
 	else { // imported raster map
-		string dummy; // no longer necessary to read no. of habitats from landFile
-		landfile >> ppLand.landNum >> dummy >> name_landscape >> name_patch;
+		string inNHabPlaceholder; // no longer necessary to read no. of habitats from landFile
+		landfile >> ppLand.landNum >> inNHabPlaceholder >> name_landscape >> name_patch;
 		landfile >> gNameCostFile >> name_dynland >> name_sp_dist;
 		if (landtype == 2) 
 			ppLand.nHab = 1; // habitat quality landscape has one habitat class
@@ -4772,10 +4772,11 @@ int ReadGeneticsFile(int simulationN, Landscape* pLandscape) {
 				string inPatches = parameters[10];
 				string patchSamplingOption;
 				int nPatchesToSample = stoi(parameters[11]);
-				if (inPatches != "all" && inPatches != "random") {
+				if (inPatches != "all" && inPatches != "random" && inPatches != "random_occupied") {
 					// then must be a list of indices
 					patchSamplingOption = "list";
 					patchList = stringToPatches(inPatches);
+					if (patchList.contains(0)) throw logic_error("Patch sampling: ID 0 is reserved for the matrix and should not be sampled.");
 				}
 				else {
 					patchSamplingOption = inPatches;
