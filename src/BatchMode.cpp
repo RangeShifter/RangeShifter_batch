@@ -4634,8 +4634,8 @@ int ReadLandFile(int option, Landscape* pLandscape)
 			ppLand.nHab = 1;
 	}
 	else { // imported raster map
-		string dummy; // no longer necessary to read no. of habitats from landFile
-		landfile >> ppLand.landNum >> dummy >> name_landscape >> name_patch;
+		string inNHabPlaceholder; // no longer necessary to read no. of habitats from landFile
+		landfile >> ppLand.landNum >> inNHabPlaceholder >> name_landscape >> name_patch;
 		landfile >> gNameCostFile >> name_dynland >> name_sp_dist;
 		if (landtype == 2) 
 			ppLand.nHab = 1; // habitat quality landscape has one habitat class
@@ -4776,6 +4776,7 @@ int ReadGeneticsFile(int simulationN, Landscape* pLandscape) {
 					// then must be a list of indices
 					patchSamplingOption = "list";
 					patchList = stringToPatches(inPatches);
+					if (patchList.contains(0)) throw logic_error("Patch sampling: ID 0 is reserved for the matrix and should not be sampled.");
 				}
 				else {
 					patchSamplingOption = inPatches;
