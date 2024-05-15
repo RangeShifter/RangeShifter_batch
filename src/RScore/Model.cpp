@@ -88,6 +88,9 @@ int RunModel(Landscape* pLandscape, int seqsim)
 #endif
 
 #ifdef BATCH_VIEW
+	auto window = sf::RenderWindow{ { 1920u, 1080u }, "RangeShifter Batch" };
+	window.setFramerateLimit(144);
+	window.display();
 	// Initialise batch view
 	BatchView bView(pLandscape, pComm);
 #endif
@@ -167,7 +170,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 #if RSDEBUG
 			DEBUGLOG << endl << "RunModel(): finished generating populations" << endl;
 #endif
-		}
+			}
 		if (init.seedType == 0 && init.freeType < 2 && init.initFrzYr > 0) {
 			// restrict available landscape to initialised region
 			pLandscape->setLandLimits(init.minSeedX, init.minSeedY,
@@ -395,7 +398,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 							patchchange = pLandscape->getPatchChange(ixpchchg++);
 							while (patchchange.chgnum <= landIx && ixpchchg <= npatchchanges) {
 
-							// move cell from original patch to new patch
+								// move cell from original patch to new patch
 								pCell = pLandscape->findCell(patchchange.x, patchchange.y);
 								if (patchchange.oldpatch != 0) { // not matrix
 									pPatch = pLandscape->findPatch(patchchange.oldpatch);
@@ -509,9 +512,9 @@ int RunModel(Landscape* pLandscape, int seqsim)
 					list_outPop.push_back(pComm->addYearToPopList(rep, yr), "rep" + std::to_string(rep) + "_year" + std::to_string(yr));
 				}
 #endif
-			// apply local extinction for generation 0 only
-			// CHANGED TO *BEFORE* RANGE & POPN OUTPUT PRODUCTION IN v1.1,
-			// SO THAT NOS. OF JUVENILES BORN CAN BE REPORTED
+				// apply local extinction for generation 0 only
+				// CHANGED TO *BEFORE* RANGE & POPN OUTPUT PRODUCTION IN v1.1,
+				// SO THAT NOS. OF JUVENILES BORN CAN BE REPORTED
 				if (!ppLand.patchModel && gen == 0) {
 					if (env.localExt) pComm->localExtinction(0);
 					if (grad.gradient && grad.gradType == 3) pComm->localExtinction(1);
@@ -576,9 +579,12 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				if (sim.outGenetics && yr >= sim.outStartGenetic && yr % sim.outIntGenetic == 0)
 					pComm->outGenetics(rep, yr, gen, -1);
 
+#ifdef BATCH_VIEW
 				// Display
-				bView.collectUserInput(); // e.g. if close was clicked
-				bView.drawCommunity();
+				//if (!bView.isOpen()) throw runtime_error("window closed");
+				bView.collectUserInput(window); // e.g. if close was clicked
+				bView.drawCommunity(window);
+#endif
 
 				// survival part 1
 				if (dem.stageStruct) {
@@ -591,7 +597,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				DEBUGLOG << "RunModel(): yr=" << yr << " gen=" << gen << " completed survival part 1" << endl;
 #endif
 
-			} // end of the generation loop
+				} // end of the generation loop
 #if RSDEBUG
 			DEBUGLOG << "RunModel(): yr=" << yr << " completed generation loop" << endl;
 #endif
@@ -624,9 +630,9 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				if (totalInds <= 0) { yr++; break; }
 			}
 
-		} // end of the years loop
+			} // end of the years loop
 
-		// Final output and popn. visualisation
+			// Final output and popn. visualisation
 #if BATCH
 		if (sim.saveMaps && yr % sim.mapInt == 0) {
 			if (updateland) {
@@ -647,7 +653,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 
 		pComm->resetPopns();
 
-			//Reset the gradient optimum
+		//Reset the gradient optimum
 		if (grad.gradient) paramsGrad->resetOptY();
 
 		pLandscape->resetLandLimits();
@@ -666,7 +672,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			patchchange = pLandscape->getPatchChange(ixpchchg++);
 			while (patchchange.chgnum <= 666666 && ixpchchg <= npatchchanges) {
 
-			// move cell from original patch to new patch
+				// move cell from original patch to new patch
 				pCell = pLandscape->findCell(patchchange.x, patchchange.y);
 				if (patchchange.oldpatch != 0) { // not matrix
 					pPatch = pLandscape->findPatch(patchchange.oldpatch);
@@ -734,10 +740,14 @@ int RunModel(Landscape* pLandscape, int seqsim)
 		DEBUGLOG << endl << "RunModel(): finished rep=" << rep << endl;
 #endif
 
-	} // end of the replicates loop
+		} // end of the replicates loop
 
-	// Close batch view if still open
-	if (bView.isOpen()) bView.close();
+#ifdef BATCH_VIEW
+	// Keep window open until user closes it
+	while (window.isOpen()) {
+		bView.collectUserInput(window); // e.g. if close was clicked
+	}
+#endif
 
 	if (sim.outConnect && ppLand.patchModel) {
 		pLandscape->deleteConnectMatrix();
@@ -779,7 +789,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 	return 0;
 #endif
 
-}
+		}
 
 #if RS_EMBARCADERO || LINUX_CLUSTER || RS_RCPP 
 // Check whether a specified directory path exists

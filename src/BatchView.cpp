@@ -3,9 +3,9 @@
 BatchView::BatchView(Landscape* pLand, Community* pCommunity) : pLandscape{pLand}, pComm{pCommunity} {
 
 	// Open a window
-	auto window = sf::RenderWindow{ { 1920u, 1080u }, "RangeShifter Batch" };
-	window.setFramerateLimit(144);
-	window.display();
+	// auto window = sf::RenderWindow{ { 1920u, 1080u }, "RangeShifter Batch" };
+	// window.setFramerateLimit(144);
+	// window.display();
 	/*
 	while (window.isOpen())
 	{
@@ -19,7 +19,7 @@ BatchView::BatchView(Landscape* pLand, Community* pCommunity) : pLandscape{pLand
 // Collect and process user window input
 // e.g. clicking, scrolling, typing etc.
 // ---------------------------------------
-void BatchView::collectUserInput() {
+void BatchView::collectUserInput(sf::RenderWindow& window) {
 	if (window.isOpen()) {
 		for (auto event = sf::Event{}; window.pollEvent(event);)
 		{
@@ -33,11 +33,12 @@ void BatchView::collectUserInput() {
 	}
 }
 
-void BatchView::drawLandscape() {
+void BatchView::drawLandscape(sf::RenderWindow& window) {
 
 }
 
-void BatchView::drawCommunity() {
+void BatchView::drawCommunity(sf::RenderWindow& window) {
+	//window.create({ 1920u, 1080u }, "RangeShifter Batch");
 	window.clear();
 	window.display();
 }

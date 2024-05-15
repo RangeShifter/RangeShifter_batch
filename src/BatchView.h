@@ -10,14 +10,14 @@ using namespace std;
 class BatchView {
 public:
 	BatchView::BatchView(Landscape* pLand, Community* pCommunity);
-	bool isOpen() const { return window.isOpen(); }
-	void close() { window.close(); }
-	void collectUserInput();
-	void drawLandscape();
-	void drawCommunity();
+	bool isOpen(sf::RenderWindow& window) const { return window.isOpen(); }
+	//void close() { window.close(); }
+	void collectUserInput(sf::RenderWindow& window);
+	void drawLandscape(sf::RenderWindow& window);
+	void drawCommunity(sf::RenderWindow& window);
 
 private:
-	sf::RenderWindow window;
+	//sf::RenderWindow window;
 
 	Landscape* pLandscape;
 	Community* pComm;
