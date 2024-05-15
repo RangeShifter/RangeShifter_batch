@@ -9,18 +9,20 @@ using namespace std;
 
 class BatchView {
 public:
-	BatchView::BatchView(Landscape* pLand, Community* pCommunity);
-	bool isOpen(sf::RenderWindow& window) const { return window.isOpen(); }
-	//void close() { window.close(); }
+	BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCommunity);
+
 	void collectUserInput(sf::RenderWindow& window);
 	void drawLandscape(sf::RenderWindow& window);
 	void drawCommunity(sf::RenderWindow& window);
 
 private:
-	//sf::RenderWindow window;
-
 	Landscape* pLandscape;
 	Community* pComm;
+
+	unsigned int cellSize;
+	int dimX, dimY;
+
+	sf::Color cellColour = sf::Color(85, 51, 255); // Han purple
 };
 
 #endif ViewH

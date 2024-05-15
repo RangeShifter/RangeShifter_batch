@@ -1,17 +1,16 @@
 #include "Batchview.h"
 
-BatchView::BatchView(Landscape* pLand, Community* pCommunity) : pLandscape{pLand}, pComm{pCommunity} {
+BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCommunity) : 
+	pLandscape{pLand}, 
+	pComm{pCommunity} {
+	
+	// Set cell size such that both dimensions fit on screen
+	dimX = pLandscape->getLandParams().dimX;
+	dimY = pLandscape->getLandParams().dimY;
+	cellSize = min(1920u / dimX, 1080u / dimY);
 
-	// Open a window
-	// auto window = sf::RenderWindow{ { 1920u, 1080u }, "RangeShifter Batch" };
-	// window.setFramerateLimit(144);
-	// window.display();
-	/*
-	while (window.isOpen())
-	{
-		window.clear();
-		window.display();
-	} */
+	window.create(sf::VideoMode{dimX * cellSize, dimY * cellSize}, "RangeShifter Batch");
+	window.setFramerateLimit(144);
 }
 
 
@@ -35,10 +34,28 @@ void BatchView::collectUserInput(sf::RenderWindow& window) {
 
 void BatchView::drawLandscape(sf::RenderWindow& window) {
 
+	for (int x = 0; x < dimX; x++) {
+		for (int y = 0; y < dimY; y++) {
+			Cell* pCell = pLandscape->findCell(x, y);
+			if (pCell != 0) {
+				sf::RectangleShape c(sf::Vector2f(cellSize, cellSize));
+				c.setPosition(cellSize * x, cellSize * y);
+				c.setFillColor(cellColour);
+				window.draw(c);
+			}
+		}
+	}
+
 }
 
 void BatchView::drawCommunity(sf::RenderWindow& window) {
-	//window.create({ 1920u, 1080u }, "RangeShifter Batch");
+
+	// Erase previous community
 	window.clear();
+	drawLandscape(window);
+
+	// Draw current community
+	// ...
+
 	window.display();
 }

@@ -88,11 +88,9 @@ int RunModel(Landscape* pLandscape, int seqsim)
 #endif
 
 #ifdef BATCH_VIEW
-	auto window = sf::RenderWindow{ { 1920u, 1080u }, "RangeShifter Batch" };
-	window.setFramerateLimit(144);
-	window.display();
-	// Initialise batch view
-	BatchView bView(pLandscape, pComm);
+	auto window = sf::RenderWindow{};
+	// Initialise batch view and open window
+	BatchView bView(window, pLandscape, pComm);
 #endif
 
 	// Loop through replicates
