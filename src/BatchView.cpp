@@ -40,7 +40,7 @@ void BatchView::drawLandscape(sf::RenderWindow& window) {
 			if (pCell != 0) {
 				sf::RectangleShape c(sf::Vector2f(cellSize, cellSize));
 				c.setPosition(cellSize * x, cellSize * y);
-				c.setFillColor(cellColour);
+				c.setFillColor(sf::Color(pRandom->IRandom(0, 255), pRandom->IRandom(0, 255), pRandom->IRandom(0, 255)));
 				window.draw(c);
 			}
 		}
