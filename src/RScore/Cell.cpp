@@ -116,16 +116,7 @@ else return habitats[ix];
 void Cell::setPatch(intptr p) {
 pPatch = p;
 }
-intptr Cell::getPatch(void)
-{
-#if RSDEBUG
-//DebugGUI(("Cell::getPatch(): this=" + Int2Str((int)this)
-//	+ " x=" + Int2Str(x) + " y=" + Int2Str(y)
-//	+ " habIxx[0]=" + Int2Str(habIxx[0]) + " pPatch=" + Int2Str(pPatch)
-//).c_str());
-#endif
-return pPatch;
-}
+intptr Cell::getPatch(void) { return pPatch; }
 
 locn Cell::getLocn(void) { locn q; q.x = x; q.y = y; return q; }
 

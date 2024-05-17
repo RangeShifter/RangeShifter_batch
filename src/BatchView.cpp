@@ -33,15 +33,18 @@ void BatchView::collectUserInput(sf::RenderWindow& window) {
 }
 
 void BatchView::drawLandscape(sf::RenderWindow& window) {
+	const int maxY = pLandscape->getLandParams().maxY * cellSize;
 
 	for (int x = 0; x < dimX; x++) {
 		for (int y = 0; y < dimY; y++) {
 			Cell* pCell = pLandscape->findCell(x, y);
 			if (pCell != 0) {
-				sf::RectangleShape c(sf::Vector2f(cellSize, cellSize));
-				c.setPosition(cellSize * x, cellSize * y);
-				c.setFillColor(sf::Color(pRandom->IRandom(0, 255), pRandom->IRandom(0, 255), pRandom->IRandom(0, 255)));
-				window.draw(c);
+				if (pCell->getPatch() != 0) {
+					sf::RectangleShape c(sf::Vector2f(cellSize, cellSize));
+					c.setPosition(cellSize * x, maxY - cellSize * y);
+					c.setFillColor(sf::Color(pRandom->IRandom(0, 255), pRandom->IRandom(0, 255), pRandom->IRandom(0, 255)));
+					window.draw(c);
+				}
 			}
 		}
 	}
