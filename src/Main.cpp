@@ -131,11 +131,11 @@ if (argc > 1) {
 	if (argc > 2) {
 		// control file number also passed as a parameter
 		int i = atoi(argv[2]);
-		cname  = paramsSim->getDir(0) + "Inputs/CONTROL" + Int2Str(i) + ".txt";
+		pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL" + Int2Str(i) + ".txt";
 	}
 	else {
 		// default name is CONTROL.txt
-		cname  = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
+		pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
 	}
 }
 else {
@@ -150,7 +150,7 @@ else {
 	path = path.substr(0,path.length()-nameS.length());
 	paramsSim->setDir(path);
 	// control file name is forced to be CONTROL.txt
-	cname  = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
+	pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
 }
 #else
 if (__argc > 1) {
