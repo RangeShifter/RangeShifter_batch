@@ -2995,7 +2995,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		const regex patternParamsUnif{ "^\"?min=[-]?([0-9]*[.])?[0-9]+,max=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsNormal{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+,sd=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsGamma{ "^\"?shape=[-]?([0-9]*[.])?[0-9]+,scale=[-]?([0-9]*[.])?[0-9]+\"?$" };
-		const regex patternParamsNegExp{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+\"?$" };
+		const regex patternParamsMean{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsSNP{ "^\"?max=[0-9]+\"?$" };
 
 		if (tr == SNP) {
@@ -3097,7 +3097,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 				}
 			}
 			else if (inDominanceDist == "negExp") {
-				isMatch = regex_search(inDominanceParams, patternParamsGamma);
+				isMatch = regex_search(inDominanceParams, patternParamsMean);
 				if (!isMatch) {
 					BatchError(whichInputFile, whichLine, 0, " ");
 					batchLog << "For a negative exponential dominance distribution, DominanceParams must have form mean=float" << endl;
@@ -3105,9 +3105,10 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 				}
 			}
 			else if (inDominanceDist == "scaled") {
-				if (inDominanceParams != "#") {
+				isMatch = regex_search(inDominanceParams, patternParamsMean);
+				if (!isMatch) {
 					BatchError(whichInputFile, whichLine, 0, " ");
-					batchLog << "For a scaled dominance distribution, DominanceParams must be left blank (#)" << endl;
+					batchLog << "For a scaled dominance distribution, DominanceParams must have form mean=float" << endl;
 					nbErrors++;
 				}
 			}
@@ -3224,7 +3225,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 				}
 			}
 			else if (inMutationDist == "negExp") {
-				isMatch = regex_search(inMutationParams, patternParamsNegExp);
+				isMatch = regex_search(inMutationParams, patternParamsMean);
 				if (!isMatch) {
 					BatchError(whichInputFile, whichLine, 0, " ");
 					batchLog << "For a negative exponential distribution, mutationParams must have form mean=float." << endl;
