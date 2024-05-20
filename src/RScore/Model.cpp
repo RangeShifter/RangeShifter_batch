@@ -579,9 +579,9 @@ int RunModel(Landscape* pLandscape, int seqsim)
 
 #ifdef BATCH_VIEW
 				// Display
-				//if (!bView.isOpen()) throw runtime_error("window closed");
-				bView.collectUserInput(window); // e.g. if close was clicked
-				bView.drawCommunity(window);
+				bView.collectUserInput(window);
+				if (window.isOpen()) 
+					bView.drawCommunity(window);
 #endif
 
 				// survival part 1

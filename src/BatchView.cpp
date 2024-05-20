@@ -1,15 +1,15 @@
 #include "Batchview.h"
 
-BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCommunity) : 
-	pLandscape{pLand}, 
-	pComm{pCommunity} {
-	
+BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCommunity) :
+	pLandscape{ pLand },
+	pComm{ pCommunity } {
+
 	// Set cell size such that both dimensions fit on screen
 	dimX = pLandscape->getLandParams().dimX;
 	dimY = pLandscape->getLandParams().dimY;
 	cellSize = min(1920u / dimX, 1080u / dimY);
 
-	window.create(sf::VideoMode{dimX * cellSize, dimY * cellSize}, "RangeShifter Batch");
+	window.create(sf::VideoMode{ dimX * cellSize, dimY * cellSize }, "RangeShifter Batch");
 	window.setFramerateLimit(144);
 }
 
@@ -36,17 +36,22 @@ void BatchView::drawLandscape(sf::RenderWindow& window) {
 	const int maxY = pLandscape->getLandParams().maxY * cellSize;
 
 	for (int x = 0; x < dimX; x++) {
+
+		// Displaying can take long, 
+		// check keys/buttons between columns
+		collectUserInput(window);
+		if (!window.isOpen()) return; // dinnae bother
+
 		for (int y = 0; y < dimY; y++) {
+
 			Cell* pCell = pLandscape->findCell(x, y);
 			if (pCell != 0) {
-				//if (pCell->getPatch() != 0) {
-					sf::RectangleShape c(sf::Vector2f(cellSize, cellSize));
-					int h = pCell->getHabIndex(0);
-					sf::Color col = habitatPalette[h];
-					c.setPosition(cellSize * x, maxY - cellSize * y);
-					c.setFillColor(col);
-					window.draw(c);
-				//}
+				sf::RectangleShape c(sf::Vector2f(cellSize, cellSize));
+				int h = pCell->getHabIndex(0);
+				sf::Color col = habitatPalette[h];
+				c.setPosition(cellSize * x, maxY - cellSize * y);
+				c.setFillColor(col);
+				window.draw(c);
 			}
 		}
 	}
