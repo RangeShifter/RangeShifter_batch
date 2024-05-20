@@ -238,8 +238,8 @@ dfile >> p;
 if (!dfile.eof()) EOFerrorR(distfile);
 #endif
 
-	dfile.close(); dfile.clear();
-	return 0;
+dfile.close(); dfile.clear();
+return 0;
 }
 
 
@@ -2257,7 +2257,7 @@ int Landscape::readCosts(string fname)
 
 	int maxcost = 0;
 
- // open cost file
+	// open cost file
 #if !RS_RCPP || RSWIN64
 	costs.open(fname.c_str());
 #else
@@ -2282,16 +2282,16 @@ int Landscape::readCosts(string fname)
 	if (header != "ncols" && header != "NCOLS") {
 #endif
 
-//	MessageDlg("The selected file is not a raster.",
-//	MessageDlg("Header problem in import_CostsLand()",
-//				mtError, TMsgDlgButtons() << mbRetry,0);
-	costs.close(); costs.clear();
-	return -1;
-}
-double tmpresolCost;		
-costs >> maxXcost >> header >> maxYcost >> header >> minLongCost;
-costs >> header >> minLatCost >> header >> tmpresolCost >> header >> NODATACost;
-resolCost = (int) tmpresolCost;
+		//	MessageDlg("The selected file is not a raster.",
+		//	MessageDlg("Header problem in import_CostsLand()",
+		//				mtError, TMsgDlgButtons() << mbRetry,0);
+		costs.close(); costs.clear();
+		return -1;
+	}
+	double tmpresolCost;
+	costs >> maxXcost >> header >> maxYcost >> header >> minLongCost;
+	costs >> header >> minLatCost >> header >> tmpresolCost >> header >> NODATACost;
+	resolCost = (int)tmpresolCost;
 
 
 #if !RS_RCPP

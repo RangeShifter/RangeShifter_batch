@@ -39,12 +39,14 @@ void BatchView::drawLandscape(sf::RenderWindow& window) {
 		for (int y = 0; y < dimY; y++) {
 			Cell* pCell = pLandscape->findCell(x, y);
 			if (pCell != 0) {
-				if (pCell->getPatch() != 0) {
+				//if (pCell->getPatch() != 0) {
 					sf::RectangleShape c(sf::Vector2f(cellSize, cellSize));
+					int h = pCell->getHabIndex(0);
+					sf::Color col = habitatPalette[h];
 					c.setPosition(cellSize * x, maxY - cellSize * y);
-					c.setFillColor(sf::Color(pRandom->IRandom(0, 255), pRandom->IRandom(0, 255), pRandom->IRandom(0, 255)));
+					c.setFillColor(col);
 					window.draw(c);
-				}
+				//}
 			}
 		}
 	}
