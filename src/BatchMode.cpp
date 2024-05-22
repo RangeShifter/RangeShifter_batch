@@ -2967,8 +2967,8 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 			batchLog << "ExpressionType must be \"multiplicative\" for genetic load traits." << endl;
 			nbErrors++;
 		}
-		const bool isQTL = tr != SNP && tr != GENETIC_LOAD && tr != INVALID_TRAIT;
-		if (isQTL && inExpressionType != "additive" && inExpressionType != "average") {
+		const bool isDisp = tr != SNP && tr != GENETIC_LOAD && tr != INVALID_TRAIT;
+		if (isDisp && inExpressionType != "additive" && inExpressionType != "average") {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << "ExpressionType must be \"additive\" or \"average\" for dispersal traits." << endl;
 			nbErrors++;
@@ -2985,7 +2985,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 			batchLog << "InitialDistribution must be blank (#) for genetic load traits." << endl;
 			nbErrors++;
 		}
-		if (isQTL && inInitDist != "normal" && inInitDist != "uniform") {
+		if (isDisp && inInitDist != "normal" && inInitDist != "uniform") {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << "InitialDistribution must be either normal or uniform for dispersal traits." << endl;
 			nbErrors++;
@@ -3027,7 +3027,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 			batchLog << "For genetic load traits, InitialParameters must be blank (#)" << endl;
 			nbErrors++;
 		}
-		if (isQTL) {
+		if (isDisp) {
 			if (inInitDist == "uniform") {
 				isMatch = regex_search(inInitParams, patternParamsUnif);
 				if (!isMatch) {
@@ -3059,7 +3059,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 				nbErrors++;
 			}
 		}
-		if (isQTL) {
+		if (isDisp) {
 			if (inDominanceDist != "#") {
 				BatchError(whichInputFile, whichLine, 0, " ");
 				batchLog << "DominanceDistribution must be left blank (#) for dispersal traits." << endl;
@@ -3125,7 +3125,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 			batchLog << "isInherited must always be TRUE for neutral and genetic load traits." << endl;
 			nbErrors++;
 		}
-		else if (isQTL) {
+		else if (isDisp) {
 			if (inIsInherited != "TRUE" && inIsInherited != "FALSE") {
 				BatchError(whichInputFile, whichLine, 0, " ");
 				batchLog << "IsInherited must be either TRUE or FALSEfor dispersal traits." << endl;
@@ -3167,7 +3167,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 				nbErrors++;
 			}
 		}
-		if (isQTL) {
+		if (isDisp) {
 			if (inIsInherited == "TRUE") {
 				if (inMutationDist == "uniform") {
 					isMatch = regex_search(inMutationParams, patternParamsUnif);
@@ -3255,7 +3255,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		nbErrors++;
 	}
 
-	//// Check QTL traits and sex-dependencies are complete 
+	//// Check dispersal traits and sex-dependencies are complete 
 	// and consistent with parameters in dispersal input files
 	
 	// Emigration traits
