@@ -66,6 +66,12 @@ void BatchView::drawCommunity(sf::RenderWindow& window) {
 
 	// Draw current community
 	// ...
+	// for (each patch)
+	// getPopn()
+	// for each ind in Popn
+	// get random cell in Patch
+	// get random x and y in cell
+	// draw individual shape there
 
 	window.display();
 }
