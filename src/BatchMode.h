@@ -53,7 +53,7 @@ using namespace std;
 #include "./RScore/Species.h"
 #include "./RScore/Model.h"
 #include "./RScore/SpeciesTrait.h"
-#include "./RScore/SNPTrait.h"
+#include "./RScore/NeutralTrait.h"
 
 struct batchfiles {
 	bool ok;

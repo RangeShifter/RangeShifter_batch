@@ -2922,8 +2922,8 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 				nbErrors++;
 			}
 		}
-		// SNP traits without enabling output is an error
-		else if (!anyNeutralGenetics && tr == SNP) {
+		// Neutral traits without enabling output is an error
+		else if (!anyNeutralGenetics && tr == NEUTRAL) {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << "A neutral trait should not be specified if all neutral stats outputs are turned off in the genetics file." << endl;
 			nbErrors++;
@@ -2957,7 +2957,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		}
 
 		// Check ExpressionType
-		if (tr == SNP && inExpressionType != "#") {
+		if (tr == NEUTRAL && inExpressionType != "#") {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << "ExpressionType must be left blank (#) for the neutral trait." << endl;
 			nbErrors++;
@@ -2967,7 +2967,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 			batchLog << "ExpressionType must be \"multiplicative\" for genetic load traits." << endl;
 			nbErrors++;
 		}
-		const bool isDisp = tr != SNP && tr != GENETIC_LOAD && tr != INVALID_TRAIT;
+		const bool isDisp = tr != NEUTRAL && tr != GENETIC_LOAD && tr != INVALID_TRAIT;
 		if (isDisp && inExpressionType != "additive" && inExpressionType != "average") {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << "ExpressionType must be \"additive\" or \"average\" for dispersal traits." << endl;
@@ -2975,7 +2975,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		}
 
 		// Check InitialDistribution
-		if (tr == SNP && inInitDist != "#" && inInitDist != "uniform") {
+		if (tr == NEUTRAL && inInitDist != "#" && inInitDist != "uniform") {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << "InitialDistribution must be either uniform or left blank (#) for the neutral trait." << endl;
 			nbErrors++;
@@ -2996,11 +2996,11 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		const regex patternParamsNormal{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+,sd=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsGamma{ "^\"?shape=[-]?([0-9]*[.])?[0-9]+,scale=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsMean{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+\"?$" };
-		const regex patternParamsSNP{ "^\"?max=[0-9]+\"?$" };
+		const regex patternParamsNeutral{ "^\"?max=[0-9]+\"?$" };
 
-		if (tr == SNP) {
+		if (tr == NEUTRAL) {
 			if (inInitDist == "uniform") {
-				isMatch = regex_search(inInitParams, patternParamsSNP);
+				isMatch = regex_search(inInitParams, patternParamsNeutral);
 				if (!isMatch) {
 					BatchError(whichInputFile, whichLine, 0, " ");
 					batchLog << "For neutral trait with uniform initialisation, InitialParameters must have form max=int" << endl;
@@ -3047,7 +3047,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		}
 
 		// Check DominanceDistribution and DominanceParameters
-		if (tr == SNP) {
+		if (tr == NEUTRAL) {
 			if (inDominanceDist != "#") {
 				BatchError(whichInputFile, whichLine, 0, " ");
 				batchLog << "DominanceDistribution must be left blank (#) for the neutral trait." << endl;
@@ -3120,7 +3120,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		}
 
 		// Check isInherited and MutationRate
-		if ((tr == SNP || tr == GENETIC_LOAD) && inIsInherited != "TRUE") {
+		if ((tr == NEUTRAL || tr == GENETIC_LOAD) && inIsInherited != "TRUE") {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << "isInherited must always be TRUE for neutral and genetic load traits." << endl;
 			nbErrors++;
@@ -3144,9 +3144,9 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		}
 
 		// Check MutationDistribution and MutationParameters
-		if (tr == SNP) {
+		if (tr == NEUTRAL) {
 			if (inMutationDist == "KAM" || inMutationDist == "SSM") {
-				isMatch = regex_search(inMutationParams, patternParamsSNP);
+				isMatch = regex_search(inMutationParams, patternParamsNeutral);
 				if (!isMatch) {
 					BatchError(whichInputFile, whichLine, 0, " ");
 					batchLog << "For a neutral trait, mutationParams must have form max=int." << endl;
@@ -3248,7 +3248,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 	} // end of while loop
 
 	// If genetic output is enabled, a neutral trait must exists
-	bool hasNeutral = traitExists(SNP, allReadTraits);
+	bool hasNeutral = traitExists(NEUTRAL, allReadTraits);
 	if (anyNeutralGenetics && !hasNeutral) {
 		BatchError(whichInputFile, -999, 0, " ");
 		batchLog << "A neutral stats output option is turned on in genetics file but no neutral trait is specified in traits file." << endl;
@@ -4879,7 +4879,7 @@ void setUpSpeciesTrait(vector<string> parameters) {
 // Convert string to corresponding TraitType value, if valid
 TraitType stringToTraitType(const std::string& str) {
 	// Non-dispersal traits
-	if (str == "neutral") return SNP;
+	if (str == "neutral") return NEUTRAL;
 	else if (str == "genetic_load") return GENETIC_LOAD;
 	// Sex-invariant dispersal traits
 	else if (str == "emigration_d0") return E_D0; // EP uses d0 for trait data
