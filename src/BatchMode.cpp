@@ -5827,9 +5827,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 					params_ok = false;
 				}
 				if (params_ok) {
-#if RSDEBUG
-					DebugGUI("RunBatch(): simulation i=" + Int2Str(i));
-#endif
 					pSpecies->setNChromosomes(0);
 					pSpecies->setTraits();
 				}
