@@ -63,15 +63,7 @@ using namespace std;
 #include <direct.h>
 #endif
 
-void MemoLine(string msg) {
-// dummy function for batch version
-}
-
 #if RSDEBUG
-void DebugGUI(string msg) {
-// dummy function for batch version
-}
-
 void run_batch_unit_tests() {
 	cout << "******* Unit test output for batch interface *******" << endl;
 	// call tests here
@@ -317,17 +309,6 @@ To do so, we would need a form of bit map which is portable across platforms
 and operating systems, rather than the Embarcadero VCL classes.
 Does such exist?
 */
-
-traitCanvas SetupTraitCanvas(void) {
-	traitCanvas tcanv;
-	for (int i = 0; i < NTRAITS; i++) { tcanv.pcanvas[i] = 0; }
-	return tcanv;
-}
-
-void Landscape::setLandMap(void) { }
-void Landscape::drawLandscape(int rep,int yr,int landnum) { }
-void Community::viewOccSuit(int year,double mn,double se) { }
-void Community::draw(int rep,int yr,int gen,int landNum) { }
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

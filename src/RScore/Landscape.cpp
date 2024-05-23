@@ -1283,6 +1283,9 @@ int Landscape::readLandChange(int filenum, bool costs)
 		}
 		if (costs) {
 			if (c < 1) { // invalid cost
+#if RS_RCPP
+			    Rcpp::Rcout << "Found invalid cost value of " << c << " in cell x " << x << " and y  " << y << std::endl;
+#endif
 				hfile.close(); hfile.clear();
 				if (pfile.is_open()) {
 					pfile.close(); pfile.clear();
@@ -1294,8 +1297,8 @@ int Landscape::readLandChange(int filenum, bool costs)
 			}
 		}
 	}
-			}
-		}
+			} // for x
+		} // for y
 #if RS_RCPP
 		hfile >> hfloat;
 		if (!hfile.eof()) EOFerrorR("habitatchgfile");
@@ -1421,6 +1424,9 @@ int Landscape::readLandChange(int filenum, bool costs)
 			}
 			if (costs) {
 				if (c < 1) { // invalid cost
+#if RS_RCPP
+				    Rcpp::Rcout << "Found invalid cost value of " << c << "in cell x " << x << " and y  " << y << std::endl;
+#endif
 					hfile.close(); hfile.clear();
 					if (pfile.is_open()) {
 						pfile.close(); pfile.clear();
@@ -1432,8 +1438,8 @@ int Landscape::readLandChange(int filenum, bool costs)
 				}
 			}
 		}
-			}
-		}
+			} // end x
+		} // end y
 #if RS_RCPP
 		hfile >> hfloat;
 		if (!hfile.eof()) EOFerrorR("habitatchgfile");
@@ -1658,7 +1664,7 @@ bool Landscape::inInitialDist(Species* pSpecies, locn loc) {
 void Landscape::deleteDistribution(Species* pSpecies) {
 	// WILL NEED TO SELECT DISTRIBUTION FOR CORRECT SPECIES ...
 	// ... CURRENTLY IT IS THE ONLY ONE ...
-	// ... FOR MULTIPLE SPECIES IT MAY BE BETTER TO USE A DYNAMIC ARRAY FOR 
+	// ... FOR MULTIPLE SPECIES IT MAY BE BETTER TO USE A DYNAMIC ARRAY FOR
 	// SPECIES DISTRIBUTIONS INDEXED BY SPECIES NUMBER, RATHER THAN A VECTOR
 	if (distns[0] != 0) delete distns[0]; distns.clear();
 }
@@ -1938,7 +1944,7 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 						if (existsPatch(p)) {
 							pPatch = findPatch(p);
 							addNewCellToPatch(pPatch, x, y, h);
-							//								addNewCellToPatch(findPatch(p),x,y,h);   
+							//								addNewCellToPatch(findPatch(p),x,y,h);
 						}
 						else {
 							pPatch = newPatch(seq++, p);
@@ -2282,21 +2288,16 @@ int Landscape::readCosts(string fname)
 	if (header != "ncols" && header != "NCOLS") {
 #endif
 
-		//	MessageDlg("The selected file is not a raster.",
-		//	MessageDlg("Header problem in import_CostsLand()",
-		//				mtError, TMsgDlgButtons() << mbRetry,0);
-		costs.close(); costs.clear();
-		return -1;
-	}
-	double tmpresolCost;
-	costs >> maxXcost >> header >> maxYcost >> header >> minLongCost;
-	costs >> header >> minLatCost >> header >> tmpresolCost >> header >> NODATACost;
-	resolCost = (int)tmpresolCost;
-
-
-#if !RS_RCPP
-	MemoLine("Loading costs map. Please wait...");
-#endif
+//	MessageDlg("The selected file is not a raster.",
+//	MessageDlg("Header problem in import_CostsLand()",
+//				mtError, TMsgDlgButtons() << mbRetry,0);
+	costs.close(); costs.clear();
+	return -1;
+}
+double tmpresolCost;
+costs >> maxXcost >> header >> maxYcost >> header >> minLongCost;
+costs >> header >> minLatCost >> header >> tmpresolCost >> header >> NODATACost;
+resolCost = (int) tmpresolCost;
 
 	for (int y = maxYcost - 1; y > -1; y--) {
 		for (int x = 0; x < maxXcost; x++) {
@@ -2321,7 +2322,7 @@ int Landscape::readCosts(string fname)
 #endif
 	if (hc < 1 && hc != NODATACost) {
 #if RS_RCPP && !R_CMD
-		Rcpp::Rcout << "Cost map my only contain values of 1 or higher, but found " << fcost << "." << endl;
+		Rcpp::Rcout << "Cost map may only contain values of 1 or higher, but found " << fcost << "." << endl;
 #endif
 		// error - zero / negative cost not allowed
 		costs.close(); costs.clear();
@@ -2329,9 +2330,18 @@ int Landscape::readCosts(string fname)
 	}
 	pCell = findCell(x, y);
 	if (pCell != 0) { // not no-data cell
-		pCell->setCost(hc);
-		if (hc > maxcost) maxcost = hc;
-	}
+	    if (hc > 0){ // only if cost value is  above 0 in a data cell
+	        pCell->setCost(hc);
+		    if (hc > maxcost) maxcost = hc;
+	    } else { // if cost value is below 0
+#if RS_RCPP && !R_CMD
+	    Rcpp::Rcout << "Cost map may only contain values of 1 or higher in habiat cells, but found " << hc << " in cell x: " << x << " y: " << y << "." << endl;
+#endif
+	    // costs.close(); costs.clear(); // not sure if it should stop at this point
+	    // return -999;
+	    }
+
+	} // end not no data vell
 		}
 	}
 #if RS_RCPP
@@ -2342,8 +2352,6 @@ if (costs.eof()) {
 #endif
 }
 else EOFerrorR(fname);
-#else
-MemoLine("Costs map loaded.");
 #endif
 
 costs.close(); costs.clear();
@@ -2368,40 +2376,22 @@ rasterdata CheckRasterFile(string fname)
 	infile.open(fname.c_str());
 	if (infile.is_open()) {
 		infile >> header >> r.ncols;
-#if RSDEBUG
-		DebugGUI(("CheckRasterFile(): header=" + header + " r.ncols=" + Int2Str(r.ncols)
-			).c_str());
-#endif
+
 		if (header != "ncols" && header != "NCOLS") r.errors++;
 		infile >> header >> r.nrows;
-#if RSDEBUG
-		DebugGUI(("CheckRasterFile(): header=" + header + " r.nrows=" + Int2Str(r.nrows)
-			).c_str());
-#endif
+
 		if (header != "nrows" && header != "NROWS") r.errors++;
 		infile >> header >> r.xllcorner;
-#if RSDEBUG
-		DebugGUI(("CheckRasterFile(): header=" + header + " r.xllcorner=" + Float2Str(r.xllcorner)
-			).c_str());
-#endif
+
 		if (header != "xllcorner" && header != "XLLCORNER") r.errors++;
 		infile >> header >> r.yllcorner;
-#if RSDEBUG
-		DebugGUI(("CheckRasterFile(): header=" + header + " r.yllcorner=" + Float2Str(r.yllcorner)
-			).c_str());
-#endif
+
 		if (header != "yllcorner" && header != "YLLCORNER") r.errors++;
 		infile >> header >> r.cellsize;
-#if RSDEBUG
-		DebugGUI(("CheckRasterFile(): header=" + header + " r.cellsize=" + Int2Str(r.cellsize)
-			).c_str());
-#endif
+
 		if (header != "cellsize" && header != "CELLSIZE") r.errors++;
 		infile >> header >> inint;
-#if RSDEBUG
-		DebugGUI(("CheckRasterFile(): header=" + header + " inint=" + Int2Str(inint)
-			).c_str());
-#endif
+
 		if (header != "NODATA_value" && header != "NODATA_VALUE") r.errors++;
 		infile.close();
 		infile.clear();
