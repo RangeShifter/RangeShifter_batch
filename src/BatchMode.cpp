@@ -3696,7 +3696,12 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 
 		// Check RecombinationRate
-		if (inRecombinationRate != "#") {
+		if (gNbSexesDisp && inRecombinationRate != "#") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "Do not specify a recombination rate for haploid/asexual systems." << endl;
+			nbErrors++;
+		}
+		else if (inRecombinationRate != "#") {
 			float recombinationRate = stof(inRecombinationRate);
 			if (recombinationRate < 0.0 || recombinationRate > 0.5) {
 				BatchError(whichFile, whichLine, 0, " ");
