@@ -545,6 +545,17 @@ void Landscape::addPatchNum(int p) {
 }
 
 
+// Read patch numbers directly from patches
+std::vector<int> Landscape::readPatchNums() const {
+	std::vector<int> patchnums;
+	for (auto p : patches) {
+		patchnums.push_back(p->getPatchNum());
+	}
+	return patchnums;
+}
+
+
+
 //---------------------------------------------------------------------------
 /* Create an artificial landscape (random or fractal), which can be
 either binary (habitat index 0 is the matrix, 1 is suitable habitat)

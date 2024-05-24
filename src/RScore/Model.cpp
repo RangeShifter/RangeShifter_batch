@@ -560,7 +560,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				// Display
 				bView.collectUserInput(window);
 				if (window.isOpen()) 
-					bView.drawCommunity(window);
+					bView.drawCommunity(window, pSpecies);
 #endif
 
 				// survival part 1

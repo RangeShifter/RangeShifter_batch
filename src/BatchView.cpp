@@ -58,7 +58,7 @@ void BatchView::drawLandscape(sf::RenderWindow& window) {
 
 }
 
-void BatchView::drawCommunity(sf::RenderWindow& window) {
+void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies) {
 
 	// Erase previous community
 	window.clear();
@@ -72,6 +72,35 @@ void BatchView::drawCommunity(sf::RenderWindow& window) {
 	// get random cell in Patch
 	// get random x and y in cell
 	// draw individual shape there
+	
+	// get patchnums
+	// pLandscape->findPatch
+	Patch* pPatch;
+	Population* pPop;
+	int popSize;
+	Cell* pRandCell;
+	locn cellLocn;
 
+	sf::CircleShape cInd;
+	
+	const vector<int> patchIndices = pLandscape->readPatchNums();
+	for (int iPch : patchIndices) {
+		if (iPch == 0) continue; // ignore individuals in matrix
+		pPatch = pLandscape->findPatch(iPch);
+		pPop = (Population*)pPatch->getPopn((intptr)pSpecies);
+		if (pPop != 0) {
+			popSize = pPop->getNInds();
+			for (int i = 0; i < popSize; i++) {
+				pRandCell = pPatch->getRandomCell();
+				cellLocn = pRandCell->getLocn();
+
+				cInd = indShape;
+				cInd.setFillColor(indColour);
+				// Randomise position inside the cell
+				cInd.setPosition(cellLocn.x * pRandom->Random() * cellSize, cellLocn.y * pRandom->Random() * cellSize);
+				window.draw(cInd);
+			}
+		}
+	}
 	window.display();
 }
