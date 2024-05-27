@@ -5614,7 +5614,7 @@ int ReadEmigration(int option)
 					emigrationTraits.d0 = inEp; 
 					emigrationTraits.alpha = emigrationTraits.beta = 0.0;
 				}
-				pSpecies->setEmigTraits(inStage, inSex, emigrationTraits);
+				pSpecies->setSpEmigTraits(inStage, inSex, emigrationTraits);
 			}
 			else { // !emig.stgDep
 
@@ -5627,7 +5627,7 @@ int ReadEmigration(int option)
 					emigrationTraits.d0 = inEp; 
 					emigrationTraits.alpha = emigrationTraits.beta = 0.0;
 				}
-				pSpecies->setEmigTraits(0, inSex, emigrationTraits);
+				pSpecies->setSpEmigTraits(0, inSex, emigrationTraits);
 
 			}
 		}
@@ -5637,12 +5637,12 @@ int ReadEmigration(int option)
 					emigrationTraits.d0 = inD0; 
 					emigrationTraits.alpha = inAlpha; 
 					emigrationTraits.beta = inBeta;
-					pSpecies->setEmigTraits(inStage, 0, emigrationTraits);
+					pSpecies->setSpEmigTraits(inStage, 0, emigrationTraits);
 				}
 				else {
 					emigrationTraits.d0 = inEp; 
 					emigrationTraits.alpha = emigrationTraits.beta = 0.0;
-					pSpecies->setEmigTraits(inStage, 0, emigrationTraits);
+					pSpecies->setSpEmigTraits(inStage, 0, emigrationTraits);
 				}
 			}
 			else { // !emig.stgDep
@@ -5655,7 +5655,7 @@ int ReadEmigration(int option)
 					emigrationTraits.d0 = inEp; 
 					emigrationTraits.alpha = emigrationTraits.beta = 0.0;
 				}
-				pSpecies->setEmigTraits(0, 0, emigrationTraits);
+				pSpecies->setSpEmigTraits(0, 0, emigrationTraits);
 			}
 		}
 
@@ -5797,7 +5797,7 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 
 		case 0: // no sex / stage dependence
 			transFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
-			pSpecies->setKernTraits(0, 0, kernParams, paramsLand.resol);
+			pSpecies->setSpKernTraits(0, 0, kernParams, paramsLand.resol);
 			break;
 
 		case 1: // sex-dependent
@@ -5809,7 +5809,7 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 				transFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
 				kernParams.probKern1 = 1.0;
 			}
-			pSpecies->setKernTraits(0, inSex, kernParams, paramsLand.resol);
+			pSpecies->setSpKernTraits(0, inSex, kernParams, paramsLand.resol);
 
 			break;
 
@@ -5822,7 +5822,7 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 				transFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
 				kernParams.probKern1 = 1.0;
 			}
-			pSpecies->setKernTraits(inStage, 0, kernParams, paramsLand.resol);
+			pSpecies->setSpKernTraits(inStage, 0, kernParams, paramsLand.resol);
 			break;
 
 		case 3: // sex- & stage-dependent
@@ -5834,7 +5834,7 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 				transFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
 				kernParams.probKern1 = 1.0;
 			}
-			pSpecies->setKernTraits(inStage, inSex, kernParams, paramsLand.resol);
+			pSpecies->setSpKernTraits(inStage, inSex, kernParams, paramsLand.resol);
 			break;
 		} // end of switch (sexkernels)
 
@@ -5930,7 +5930,7 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 		}
 	}
 	pSpecies->setTrfrRules(trfr);
-	pSpecies->setMovtTraits(move);
+	pSpecies->setSpMovtTraits(move);
 }
 
 int ReadTransferCRW(transferRules trfr, const landParams& paramsLand) {
@@ -5971,7 +5971,7 @@ int ReadTransferCRW(transferRules trfr, const landParams& paramsLand) {
 		}
 	}
 	pSpecies->setTrfrRules(trfr);
-	pSpecies->setMovtTraits(move);
+	pSpecies->setSpMovtTraits(move);
 	return error;
 }
 
@@ -6063,7 +6063,7 @@ int ReadSettlement(int option)
 			pSpecies->setSettRules(stageToSet, sexToSet, srules);
 			pSpecies->setSteps(stageToSet, sexToSet, ssteps);
 			if (srules.densDep) {
-				pSpecies->setSettTraits(stageToSet, sexToSet, settleDD);
+				pSpecies->setSpSettTraits(stageToSet, sexToSet, settleDD);
 			}
 
 			if (!sett.stgDep) {
@@ -6072,12 +6072,12 @@ int ReadSettlement(int option)
 						for (int stg = 1; stg < sstruct.nStages; stg++) {
 							pSpecies->setSettRules(stg, 0, srules);
 							pSpecies->setSteps(stg, 0, ssteps);
-							pSpecies->setSettTraits(stg, 0, settleDD);
+							pSpecies->setSpSettTraits(stg, 0, settleDD);
 							if (hasMales) { // model is sexual - also set parameters for males
 								pSpecies->setSettRules(stg, 1, srules);
 								pSpecies->setSteps(stg, 1, ssteps);
 								if (srules.densDep && !sett.indVar) 
-									pSpecies->setSettTraits(stg, 1, settleDD);
+									pSpecies->setSpSettTraits(stg, 1, settleDD);
 							}
 						}
 					}
@@ -6086,7 +6086,7 @@ int ReadSettlement(int option)
 							pSpecies->setSettRules(0, 1, srules);
 							pSpecies->setSteps(0, 1, ssteps);
 							if (srules.densDep) {
-								pSpecies->setSettTraits(0, 1, settleDD);
+								pSpecies->setSpSettTraits(0, 1, settleDD);
 							}
 						}
 					}
@@ -6097,7 +6097,7 @@ int ReadSettlement(int option)
 							pSpecies->setSettRules(stg, sexToSet, srules);
 							pSpecies->setSteps(stg, sexToSet, ssteps);
 							if (srules.densDep && !sett.indVar) 
-								pSpecies->setSettTraits(stg, sexToSet, settleDD);
+								pSpecies->setSpSettTraits(stg, sexToSet, settleDD);
 						}
 					}
 				}
@@ -6108,7 +6108,7 @@ int ReadSettlement(int option)
 						pSpecies->setSettRules(stageToSet, 1, srules);
 						pSpecies->setSteps(stageToSet, 1, ssteps);
 						if (srules.densDep) {
-							pSpecies->setSettTraits(stageToSet, 1, settleDD);
+							pSpecies->setSpSettTraits(stageToSet, 1, settleDD);
 						}
 					}
 				}
