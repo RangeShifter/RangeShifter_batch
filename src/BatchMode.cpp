@@ -5473,7 +5473,7 @@ int ReadStageWeights(int option)
 	if (dem.repType != 2) 
 		n = sstruct.nStages;
 	else 
-		n = sstruct.nStages * maxNbSexes;
+		n = sstruct.nStages * gMaxNbSexes;
 
 	switch (option) {
 
