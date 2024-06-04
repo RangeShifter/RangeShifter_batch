@@ -1,8 +1,13 @@
 #!/bin/bash
 
 # Check that Rangeshifter outputs in Debug mode match pre-set expectations
-# First arg should indicate which test scenario to go to
+# The Outputs folder for the scenario must have been populated (by running RangeShifter for this scenario)
+
+# Syntax:
+# - active directory must be run_on_gha
+# - first argument must be the name of the scenario, e.g. 01
 test_dir=test_scenario_$1
+
 
 # MacOS number generation differs from Ubuntu and Windows so different set of expectations
 if [ $OSTYPE == "darwin21" ]; then osdir=macos ; else osdir=windows_ubuntu ; fi
@@ -20,9 +25,9 @@ fi
 any_diff=0
 for filename in ${test_dir}/Outputs/*.txt; do
 	# Ignore anchor; Batch and Debug logs are uninteresting to compare
-	if [ $filename != ${test_dir}/Outputs/git_anchor.txt ] 
-	&& [ $filename != ${test_dir}/Outputs/BatchLog.txt ] 
-	&& [ $filename != ${test_dir}/Outputs/DebugLog.txt ]
+	if [ $filename != ${test_dir}/Outputs/git_anchor.txt ] && 
+	[ $filename != ${test_dir}/Outputs/BatchLog.txt ] && 
+	[ $filename != ${test_dir}/Outputs/DebugLog.txt ]
 	then 
 		matching_expectation="${test_dir}/Outputs/expected/${osdir}/${filename#${test_dir}/Outputs/}"
 		# Ignore input filenames in Parameters which vary with OS
