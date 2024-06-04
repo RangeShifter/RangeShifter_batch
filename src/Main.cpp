@@ -123,7 +123,7 @@ paramsInit = new paramInit;
 paramsSim = new paramSim;                
 
 // set up working directory and control file name
-string cname;
+string pathToControlFile;
 #if LINUX_CLUSTER || RS_RCPP
 if (argc > 1) {
 	// full path name of directory passed as a parameter
@@ -131,11 +131,11 @@ if (argc > 1) {
 	if (argc > 2) {
 		// control file number also passed as a parameter
 		int i = atoi(argv[2]);
-		cname  = paramsSim->getDir(0) + "Inputs/CONTROL" + Int2Str(i) + ".txt";
+		pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL" + to_string(i) + ".txt";
 	}
 	else {
 		// default name is CONTROL.txt
-		cname  = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
+		pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
 	}
 }
 else {
@@ -150,7 +150,7 @@ else {
 	path = path.substr(0,path.length()-nameS.length());
 	paramsSim->setDir(path);
 	// control file name is forced to be CONTROL.txt
-	cname  = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
+	pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
 }
 #else
 if (__argc > 1) {
@@ -158,11 +158,11 @@ if (__argc > 1) {
 	paramsSim->setDir(__argv[1]);
 	if (__argc > 2) {
 		// control file name also passed as a parameter
-		cname = paramsSim->getDir(0) + "Inputs\\" + __argv[2];
+		pathToControlFile = paramsSim->getDir(0) + "Inputs\\" + __argv[2];
 }
 	else {
 		// default name is CONTROL.txt
-		cname = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
+		pathToControlFile = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
 	}
 }
 else {
@@ -173,13 +173,13 @@ else {
 	dir = dir + "\\"; //Current directory path
 	paramsSim->setDir(dir);
 	// control file name is forced to be CONTROL.txt
-	cname = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
+	pathToControlFile = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
 }
 #endif
 #if RSDEBUG
 cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
 cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
-cout << endl << "Control file:      " << cname << endl << endl;
+cout << endl << "Control file:      " << pathToControlFile << endl << endl;
 #endif
 
 bool errorfolder = CheckDirectory();
@@ -207,33 +207,34 @@ else
 #endif
 
 // set up species
-// FOR MULTI-SPECIES MODEL, THERE WILL BE AN ARRAY OF SPECIES POINTERS
-// OR A COMMUNITY CLASS TO HOLD THE SPECIES
 pSpecies = new Species;
-demogrParams dem = pSpecies->getDemogr();
-stageParams sstruct = pSpecies->getStage();
-trfrRules trfr = pSpecies->getTrfr();
+demogrParams dem = pSpecies->getDemogrParams();
+stageParams sstruct = pSpecies->getStageParams();
+transferRules trfr = pSpecies->getTransferRules();
 
 batchfiles b;
 string indir  = paramsSim->getDir(1);
 string outdir = paramsSim->getDir(2);
-b = ParseControlFile(cname,indir,outdir);       
+b = ParseControlAndCheckInputFiles(pathToControlFile, indir, outdir);       
 if (b.ok) { 
 	nSimuls = b.nSimuls;
 	nLandscapes = b.nLandscapes;
 	dem.repType = b.reproductn;
 	dem.repSeasons = b.repseasons;
-	if (b.stagestruct == 0) dem.stageStruct = false; else dem.stageStruct = true;
+	if (b.stagestruct == 0) 
+		dem.stageStruct = false; 
+	else dem.stageStruct = true;
 	sstruct.nStages = b.stages;
-	if (b.transfer == 0) trfr.moveModel = false;
+	if (b.transfer == 0) 
+		trfr.usesMovtProc = false;
 	else {
-		trfr.moveModel = true;
+		trfr.usesMovtProc = true;
 		trfr.moveType = b.transfer;
 	}
 	cout << endl << "Batch input files OK" << endl;
 	pSpecies->setDemogr(dem);
 	pSpecies->setStage(sstruct);
-	pSpecies->setTrfr(trfr);
+	pSpecies->setTrfrRules(trfr);
 	simParams sim = paramsSim->getSim();
 	sim.batchMode = true;
 	sim.batchNum = b.batchNum;  
@@ -242,9 +243,6 @@ if (b.ok) {
 else {
 	cout << endl << "Error in parsing batch input files - see BatchLog file for details" << endl;
 }
-#if RSDEBUG
-DEBUGLOG << "Main(): dem.repType = " << dem.repType << endl;
-#endif
 
 // set up random number class
 #if RS_RCPP
@@ -262,7 +260,14 @@ DEBUGLOG << "Main(): dem.repType = " << dem.repType << endl;
 randomCheck();
 #else
 if (b.ok) {
-	RunBatch(nSimuls, nLandscapes);
+	try
+	{
+		RunBatch(nSimuls, nLandscapes);
+	}
+	catch (const std::exception& e)
+	{
+		cerr << endl << "Error: " << e.what() << endl;
+	}
 }
 #endif
 
@@ -302,17 +307,6 @@ To do so, we would need a form of bit map which is portable across platforms
 and operating systems, rather than the Embarcadero VCL classes.
 Does such exist?
 */
-
-traitCanvas SetupTraitCanvas(void) {
-	traitCanvas tcanv;
-	for (int i = 0; i < NTRAITS; i++) { tcanv.pcanvas[i] = 0; }
-	return tcanv;
-}
-
-void Landscape::setLandMap(void) { }
-void Landscape::drawLandscape(int rep,int yr,int landnum) { }
-void Community::viewOccSuit(int year,double mn,double se) { }
-void Community::draw(int rep,int yr,int gen,int landNum) { }
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

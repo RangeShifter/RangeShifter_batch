@@ -33,7 +33,7 @@ Patch::Patch(int seqnum, int num)
 	xMin = yMin = 999999999; xMax = yMax = 0; x = y = 0;
 	subCommPtr = 0;
 	localK = 0.0;
-	for (int sex = 0; sex < NSEXES; sex++) {
+	for (int sex = 0; sex < gMaxNbSexes; sex++) {
 		nTemp[sex] = 0;
 	}
 	changed = false;
@@ -326,7 +326,7 @@ void Patch::resetPopn(void) {
 }
 
 void Patch::resetPossSettlers(void) {
-	for (int sex = 0; sex < NSEXES; sex++) {
+	for (int sex = 0; sex < gMaxNbSexes; sex++) {
 		nTemp[sex] = 0;
 	}
 }
@@ -338,7 +338,7 @@ void Patch::incrPossSettler(Species* pSpecies, int sex) {
 	//	<< " sex = " << sex << endl;
 #endif
 // NOTE: THE FOLLOWING OPERATION WILL NEED TO BE MADE SPECIES-SPECIFIC...
-	if (sex >= 0 && sex < NSEXES) {
+	if (sex >= 0 && sex < gMaxNbSexes) {
 		nTemp[sex]++;
 	}
 }
@@ -350,8 +350,13 @@ int Patch::getPossSettlers(Species* pSpecies, int sex) {
 	//	<< " sex = " << sex << endl;
 #endif
 // NOTE: THE FOLLOWING OPERATION WILL NEED TO BE MADE SPECIES-SPECIFIC...
-	if (sex >= 0 && sex < NSEXES) return nTemp[sex];
+	if (sex >= 0 && sex < gMaxNbSexes) return nTemp[sex];
 	else return 0;
+}
+
+bool Patch::speciesIsPresent(Species* pSpecies) {
+	const auto pPop = this->getPopn((intptr)pSpecies);
+	return pPop != 0;
 }
 
 //---------------------------------------------------------------------------

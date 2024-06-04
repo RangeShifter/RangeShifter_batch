@@ -52,7 +52,7 @@
 
 #include "Parameters.h"
 #include "SpeciesTrait.h"
-#include "TTrait.h"
+#include "QuantitativeTrait.h"
 
 class SpeciesTrait;
 
@@ -100,15 +100,15 @@ struct emigTraits {
 
 // structures for transfer parameters
 
-struct trfrRules {
-	bool moveModel; bool stgDep; bool sexDep;
+struct transferRules {
+	bool usesMovtProc; bool stgDep; bool sexDep;
 	bool distMort; bool indVar;
 	bool twinKern;
 	bool habMort;
 	short moveType; bool costMap;
 	short movtTrait[2];
 };
-struct trfrKernTraits {
+struct trfrKernelParams {
 	float	meanDist1;
 	float	meanDist2;
 	float	probKern1;
@@ -116,22 +116,22 @@ struct trfrKernTraits {
 struct trfrMortParams {
 	float fixedMort; float mortAlpha; float mortBeta;
 };
-struct trfrMovtTraits {
+struct trfrMovtParams {
 	short	pr; short	prMethod; short	memSize; short goalType;
 	float	dp; float	gb; float alphaDB; int betaDB;
 	float	stepMort; float	stepLength; float	rho;
-	bool straigtenPath;
+	bool straightenPath;
 };
 struct trfrCRWTraits {
 	float	stepMort;
 	float	stepLength;
 	float	rho;
-	bool	straigtenPath;
+	bool	straightenPath;
 };
 struct trfrSMSTraits {
 	short	pr; short	prMethod; short	memSize; short goalType;
 	float	dp; float	gb; float alphaDB; int betaDB; float	stepMort;
-	bool straigtenPath;
+	bool straightenPath;
 };
 
 // structures for settlement parameters
@@ -187,11 +187,11 @@ public:
 	void setStage( // Set stage structure parameters
 		const stageParams	// structure holding stage structure parameters
 	);
-	stageParams getStage(void); // Get stage structure parameters
+	stageParams getStageParams(void); // Get stage structure parameters
 	void setDemogr( // Set general demographic parameters
 		const demogrParams	// structure holding general demographic parameters
 	);
-	demogrParams getDemogr(void); // Get general demographic parameters
+	demogrParams getDemogrParams(void); // Get general demographic parameters
 	short getRepType(void);
 	bool stageStructured(void);
 	void setDensDep( // Set demographic density dependence coefficients
@@ -298,57 +298,54 @@ public:
 		return stagesToSampleFrom;
 	}
 
-	string getNSampleCellsFst() {
-		return nSampleCellsFst;
+	int getNbPatchesToSample() {
+		return nPatchesToSample;
 	}
 
 	// Genetic functions
-	void turnOffMutations(void);
 	void resetGeneticParameters();
 	bool areMutationsOn(void);
 	bool isDiploid() const;
-	void setNumberOfNeutralLoci(int);
-	int getNumberOfNeutralLoci() const;
-	int incrementAdaptiveTraits();
-	int getNumberOfAdaptiveTraits() const;
+	int incrNbGenLoadTraits();
+	int getNbGenLoadTraits() const;
 
 	// emigration parameter functions
 
-	void setEmig( // Set emigration rules
+	void setEmigRules( // Set emigration rules
 		const emigRules	// structure holding emigration rules
 	);
-	emigRules getEmig(void); // Get emigration rules
-	void setEmigTraits( // Set emigration trait parameters
+	emigRules getEmigRules(void); // Get emigration rules
+	void setSpEmigTraits( // Set emigration trait parameters
 		const short,			// stage
 		const short,			// sex
 		const emigTraits	// structure holding emigration trait parameters
 	);
-	emigTraits getEmigTraits( // Get emigration trait parameters
+	emigTraits getSpEmigTraits( // Get emigration trait parameters
 		short,	// stage
 		short		// sex
 	);
-	float getEmigD0( // Get (maximum) emigration probability
+	float getSpEmigD0( // Get (maximum) emigration probability
 		short,	// stage
 		short		// sex
 	);
 
 	// transfer parameter functions
 
-	void setTrfr( // Set transfer rules
-		const trfrRules	// structure holding transfer rules
+	void setTrfrRules( // Set transfer rules
+		const transferRules	// structure holding transfer rules
 	);
-	trfrRules getTrfr(void); // Get transfer rules
+	transferRules getTransferRules(void); // Get transfer rules
 	void setFullKernel( // Set fullKernel condition
 		bool						// fullKernel value
 	);
 	bool useFullKernel(void);
-	void setKernTraits( // Set transfer by kernel parameters
+	void setSpKernTraits( // Set transfer by kernel parameters
 		const short,					// stage
 		const short,					// sex
-		const trfrKernTraits,	// structure holding transfer by kernel parameters
+		const trfrKernelParams,	// structure holding transfer by kernel parameters
 		const int							// Landscape resolution
 	);
-	trfrKernTraits getKernTraits( // Get transfer by kernel parameters
+	trfrKernelParams getSpKernTraits( // Get transfer by kernel parameters
 		short,	// stage
 		short		// sex
 	);
@@ -356,12 +353,12 @@ public:
 		const trfrMortParams	// structure holding transfer mortality parameters
 	);
 	trfrMortParams getMortParams(void); // Get transfer mortality parameters
-	void setMovtTraits( // Set transfer movement model parameters
-		const trfrMovtTraits	// structure holding transfer movement model parameters
+	void setSpMovtTraits( // Set transfer movement model parameters
+		const trfrMovtParams	// structure holding transfer movement model parameters
 	);
-	trfrMovtTraits getMovtTraits(void); // Get transfer movement model traits
-	trfrCRWTraits getCRWTraits(void);		// Get CRW traits
-	trfrSMSTraits getSMSTraits(void);		// Get SMS traits
+	trfrMovtParams getSpMovtTraits(void); // Get transfer movement model traits
+	trfrCRWTraits getSpCRWTraits(void);		// Get CRW traits
+	trfrSMSTraits getSpSMSTraits(void);		// Get SMS traits
 	// Return dimension of habitat-dependent step mortality and costs matrices
 	short getMovtHabDim(void);
 	void createHabCostMort( // Create habitat-dependent costs and mortality matrices
@@ -407,12 +404,12 @@ public:
 		short,	// stage
 		short		// sex
 	);
-	void setSettTraits( // Set settlement density dependence traits
+	void setSpSettTraits( // Set settlement density dependence traits
 		const short,					// stage
 		const short,					// sex
 		const settleTraits	// structure holding density dependence traits
 	);
-	settleTraits getSettTraits( // Get settlement density dependence traits
+	settleTraits getSpSettTraits( // Get settlement density dependence traits
 		short,	// stage
 		short		// sex
 	);
@@ -433,7 +430,7 @@ public:
 	float getRecombinationRate() const;
 	std::set<int> getChromosomeEnds() const;
 	void setGeneticParameters(const std::set<int>& chromosomeEnds, const int genomeSize, const float recombinationRate,
-		const std::set<int>& samplePatchList, const string nIndsToSample, const std::set<int>& stagesToSampleFrom, string nSampleCellsFst);
+		const std::set<int>& samplePatchList, const string nIndsToSample, const std::set<int>& stagesToSampleFrom, int nPatchesToSampleFrom);
 	void setSamplePatchList(const std::set<int>& samplePatchList);
 
 private:
@@ -471,10 +468,10 @@ private:
 	float** ddwtDev;    // density-dependent weights matrix for development
 	float** ddwtSurv;   // density-dependent weights matrix for survival
 	// NB for the following arrays, sex 0 is females, sex 1 is males
-	float fec[NSTAGES][NSEXES];			// fecundities
-	float dev[NSTAGES][NSEXES];			// development probabilities
-	float surv[NSTAGES][NSEXES];		// survival probabilities
-	short minAge[NSTAGES][NSEXES];	// minimum age to enter stage
+	float fec[gMaxNbStages][gMaxNbSexes];			// fecundities
+	float dev[gMaxNbStages][gMaxNbSexes];			// development probabilities
+	float surv[gMaxNbStages][gMaxNbSexes];		// survival probabilities
+	short minAge[gMaxNbStages][gMaxNbSexes];	// minimum age to enter stage
 	// NOTE - IN THEORY, NEXT 3 VARIABLES COULD BE COMMON, BUT WE WOULD NEED TO ENSURE THAT
 	// ALL MATRICES ARE DELETED IF THERE IS A CHANGE IN NO. OF STAGES OR REPRODUCTION TYPE
 	// ***** TO BE RECONSIDERED LATER *****
@@ -492,11 +489,10 @@ private:
 	int genomeSize;
 	bool diploid;
 	bool mutationsOn;
-	int numberOfNeutralLoci;
-	int numberOfAdaptiveTraits;
+	int nbGeneticFitnessTraits;
 	float recombinationRate;
 	std::set<int> samplePatchList;
-	string nSampleCellsFst; //for cell based landscape
+	int nPatchesToSample; //for cell based landscape
 	std::set<int> stagesToSampleFrom;
 	string nIndsToSample; //could be integer or 'all', all means in in selected patches not necessarily all in population
 
@@ -509,9 +505,9 @@ private:
 	short emigStage;		// stage which emigrates (used for stage-strucutred population
 	// having individual variability in emigration probability)
 // NB for the following arrays, sex 0 is females, sex 1 is males
-	float	d0[NSTAGES][NSEXES];				 // maximum emigration probability
-	float	alphaEmig[NSTAGES][NSEXES];	 // slope of density-dependent reaction norm
-	float	betaEmig[NSTAGES][NSEXES];	 // inflection point of reaction norm (in terms of N/K)
+	float	d0[gMaxNbStages][gMaxNbSexes];				 // maximum emigration probability
+	float	alphaEmig[gMaxNbStages][gMaxNbSexes];	 // slope of density-dependent reaction norm
+	float	betaEmig[gMaxNbStages][gMaxNbSexes];	 // inflection point of reaction norm (in terms of N/K)
 	// NB Initialisation parameters are made double to avoid conversion errors (reason unclear)
 	// on traits maps using FloatToStr()
 
@@ -524,9 +520,9 @@ private:
 	bool indVarTrfr;
 	bool twinKern;
 	bool habMort;		// habitat-dependent mortality
-	float	meanDist1[NSTAGES][NSEXES];	// mean of 1st dispersal kernel (m)
-	float	meanDist2[NSTAGES][NSEXES]; // mean of 2nd dispersal kernel (m)
-	float	probKern1[NSTAGES][NSEXES]; // probability of dispersing with the 1st kernel
+	float	meanDist1[gMaxNbStages][gMaxNbSexes];	// mean of 1st dispersal kernel (m)
+	float	meanDist2[gMaxNbStages][gMaxNbSexes]; // mean of 2nd dispersal kernel (m)
+	float	probKern1[gMaxNbStages][gMaxNbSexes]; // probability of dispersing with the 1st kernel
 	// NB INITIAL limits are made double to avoid conversion errors (reason unclear)
 	// on traits maps using FloatToStr()
 	// As evolving traits are are not stage-dependent, no. of rows can be 1
@@ -550,7 +546,7 @@ private:
 	short habDimTrfr;		// dimension of habitat-dependent step mortality and costs matrices
 	int* habCost;				// habitat costs
 	bool costMap;				// import cost map from file?
-	bool straigtenPath;	// straighten path after decision not to settle
+	bool straightenPath;	// straighten path after decision not to settle
 	bool fullKernel;		// used to indicate special case when density-independent emigration
 	// is 1.0, and kernel-based movement within the natal cell is used
 	// to determine philopatry
@@ -560,16 +556,16 @@ private:
 	bool stgDepSett;
 	bool sexDepSett;
 	bool indVarSett;   								// individual variation in settlement
-	bool densDepSett[NSTAGES][NSEXES];
-	bool wait[NSTAGES][NSEXES];				// wait to continue moving next season (stage-structured model only)
-	bool go2nbrLocn[NSTAGES][NSEXES];	// settle in neighbouring cell/patch if available (ditto)
-	bool findMate[NSTAGES][NSEXES];
-	int minSteps;     								// minimum no. of steps
-	int maxSteps;											// maximum total no. of steps
-	int maxStepsYr[NSTAGES][NSEXES]; 	// maximum no. of steps in any one dispersal period
-	float	s0[NSTAGES][NSEXES];				// maximum settlement probability
-	float alphaS[NSTAGES][NSEXES];		// slope of the settlement reaction norm to density
-	float betaS[NSTAGES][NSEXES];			// inflection point of the settlement reaction norm to density
+	bool densDepSett[gMaxNbStages][gMaxNbSexes];
+	bool wait[gMaxNbStages][gMaxNbSexes];				// wait to continue moving next season (stage-structured model only)
+	bool go2nbrLocn[gMaxNbStages][gMaxNbSexes];	// settle in neighbouring cell/patch if available (ditto)
+	bool findMate[gMaxNbStages][gMaxNbSexes];
+	int minSteps[gMaxNbStages][gMaxNbSexes];     								// minimum no. of steps
+	int maxSteps[gMaxNbStages][gMaxNbSexes];											// maximum total no. of steps
+	int maxStepsYr[gMaxNbStages][gMaxNbSexes]; 	// maximum no. of steps in any one dispersal period
+	float s0[gMaxNbStages][gMaxNbSexes];				// maximum settlement probability
+	float alphaS[gMaxNbStages][gMaxNbSexes];		// slope of the settlement reaction norm to density
+	float betaS[gMaxNbStages][gMaxNbSexes];			// inflection point of the settlement reaction norm to density
 
 	// other attributes
 	int spNum;

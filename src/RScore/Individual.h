@@ -249,13 +249,11 @@ public:
 
 	void inheritTraits(Species* pSpecies, Individual* mother, int resol); //haploid
 
-	void setQTLPhenotypes(Species* pSpecies, int resol);
+	void setDispersalPhenotypes(Species* pSpecies, int resol);
 
-	TTrait* getTrait(TraitType trait) const;
+	QuantitativeTrait* getTrait(TraitType trait) const;
 
 	set<TraitType> getTraitTypes();
-
-	//map<TraitType, std::unique_ptr<TTrait>>  getTraitTable(void) const;
 
 	void inherit(Species* pSpecies, const Individual* mother, const Individual* father);
 
@@ -263,27 +261,26 @@ public:
 
 	Individual* traitClone(Cell*, Patch*, float, bool, short);
 
-
 	void setEmigTraits(Species* pSpecies, bool sexDep, bool densityDep);
-	void setTransferTraits(Species* pSpecies, trfrRules trfr, int resol);
+	void setTransferTraits(Species* pSpecies, transferRules trfr, int resol);
 
-	emigTraits getEmigTraits(void); // Get phenotypic emigration traits
+	emigTraits getIndEmigTraits(void); // Get phenotypic emigration traits
 
-	void setKernelTraits(Species* pSpecies, bool sexDep, bool twinKernel, int resol);
+	void setIndKernelTraits(Species* pSpecies, bool sexDep, bool twinKernel, int resol);
 
-	trfrKernTraits getKernTraits(void); // Get phenotypic transfer by kernel traits
+	trfrKernelParams getIndKernTraits(void); // Get phenotypic transfer by kernel traits
 
-	void setSMSTraits(Species* pSpecies);
+	void setIndSMSTraits(Species* pSpecies);
 
-	trfrSMSTraits getSMSTraits(void); // Get phenotypic transfer by SMS traits
+	trfrSMSTraits getIndSMSTraits(void); // Get phenotypic transfer by SMS traits
 
-	void setCRWTraits(Species* pSpecies, bool sexDep);
+	void setIndCRWTraits(Species* pSpecies);
 
-	trfrCRWTraits getCRWTraits(void); // Get phenotypic transfer by CRW traits
+	trfrCRWTraits getIndCRWTraits(void); // Get phenotypic transfer by CRW traits
 
 	void setSettlementTraits(Species* pSpecies, bool sexDep);
 
-	settleTraits getSettTraits(void); // Get phenotypic settlement traits
+	settleTraits getIndSettTraits(void); // Get phenotypic settlement traits
 
 	trfrData* getTrfrData(void);
 	void setEmigTraits(const emigTraits& emig);
@@ -296,7 +293,7 @@ public:
 	int getId(void);
 	sex_t getSex(void);
 	int getStatus(void);
-	float getFitness(void);
+	float getGeneticFitness(void);
 	indStats getStats(void);
 	Cell* getLocn( // Return location (as pointer to Cell)
 		const short	// option: 0 = get natal locn, 1 = get current locn
@@ -367,13 +364,6 @@ public:
 		const short,	// landscape change index
 		const bool    // absorbing boundaries?
 	);
-	void outGenetics( // Write records to genetics file
-		const int,		 	// replicate
-		const int,		 	// year
-		const int,		 	// species number
-		const int,		 	// landscape number
-		const bool	 		// output as cross table?
-	);
 #if RS_RCPP
 	void outMovePath( // Write records to movement paths file
 		const int		 	// year
@@ -382,7 +372,7 @@ public:
 
 private:
 	int indId;
-	float fitness;
+	float geneticFitness;
 	short stage;
 	sex_t sex;
 	short age;
@@ -409,7 +399,7 @@ private:
 	std::unique_ptr <settleTraits> pSettleTraits;		// pointer to settlement traits
 	std::unique_ptr <trfrData> pTrfrData; //can be sms, kernel, crw
 	std::queue <locn> memory;		// memory of last N squares visited for SMS
-	map<TraitType, unique_ptr<TTrait>> spTraitTable;
+	map<TraitType, unique_ptr<QuantitativeTrait>> spTraitTable;
 };
 
 

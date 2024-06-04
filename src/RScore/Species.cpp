@@ -37,8 +37,8 @@ Species::Species(void)
 	devDens = false; devStageDens = false;
 	survDens = false; survStageDens = false;
 	disperseOnLoss = false;
-	for (int i = 0; i < NSTAGES; i++) {
-		for (int j = 0; j < NSEXES; j++) {
+	for (int i = 0; i < gMaxNbStages; i++) {
+		for (int j = 0; j < gMaxNbSexes; j++) {
 			fec[i][j] = 0.0; dev[i][j] = 0.0; surv[i][j] = 0.0;
 			minAge[i][j] = 0;
 		}
@@ -52,8 +52,8 @@ Species::Species(void)
 	// initialise emigration parameters
 	densDepEmig = false; stgDepEmig = false; sexDepEmig = false; indVarEmig = false;
 	emigStage = 0;
-	for (int i = 0; i < NSTAGES; i++) {
-		for (int j = 0; j < NSEXES; j++) {
+	for (int i = 0; i < gMaxNbStages; i++) {
+		for (int j = 0; j < gMaxNbSexes; j++) {
 			d0[i][j] = 0.0; alphaEmig[i][j] = 0.0; betaEmig[i][j] = 1.0;
 		}
 	}
@@ -64,8 +64,8 @@ Species::Species(void)
 	habMort = false;
 	costMap = false;
 	moveType = 1;
-	for (int i = 0; i < NSTAGES; i++) {
-		for (int j = 0; j < NSEXES; j++) {
+	for (int i = 0; i < gMaxNbStages; i++) {
+		for (int j = 0; j < gMaxNbSexes; j++) {
 			meanDist1[i][j] = 100.0f; meanDist2[i][j] = 1000.0f; probKern1[i][j] = 0.99f;
 		}
 	}
@@ -76,15 +76,14 @@ Species::Species(void)
 	//costMapFile = "NULL";
 	fixedMort = 0.0; mortAlpha = 0.0; mortBeta = 1.0;
 	habDimTrfr = 0;
-	straigtenPath = false;
+	straightenPath = false;
 	fullKernel = false;
 	// initialise settlement parameters
 	stgDepSett = false; sexDepSett = false; indVarSett = false;
-	minSteps = 0; maxSteps = 99999999;
-	for (int i = 0; i < NSTAGES; i++) {
-		for (int j = 0; j < NSEXES; j++) {
+	for (int i = 0; i < gMaxNbStages; i++) {
+		for (int j = 0; j < gMaxNbSexes; j++) {
 			densDepSett[i][j] = false; wait[i][j] = false; go2nbrLocn[i][j] = false; findMate[i][j] = false;
-			maxStepsYr[i][j] = 99999999;
+			maxStepsYr[i][j] = 99999999; 	minSteps[i][j] = 0; maxSteps[i][j] = 99999999;
 			s0[i][j] = 1.0; alphaS[i][j] = 0.0; betaS[i][j] = 1.0;
 		}
 	}
@@ -120,7 +119,7 @@ void Species::setDemogr(const demogrParams d) {
 	if (d.lambda > 0.0) lambda = d.lambda;
 }
 
-demogrParams Species::getDemogr(void) {
+demogrParams Species::getDemogrParams(void) {
 	demogrParams d;
 	d.repType = repType;
 	d.repSeasons = repSeasons;
@@ -177,13 +176,16 @@ void Species::setStage(const stageParams s) {
 	if (s.maxAge >= 1) maxAge = s.maxAge;
 	if (s.survival >= 0 && s.survival <= 2) survival = s.survival;
 	if (s.probRep > 0.0 && s.probRep <= 1.0) probRep = s.probRep;
-	fecDens = s.fecDens;		fecStageDens = s.fecStageDens;
-	devDens = s.devDens;		devStageDens = s.devStageDens;
-	survDens = s.survDens;	survStageDens = s.survStageDens;
+	fecDens = s.fecDens;		
+	fecStageDens = s.fecStageDens;
+	devDens = s.devDens;		
+	devStageDens = s.devStageDens;
+	survDens = s.survDens;	
+	survStageDens = s.survStageDens;
 	disperseOnLoss = s.disperseOnLoss;
 }
 
-stageParams Species::getStage(void) {
+stageParams Species::getStageParams(void) {
 	stageParams s;
 	s.nStages = nStages; s.repInterval = repInterval; s.maxAge = maxAge;
 	s.survival = survival; s.probRep = probRep;
@@ -196,12 +198,12 @@ stageParams Species::getStage(void) {
 
 void Species::setFec(short stg, short sex, float f) {
 	// NB fecundity for stage 0 must always be zero
-	if (stg > 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES && f >= 0)
+	if (stg > 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes && f >= 0)
 		fec[stg][sex] = f;
 }
 
 float Species::getFec(short stg, short sex) {
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES)
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes)
 		return fec[stg][sex];
 	else return 0.0;
 }
@@ -209,7 +211,7 @@ float Species::getFec(short stg, short sex) {
 float Species::getMaxFec(void) {
 	float maxfec = 0.0;
 	if (stageStruct) {
-		for (int stg = 1; stg < NSTAGES; stg++) {
+		for (int stg = 1; stg < gMaxNbStages; stg++) {
 			if (fec[stg][0] > maxfec) maxfec = fec[stg][0];
 		}
 	}
@@ -218,35 +220,35 @@ float Species::getMaxFec(void) {
 }
 
 void Species::setDev(short stg, short sex, float d) {
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES && d >= 0)
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes && d >= 0)
 		dev[stg][sex] = d;
 }
 
 float Species::getDev(short stg, short sex) {
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES)
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes)
 		return dev[stg][sex];
 	else return 0.0;
 }
 
 void Species::setSurv(short stg, short sex, float s) {
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES && s >= 0)
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes && s >= 0)
 		surv[stg][sex] = s;
 }
 
 float Species::getSurv(short stg, short sex) {
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES)
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes)
 		return surv[stg][sex];
 	else return 0.0;
 }
 
 void Species::setMinAge(short stg, short sex, int age) {
 	// NB min age for stages 0 & 1 must always be zero
-	if (stg > 1 && stg < NSTAGES && sex >= 0 && sex < NSEXES && age >= 0)
+	if (stg > 1 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes && age >= 0)
 		minAge[stg][sex] = age;
 }
 
 short Species::getMinAge(short stg, short sex) {
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES)
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes)
 		return minAge[stg][sex];
 	else return 0;
 }
@@ -263,7 +265,7 @@ densDepParams Species::getDensDep(void) {
 }
 
 void Species::createDDwtFec(short mSize) {
-	if (mSize >= 0 && mSize < (NSTAGES * NSEXES)) {
+	if (mSize >= 0 && mSize < (gMaxNbStages * gMaxNbSexes)) {
 		if (ddwtFec != 0) deleteDDwtFec();
 		ddwtFecDim = mSize;
 		ddwtFec = new float* [mSize];
@@ -295,7 +297,7 @@ void Species::deleteDDwtFec(void) {
 }
 
 void Species::createDDwtDev(short mSize) {
-	if (mSize >= 0 && mSize < (NSTAGES * NSEXES)) {
+	if (mSize >= 0 && mSize < (gMaxNbStages * gMaxNbSexes)) {
 		if (ddwtDev != 0) deleteDDwtDev();
 		ddwtDevDim = mSize;
 		ddwtDev = new float* [mSize];
@@ -327,7 +329,7 @@ void Species::deleteDDwtDev(void) {
 }
 
 void Species::createDDwtSurv(short mSize) {
-	if (mSize >= 0 && mSize < (NSTAGES * NSEXES)) {
+	if (mSize >= 0 && mSize < (gMaxNbStages * gMaxNbSexes)) {
 		if (ddwtSurv != 0) deleteDDwtSurv();
 		ddwtSurvDim = mSize;
 		ddwtSurv = new float* [mSize];
@@ -370,21 +372,16 @@ float Species::getMinMax(short opt) {
 
 //---------------------------------------------------------------------------
 
-void Species::turnOffMutations(void) {
-	mutationsOn = false;
-}
-
 bool Species::areMutationsOn(void) {
 	return mutationsOn;
 }
 
 void Species::resetGeneticParameters() {
 	mutationsOn = true;
-	numberOfNeutralLoci = -9999;
-	numberOfAdaptiveTraits = 0;
+	nbGeneticFitnessTraits = 0;
 	genomeSize = -9999;
 	recombinationRate = -9999;
-	nSampleCellsFst = "";
+	nPatchesToSample = 0;
 	nIndsToSample = "";
 	chromosomeEnds.clear();
 	samplePatchList.clear();
@@ -394,63 +391,53 @@ bool Species::isDiploid() const {
 	return diploid;
 }
 
-void Species::setNumberOfNeutralLoci(int nN)
+int Species::incrNbGenLoadTraits()
 {
-	numberOfNeutralLoci = nN;
+	nbGeneticFitnessTraits++;
+	return nbGeneticFitnessTraits;
 }
 
-int Species::getNumberOfNeutralLoci() const
+int Species::getNbGenLoadTraits() const
 {
-	return numberOfNeutralLoci;
-}
-
-int Species::incrementAdaptiveTraits()
-{
-	numberOfAdaptiveTraits++;
-	return numberOfAdaptiveTraits;
-}
-
-int Species::getNumberOfAdaptiveTraits() const
-{
-	return numberOfAdaptiveTraits;
+	return nbGeneticFitnessTraits;
 }
 
 void Species::addTrait(TraitType traitType, const SpeciesTrait& trait) {
 
 	TraitType traitT = traitType;
-	//hack to deal with multiple adaptive traits, could be handled better
-	if (traitType == ADAPTIVE) {
-		int n = incrementAdaptiveTraits();
+	// hack to deal with multiple genetic load traits, could be handled better
+	if (traitType == GENETIC_LOAD) {
+		int n = incrNbGenLoadTraits();
 
 		switch (n) {
 		case 1:
 		{
-			traitT = ADAPTIVE1;
+			traitT = GENETIC_LOAD1;
 			break;
 		}
 		case 2:
 		{
-			traitT = ADAPTIVE2;
+			traitT = GENETIC_LOAD2;
 			break;
 		}
 		case 3:
 		{
-			traitT = ADAPTIVE3;
+			traitT = GENETIC_LOAD3;
 			break;
 		}
 		case 4:
 		{
-			traitT = ADAPTIVE4;
+			traitT = GENETIC_LOAD4;
 			break;
 		}
 		case 5:
 		{
-			traitT = ADAPTIVE5;
+			traitT = GENETIC_LOAD5;
 			break;
 		}
 		default:
 		{
-			cout << endl << ("Error:: Too many adaptive traits in Traits file, max = 5 \n");
+			cout << endl << ("Error:: Too many genetic load traits in Traits file, max = 5 \n");
 			break; //should return false
 		}
 		}
@@ -465,11 +452,6 @@ SpeciesTrait* Species::getSpTrait(TraitType trait) const {
 void Species::clearTraitTable() {
 	spTraitTable.clear();
 }
-
-//map<TraitType, std::unique_ptr<ProtoTrait>>&  Species::getTraitTable(void) 
-//{
-//	return traitTable;
-//}
 
 set<TraitType> Species::getTraitTypes() {
 	auto kv = std::ranges::views::keys(spTraitTable);
@@ -500,31 +482,39 @@ set<int> Species::getChromosomeEnds() const {
 //---------------------------------------------------------------------------
 
 // Emigration functions
-void Species::setEmig(const emigRules e) {
-	densDepEmig = e.densDep; stgDepEmig = e.stgDep; sexDepEmig = e.sexDep;
+void Species::setEmigRules(const emigRules e) {
+	densDepEmig = e.densDep; 
+	stgDepEmig = e.stgDep; 
+	sexDepEmig = e.sexDep;
 	indVarEmig = e.indVar;
 	if (e.emigStage >= 0) emigStage = e.emigStage;
 //setGenome();
 }
 
-emigRules Species::getEmig(void) {
+emigRules Species::getEmigRules(void) {
 	emigRules e;
-	e.densDep = densDepEmig; e.stgDep = stgDepEmig; e.sexDep = sexDepEmig;
-	e.indVar = indVarEmig; e.emigStage = emigStage;
+	e.densDep = densDepEmig; 
+	e.stgDep = stgDepEmig; 
+	e.sexDep = sexDepEmig;
+	e.indVar = indVarEmig; 
+	e.emigStage = emigStage;
 	return e;
 }
 
-void Species::setEmigTraits(const short stg, const short sex, const emigTraits e) {
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES) {
+void Species::setSpEmigTraits(const short stg, const short sex, const emigTraits e) {
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
 		if (e.d0 >= 0.0 && e.d0 <= 1.0) d0[stg][sex] = e.d0;
-		alphaEmig[stg][sex] = e.alpha; betaEmig[stg][sex] = e.beta;
+		alphaEmig[stg][sex] = e.alpha; 
+		betaEmig[stg][sex] = e.beta;
 	}
 }
 
-emigTraits Species::getEmigTraits(short stg, short sex) {
+emigTraits Species::getSpEmigTraits(short stg, short sex) {
 	emigTraits e;
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES) {
-		e.d0 = d0[stg][sex]; e.alpha = alphaEmig[stg][sex]; e.beta = betaEmig[stg][sex];
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
+		e.d0 = d0[stg][sex];
+		e.alpha = alphaEmig[stg][sex];
+		e.beta = betaEmig[stg][sex];
 	}
 	else {
 		e.d0 = e.alpha = e.beta = 0.0;
@@ -532,8 +522,8 @@ emigTraits Species::getEmigTraits(short stg, short sex) {
 	return e;
 }
 
-float Species::getEmigD0(short stg, short sex) {
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES) {
+float Species::getSpEmigD0(short stg, short sex) {
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
 		return d0[stg][sex];
 	}
 	else {
@@ -545,18 +535,22 @@ float Species::getEmigD0(short stg, short sex) {
 
 // Transfer functions
 
-void Species::setTrfr(const trfrRules t) {
-	moveModel = t.moveModel; stgDepTrfr = t.stgDep; sexDepTrfr = t.sexDep;
-	distMort = t.distMort; indVarTrfr = t.indVar;
+void Species::setTrfrRules(const transferRules t) {
+	moveModel = t.usesMovtProc; 
+	stgDepTrfr = t.stgDep; 
+	sexDepTrfr = t.sexDep;
+	distMort = t.distMort;
+	indVarTrfr = t.indVar;
 	twinKern = t.twinKern;
 	habMort = t.habMort;
-	moveType = t.moveType; costMap = t.costMap;
+	moveType = t.moveType; 
+	costMap = t.costMap;
 //setGenome();
 }
 
-trfrRules Species::getTrfr(void) {
-	trfrRules t;
-	t.moveModel = moveModel; t.stgDep = stgDepTrfr; t.sexDep = sexDepTrfr;
+transferRules Species::getTransferRules(void) {
+	transferRules t;
+	t.usesMovtProc = moveModel; t.stgDep = stgDepTrfr; t.sexDep = sexDepTrfr;
 	t.distMort = distMort; t.indVar = indVarTrfr;
 	t.twinKern = twinKern;
 	t.habMort = habMort;
@@ -570,19 +564,19 @@ void Species::setFullKernel(bool k) {
 
 bool Species::useFullKernel(void) { return fullKernel; }
 
-void Species::setKernTraits(const short stg, const short sex,
-	const trfrKernTraits k, const int resol)
+void Species::setSpKernTraits(const short stg, const short sex,
+	const trfrKernelParams k, const int resol)
 {
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES) {
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
 		if (k.meanDist1 > 0.0 && k.meanDist1 >= (float)resol) meanDist1[stg][sex] = k.meanDist1;
 		if (k.meanDist2 >= (float)resol) meanDist2[stg][sex] = k.meanDist2;
 		if (k.probKern1 > 0.0 && k.probKern1 < 1.0) probKern1[stg][sex] = k.probKern1;
 	}
 }
 
-trfrKernTraits Species::getKernTraits(short stg, short sex) {
-	trfrKernTraits k;
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES) {
+trfrKernelParams Species::getSpKernTraits(short stg, short sex) {
+	trfrKernelParams k;
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
 		k.meanDist1 = meanDist1[stg][sex];
 		k.meanDist2 = meanDist2[stg][sex];
 		k.probKern1 = probKern1[stg][sex];
@@ -605,7 +599,7 @@ trfrMortParams Species::getMortParams(void) {
 	return m;
 }
 
-void Species::setMovtTraits(const trfrMovtTraits m) {
+void Species::setSpMovtTraits(const trfrMovtParams m) {
 	if (m.pr >= 1) pr = m.pr;
 	if (m.prMethod >= 1 && m.prMethod <= 3) prMethod = m.prMethod;
 	if (m.memSize >= 1 && m.memSize <= 14) memSize = m.memSize;
@@ -617,29 +611,29 @@ void Species::setMovtTraits(const trfrMovtTraits m) {
 	if (m.stepMort >= 0.0 && m.stepMort < 1.0) stepMort = m.stepMort;
 	if (m.stepLength > 0.0) stepLength = m.stepLength;
 	if (m.rho > 0.0 && m.rho < 1.0) rho = m.rho;
-	straigtenPath = m.straigtenPath;
+	straightenPath = m.straightenPath;
 }
 
-trfrMovtTraits Species::getMovtTraits(void) {
-	trfrMovtTraits m;
+trfrMovtParams Species::getSpMovtTraits(void) {
+	trfrMovtParams m;
 	m.pr = pr; m.prMethod = prMethod; m.memSize = memSize; m.goalType = goalType;
 	m.dp = dp; m.gb = gb; m.alphaDB = alphaDB;  m.betaDB = betaDB;
 	m.stepMort = stepMort; m.stepLength = stepLength; m.rho = rho;
 	return m;
 }
 
-trfrCRWTraits Species::getCRWTraits(void) {
+trfrCRWTraits Species::getSpCRWTraits(void) {
 	trfrCRWTraits m;
 	m.stepMort = stepMort; m.stepLength = stepLength; m.rho = rho;
-	m.straigtenPath = straigtenPath;
+	m.straightenPath = straightenPath;
 	return m;
 }
 
-trfrSMSTraits Species::getSMSTraits(void) {
+trfrSMSTraits Species::getSpSMSTraits(void) {
 	trfrSMSTraits m;
 	m.pr = pr; m.prMethod = prMethod; m.memSize = memSize; m.goalType = goalType;
 	m.dp = dp; m.gb = gb; m.alphaDB = alphaDB;  m.betaDB = betaDB; m.stepMort = stepMort;
-	m.straigtenPath = straigtenPath;
+	m.straightenPath = straightenPath;
 	return m;
 }
 
@@ -705,7 +699,7 @@ settleType Species::getSettle(void) {
 }
 
 void Species::setSettRules(const short stg, const short sex, const settleRules s) {
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES) {
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
 		densDepSett[stg][sex] = s.densDep; wait[stg][sex] = s.wait;
 		go2nbrLocn[stg][sex] = s.go2nbrLocn; findMate[stg][sex] = s.findMate;
 	}
@@ -717,7 +711,7 @@ settleRules Species::getSettRules(short stg, short sex) {
 	s.findMate = false;
 	s.go2nbrLocn = false;
 	s.wait = false;
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES) {
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
 		s.densDep = densDepSett[stg][sex]; s.wait = wait[stg][sex];
 		s.go2nbrLocn = go2nbrLocn[stg][sex]; s.findMate = findMate[stg][sex];
 	}
@@ -725,58 +719,62 @@ settleRules Species::getSettRules(short stg, short sex) {
 }
 
 void Species::setSteps(const short stg, const short sex, const settleSteps s) {
-	if (stg == 0 && sex == 0) {
-		if (s.minSteps >= 0) minSteps = s.minSteps;
-		else minSteps = 0;
-		if (s.maxSteps >= 1) maxSteps = s.maxSteps;
-		else maxSteps = 99999999;
-	}
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES) {
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
 		if (s.maxStepsYr >= 1) maxStepsYr[stg][sex] = s.maxStepsYr;
 		else maxStepsYr[stg][sex] = 99999999;
+		if (s.minSteps >= 0) minSteps[stg][sex] = s.minSteps;
+		else minSteps[stg][sex] = 0;
+		if (s.maxSteps >= 1) maxSteps[stg][sex] = s.maxSteps;
+		else maxSteps[stg][sex] = 99999999;
 	}
 }
 
 settleSteps Species::getSteps(short stg, short sex) {
 	settleSteps s;
-	s.minSteps = minSteps;
-	s.maxSteps = maxSteps;
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES) s.maxStepsYr = maxStepsYr[stg][sex];
-	else s.maxStepsYr = 99999999;
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
+	    s.maxStepsYr = maxStepsYr[stg][sex];
+	    s.minSteps = minSteps[stg][sex];
+	    s.maxSteps = maxSteps[stg][sex];
+	}
+	else {
+	    s.maxStepsYr = 99999999;
+	    s.minSteps = 0;
+	    s.maxSteps = 99999999;
+	}
 	return s;
 }
 
-void Species::setSettTraits(const short stg, const short sex, const settleTraits dd) {
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES) {
+void Species::setSpSettTraits(const short stg, const short sex, const settleTraits dd) {
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
 		if (dd.s0 > 0.0 && dd.s0 <= 1.0) s0[stg][sex] = dd.s0;
 		alphaS[stg][sex] = dd.alpha; betaS[stg][sex] = dd.beta;
 	}
 }
 
+settleTraits Species::getSpSettTraits(short stg, short sex) {
+	settleTraits dd;
+	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
+		dd.s0 = s0[stg][sex]; dd.alpha = alphaS[stg][sex]; dd.beta = betaS[stg][sex];
+	}
+	else { dd.s0 = 1.0; dd.alpha = dd.beta = 0.0; }
+	return dd;
+}
+
 void Species::setGeneticParameters(const std::set<int>& chromosomeEnds, const int genomeSize, const float recombinationRate,
-	const std::set<int>& samplePatchList, const string nIndsToSample, const std::set<int>& stagesToSampleFrom, string nSampleCellsFst)
+	const std::set<int>& samplePatchList, const string nIndsToSample, const std::set<int>& stagesToSampleFrom, int nPatchesToSampleFrom)
 {
 	this->genomeSize = genomeSize;
 	this->chromosomeEnds = chromosomeEnds;
 	this->recombinationRate = recombinationRate;
 	this->samplePatchList = samplePatchList;
-	this->nSampleCellsFst = nSampleCellsFst;
+	this->nPatchesToSample = nPatchesToSampleFrom;
 	this->nIndsToSample = nIndsToSample;
 	this->stagesToSampleFrom = stagesToSampleFrom;
 }
 
-//only called for cell based landscape
+// only called for cell based landscape
 void Species::setSamplePatchList(const set<int>& samplePatchList) {
 	this->samplePatchList = samplePatchList;
-}
-
-settleTraits Species::getSettTraits(short stg, short sex) {
-	settleTraits dd;
-	if (stg >= 0 && stg < NSTAGES && sex >= 0 && sex < NSEXES) {
-		dd.s0 = s0[stg][sex]; dd.alpha = alphaS[stg][sex]; dd.beta = betaS[stg][sex];
-	}
-	else { dd.s0 = 1.0; dd.alpha = dd.beta = 0.0; }
-	return dd;
 }
 
 //---------------------------------------------------------------------------

@@ -35,7 +35,7 @@ Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short rep
 	float probmale, bool movt, short moveType)
 {
 	indId = indCounter; indCounter++; // unique identifier for each individual
-	fitness = 1.0;
+	geneticFitness = 1.0;
 	stage = stg;
 	if (probmale <= 0.0) sex = FEM;
 	else sex = pRandom->Bernoulli(probmale) ? FEM : MAL;
@@ -55,7 +55,6 @@ Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short rep
 		path = new pathData;
 		path->year = 0; path->total = 0; path->out = 0;
 		path->pSettPatch = 0; path->settleStatus = 0;
-		//	path->leftNatalPatch = false;
 		if (moveType == 1) { // SMS
 			// set up location data for SMS
 			pTrfrData = make_unique<smsData>(loc, loc);
@@ -73,18 +72,10 @@ Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short rep
 		path = 0;
 		pTrfrData = make_unique<kernelData>(0.0, 0.0, 0.0);
 	}
-	//pEmigTraits = make_unique<emigTraits>(nullptr);
-	//pSettleTraits = make_unique<settleTraits>(nullptr);
 }
 
 Individual::~Individual(void) {
 	if (path != 0) delete path;
-	//if (crw != 0) delete crw;
-	//if (smsData != 0) delete smsData;
-	//if (emigtraits != 0) delete emigtraits;
-	//if (kerntraits != 0) delete kerntraits;
-	//if (setttraits != 0) delete setttraits;
-
 }
 
 
@@ -106,14 +97,12 @@ void Individual::setSettleTraits(const settleTraits& settle) {
 	pSettleTraits = make_unique<settleTraits>(settle);
 }
 
-TTrait* Individual::getTrait(TraitType trait) const {
-	return this->spTraitTable.find(trait)->second.get();
+QuantitativeTrait* Individual::getTrait(TraitType trait) const {
+	auto p = this->spTraitTable.find(trait);
+	if (p == spTraitTable.end())
+		throw runtime_error("Trait does not exist in trait table.");
+	else return p->second.get();
 }
-
-//map<TraitType, std::unique_ptr<TTrait>>  Individual::getTraitTable(void) const
-//{
-//	return traitTable;
-//}
 
 set<TraitType> Individual::getTraitTypes() {
 	auto kv = std::views::keys(this->spTraitTable);
@@ -122,10 +111,8 @@ set<TraitType> Individual::getTraitTypes() {
 }
 
 //---------------------------------------------------------------------------
-
+// Inheritance for diploid, sexual species
 //---------------------------------------------------------------------------
-
-
 void Individual::inherit(Species* pSpecies, const Individual* mother, const Individual* father) {
 
 	int events = 0;
@@ -138,9 +125,9 @@ void Individual::inherit(Species* pSpecies, const Individual* mother, const Indi
 	set<unsigned int> maternalRecomPositions;
 	set<unsigned int> paternalRecomPositions;
 
-	// Determine at which chromosome ends does the genome break
+	// Determine which parental chromosomes are inherited
 	for (int pos : chromosomeEnds) {
-		if (pRandom->Bernoulli(0.5))
+		if (pRandom->Bernoulli(0.5)) // switch strand for next chromosome
 			maternalRecomPositions.insert(pos);
 		if (pRandom->Bernoulli(0.5))
 			paternalRecomPositions.insert(pos);
@@ -148,8 +135,12 @@ void Individual::inherit(Species* pSpecies, const Individual* mother, const Indi
 
 	// Draw recombination events for maternal genome
 	if (pSpecies->getRecombinationRate() > 0.0)
-		events = pRandom->Poisson(genomeSize * pSpecies->getRecombinationRate());
+		events = pRandom->Binomial(genomeSize, pSpecies->getRecombinationRate());
+	// if poisson exceeds genomeSize, bound to genomeSize
 	int nbrCrossOvers = events + maternalRecomPositions.size();
+	if (nbrCrossOvers > genomeSize) {
+		nbrCrossOvers = genomeSize;
+	}
 	while (maternalRecomPositions.size() < nbrCrossOvers) {
 		// Sample recombination sites
 		maternalRecomPositions.insert(pRandom->IRandom(0, genomeSize));
@@ -157,8 +148,11 @@ void Individual::inherit(Species* pSpecies, const Individual* mother, const Indi
 
 	// Draw recombination events for paternal genome
 	if (pSpecies->getRecombinationRate() > 0.0)
-		events = pRandom->Poisson(genomeSize * pSpecies->getRecombinationRate());
+		events = pRandom->Binomial(genomeSize, pSpecies->getRecombinationRate());
 	nbrCrossOvers = events + paternalRecomPositions.size();
+	if (nbrCrossOvers > genomeSize) {
+		nbrCrossOvers = genomeSize;
+	}
 	while (paternalRecomPositions.size() < nbrCrossOvers) {
 		paternalRecomPositions.insert(pRandom->IRandom(0, genomeSize));
 	}
@@ -167,71 +161,75 @@ void Individual::inherit(Species* pSpecies, const Individual* mother, const Indi
 	maternalRecomPositions.insert(genomeSize - 1);
 	paternalRecomPositions.insert(genomeSize - 1);
 
+	// Inherit genes for each gene
 	const auto& spTraits = pSpecies->getTraitTypes();
-
 	for (auto const& trait : spTraits)
 	{
 		const auto motherTrait = mother->getTrait(trait);
 		const auto fatherTrait = father->getTrait(trait);
-		auto newTrait = motherTrait->clone(); // shallow copy, pointer to proto trait initialised and empty sequence
+		auto newTrait = motherTrait->clone(); // shallow copy pointer to species-level attributes
 
-		newTrait->inherit(motherTrait, maternalRecomPositions, FEM, maternalStartingChromosome);
+		// Inherit from mother first
+		newTrait->inheritGenes(true, motherTrait, maternalRecomPositions, maternalStartingChromosome);
 		if (newTrait->isInherited()) {
-			newTrait->inherit(fatherTrait, paternalRecomPositions, MAL, paternalStartingChromosome);
+			// Inherit father trait values
+			newTrait->inheritGenes(false, fatherTrait, paternalRecomPositions, paternalStartingChromosome);
 			if (newTrait->getMutationRate() > 0 && pSpecies->areMutationsOn())
 				newTrait->mutate();
 		}
-		if (trait == ADAPTIVE1 || trait == ADAPTIVE2 || trait == ADAPTIVE3 || trait == ADAPTIVE4 || trait == ADAPTIVE5)
-			fitness *= newTrait->express();
+		if (trait == GENETIC_LOAD1 || trait == GENETIC_LOAD2 || trait == GENETIC_LOAD3 || trait == GENETIC_LOAD4 || trait == GENETIC_LOAD5)
+			geneticFitness *= newTrait->express();
 
+		// Add the inherited trait and genes to the newborn's list
 		spTraitTable.insert(make_pair(trait, move(newTrait)));
 	}
 }
 
+//---------------------------------------------------------------------------
+// Inheritance for haploid, asexual species
+//---------------------------------------------------------------------------
 void Individual::inherit(Species* pSpecies, const Individual* mother) {
 	set<unsigned int> recomPositions; //not used here cos haploid but need it for inherit function, not ideal 
 	int startingChromosome = 0;
-	//const auto mumTraitTable = mother->getTraitTable(); //assuming mother and father share the same genetic structure..
 
 	const auto& mumTraits = getTraitTypes();
 
 	for (auto const& trait : mumTraits)
 	{
 		const auto motherTrait = mother->getTrait(trait);
+		auto newTrait = motherTrait->clone(); // shallow copy, pointer to species trait initialised and empty sequence
 
-		auto newTrait = motherTrait->clone(); //shallow copy, pointer to proto trait initialised and empty sequence
-
-		newTrait->inherit(motherTrait, recomPositions, FEM, startingChromosome);
+		newTrait->inheritGenes(true, motherTrait, recomPositions, startingChromosome);
 		if (newTrait->isInherited()) {
 			if (newTrait->getMutationRate() > 0 && pSpecies->areMutationsOn())
 				newTrait->mutate();
 		}
-		if (trait == ADAPTIVE1 || trait == ADAPTIVE2 || trait == ADAPTIVE3 || trait == ADAPTIVE4 || trait == ADAPTIVE5)
-			fitness *= newTrait->express();
+		if (trait == GENETIC_LOAD1 || trait == GENETIC_LOAD2 || trait == GENETIC_LOAD3 || trait == GENETIC_LOAD4 || trait == GENETIC_LOAD5)
+			geneticFitness *= newTrait->express();
 
+		// Add the inherited trait and genes to the newborn's list
 		spTraitTable.insert(make_pair(trait, move(newTrait)));
 	}
 }
 
-// Set genes for individual variation from species initialisation parameters
+// Initialise individual trait genes from species-level traits
 void Individual::setUpGenes(Species* pSpecies, int resol) {
 
 	// this way to keep spp trait table immutable i.e. not able to call getTraitTable, 
 	// could pass it back by value (copy) instead but could be heavy if large map
 	const auto& traitTypes = pSpecies->getTraitTypes();
-
 	for (auto const& traitType : traitTypes)
 	{
 		const auto spTrait = pSpecies->getSpTrait(traitType);
 		this->spTraitTable.emplace(traitType, traitFactory.Create(traitType, spTrait));
 	}
-	setQTLPhenotypes(pSpecies, resol);
+	setDispersalPhenotypes(pSpecies, resol);
 }
 
-void Individual::setQTLPhenotypes(Species* pSpecies, int resol) {
+void Individual::setDispersalPhenotypes(Species* pSpecies, int resol) {
 
-	const emigRules emig = pSpecies->getEmig();
-	const trfrRules trfr = pSpecies->getTrfr();
+	const emigRules emig = pSpecies->getEmigRules();
+	const transferRules trfr = pSpecies->getTransferRules();
 	const settleType sett = pSpecies->getSettle();
 
 	// record phenotypic traits
@@ -243,16 +241,16 @@ void Individual::setQTLPhenotypes(Species* pSpecies, int resol) {
 		this->setSettlementTraits(pSpecies, sett.sexDep);
 }
 
-void Individual::setTransferTraits(Species* pSpecies, trfrRules trfr, int resol) {
-	if (trfr.moveModel) {
+void Individual::setTransferTraits(Species* pSpecies, transferRules trfr, int resol) {
+	if (trfr.usesMovtProc) {
 		if (trfr.moveType == 1) {
-			setSMSTraits(pSpecies);
+			setIndSMSTraits(pSpecies);
 		}
 		else
-			setCRWTraits(pSpecies, trfr.sexDep);
+			setIndCRWTraits(pSpecies);
 	}
 	else
-		setKernelTraits(pSpecies, trfr.sexDep, trfr.twinKern, resol);
+		setIndKernelTraits(pSpecies, trfr.sexDep, trfr.twinKern, resol);
 }
 
 void Individual::setSettlementTraits(Species* pSpecies, bool sexDep) {
@@ -279,18 +277,18 @@ void Individual::setSettlementTraits(Species* pSpecies, bool sexDep) {
 }
 
 
-// Inherit genome from parent(s)
+// Inherit genome from parent(s), diploid
 void Individual::inheritTraits(Species* pSpecies, Individual* mother, Individual* father, int resol)
 {
 	inherit(pSpecies, mother, father);
-	setQTLPhenotypes(pSpecies, resol);
+	setDispersalPhenotypes(pSpecies, resol);
 }
 
 // Inherit genome from mother, haploid
 void Individual::inheritTraits(Species* pSpecies, Individual* mother, int resol)
 {
 	inherit(pSpecies, mother);
-	setQTLPhenotypes(pSpecies, resol);
+	setDispersalPhenotypes(pSpecies, resol);
 }
 
 //---------------------------------------------------------------------------
@@ -311,7 +309,7 @@ sex_t Individual::getSex(void) { return sex; }
 
 int Individual::getStatus(void) { return status; }
 
-float Individual::getFitness(void) { return fitness; }
+float Individual::getGeneticFitness(void) { return geneticFitness; }
 
 indStats Individual::getStats(void) {
 	indStats s;
@@ -374,33 +372,48 @@ void Individual::setSettPatch(const settlePatch s) {
 
 void Individual::setEmigTraits(Species* pSpecies, bool sexDep, bool densityDep) {
 	emigTraits e; e.d0 = e.alpha = e.beta = 0.0;
-	if (sexDep && this->getSex() == MAL) {
-		e.d0 = this->getTrait(E_D0_M)->express();
-		if (densityDep) {
-			e.alpha = getTrait(E_ALPHA_M)->express();
-			e.beta = getTrait(E_BETA_M)->express();
+	if (sexDep) {
+		if (this->getSex() == MAL) {
+			e.d0 = this->getTrait(E_D0_M)->express();
+			if (densityDep) {
+				e.alpha = getTrait(E_ALPHA_M)->express();
+				e.beta = getTrait(E_BETA_M)->express();
+			}
 		}
-	}
+		else if (this->getSex() == FEM) {
+			e.d0 = this->getTrait(E_D0_F)->express();
+			if (densityDep) {
+				e.alpha = getTrait(E_ALPHA_F)->express();
+				e.beta = getTrait(E_BETA_F)->express();
+			}
+		}
+		else {
+			throw runtime_error("Attempt to express invalid emigration trait sex.");
+		}
+	}	
 	else {
-		e.d0 = this->getTrait(E_D0_F)->express();
+		e.d0 = this->getTrait(E_D0)->express();
 		if (densityDep) {
-			e.alpha = getTrait(E_ALPHA_F)->express();
-			e.beta = getTrait(E_BETA_F)->express();
+			e.alpha = getTrait(E_ALPHA)->express();
+			e.beta = getTrait(E_BETA)->express();
 		}
 	}
 
 	pEmigTraits = make_unique<emigTraits>();
-	pEmigTraits->d0 = (float)(e.d0);
-	pEmigTraits->alpha = (float)(e.alpha);
-	pEmigTraits->beta = (float)(e.beta);
-	if (pEmigTraits->d0 < 0.0) pEmigTraits->d0 = 0.0;
-	if (pEmigTraits->d0 > 1.0) pEmigTraits->d0 = 1.0;
+	pEmigTraits->d0 = e.d0;
+	pEmigTraits->alpha = e.alpha;
+	pEmigTraits->beta = e.beta;
+
+	// Below must never trigger, phenotype is bounded in express()
+	if (pEmigTraits->d0 < 0.0) throw runtime_error("d0 value has become negative.");
+	if (pEmigTraits->d0 > 1.0) throw runtime_error("d0 value has exceeded 1.");
 	return;
 }
 
 // Get phenotypic emigration traits
-emigTraits Individual::getEmigTraits(void) {
-	emigTraits e; e.d0 = e.alpha = e.beta = 0.0;
+emigTraits Individual::getIndEmigTraits(void) {
+	emigTraits e; 
+	e.d0 = e.alpha = e.beta = 0.0;
 	if (pEmigTraits != 0) {
 		e.d0 = pEmigTraits->d0;
 		e.alpha = pEmigTraits->alpha;
@@ -409,27 +422,41 @@ emigTraits Individual::getEmigTraits(void) {
 	return e;
 }
 // Set phenotypic transfer by kernel traits
-void Individual::setKernelTraits(Species* pSpecies, bool sexDep, bool twinKernel, int resol) {
+void Individual::setIndKernelTraits(Species* pSpecies, bool sexDep, bool twinKernel, int resol) {
 
-	trfrKernTraits k; k.meanDist1 = k.meanDist2 = k.probKern1 = 0.0;
-	if (sexDep && this->sex == MAL) {
-		k.meanDist1 = getTrait(KERNEL_MEANDIST_1_M)->express();
+	trfrKernelParams k; 
+	k.meanDist1 = k.meanDist2 = k.probKern1 = 0.0;
 
-		if (twinKernel) { // twin kernel
-			k.meanDist2 = getTrait(KERNEL_MEANDIST_2_M)->express();
-			k.probKern1 = getTrait(KERNEL_PROBABILITY_M)->express();
+	if (sexDep) {
+		if (this->sex == MAL) {
+			k.meanDist1 = getTrait(KERNEL_MEANDIST_1_M)->express();
+
+			if (twinKernel) { // twin kernel
+				k.meanDist2 = getTrait(KERNEL_MEANDIST_2_M)->express();
+				k.probKern1 = getTrait(KERNEL_PROBABILITY_M)->express();
+			}
 		}
+		else if (this->sex == FEM) {
+			k.meanDist1 = getTrait(KERNEL_MEANDIST_1_F)->express();
 
+			if (twinKernel) { // twin kernel
+				k.meanDist2 = getTrait(KERNEL_MEANDIST_2_F)->express();
+				k.probKern1 = getTrait(KERNEL_PROBABILITY_F)->express();
+			}
+		}
+		else {
+			throw runtime_error("Attempt to express invalid kernel transfer trait sex.");
+		}
 	}
 	else {
-		k.meanDist1 = getTrait(KERNEL_MEANDIST_1_F)->express();
+		k.meanDist1 = getTrait(KERNEL_MEANDIST_1)->express();
 
 		if (twinKernel) { // twin kernel
-			k.meanDist2 = getTrait(KERNEL_MEANDIST_2_F)->express();
-			k.probKern1 = getTrait(KERNEL_PROBABILITY_F)->express();
+			k.meanDist2 = getTrait(KERNEL_MEANDIST_2)->express();
+			k.probKern1 = getTrait(KERNEL_PROBABILITY)->express();
 		}
-
 	}
+	
 	float meanDist1 = (float)(k.meanDist1);
 	float meanDist2 = (float)(k.meanDist2);
 	float probKern1 = (float)(k.probKern1);
@@ -452,8 +479,8 @@ void Individual::setKernelTraits(Species* pSpecies, bool sexDep, bool twinKernel
 
 
 // Get phenotypic emigration traits
-trfrKernTraits Individual::getKernTraits(void) {
-	trfrKernTraits k; k.meanDist1 = k.meanDist2 = k.probKern1 = 0.0;
+trfrKernelParams Individual::getIndKernTraits(void) {
+	trfrKernelParams k; k.meanDist1 = k.meanDist2 = k.probKern1 = 0.0;
 	if (pTrfrData != 0) {
 
 		auto& pKernel = dynamic_cast<const kernelData&>(*pTrfrData);
@@ -466,9 +493,9 @@ trfrKernTraits Individual::getKernTraits(void) {
 	return k;
 }
 
-void Individual::setSMSTraits(Species* pSpecies) {
+void Individual::setIndSMSTraits(Species* pSpecies) {
 
-	trfrSMSTraits s = pSpecies->getSMSTraits();
+	trfrSMSTraits s = pSpecies->getSpSMSTraits();
 
 	double dp, gb, alphaDB, betaDB;
 	dp = gb = alphaDB = betaDB = 0.0;
@@ -502,7 +529,7 @@ trfrData* Individual::getTrfrData(void) {
 }
 
 // Get phenotypic transfer by SMS traits
-trfrSMSTraits Individual::getSMSTraits(void) {
+trfrSMSTraits Individual::getIndSMSTraits(void) {
 
 	trfrSMSTraits s; s.dp = s.gb = s.alphaDB = 1.0; s.betaDB = 1;
 	if (pTrfrData != 0) {
@@ -518,16 +545,11 @@ trfrSMSTraits Individual::getSMSTraits(void) {
 
 
 // Set phenotypic transfer by CRW traits
-void Individual::setCRWTraits(Species* pSpecies, bool sexDep) {
+void Individual::setIndCRWTraits(Species* pSpecies) {
 	trfrCRWTraits c; c.stepLength = c.rho = 0.0;
-	if (sexDep && this->sex == MAL) {
-		c.stepLength = getTrait(CRW_STEPLENGTH_M)->express();
-		c.rho = getTrait(CRW_STEPCORRELATION_M)->express();
-	}
-	else {
-		c.stepLength = getTrait(CRW_STEPLENGTH_F)->express();
-		c.rho = getTrait(CRW_STEPCORRELATION_F)->express();
-	}
+
+	c.stepLength = getTrait(CRW_STEPLENGTH)->express();
+	c.rho = getTrait(CRW_STEPCORRELATION)->express();
 
 	auto& pCRW = dynamic_cast<crwData&>(*pTrfrData);
 	pCRW.stepLength = (float)(c.stepLength);
@@ -539,24 +561,20 @@ void Individual::setCRWTraits(Species* pSpecies, bool sexDep) {
 }
 
 // Get phenotypic transfer by CRW traits
-trfrCRWTraits Individual::getCRWTraits(void) {
+trfrCRWTraits Individual::getIndCRWTraits(void) {
+
 	trfrCRWTraits c; c.stepLength = c.rho = 0.0;
-
-
 	if (pTrfrData != 0) {
-
 		auto& pCRW = dynamic_cast<const crwData&>(*pTrfrData);
-
 		c.stepLength = pCRW.stepLength;
 		c.rho = pCRW.rho;
 	}
-
 	return c;
 
 }
 
 // Get phenotypic settlement traits
-settleTraits Individual::getSettTraits(void) {
+settleTraits Individual::getIndSettTraits(void) {
 	settleTraits s; s.s0 = s.alpha = s.beta = 0.0;
 	if (pSettleTraits != 0) {
 		s.s0 = pSettleTraits->s0;
@@ -624,7 +642,7 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies,
 	int dispersing = 1;
 	double xrand, yrand, meandist, dist, r1, rndangle, nx, ny;
 	float localK;
-	trfrKernTraits kern;
+	trfrKernelParams kern;
 	Cell* pCell;
 	Patch* pPatch;
 	locn loc = pCurrCell->getLocn();
@@ -632,7 +650,7 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies,
 	landData land = pLandscape->getLandData();
 
 	bool usefullkernel = pSpecies->useFullKernel();
-	trfrRules trfr = pSpecies->getTrfr();
+	transferRules trfr = pSpecies->getTransferRules();
 	settleRules sett = pSpecies->getSettRules(stage, sex);
 
 	pCell = NULL;
@@ -653,18 +671,18 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies,
 	else { // get kernel parameters for the species
 		if (trfr.sexDep) {
 			if (trfr.stgDep) {
-				kern = pSpecies->getKernTraits(stage, sex);
+				kern = pSpecies->getSpKernTraits(stage, sex);
 			}
 			else {
-				kern = pSpecies->getKernTraits(0, sex);
+				kern = pSpecies->getSpKernTraits(0, sex);
 			}
 		}
 		else {
 			if (trfr.stgDep) {
-				kern = pSpecies->getKernTraits(stage, 0);
+				kern = pSpecies->getSpKernTraits(stage, 0);
 			}
 			else {
-				kern = pSpecies->getKernTraits(0, 0);
+				kern = pSpecies->getSpKernTraits(0, 0);
 			}
 		}
 	}
@@ -704,7 +722,6 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies,
 				yrand = (double)loc.y + pRandom->Random() * 0.999;
 
 				r1 = 0.0000001 + pRandom->Random() * (1.0 - 0.0000001);
-				//			dist = (-1.0*meandist)*std::log(r1);
 				dist = (-1.0 * meandist) * log(r1);  // for LINUX_CLUSTER
 
 				rndangle = pRandom->Random() * 2.0 * PI;
@@ -832,8 +849,8 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 	landData land = pLandscape->getLandData();
 	simParams sim = paramsSim->getSim();
 
-	trfrRules trfr = pSpecies->getTrfr();
-	trfrCRWTraits movt = pSpecies->getCRWTraits();
+	transferRules trfr = pSpecies->getTransferRules();
+	trfrCRWTraits movt = pSpecies->getSpCRWTraits();
 	settleSteps settsteps = pSpecies->getSteps(stage, sex);
 
 	patch = pCurrCell->getPatch();
@@ -921,7 +938,7 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 				rho = 0.99; // to promote leaving natal patch
 				path->out = 0;
 			}
-			if (movt.straigtenPath && path->settleStatus > 0) {
+			if (movt.straightenPath && path->settleStatus > 0) {
 				// individual is in a patch and has already determined whether to settle
 				rho = 0.99; // to promote leaving the patch
 				path->out = 0;
@@ -1036,13 +1053,13 @@ movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
 	}
 
 	landData land = pLand->getLandData();
-	trfrSMSTraits movt = pSpecies->getSMSTraits();
+	trfrSMSTraits movt = pSpecies->getSpSMSTraits();
 	current = pCurrCell->getLocn();
 
 	//get weights for directional persistence....
 	if ((path->out > 0 && path->out <= (movt.pr + 1))
 		|| natalPatch
-		|| (movt.straigtenPath && path->settleStatus > 0)) {
+		|| (movt.straightenPath && path->settleStatus > 0)) {
 		// inflate directional persistence to promote leaving the patch
 		if (indvar) nbr = getSimDir(current.x, current.y, 10.0f * pSMS.dp);
 		else nbr = getSimDir(current.x, current.y, 10.0f * movt.dp);
@@ -1367,8 +1384,8 @@ array3x3f Individual::getHabMatrix(Landscape* pLand, Species* pSpecies,
 	Cell* pCell;
 
 	landData land = pLand->getLandData();
-	if (absorbing) nodatacost = ABSNODATACOST;
-	else nodatacost = NODATACOST;
+	if (absorbing) nodatacost = gAbsorbingNoDataCost;
+	else nodatacost = gNoDataCost;
 
 	for (int x2 = -1; x2 < 2; x2++) {   // index of relative move in x direction
 		for (int y2 = -1; y2 < 2; y2++) { // index of relative move in x direction

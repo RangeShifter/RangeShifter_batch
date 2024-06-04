@@ -6,161 +6,157 @@
 
 using namespace std;
 
-/**Creates an array of doubles of size = rows*cols, taken from NEMO**/
+// Patch * patch matrix to store pairwise Fst calculations
+/** Creates an array of doubles of size = rows*cols, taken from NEMO **/
 struct PatchMatrix
 {
-private:
-	unsigned int _rows, _cols, _length;
-	vector<double> _val;
-
 public:
-
-	PatchMatrix(int rows = 0, int cols = 0) : _rows(0), _cols(0), _length(0), _val(0) {
-		_length = rows * cols;
-		_val.resize(_length);
-		_rows = rows; _cols = cols;
+	PatchMatrix(int rows = 0, int cols = 0) : rows(0), cols(0), nbCells(0), value(0) {
+		nbCells = rows * cols;
+		value.resize(nbCells);
+		rows = rows; cols = cols;
 	};
 
-
-	/**Assigns a value to all element of the matrix.*/
-	void assign(double val)
-	{
-		for (unsigned int i = 0; i < _length; ++i) _val[i] = val;
-	}
-
-	int length() { return _length; };
-
-	/**Sets element at row i and column j to value val**/
-	void set(unsigned int i, unsigned int j, double val) {
-		if (i * j < _length)
-			_val[i * _cols + j] = val;
-		else
-			cout << endl << ("Error: PatchMatrix::set() out of range!\n");
-	}
-
+	// Get value at specified position
 	double get(unsigned int i, unsigned int j) {
-		if (!((i + 1) * (j + 1) > _length))
-			return _val[i * _cols + j];
-		else
-			cout << endl << ("Error: PatchMatrix::get() out of range!\n");
+		if (!((i + 1) * (j + 1) > nbCells))
+			return value[i * cols + j];
+		else throw runtime_error("Error: PatchMatrix::get() out of range!\n");
 		return 0;
 	}
-};
 
+	int getNbCells() { return nbCells; };
 
-struct NeutralData {
+	/** Sets element at row i and column j to value val **/
+	void set(unsigned int i, unsigned int j, double val) {
+		if (i * j < nbCells)
+			value[i * cols + j] = val;
+		else throw runtime_error("Error: PatchMatrix::set() out of range!\n");
+	}
+
+	/** Assigns a value to all elements of the matrix. */
+	void setAll(double val)
+	{
+		for (unsigned int i = 0; i < nbCells; ++i) value[i] = val;
+	}
 
 private:
-	//int lociPosition;
-	//char allele;
-	vector<int> counts;
-	vector<double> freqs;
-	vector<double> heteros;
+	unsigned int rows, cols, nbCells;
+	vector<double> value;
+};
+
+// Counts of NEUTRAL allele occurrences in populations
+// for neutral statistics calculations
+struct NeutralCountsTable {
 
 public:
-	//for community allele table, heteros not technically needed so don't reserve 
-	NeutralData(int nAllele, int allele, int alleleCount) : counts(nAllele), freqs(nAllele) {
-		this->incrementCountBy(alleleCount, allele);
-	};
+	NeutralCountsTable(int nAllele) : alleleTallies(nAllele), alleleFrequencies(nAllele), alleleHeterozygoteTallies(nAllele) {};
+	
+	void reset() {
+		fill(alleleTallies.begin(), alleleTallies.end(), 0); fill(alleleFrequencies.begin(), alleleFrequencies.end(), 0);
+		fill(alleleHeterozygoteTallies.begin(), alleleHeterozygoteTallies.end(), 0);
+	}
 
-	//for population allele tables 
-	NeutralData(int nAllele) : counts(nAllele), freqs(nAllele), heteros(nAllele) {};
+	// Getters
+	int getTally(int whichAllele) { return alleleTallies[whichAllele]; };
+	double getFrequency(int whichAllele) { return alleleFrequencies[whichAllele]; };
+	int getHeteroTally(int whichAllele) { return alleleHeterozygoteTallies[whichAllele]; };
 
-	void setFrequencies(int populationSize) {
-		int i = 0;
-		for (auto count : counts) {
-			if (freqs.size() <= i)
-				freqs.push_back(((count != 0) ? count / static_cast<double>(populationSize) : 0));
-			else
-				freqs[i] = ((count != 0) ? count / static_cast<double>(populationSize) : 0);
-			++i;
+	// Setters / increments
+	void incrementTally(int whichAllele) { alleleTallies[whichAllele]++; };
+	void incrementTallyBy(int count, int whichAllele) { this->alleleTallies[whichAllele] += count; }
+	void incrementHeteroTally(int whichAllele) { this->alleleHeterozygoteTallies[whichAllele]++; }
+	void setFrequencies(int sampleSize) {
+		for (int i = 0; i < alleleFrequencies.size(); i++) {
+			alleleFrequencies[i] = sampleSize > 0 ? static_cast<double>(alleleTallies[i]) / sampleSize : 0.0;
 		}
 	};
 
-	void reset() {
-		fill(counts.begin(), counts.end(), 0); fill(freqs.begin(), freqs.end(), 0);
-		fill(heteros.begin(), heteros.end(), 0);
-	}
-
-	int getCount(int allele) { 
-		return counts[allele]; 
-	};
-	double getFrequency(int allele) { return freqs[allele]; };
-
-	double getHetero(int allele) { return heteros[allele]; };
-
-	void incrementCount(int allele) { counts[allele]++; };
-
-	void incrementCountBy(int count, int allele) { this->counts[allele] += count; }
-
-	void incrementHeteroBy(int count, int allele) { 
-		this->heteros[allele] += count; 
-	}
+private:
+	// Tallies, one for each possible allele (so absolute max size is 255)
+	vector<int> alleleTallies; // number of occurrences of each allele in pop
+	vector<double> alleleFrequencies; // frequency of each allele in pop
+	vector<int> alleleHeterozygoteTallies; // nb of times each allele is found in a heterozygous pair
 };
 
 
-
+// Handles calculations of neutral statistics
 class NeutralStatsManager {
 
-private:
-	int  _n_extantPopulations, _n_individuals;
-	/**F-statistics*/
-	double _ho, _hs, _ht, _hsnei, _htnei, _nb_alleles_local, _nb_alleles_global,
-		_fst, _fis, _fit, _fix_loc_local, _fix_loc_global;
-	/**Weir & Hill (2002) F-stat estimates.*/
-	double _fst_WH;
-	/**Weir & Cockerham (1984) F-stat estimates.*/
-	double _fst_WC, _fis_WC, _fit_WC;
-	/**Per-locus F-stats (Weir&Cockerham).*/
-	vector<double> _fst_WC_loc, _fis_WC_loc, _fit_WC_loc, ho_loc; //no need for pointers because shouldn't be copied or moved, resized 
+public:
 
-	/**Pairwise Fst matrix.*/
-	PatchMatrix _fst_matrix;
-	vector<NeutralData> globalAlleleTable; //don't have to be pointers, not shared or moved
+	NeutralStatsManager(const int& nbSampledPatches, const int nLoci);
 
-public: 
+	// Count alleles and their frequencies in all pops and community
+	void updateAllNeutralTables(Species* pSpecies, Landscape* pLandscape, set<int> const& patchList);
+	void resetCommNeutralTables();
 
-	NeutralStatsManager(set<int> const& patchList, const int nLoci);
-
-	void updateAlleleTables(Species* pSpecies, Landscape* pLandscape, set<int> const& patchList);
-
-	void resetGlobalAlleleTable();
-
-	void setLociDiversityCounter(set<int> const& patchList, const int nInds, Species* pSpecies, Landscape* pLandscape);
-
-	void calculateHo(set<int> const& patchList, const int nbInds, const int nbrLoci, Species* pSpecies, Landscape* pLandscape);
+	void calcAllelicDiversityMetrics(set<int> const& patchList, const int nInds, Species* pSpecies, Landscape* pLandscape);
+	
+	// Heterozygosity calculations
+	void calculateHo(set<int> const& patchList, const int totalNbSampledInds, const int nbrLoci, Species* pSpecies, Landscape* pLandscape);
 	void calculateHs(set<int> const& patchList, const int nbrLoci, Species* pSpecies, Landscape* pLandscape);
 	void calculateHt(Species* pSpecies, Landscape* pLandscape, const int nLoci, const int nAlleles);
-	void calculateHo2(set<int> const& patchList, const int nbInds, const int nbrLoci, Species* pSpecies, Landscape* pLandscape);
-
+	void calculatePerLocusHo(set<int> const& patchList, const int totalNbSampledInds, const int nbrLoci, Species* pSpecies, Landscape* pLandscape);
+	
+	// F-stats calculations
 	void calculateFstatWC(set<int> const& patchList, const int nInds, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape);
-	void calculateFstatWC_MS(set<int> const& patchList, const int nInds, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape);
+	void calcPerLocusMeanSquaresFst(set<int> const& patchList, const int nInds, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape);
+	void calcPairwiseWeightedFst(set<int> const& patchList, const int nInds, const int nLoci, Species* pSpecies, Landscape* pLandscape);
 
-	void setFstMatrix(set<int> const& patchList, const int nInds, const int nLoci, Species* pSpecies, Landscape* pLandscape);
+	// Getters
+	int getNbPopulatedSampledPatches() const { return nbExtantPops; }
+	int getTotalNbSampledInds() const { return totalNbSampledInds; }
+	
+	double getMeanNbAllPerLocusPerPatch() const { return meanNbAllelesPerLocusPerPatch; }
+	double getMeanNbAllPerLocus() const { return meanNbAllelesPerLocus; }
+	double getMeanFixdAllelesPerPatch() const { return meanNbFixedAllelesPerPatch; }
+	double getTotalFixdAlleles() const { return nbGloballyFixedAlleles; }
+	
+	double getHo() const { return ho; }
+	double getHs() const { return hs; }
+	double getHt() const { return ht; }
 
-	double getHsnei() const { return _hsnei; }
-	double getHtnei() const { return _htnei; }
-	double getHo() const { return _ho; }
-	double getHs() const { return _hs; }
-	double getHt() const { return _ht; }
-	double getFst() const { return _fst; }
-	double getFis() const { return _fis; }
-	double getFit() const { return _fit; }
-	double getFstWC() const { return _fst_WC; }
-	double getFisWC() const { return _fis_WC; }
-	double getFitWC() const { return _fit_WC; }
-	int getNExtantPatchs() const { return _n_extantPopulations;  }
-	int getNIndividuals() const { return _n_individuals;  }
-	double getWeightedFst() { return _fst_WH; }
-	double getNbAllLocal() const { return _nb_alleles_local; }
-	double getNbAllGlobal() const { return _nb_alleles_global; }
-	double getFixLocLocal() const { return _fix_loc_local; }
-	double getFixLocGlobal() const { return _fix_loc_global; }
-	double getPairwiseFst(int i, int j) { return _fst_matrix.get(i, j); }
-	double get_fst_WC_loc(int i) const { return _fst_WC_loc[i]; }
-	double get_fis_WC_loc(int i) const { return _fis_WC_loc[i]; }
-	double get_fit_WC_loc(int i) const { return _fit_WC_loc[i]; }
-	double get_ho_loc(int i) const { return ho_loc[i]; }
+	double getPerLocusHo(int i) const { return perLocusHo[i]; }
+
+	double getFstWC() const { return fst; }
+	double getFisWC() const { return fis; }
+	double getFitWC() const { return fit; }
+
+	double getWeightedFst() { return weightedFst; }
+
+	double getPerLocusFst(int i) const { return perLocusFst[i]; }
+	double getPerLocusFis(int i) const { return perLocusFis[i]; }
+	double getPerLocusFit(int i) const { return perLocusFit[i]; }
+
+	double getPairwiseFst(int i, int j) { return pairwiseFstMatrix.get(i, j); }
+
+private:
+
+	int nbExtantPops, totalNbSampledInds;
+	vector<NeutralCountsTable> commNeutralCountTables; // community-level tallies of allele counts and freqs
+
+	double meanNbAllelesPerLocusPerPatch, meanNbAllelesPerLocus;
+	double meanNbFixedAllelesPerPatch, nbGloballyFixedAlleles;
+
+	double ho; // observed heterozygosity 
+	double hs; // expected population-level heterozygosity
+	double ht; // expected community-level heterozygosity
+	
+	vector<double> perLocusHo; // Per-locus observed heterozygosity
+
+	// F-statistics
+	// Weir & Cockerham (1984) F-stat estimates.
+	double fst, fis, fit;
+
+	// Weir & Hill (2002) F-stat estimates 
+	double weightedFst;
+
+	// Per-locus F-stats (Weir & Cockerham).
+	vector<double> perLocusFst, perLocusFis, perLocusFit;
+
+	// Pairwise Fst matrix
+	PatchMatrix pairwiseFstMatrix;
 };
 
 #endif

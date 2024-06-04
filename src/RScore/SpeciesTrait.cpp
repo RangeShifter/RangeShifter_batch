@@ -1,183 +1,178 @@
 
 #include "SpeciesTrait.h"
 
-//could be handled in header file but here for now for flexibility
-SpeciesTrait::SpeciesTrait(vector<string> parameters, Species* pSpecies) {
-
-	bool neutralPresent = false;
-	if (ploidy == 0) this->ploidy = pSpecies->isDiploid() ? 2 : 1;
-
-	this->sex = stringToSex(parameters[2]);
-	TraitType traitType = stringToTraitType(parameters[1], this->sex);
-	this->positions = stringToLoci(parameters[3], parameters[4], pSpecies);
-	this->expressionType = stringToExpressionType(parameters[5]);
-	this->initialDistribution = stringToDistributionType(parameters[6]);
-	this->initialParameters = stringToParameterMap(parameters[7]);
-	this->dominanceDistribution = stringToDistributionType(parameters[8]);
-	this->dominanceParameters = stringToParameterMap(parameters[9]);
-
-	if (traitType == SNP || traitType == ADAPTIVE)
-		this->inherited = true;
-	else
-		this->inherited = (parameters[10] == "true") ? true : false;
-
-	if (this->isInherited()) {
-		this->mutationDistribution = stringToDistributionType(parameters[11]);
-		this->mutationParameters = stringToParameterMap(parameters[12]);
-		this->mutationRate = stof(parameters[13]);
-	}
-
-	// error outputting for different traits 
-	if (traitType == SNP) {
-		if (mutationDistribution != KAM && mutationDistribution != SSM)
-			cout << endl << "Traits file: ERROR - Neutral marker mutation distribution must be KAM or SSM (max = 256))" << endl;
-
-		if (pSpecies->getNumberOfNeutralLoci() > 0)
-			cout << endl << "Traits file: WARNING - can only have one set of neutral markers, overwriting previous" << endl;
-		else pSpecies->setNumberOfNeutralLoci(static_cast<int>(positions.size()));
-	}
-}
-
-TraitType SpeciesTrait::stringToTraitType(const std::string& str, sex_t sex) const {
-
-	if (sex == MAL) {
-		if (str == "emigration_d0") return E_D0_M;
-		else if (str == "emigration_alpha") return E_ALPHA_M;
-		else if (str == "emigration_beta") return E_BETA_M;
-		else if (str == "settlement_s0") return S_S0_M;
-		else if (str == "settlement_alpha") return S_ALPHA_M;
-		else if (str == "settlement_beta") return S_BETA_M;
-		else if (str == "kernel_meanDistance1") return KERNEL_MEANDIST_1_M;
-		else if (str == "kernel_meanDistance2") return KERNEL_MEANDIST_2_M;
-		else if (str == "kernel_probability") return KERNEL_PROBABILITY_M;
-		else if (str == "crw_stepLength") return CRW_STEPLENGTH_M;
-		else if (str == "crw_stepCorrelation") return CRW_STEPCORRELATION_M;
-		else throw logic_error(str + " is not a valid trait type.");
-	} else {
-		if (str == "emigration_d0") return E_D0_F;
-		else if (str == "emigration_alpha") return E_ALPHA_F;
-		else if (str == "emigration_beta") return E_BETA_F;
-		else if (str == "settlement_s0") return S_S0_F;
-		else if (str == "settlement_alpha") return S_ALPHA_F;
-		else if (str == "settlement_beta") return S_BETA_F;
-		else if (str == "kernel_meanDistance1") return KERNEL_MEANDIST_1_F;
-		else if (str == "kernel_meanDistance2") return KERNEL_MEANDIST_2_F;
-		else if (str == "kernel_probability") return KERNEL_PROBABILITY_F;
-		else if (str == "crw_stepLength") return CRW_STEPLENGTH_F;
-		else if (str == "crw_stepCorrelation") return CRW_STEPCORRELATION_F;
-		else if (str == "sms_directionalPersistence") return SMS_DP;
-		else if (str == "sms_goalBias") return SMS_GB;
-		else if (str == "sms_alphaDB") return SMS_ALPHADB;
-		else if (str == "sms_betaDB") return SMS_BETADB;
-		else if (str == "neutral") return SNP;
-		else if (str == "adaptive") return ADAPTIVE;
-		else throw logic_error(str + " is not a valid trait type.");
-	}
-}
-
-ExpressionType SpeciesTrait::stringToExpressionType(const std::string& str) const {
-	if (str == "average") return AVERAGE;
-	else if (str == "additive") return ADDITIVE;
-	else if (str == "multiplicative") return MULTIPLICATIVE;
-	else if (str == "#") return NEUTRAL;
-	else throw logic_error(str + " is not a valid gene expression type.");
-}
-
-DistributionType SpeciesTrait::stringToDistributionType(const std::string& str) const
+// Species trait constructor
+SpeciesTrait::SpeciesTrait(
+	const TraitType& trType, const sex_t& sx,
+	const set<int>& pos, const ExpressionType& expr,
+	const DistributionType& initDist, const map<GenParamType, float> initParams,
+	const DistributionType& dominanceDist, const map<GenParamType, float> dominanceParams,
+	bool isInherited, const float& mutRate,
+	const DistributionType& mutationDist, const map<GenParamType, float> mutationParams,
+	Species* pSpecies) :
+	traitType{ trType },
+	sex{ sx },
+	genePositions{ pos },
+	expressionType{ expr },
+	initialDistribution{ initDist },
+	initialParameters{ initParams },
+	dominanceDistribution{ dominanceDist },
+	dominanceParameters{ dominanceParams },
+	inherited{ isInherited },
+	mutationDistribution{ mutationDist },
+	mutationParameters{ mutationParams },
+	mutationRate{ mutRate }
 {
-	if (str == "#") return NONE;
-	else if (str == "uniform") return UNIFORM;
-	else if (str == "normal") return NORMAL;
-	else if (str == "gamma") return GAMMA;
-	else if (str == "scaled") return SCALED;
-	else if (str == "negExp") return NEGEXP;
-	else if (str == "KAM") return KAM;
-	else if (str == "SSM") return SSM;
-	else throw logic_error(str + " is not a valid distribution type.");
-}
+	// Initialise ploidy only once per species
+	if (ploidy == NULL) this->ploidy = pSpecies->isDiploid() ? 2 : 1;
 
-map<parameter_t, float> SpeciesTrait::stringToParameterMap(string parameters) const {
-
-	map<parameter_t, float> paramMap;
-	if (parameters != "#") {
-		parameters.erase(remove(parameters.begin(), parameters.end(), '\"'), parameters.end());
-		stringstream ss(parameters);
-
-		string value, valueWithin;
-		while (std::getline(ss, value, ',')) {
-			stringstream sss(value);
-			vector<string> paramValue;
-			while (std::getline(sss, valueWithin, '=')) {
-				paramValue.push_back(valueWithin);
-			}
-
-			if (paramValue.size() == 2) {
-				parameter_t parameterT = paramValue[0];
-				float value = stof(paramValue[1]);
-				paramMap.emplace(parameterT, value);
-			}
-			else
-				cout << endl << "Traits file: ERROR - parameter values for a distribution missing, should be e.g. 'mean=0,standard_deviation=0.5' or if not applicable put #" << endl;
+	// Check distribution parameters
+	// Initial distribution
+	for (auto [paramType, paramVal] : initParams) {
+		switch (paramType)
+		{
+		case MIN: case MAX: case MEAN:
+			if (!isValidTraitVal(paramVal))
+				throw logic_error("Invalid parameter value: initial parameter " + to_string(paramType) + " must have a valid value for trait" + to_string(traitType) + ".");
+			break;
+		case SD:
+			if (paramVal <= 0.0)
+				throw logic_error("Invalid parameter value: initial parameter " + to_string(paramType) + " must be strictly positive");
+			break;
+		default:
+			break;
 		}
 	}
-	return paramMap;
-}
 
-set<int> SpeciesTrait::selectRandomLociPositions(int nbLoci, Species* pSpecies) const {
-
-	int genomeSize = pSpecies->getGenomeSize();
-	set<int> positions;
-	for (int i = 0; i < nbLoci; ++i)
-		positions.insert(pRandom->IRandom(0, genomeSize));
-	return positions;
-}
-
-
-set<int> SpeciesTrait::stringToLoci(string pos, string nLoci, Species* pSpecies) const {
-
-	set<int> positions;
-
-	if (pos != "random") {
-
-		// Parse comma-separated list from input string
-		stringstream ss(pos);
-		string value, valueWithin;
-		// Read comma-separated positions
-		while (std::getline(ss, value, ',')) {
-			stringstream sss(value);
-			vector<int> positionRange;
-			// Read single positions and dash-separated ranges
-			while (std::getline(sss, valueWithin, '-')) {
-				positionRange.push_back(stoi(valueWithin));
-			}
-			switch (positionRange.size())
-			{
-			case 1: // single position
-				if (positionRange[0] > pSpecies->getGenomeSize())
-					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
-				positions.insert(positionRange[0]);
-				break;
-			case 2: // dash-separated range
-				if (positionRange[0] > pSpecies->getGenomeSize() || positionRange[1] > pSpecies->getGenomeSize()) {
-					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
-				}
-				for (int i = positionRange[0]; i < positionRange[1] + 1; ++i) {
-					positions.insert(i);
-				}
-				break;
-			default: // zero or more than 2 values between commas: error
-				throw logic_error("Traits file: ERROR - incorrectly formatted position range.");
-				break;
-			}
-		}
-
-		for (auto position : positions) {
-			if (position > pSpecies->getGenomeSize())
-				cout << endl << "Traits file: ERROR - trait positions " << position << " must not exceed genome size" << endl;
+	// Mutation distribution
+	for (auto [paramType, paramVal] : mutationParams) {
+		switch (paramType)
+		{
+		case MIN: case MAX: case MEAN:
+			if (!isValidTraitVal(paramVal))
+				throw logic_error("Invalid parameter value: mutation parameter " + to_string(paramType) + " must have a valid value for trait" + to_string(traitType) + ".");
+			break;
+		case SD: case SHAPE: case SCALE:
+			if (paramVal <= 0.0)
+				throw logic_error("Invalid parameter value: mutation parameter " + to_string(paramType) + " must be strictly positive");
+			break;
+		default:
+			break;
 		}
 	}
-	else {
-		positions = selectRandomLociPositions(stoi(nLoci), pSpecies);
+
+	// Dominance distribution
+	for (auto [paramType, paramVal] : dominanceParams) {
+		switch (paramType)
+		{
+		case MIN: case MAX: case MEAN:
+			if (paramVal < 0.0)
+				throw logic_error("Invalid parameter value: dominance parameter " + to_string(paramType) + " must not be negative.");
+			break;
+		case SD: case SHAPE: case SCALE:
+			if (paramVal <= 0.0)
+				throw logic_error("Invalid parameter value: dominance parameter " + to_string(paramType) + " must be strictly positive");
+			break;
+		default:
+			break;
+		}
 	}
-	return positions;
 }
+
+bool SpeciesTrait::isValidTraitVal(const float& val) const {
+	switch (traitType)
+	{
+	// Neutral trait
+	case NEUTRAL: // only need to check for input parameters
+	{
+		return val >= 0.0 && val <= 255.0;
+	}
+	// Genetic Load
+	case GENETIC_LOAD: case GENETIC_LOAD1: case GENETIC_LOAD2: case GENETIC_LOAD3: case GENETIC_LOAD4: case GENETIC_LOAD5:
+	{
+		return val >= -1.0 // genetic fitness traits can be beneficial
+			&& val <= 1.0;
+		break;
+	}
+	// Dispersal traits
+	/// Emigration
+	case E_D0_F: case E_D0_M: case E_D0: {
+		return val >= 0.0 && val <= 1.0; // is a probability
+		break;
+	}
+	case E_ALPHA_F: case E_ALPHA_M: case E_ALPHA:
+	{
+		return val > 0.0;
+		break;
+	}
+	case E_BETA_F: case E_BETA_M: case E_BETA:
+	{
+		return true; // inflexion point can be any value
+		break;
+	}
+	/// Settlement
+	case S_S0_F: case S_S0_M: case S_S0:
+	{
+		return val >= 0.0 && val <= 1.0;
+		break;
+	}
+	case S_ALPHA_F: case S_ALPHA_M: case S_ALPHA:
+	{
+		return val > 0.0;
+		break;
+	}
+	case S_BETA_F: case S_BETA_M: case S_BETA:
+	{
+		return true;
+		break;
+	}
+	/// Transfer - Kernels
+	case KERNEL_MEANDIST_1_F: case KERNEL_MEANDIST_1_M: case KERNEL_MEANDIST_1:
+	case KERNEL_MEANDIST_2_F: case KERNEL_MEANDIST_2_M: case KERNEL_MEANDIST_2:
+	{
+		return val >= 0.0; // is a distance
+		break;
+	}
+	case KERNEL_PROBABILITY_F: case KERNEL_PROBABILITY_M: case KERNEL_PROBABILITY:
+	{
+		return val >= 0.0 && val <= 1.0;
+		break;
+	}
+	/// Transfer - Correlated random walk
+	case CRW_STEPLENGTH:
+	{
+		return val >= 0.0;
+		break;
+	}
+	case CRW_STEPCORRELATION:
+	{
+		return val >= 0.0 && val <= 1.0;
+		break;
+	}
+	/// Transfer - Stochastic Movement Simulator
+	case SMS_DP:
+	{
+		return val >= 1.0; // according to parameter doc
+		break;
+	}
+	case SMS_GB:
+	{
+		return val >= 1.0; // according to parameter doc
+		break;
+	}
+	case SMS_ALPHADB:
+	{
+		return val > 0.0;
+		break;
+	}
+	case SMS_BETADB:
+	{
+		return true;
+		break;
+	}
+	default:
+		throw logic_error("Invalid trait type " + to_string(traitType) + " passed to isValidTraitVal().");
+		break;
+	}
+}
+

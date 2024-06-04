@@ -128,7 +128,7 @@ paramInit::paramInit(void) {
 	minSeedX = 0; maxSeedX = 99999999; minSeedY = 0; maxSeedY = 99999999;
 	nSeedPatches = 1; nSpDistPatches = 1;
 	indsFile = "NULL";
-	for (int i = 0; i < NSTAGES; i++) {
+	for (int i = 0; i < gMaxNbStages; i++) {
 		initProp[i] = 0.0;
 	}
 }
@@ -176,12 +176,12 @@ initParams paramInit::getInit(void) {
 }
 
 void paramInit::setProp(short stg, float p) {
-	if (stg >= 0 && stg < NSTAGES && p >= 0.0 && p <= 1.0) initProp[stg] = p;
+	if (stg >= 0 && stg < gMaxNbStages && p >= 0.0 && p <= 1.0) initProp[stg] = p;
 }
 
 float paramInit::getProp(short stg) {
 	float p = 0.0;
-	if (stg >= 0 && stg < NSTAGES) p = initProp[stg];
+	if (stg >= 0 && stg < gMaxNbStages) p = initProp[stg];
 	return p;
 }
 
@@ -198,13 +198,6 @@ initInd paramInit::getInitInd(int ix) {
 		iind.year = iind.patchID = iind.x = iind.y = iind.sex = iind.age = iind.stage = 0;
 		iind.species = -1;
 	}
-#if RSDEBUG
-	//DEBUGLOG << "paramInit::getInitInd(): ix=" << ix << " size()=" << initinds.size()
-	//	<< " iind.patchID=" << iind.patchID
-	//	<< " iind.x=" << iind.x
-	//	<< " iind.y=" << iind.y
-	//	<< endl;
-#endif
 	return iind;
 }
 
@@ -221,7 +214,6 @@ paramSim::paramSim(void) {
 	simulation = 0;
 	reps = years = 1;
 	outIntRange = 1;
-	//	outStartRange = outStartOcc = outStartPop = outStartInd = 0;
 	outStartPop = outStartInd = 0;
 	outStartTraitCell = outStartTraitRow = outStartConn = 0;
 	outIntOcc = outIntPop = outIntInd = outputGeneticInterval = 10;
@@ -238,10 +230,6 @@ paramSim::paramSim(void) {
 	outStartPaths = 0; outIntPaths = 0;
 	outPaths = false; ReturnPopRaster = false; CreatePopFile = true;
 #endif
-	drawLoaded = false;
-	fionaOptions = 0.0;
-	storeIndsYr = -9999;
-	fixReplicateSeed = false;
 	viewLand = false; viewPatch = false; viewGrad = false; viewCosts = false;
 	viewPop = false; viewTraits = false; viewPaths = false; viewGraph = false;
 	dir = ' ';
@@ -261,8 +249,6 @@ void paramSim::setSim(simParams s) {
 	outPop = s.outPop; outInds = s.outInds;
 	outTraitsCells = s.outTraitsCells; outTraitsRows = s.outTraitsRows;
 	outConnect = s.outConnect;
-	//if (s.outStartRange >= 0) outStartRange =	s.outStartRange;
-	//if (s.outStartOcc >= 0) outStartOcc =	s.outStartOcc;
 	if (s.outStartPop >= 0) outStartPop = s.outStartPop;
 	if (s.outStartInd >= 0) outStartInd = s.outStartInd;
 	if (s.outStartTraitCell >= 0) outStartTraitCell = s.outStartTraitCell;
@@ -284,16 +270,16 @@ void paramSim::setSim(simParams s) {
 	ReturnPopRaster = s.ReturnPopRaster;
 	CreatePopFile = s.CreatePopFile;
 #endif
-	drawLoaded = s.drawLoaded;
-	fionaOptions = s.fionaOptions;
-	storeIndsYr = s.storeIndsYr;
 	fixReplicateSeed = s.fixReplicateSeed;
 }
 
-void paramSim::setGeneticSim(bool outputWCFstat, bool outputPerLocusWCFstat, bool outputPairwiseFst, int outputGeneticInterval) {
+void paramSim::setGeneticSim(string patchSamplingOption, bool outputGeneticValues, bool outputWCFstat, bool outputPerLocusWCFstat, bool outputPairwiseFst, int outputStartGenetics, int outputGeneticInterval) {
+	this->patchSamplingOption = patchSamplingOption;
+	this->outputGenes = outputGeneticValues;
 	this->outputWCFstat = outputWCFstat;
 	this->outputPerLocusWCFstat = outputPerLocusWCFstat;
 	this->outputPairwiseFst = outputPairwiseFst;
+	this->outputStartGenetics = outputGeneticInterval;
 	this->outputGeneticInterval = outputGeneticInterval;
 }
 
@@ -303,8 +289,6 @@ simParams paramSim::getSim(void) {
 	s.simulation = simulation; s.reps = reps; s.years = years;
 	s.outRange = outRange; s.outOccup = outOccup; s.outPop = outPop; s.outInds = outInds;
 	s.outTraitsCells = outTraitsCells; s.outTraitsRows = outTraitsRows; s.outConnect = outConnect;
-	//s.outStartRange =	outStartRange;
-	//s.outStartOcc =	outStartOcc;
 	s.outStartPop = outStartPop; s.outStartInd = outStartInd;
 	s.outStartTraitCell = outStartTraitCell; s.outStartTraitRow = outStartTraitRow;
 	s.outStartConn = outStartConn;
@@ -326,12 +310,12 @@ simParams paramSim::getSim(void) {
 	s.ReturnPopRaster = ReturnPopRaster;
 	s.CreatePopFile = CreatePopFile;
 #endif
-	s.drawLoaded = drawLoaded;
-	s.fionaOptions = fionaOptions;
-	s.storeIndsYr = storeIndsYr;
+	s.patchSamplingOption = patchSamplingOption;
+	s.outputGeneValues = outputGenes;
 	s.outputWCFstat = outputWCFstat;
 	s.outputPerLocusWCFstat = outputPerLocusWCFstat;
 	s.outputPairwiseFst = outputPairwiseFst;
+	s.outStartGenetics = outputStartGenetics;
 	s.outputGeneticInterval = outputGeneticInterval;
 
 	return s;
@@ -394,104 +378,6 @@ string paramSim::getDir(int option) {
 	}
 	return s;
 }
-
-const sex_t stringToSex(const std::string& str) {
-	if (str == "female") return FEM;
-	else if (str == "male") return MAL;
-	else throw logic_error("Traits file: ERROR - sex can either be 'female' or 'male'.");
-}
-
-set<int> convertStringToPatches(const string& str, const int& nb_rnd_patches, const vector<int>& existingPatches) {
-	
-	set<int> patches;
-
-	if (str == "random") {
-		if (nb_rnd_patches > existingPatches.size()) {
-			throw logic_error("Genetics file: ERROR - Nb of patches to randomly sample exceeds nb of existing patches.");
-		} else {
-			// Sample without replacement
-			std::sample(
-				existingPatches.begin(), 
-				existingPatches.end(), 
-				std::inserter(patches, patches.end()),
-				nb_rnd_patches,
-				pRandom->getRNG()
-			);
-		}
-	} else if (str == "all") {
-		// Copy all patches into sampled patches
-		std::copy(existingPatches.begin(), 
-			existingPatches.end(),
-			std::inserter(patches, patches.end())
-		);
-	} else {
-		// comma-separated list of patches
-		stringstream ss(str);
-		string strPch;
-		int pch;
-		bool patchExists;
-		// Read comma-separated values
-		while (std::getline(ss, strPch, ',')) {
-			pch = std::stoi(strPch);
-			patchExists = std::find(existingPatches.begin(), existingPatches.end(), pch) != existingPatches.end();
-			if (!patchExists)
-				throw logic_error("Genetics file: ERROR - sampled patch does not exist.");
-			else {
-				patches.insert(pch);
-			}
-		}
-	}
-	return patches;
-}
-
-set<int> convertStringToChromosomeEnds(string str, int genomeSize) {
-	set<int> chromosomeEnds;
-	if (str == "#")
-		chromosomeEnds.insert(genomeSize - 1); // last position in genome
-	else {
-		// Parse comma-separated list from input string
-		stringstream ss(str);
-		string strPos; 
-		int pos;
-		// Read comma-separated positions
-		while (std::getline(ss, strPos, ',')) {
-			pos = std::stoi(strPos);
-			if (pos > genomeSize)
-				throw logic_error("Genetics file: ERROR - chromosome ends must not exceed genome size.");
-			else {
-				chromosomeEnds.insert(pos);
-			}
-		}
-	}
-	return chromosomeEnds;
-}
-
-set<int> convertStringToStages(const string& str, const int& nbStages) {
-	set<int> stages;
-	if (str == "all") {
-		for (int stg = 0; stg < nbStages; ++stg) {
-			stages.insert(stg);
-		}
-	}
-	else {
-		// Parse comma-separated list from input string
-		stringstream ss(str);
-		string strStg;
-		int stg;
-		// Read comma-separated values
-		while (std::getline(ss, strStg, ',')) {
-			stg = std::stoi(strStg);
-			if (stg > nbStages - 1)
-				throw logic_error("Genetics file: ERROR - sampled stage exceeds number of stages.");
-			else {
-				stages.insert(stg);
-			}
-		}
-	}
-	return stages;
-}
-
-
 
 #if RS_RCPP
 bool paramSim::getReturnPopRaster(void) { return ReturnPopRaster; }

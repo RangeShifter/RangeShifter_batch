@@ -80,14 +80,11 @@ public:
 		int				// year (relevent only for seedType == 2)
 	);
 	void addManuallySelected(void);
-	void addIndividualsToColdStorage(void);
-	void createAverageTraitIndividualAndStore(Species* pSpecies, Landscape* pLandscape);
 	void resetPopns(void);
 	void localExtinction(int);
 	void patchChanges(void);
 	void reproduction(
-		int,				// year
-		bool
+		int				// year
 	);
 	void emigration(void);
 #if RS_RCPP // included also SEASONAL
@@ -164,12 +161,6 @@ public:
 	void outOccSuit(
 		bool	// TRUE if occupancy graph is to be viewed on screen
 	);
-	void viewOccSuit( // Update the occupancy graph on the screen
-		// NULL for the batch version
-		int,		// year
-		double,	// mean occupancy
-		double	// standard error of occupancy
-	);
 	bool outTraitsHeaders( // Open traits file and write header record
 		Species*,	// pointer to Species
 		int				// Landscape number (-999 to close the file)
@@ -179,11 +170,6 @@ public:
 		int       // Landscape number (-999 to close the file)
 	);
 	void outTraits( // Write records to traits file
-		traitCanvas,// pointers to canvases for drawing variable traits 
-		//		emigCanvas,	// pointers to canvases for drawing emigration traits
-		//		trfrCanvas, // pointers to canvases for drawing emigration traits
-										// see SubCommunity.h
-										// in the batch version, these are replaced by integers set to zero
 		Species*,		// pointer to Species
 		int,				// replicate
 		int,				// year
@@ -197,13 +183,6 @@ public:
 		int,			// row number (Y cell co-ordinate)
 		traitsums	// structure holding sums of trait genes for dispersal (see Population.h)
 	);
-	void draw(	// Draw the Community on the landscape map and optionally save the map
-		// NULL for the batch version
-		int,	// replicate
-		int,	// year
-		int,	// generation
-		int		// Landscape number
-	);
 #if RS_RCPP && !R_CMD
 	Rcpp::IntegerMatrix addYearToPopList(int, int);
 #endif
@@ -211,8 +190,11 @@ public:
 	//sample individuals for genetics (or could be used for anything)
 	void sampleIndividuals(Species* pSpecies);
 
+	bool openOutGenesFile(const bool& isDiploid, const int landNr, const int rep);
+	void outputGeneValues(const int& year, const int& gen, Species* pSpecies);
+
 	//control neutral stat output
-	void outNeutralGenetics(Species* pSpecies, int rep, int yr, int gen, bool perLocus, bool pairwise);
+	void outNeutralGenetics(Species* pSpecies, int rep, int yr, int gen, bool fstat, bool perLocus, bool pairwise);
 
 	//file openers
 	bool openWCFstatFile(Species* pSpecies, const int landNr);
@@ -224,7 +206,6 @@ public:
 	void writeWCPerLocusFstatFile(Species* pSpecies, const int yr, const int gen, const  int nAlleles, const int nLoci, set<int> const& patchList);
 	void writePairwiseFSTFile(Species* pSpecies, const int yr, const int gen, const  int nAlleles, const int nLoci, set<int> const& patchList);
 
-
 private:
 	Landscape* pLandscape;
 	int indIx;				// index used to apply initial individuals
@@ -232,7 +213,6 @@ private:
 	std::vector <SubCommunity*> subComms;
 
 	//below won't work for multispecies
-	Population* pColdStorage;
 	unique_ptr<NeutralStatsManager> pNeutralStatistics;
 };
 
