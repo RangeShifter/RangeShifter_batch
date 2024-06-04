@@ -20,7 +20,9 @@ fi
 any_diff=0
 for filename in ${test_dir}/Outputs/*.txt; do
 	# Ignore anchor; Batch and Debug logs are uninteresting to compare
-	if [ $filename != ${test_dir}/Outputs/git_anchor.txt ] && [ $filename != ${test_dir}/Outputs/BatchLog.txt ] && [ $filename != ${test_dir}/Outputs/DebugLog.txt ]
+	if [ $filename != ${test_dir}/Outputs/git_anchor.txt ] 
+	&& [ $filename != ${test_dir}/Outputs/BatchLog.txt ] 
+	&& [ $filename != ${test_dir}/Outputs/DebugLog.txt ]
 	then 
 		matching_expectation="${test_dir}/Outputs/expected/${osdir}/${filename#${test_dir}/Outputs/}"
 		# Ignore input filenames in Parameters which vary with OS

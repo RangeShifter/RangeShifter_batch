@@ -70,3 +70,6 @@ run_on_gha/test_scenario_01/OutputMaps/*
 run_on_gha/test_scenario_02/Outputs/*
 run_on_gha/test_scenario_02/OutputMaps/*
 !run_on_gha/test_scenario_02/OutputMaps/git_anchor.txt
+
+# Ignore older structure for test scenarios
+/run_on_gha/rs_test_project/Outputs
