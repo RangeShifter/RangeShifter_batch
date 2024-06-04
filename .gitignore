@@ -61,13 +61,15 @@ out/
 x64/
 *.json
 
-# Ignore test project outputs, except anchors
+# Ignore test project outputs, except expected outputs folder
 
 run_on_gha/test_scenario_01/Outputs/*
+!run_on_gha/test_scenario_01/Outputs/expected
 run_on_gha/test_scenario_01/OutputMaps/*
 !run_on_gha/test_scenario_01/OutputMaps/git_anchor.txt
 
 run_on_gha/test_scenario_02/Outputs/*
+!run_on_gha/test_scenario_01/Outputs/expected
 run_on_gha/test_scenario_02/OutputMaps/*
 !run_on_gha/test_scenario_02/OutputMaps/git_anchor.txt
 

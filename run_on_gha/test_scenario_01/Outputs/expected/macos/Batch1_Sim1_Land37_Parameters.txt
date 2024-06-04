@@ -101,10 +101,15 @@ MAX. No. OF STEPS/YEAR:	 not applied
 
 GENETICS:
 DIPLOID
-Genome size: -9999
-Chromosome breaks : 
-Recombination rate: -9999
+Genome size: 300
+Chromosome breaks : 299 
+Recombination rate: 0
 Traits modelled:  
+0
+2
+3
+13
+19  
 
 INITIALISATION CONDITIONS:
 From species distribution: 	
