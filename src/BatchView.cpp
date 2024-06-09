@@ -79,7 +79,8 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies) {
 	Population* pPop;
 	int popSize;
 	Cell* pRandCell;
-	locn cellLocn;
+	locn randLocn;
+	sf::Vector2f indPosition;
 
 	sf::CircleShape cInd;
 	
@@ -92,13 +93,30 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies) {
 			popSize = pPop->getNInds();
 			for (int i = 0; i < popSize; i++) {
 				pRandCell = pPatch->getRandomCell();
-				cellLocn = pRandCell->getLocn();
+				randLocn = pRandCell->getLocn();
 
 				cInd = indShape;
-				cInd.setFillColor(indColour);
-				// Randomise position inside the cell
-				cInd.setPosition(cellLocn.x * pRandom->Random() * cellSize, cellLocn.y * pRandom->Random() * cellSize);
-				window.draw(cInd);
+				cInd.setFillColor(sf::Color::Blue);
+
+				if (pPatch->getPatchNum() == 30) {
+					cInd.setFillColor(indColour);
+
+					patchLimits plim = pPatch->getLimits();
+					sf::RectangleShape thatPatch{sf::Vector2f(plim.xMax - plim.xMin, plim.yMax - plim.yMin)};
+					thatPatch.setOutlineColor(indColour);
+					thatPatch.setOutlineThickness(3.0);
+					thatPatch.setFillColor(sf::Color::Transparent);
+					thatPatch.setPosition(plim.xMin, plim.xMax);
+					window.draw(thatPatch);
+					
+					// Randomise position inside the cell
+					indPosition = {(float)((randLocn.x * pRandom->Random() * cellSize)),
+						float((randLocn.y + pRandom->Random()) * cellSize) };
+					cInd.setPosition(indPosition);
+					window.draw(cInd);
+				}
+				
+				
 			}
 		}
 	}

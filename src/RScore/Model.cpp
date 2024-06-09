@@ -558,6 +558,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 
 #ifdef BATCH_VIEW
 				// Display
+				commStats cs = pComm->getStats();
 				bView.collectUserInput(window);
 				if (window.isOpen()) 
 					bView.drawCommunity(window, pSpecies);
