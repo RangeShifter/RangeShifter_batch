@@ -13,7 +13,7 @@ public:
 
 	void collectUserInput(sf::RenderWindow& window);
 	void drawLandscape(sf::RenderWindow& window);
-	void drawCommunity(sf::RenderWindow& window, Species* pSpecies);
+	void drawCommunity(sf::RenderWindow& window, Species* pSpecies, const int& yr, const int& gen);
 
 private:
 	Landscape* pLandscape;
@@ -21,6 +21,8 @@ private:
 
 	unsigned int cellSize;
 	int dimX, dimY;
+
+	const float relSizeLegend = 0.05; // height of time+gen label relative to dimX
 
 	float indRadius = 1.0;
 	sf::CircleShape indShape = sf::CircleShape(indRadius);

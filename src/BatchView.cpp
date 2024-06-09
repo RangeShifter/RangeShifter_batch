@@ -9,7 +9,10 @@ BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCom
 	dimY = pLandscape->getLandParams().dimY;
 	cellSize = min(1920u / dimX, 1080u / dimY);
 
-	window.create(sf::VideoMode{ dimX * cellSize, dimY * cellSize }, "RangeShifter Batch");
+	unsigned int winWidth = dimX * cellSize;
+	unsigned int winHeight = dimY * cellSize + dimY * relSizeLegend; // space at bottom for legend
+
+	window.create(sf::VideoMode{winWidth, winHeight}, "RangeShifter Batch");
 	window.setFramerateLimit(144);
 }
 
@@ -58,23 +61,13 @@ void BatchView::drawLandscape(sf::RenderWindow& window) {
 
 }
 
-void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies) {
+void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const int& yr, const int& gen) {
 
 	// Erase previous community
 	window.clear();
 	drawLandscape(window);
 
 	// Draw current community
-	// ...
-	// for (each patch)
-	// getPopn()
-	// for each ind in Popn
-	// get random cell in Patch
-	// get random x and y in cell
-	// draw individual shape there
-	
-	// get patchnums
-	// pLandscape->findPatch
 	Patch* pPatch;
 	Population* pPop;
 	int popSize;
@@ -108,17 +101,30 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies) {
 					thatPatch.setFillColor(sf::Color::Transparent);
 					thatPatch.setPosition(plim.xMin, plim.xMax);
 					window.draw(thatPatch);
-					
-					// Randomise position inside the cell
-					indPosition = {(float)((randLocn.x * pRandom->Random() * cellSize)),
-						float((randLocn.y + pRandom->Random()) * cellSize) };
-					cInd.setPosition(indPosition);
-					window.draw(cInd);
 				}
 				
-				
+				// Randomise position inside the cell
+				indPosition = { (float)((randLocn.x * pRandom->Random() * cellSize)),
+					float((randLocn.y + pRandom->Random()) * cellSize) };
+				cInd.setPosition(indPosition);
+				window.draw(cInd);
 			}
 		}
 	}
+
+	// Display year and generation
+	sf::Vector2f timeLegendPosition{0.0, (1 + relSizeLegend) * dimY}; // just below plot
+	sf::RectangleShape timeLegendBg(sf::Vector2f{(float)dimX, relSizeLegend * dimY});
+	timeLegendBg.setPosition(timeLegendPosition);
+	sf::Text timeLegendTxt;
+	sf::Font font;
+	font.loadFromFile("../../../graphic_resources/rockwell.otf");
+	timeLegendTxt.setFont(font);
+	timeLegendTxt.setPosition(timeLegendPosition);
+	timeLegendTxt.setString("Year:\t" + to_string(yr) + "\n Gen:\t" + to_string(gen));
+	timeLegendTxt.setFillColor(sf::Color::White);
+	window.draw(timeLegendBg);
+	window.draw(timeLegendTxt);
+
 	window.display();
 }

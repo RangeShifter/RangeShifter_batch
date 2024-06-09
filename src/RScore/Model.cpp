@@ -500,6 +500,13 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				// reproduction
 				pComm->reproduction(yr);
 
+#ifdef BATCH_VIEW
+				// Display
+				bView.collectUserInput(window);
+				if (window.isOpen())
+					bView.drawCommunity(window, pSpecies, yr, gen);
+#endif
+
 				if (dem.stageStruct) {
 					if (sstruct.survival == 0) { // at reproduction
 						pComm->survival(0, 2, 1); // survival of all non-juvenile stages
@@ -555,14 +562,6 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				// output Genetics
 				if (sim.outGenetics && yr >= sim.outStartGenetic && yr % sim.outIntGenetic == 0)
 					pComm->outGenetics(rep, yr, gen, -1);
-
-#ifdef BATCH_VIEW
-				// Display
-				commStats cs = pComm->getStats();
-				bView.collectUserInput(window);
-				if (window.isOpen()) 
-					bView.drawCommunity(window, pSpecies);
-#endif
 
 				// survival part 1
 				if (dem.stageStruct) {
