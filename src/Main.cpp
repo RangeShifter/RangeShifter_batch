@@ -131,7 +131,7 @@ if (argc > 1) {
 	if (argc > 2) {
 		// control file number also passed as a parameter
 		int i = atoi(argv[2]);
-		cname  = paramsSim->getDir(0) + "Inputs/CONTROL" + Int2Str(i) + ".txt";
+		cname  = paramsSim->getDir(0) + "Inputs/CONTROL" + to_string(i) + ".txt";
 	}
 	else {
 		// default name is CONTROL.txt

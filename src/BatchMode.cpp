@@ -618,7 +618,7 @@ int ParseParameterFile(void)
 	bParamFile >> header; if (header != "bc") errors++;
 	bParamFile >> header; if (header != "Rmax") errors++;
 	for (i = 0; i < maxNhab; i++) {
-		Kheader = "K" + Int2Str(i + 1);
+		Kheader = "K" + to_string(i + 1);
 		bParamFile >> header; if (header != Kheader) Kerrors++;
 	}
 	bParamFile >> header; if (header != "OutStartPop") errors++;
@@ -789,7 +789,7 @@ int ParseParameterFile(void)
 		for (i = 0; i < maxNhab; i++) {
 			bParamFile >> infloat;
 			if (infloat < 0.0) {
-				Kheader = "K" + Int2Str(i + 1);
+				Kheader = "K" + to_string(i + 1);
 				BatchError(filetype, line, 19, Kheader); errors++;
 			}
 			else {
@@ -1768,9 +1768,9 @@ int ParseTransitionFile(short nstages, short nsexesDem)
 	for (i = 0; i < nstages; i++) {
 		for (j = 0; j < nsexesDem; j++) {
 			bTransMatrix >> header;
-			if (nsexesDem == 1) hhh = Int2Str(i);
+			if (nsexesDem == 1) hhh = to_string(i);
 			else {
-				if (j == 0) hhh = Int2Str(i) + "m"; else hhh = Int2Str(i) + "f";
+				if (j == 0) hhh = to_string(i) + "m"; else hhh = to_string(i) + "f";
 			}
 			if (header != hhh) errors++;
 		}
@@ -1818,9 +1818,9 @@ int ParseTransitionFile(short nstages, short nsexesDem)
 			line++;
 			// row header
 			bTransMatrix >> header;
-			if (nsexesDem == 1) hhh = Int2Str(stage);
+			if (nsexesDem == 1) hhh = to_string(stage);
 			else {
-				if (sex == 0) hhh = Int2Str(stage) + "m"; else hhh = Int2Str(stage) + "f";
+				if (sex == 0) hhh = to_string(stage) + "m"; else hhh = to_string(stage) + "f";
 			}
 			if (header != hhh) {
 				BatchError(filetype, line, 0, " ");
@@ -1874,9 +1874,9 @@ int ParseWeightsFile(string filetype)
 	for (i = 0; i < stages; i++) {
 		for (j = 0; j < sexesDem; j++) {
 			bStageWeightsFile >> header;
-			if (sexesDem == 1) hhh = Int2Str(i);
+			if (sexesDem == 1) hhh = to_string(i);
 			else {
-				if (j == 0) hhh = Int2Str(i) + "m"; else hhh = Int2Str(i) + "f";
+				if (j == 0) hhh = to_string(i) + "m"; else hhh = to_string(i) + "f";
 			}
 			if (header != hhh) errors++;
 		}
@@ -1895,9 +1895,9 @@ int ParseWeightsFile(string filetype)
 			line++;
 			// row header
 			bStageWeightsFile >> header;
-			if (sexesDem == 1) hhh = Int2Str(stage);
+			if (sexesDem == 1) hhh = to_string(stage);
 			else {
-				if (sex == 0) hhh = Int2Str(stage) + "m"; else hhh = Int2Str(stage) + "f";
+				if (sex == 0) hhh = to_string(stage) + "m"; else hhh = to_string(stage) + "f";
 			}
 			if (header != hhh) {
 				BatchError(filetype, line, 0, " ");
@@ -2011,7 +2011,7 @@ int ParseEmigFile(void)
 			if (stage == 0 && sex == 0) {
 				if (emigstage < 0 || emigstage >= stages) {
 					BatchError(filetype, line, 0, "EmigStage"); errors++;
-					batchlog << "EmigStage must be from 0 to " << Int2Str(stages - 1) << endl;
+					batchlog << "EmigStage must be from 0 to " << to_string(stages - 1) << endl;
 				}
 			}
 		}
@@ -2215,11 +2215,11 @@ int ParseTransferFile(string indir)
 		case 0: { // raster map with unique habitat codes
 			batchlog << "for LandType = 0" << endl;
 			for (i = 0; i < maxNhab; i++) {
-				colheader = "MortHab" + Int2Str(i + 1);
+				colheader = "MortHab" + to_string(i + 1);
 				bTransferFile >> header; if (header != colheader) morthaberrors++;
 			}
 			for (i = 0; i < maxNhab; i++) {
-				colheader = "CostHab" + Int2Str(i + 1);
+				colheader = "CostHab" + to_string(i + 1);
 				bTransferFile >> header; if (header != colheader) costerrors++;
 			}
 			break;
@@ -2256,7 +2256,7 @@ int ParseTransferFile(string indir)
 		bTransferFile >> header; if (header != "SMconst") errors++;
 		if (landtype == 0) {
 			for (i = 0; i < maxNhab; i++) {
-				colheader = "MortHab" + Int2Str(i + 1);
+				colheader = "MortHab" + to_string(i + 1);
 				bTransferFile >> header; if (header != colheader) morthaberrors++;
 			}
 		}
@@ -2516,7 +2516,7 @@ int ParseTransferFile(string indir)
 					if (smtype == 1)
 					{
 						if (morthab < 0.0 || morthab >= 1.0) {
-							colheader = "MortHab" + Int2Str(i + 1);
+							colheader = "MortHab" + to_string(i + 1);
 							BatchError(filetype, line, 20, colheader); errors++;
 						}
 					}
@@ -2525,7 +2525,7 @@ int ParseTransferFile(string indir)
 					bTransferFile >> costhab;
 					if (name_costfile == "NULL") {
 						if (costhab < 1) {
-							colheader = "CostHab" + Int2Str(i + 1);
+							colheader = "CostHab" + to_string(i + 1);
 							BatchError(filetype, line, 11, colheader); errors++;
 						}
 					}
@@ -2621,7 +2621,7 @@ int ParseTransferFile(string indir)
 					bTransferFile >> morthab;
 					if (smtype) {
 						if (morthab < 0.0 || morthab >= 1.0) {
-							colheader = "MortHab" + Int2Str(i + 1);
+							colheader = "MortHab" + to_string(i + 1);
 							BatchError(filetype, line, 20, colheader); errors++;
 						}
 					}
@@ -3139,7 +3139,7 @@ int ParseInitFile(string indir)
 	if (stagestruct) {
 		bInitFile >> header; if (header != "InitAge") errors++;
 		for (i = 1; i < stages; i++) {
-			colheader = "PropStage" + Int2Str(i);
+			colheader = "PropStage" + to_string(i);
 			bInitFile >> header; if (header != colheader) propnerrors++;
 		}
 	}
@@ -3312,7 +3312,7 @@ int ParseInitFile(string indir)
 				bInitFile >> propstage;
 				cumprop += propstage;
 				if (seedtype != 2 && (propstage < 0.0 || propstage > 1.0)) {
-					colheader = "PropStage" + Int2Str(i);
+					colheader = "PropStage" + to_string(i);
 					BatchError(filetype, line, 20, colheader); errors++;
 				}
 			}
@@ -5625,7 +5625,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 
 	t0 = (int)time(0);
 
-	string name = paramsSim->getDir(2) + "Batch" + Int2Str(sim.batchNum) + "_RS_log.csv";
+	string name = paramsSim->getDir(2) + "Batch" + to_string(sim.batchNum) + "_RS_log.csv";
 	if (rsLog.is_open()) {
 		rsLog.close(); rsLog.clear();
 	}
@@ -5659,7 +5659,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 		t00 = (int)time(0);
 		land_nr = ReadLandFile(1, pLandscape);
 		if (land_nr <= 0) { // error condition
-			string msg = "Error code " + Int2Str(-land_nr)
+			string msg = "Error code " + to_string(-land_nr)
 				+ " returned from reading LandFile - aborting batch run";
 			cout << endl << msg << endl;
 			ReadLandFile(9); // close the landscape file
@@ -5860,8 +5860,8 @@ void RunBatch(int nSimuls, int nLandscapes)
 						<< endl;
 #endif
 
-					cout << endl << "Running simulation nr. " << Int2Str(sim.simulation)
-						<< " on landscape no. " << Int2Str(land_nr) << endl;
+					cout << endl << "Running simulation nr. " << to_string(sim.simulation)
+						<< " on landscape no. " << to_string(land_nr) << endl;
 
 					// for batch processing, include landscape number in parameter file name
 					OutParameters(pLandscape);
