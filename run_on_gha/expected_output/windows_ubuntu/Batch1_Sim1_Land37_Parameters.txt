@@ -11,7 +11,7 @@ BOUNDARIES 	reflective
 
 LANDSCAPE:	imported map
 TYPE: 	habitat codes
-FILE NAME:  (see batch file) Inputs/LandFile_ex4.txt
+FILE NAME:  (see batch file) ../../../run_on_gha/rs_test_project/Inputs\LandFile_ex4.txt
 No. HABITATS:	7
 RESOLUTION (m): 	10
 DIMENSIONS:  X 979  Y 619
@@ -19,7 +19,7 @@ AVAILABLE:   min.X 0 min.Y 0  max.X 978 max.Y 618
 
 SPECIES DISTRIBUTION LOADED: 	yes
 RESOLUTION (m)	10
-FILE NAME:  (see batch file) Inputs/LandFile_ex4.txt
+FILE NAME:  (see batch file) ../../../run_on_gha/rs_test_project/Inputs\LandFile_ex4.txt
 
 ENVIRONMENTAL GRADIENT:	 no
 ENVIRONMENTAL STOCHASTICITY:	no
@@ -92,10 +92,10 @@ STEP MORTALITY:
 constant 0.01
 
 DISPERSAL - SETTLEMENT:
-MIN. No. OF STEPS:	 0
-MAX. No. OF STEPS:	 not applied
 SEX-DEPENDENT:   no
 STAGE-DEPENDENT: no
+MIN. No. OF STEPS:	 0
+MAX. No. OF STEPS:	 not applied
 SETTLE IF: find a suitable cell/patch + mating requirements
 MAX. No. OF STEPS/YEAR:	 not applied
 
