@@ -1,0 +1,2 @@
+Simulation	IndVar	PR	PRMethod	DP	MemSize	GB	GoalType	AlphaDB	BetaDB	DPMean	DPSD	GBMean	GBSD	AlphaDBMean	AlphaDBSD	BetaDBMean	BetaDBSD	DPScale	GBScale	AlphaDBScale	BetaDBScale	StraightenPath	SMtype	SMconst	MortHab1	MortHab2	MortHab3	MortHab4	MortHab5	MortHab6	MortHab7	CostHab1	CostHab2	CostHab3	CostHab4	CostHab5	CostHab6	CostHab7
+1	0	5	1	10	1	1	0	0	0	-9	-9	-9	-9	-9	-9	-9	-9	-9	-9	-9	-9	0	0	0.01	-9	-9	-9	-9	-9	-9	-9	1	1	3	5	10	20	50

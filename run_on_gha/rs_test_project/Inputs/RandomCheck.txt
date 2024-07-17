@@ -1,0 +1,2 @@
+samplesize	bernMean	normMean	normSD	poisMean	irandMin	irandMax
+10	0.5	0.5	0.5	2	2	5

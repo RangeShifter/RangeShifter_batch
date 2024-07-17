@@ -1,0 +1,2 @@
+Simulation	PostDestructn	PRep	RepInterval	MaxAge	TransMatrixFile	SurvSched	FecDensDep	FecStageWts	FecStageWtsFile	DevDensDep	DevDensCoeff	DevStageWts	DevStageWtsFile	SurvDensDep	SurvDensCoeff	SurvStageWts	SurvStageWtsFile
+1	0	1	0	1000	TransitionMatrix_ex4A.txt	2	1	0	NULL	0	-9	0	NULL	0	-9	0	NULL
