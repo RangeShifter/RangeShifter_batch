@@ -908,7 +908,7 @@ int ParseParameterFile(void)
 	}
 #else
 	for (i = 0; i < maxNhab; i++) {
-		Kheader = "K" + Int2Str(i + 1);
+		Kheader = "K" + to_string(i + 1);
 		bParamFile >> header; if (header != Kheader) Kerrors++;
 	}
 #endif // SEASONAL 
@@ -1253,7 +1253,7 @@ int ParseParameterFile(void)
 		for (i = 0; i < maxNhab; i++) {
 			bParamFile >> infloat;
 			if (infloat < 0.0) {
-				Kheader = "K" + Int2Str(i + 1);
+				Kheader = "K" + to_string(i + 1);
 				BatchError(filetype, line, 19, Kheader); errors++;
 			}
 			else {
