@@ -1,0 +1,4 @@
+Simulation	DensDep	UseFullKern	StageDep	SexDep	IndVar	EmigStage	Stage	Sex	EP	D0	alpha	beta	EPMean	EPSD	D0Mean	D0SD	alphaMean	alphaSD	betaMean	betaSD	EPScale	D0Scale	alphaScale	betaScale
+1	1	0	1	0	0	0	0	0	0	0.5	10	1	-9	-9	-9	-9	-9	-9	-9	-9	-9	-9	-9	-9
+1	1	0	1	0	0	0	1	0	0	0	0	0	-9	-9	-9	-9	-9	-9	-9	-9	-9	-9	-9	-9
+1	1	0	1	0	0	0	2	0	0	0	0	0	-9	-9	-9	-9	-9	-9	-9	-9	-9	-9	-9	-9

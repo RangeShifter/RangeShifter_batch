@@ -1,42 +1,42 @@
 /*----------------------------------------------------------------------------
- *	
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell 
- *	
+ *
+ *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *
  *	This file is part of RangeShifter.
- *	
+ *
  *	RangeShifter is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 3 of the License, or
  *	(at your option) any later version.
- *	
+ *
  *	RangeShifter is distributed in the hope that it will be useful,
  *	but WITHOUT ANY WARRANTY; without even the implied warranty of
  *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  *	GNU General Public License for more details.
- *	
+ *
  *	You should have received a copy of the GNU General Public License
  *	along with RangeShifter. If not, see <https://www.gnu.org/licenses/>.
- *	
+ *
  --------------------------------------------------------------------------*/
- 
- 
-/*------------------------------------------------------------------------------
 
-RangeShifter v2.0 BatchMode
 
-Functions for running in BATCH MODE
+ /*------------------------------------------------------------------------------
 
-For full details of RangeShifter, please see:
-Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
-and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
-eco-evolutionary dynamics and species’ responses to environmental changes.
-Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
+ RangeShifter v2.0 BatchMode
 
-Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
+ Functions for running in BATCH MODE
 
-Last updated: 26 October 2021 by Steve Palmer
+ For full details of RangeShifter, please see:
+ Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+ and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
+ eco-evolutionary dynamics and species’ responses to environmental changes.
+ Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
-------------------------------------------------------------------------------*/
+ Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
+
+ Last updated: 26 October 2021 by Steve Palmer
+
+ ------------------------------------------------------------------------------*/
 
 #ifndef BatchModeH
 #define BatchModeH
@@ -75,7 +75,7 @@ struct batchfiles {
 	int sexesDem;		// no. of explicit sexes for demographic model
 	int sexesDisp;	// no. of explicit sexes for dispersal model
 #if SEASONAL
-//	string seasonFile;
+	//	string seasonFile;
 #endif // SEASONAL 
 	string parameterFile;
 	string landFile;
@@ -92,28 +92,28 @@ struct batchfiles {
 	string virtEcolFile;
 #endif
 #if RS_ABC
-	string abcParamsFile,abcObsFile;
+	string abcParamsFile, abcObsFile;
 #endif
 };
 
 struct simCheck {
 	bool newsimul;
-	int simul,simlines,reqdsimlines,errors;
+	int simul, simlines, reqdsimlines, errors;
 };
 
-batchfiles ParseControlFile(string,string,string);
+batchfiles ParseControlFile(string, string, string);
 #if BUTTERFLYDISP
 int ParseParameterFile(string);
 #else
 int ParseParameterFile(void);
 #endif
-int ParseLandFile(int,string);
-int ParseDynamicFile(string,string);
+int ParseLandFile(int, string);
+int ParseDynamicFile(string, string);
 int ParseStageFile(string);
-int ParseTransitionFile(short,short);
+int ParseTransitionFile(short, short);
 int ParseWeightsFile(string);
 #if RS_CONTAIN
-int ParseHabDemFile(short,short,string);
+int ParseHabDemFile(short, short, string);
 int ParseManageFile(string);
 #endif // RS_CONTAIN 
 #if SEASONAL
@@ -142,7 +142,7 @@ int ParseABCObsFile(void);
 int ParseMortFile(void);
 int ReadMortalities(string);
 #endif // TEMPMORT 
-simCheck CheckStageSex(string,int,int,simCheck,int,int,int,int,int,bool,bool);
+simCheck CheckStageSex(string, int, int, simCheck, int, int, int, int, int, bool, bool);
 
 void BatchError(
 	string,	// file name
@@ -201,26 +201,26 @@ void ArchFormatError(void);
 #if VIRTUALECOLOGIST
 void SampleFormatError(void);
 #endif // VIRTUALECOLOGIST
-void FormatError(string,int);
-void OpenError(string,string);
+void FormatError(string, int);
+void OpenError(string, string);
 void EOFerror(string);
-void FileOK(string,int,int);
+void FileOK(string, int, int);
 void FileHeadersOK(string);
 void SimulnCountError(string);
 
-void RunBatch(int,int);
-int ReadParameters(int,Landscape*);
+void RunBatch(int, int);
+int ReadParameters(int, Landscape*);
 int ReadLandFile(int);
-int ReadLandFile(int,Landscape*);
+int ReadLandFile(int, Landscape*);
 int ReadDynLandFile(Landscape*);
 #if SEASONAL
-int ReadStageStructure(int,Landscape*);
+int ReadStageStructure(int, Landscape*);
 #else
 int ReadStageStructure(int);
 #endif // SEASONAL   
 #if RS_CONTAIN
-int ReadHabDemFile(const short,const short);
-int ReadManageFile(int,Landscape*);
+int ReadHabDemFile(const short, const short);
+int ReadManageFile(int, Landscape*);
 #endif // RS_CONTAIN 
 int ReadTransitionMatrix(
 	short,	// no. of stages
@@ -230,16 +230,16 @@ int ReadTransitionMatrix(
 );
 int ReadStageWeights(int);
 int ReadEmigration(int);
-int ReadTransfer(int,Landscape*);
+int ReadTransfer(int, Landscape*);
 int ReadSettlement(int);
 int ReadGenetics(int);
 int ReadArchFile(string);
-int ReadInitialisation(int,Landscape*);
-int ReadInitIndsFile(int,Landscape*,string);
+int ReadInitialisation(int, Landscape*);
+int ReadInitIndsFile(int, Landscape*, string);
 #if SEASONAL
-int ReadSeasonFile(const short,const short);
+int ReadSeasonFile(const short, const short);
 //#if PARTMIGRN
-int ReadExtremeFile(Landscape*,const short);
+int ReadExtremeFile(Landscape*, const short);
 //#endif // PARTMIGRN 
 #endif // SEASONAL
 #if VIRTUALECOLOGIST
@@ -253,16 +253,16 @@ extern ofstream DEBUGLOG;
 #endif
 
 // external pointers to parameter sets
-extern paramGrad *paramsGrad;
-extern paramStoch *paramsStoch;
-extern paramInit *paramsInit;
-extern paramSim *paramsSim;
+extern paramGrad* paramsGrad;
+extern paramStoch* paramsStoch;
+extern paramInit* paramsInit;
+extern paramSim* paramsSim;
 
-extern Species *pSpecies;
+extern Species* pSpecies;
 extern string costmapname;	// see FormMove.cpp (VCL) OR Main.cpp (batch)
 extern string genfilename;	// see FormGenetics.cpp (VCL) OR Main.cpp (batch)
 #if RS_CONTAIN
-extern Cull *pCull;
+extern Cull* pCull;
 #endif // RS_CONTAIN 
 #if VIRTUALECOLOGIST
 extern string locfilename;		// see FormVirtEcol.cpp (VCL) OR Main.cpp (batch)

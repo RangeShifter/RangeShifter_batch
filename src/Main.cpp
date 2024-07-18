@@ -1,32 +1,29 @@
 /*----------------------------------------------------------------------------
- *	
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell 
- *	
+ *
+ *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *
  *	This file is part of RangeShifter.
- *	
+ *
  *	RangeShifter is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 3 of the License, or
  *	(at your option) any later version.
- *	
+ *
  *	RangeShifter is distributed in the hope that it will be useful,
  *	but WITHOUT ANY WARRANTY; without even the implied warranty of
  *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  *	GNU General Public License for more details.
- *	
+ *
  *	You should have received a copy of the GNU General Public License
  *	along with RangeShifter. If not, see <https://www.gnu.org/licenses/>.
- *	
+ *
  --------------------------------------------------------------------------*/
- 
  
 /*------------------------------------------------------------------------------
 
-RangeShifter v2.0 Main
+ RangeShifter v2.0 Main
 
-Entry level function for BATCH MODE version
-
-For compilation in Embarcadero
+ Entry level function for BATCH MODE version
 
 For full details of RangeShifter, please see:
 Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
@@ -34,11 +31,11 @@ and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
 eco-evolutionary dynamics and species’ responses to environmental changes.
 Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
-Author: Steve Palmer, University of Aberdeen
+ Author: Steve Palmer, University of Aberdeen
 
-Last updated: 14 January 2021 by Anne-Kathleen Malchow, Potsdam University
+ Last updated: 14 January 2021 by Anne-Kathleen Malchow, Potsdam University
 
-------------------------------------------------------------------------------*/
+ ------------------------------------------------------------------------------*/
 #if RS_EMBARCADERO
 #pragma hdrstop
 #pragma argsused 
@@ -50,6 +47,7 @@ Last updated: 14 January 2021 by Anne-Kathleen Malchow, Potsdam University
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
+#include <cassert>
 
 using namespace std;
 
@@ -58,6 +56,7 @@ using namespace std;
 #include "./RScore/Species.h"
 #include "./RScore/SubCommunity.h"
 #include "./BatchMode.h"
+
 #if RANDOMCHECK
 #include "./RScore/RandomCheck.h"
 #endif
@@ -70,46 +69,26 @@ using namespace std;
 #include <direct.h>
 #endif
 
-
-const string Int2Str(const int x)
-{
-	ostringstream o;
-	if (!(o << x)) return "ERROR";
-	return o.str();
-}
-const string Float2Str(const float x) {
-	ostringstream o;
-	if (!(o << x)) return "ERROR";
-	return o.str();
-}
-const string Double2Str(const double x) {
-	ostringstream o;
-	if (!(o << x)) return "ERROR";
-	return o.str();
-}
-
-void MemoLine(string msg) {
-// dummy function for batch version
-}
-
 #if RSDEBUG
-void DebugGUI(string msg) {
-// dummy function for batch version
+void run_batch_unit_tests() {
+	cout << "******* Unit test output for batch interface *******" << endl;
+	// call tests here
+	cout << endl << "************************" << endl;
 }
-#endif
+#endif // RSDEBUG
 
-string habmapname,patchmapname,distnmapname;	// req'd for compilation, but not used
-string costmapname,genfilename;					 			// ditto
+string habmapname, patchmapname, distnmapname;	// req'd for compilation, but not used
+string costmapname, genfilename;					 			// ditto
 vector <string> hfnames;											// ditto
 
-paramGrad *paramsGrad;			// pointer to environmental gradient parameters
-paramStoch *paramsStoch;		// pointer to environmental stochasticity parameters
-paramInit *paramsInit;			// pointer to initialisation parameters
-paramSim *paramsSim;				// pointer to simulation parameters
+paramGrad* paramsGrad;			// pointer to environmental gradient parameters
+paramStoch* paramsStoch;		// pointer to environmental stochasticity parameters
+paramInit* paramsInit;			// pointer to initialisation parameters
+paramSim* paramsSim;				// pointer to simulation parameters
 
-Species *pSpecies;  				// pointer to species
-Community *pComm;						// pointer to community
-RSrandom *pRandom;          // pointer to random number routines
+Species* pSpecies;  				// pointer to species
+Community* pComm;						// pointer to community
+RSrandom* pRandom;          // pointer to random number routines
 
 #if RSDEBUG
 ofstream DEBUGLOG;
@@ -124,20 +103,33 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 {
 
-//int i,t0,t1,Nruns;
+#if RSDEBUG
+	cout << "RangeShifter Debug Mode" << endl;
+#else
+	cout << "RangeShifter Release Mode" << endl;
+#endif
+
+#if RSDEBUG
+	assert(0.1 > 0.0); // assert does run correctly
+	run_batch_unit_tests();
+#else
+	// assert does not run in Release mode
+	assert(1 == 2);
+#endif
+
 int i,t0,t1;
 int nSimuls = 0, nLandscapes = 0; // no. of simulations and landscapes in batch
 
-t0 = (int)time(0);
+	t0 = (int)time(0);
 
-// set up parameter objects
-paramsGrad = new paramGrad;
-paramsStoch = new paramStoch;
-paramsInit = new paramInit;
-paramsSim = new paramSim;                
+	// set up parameter objects
+	paramsGrad = new paramGrad;
+	paramsStoch = new paramStoch;
+	paramsInit = new paramInit;
+	paramsSim = new paramSim;
 
-// set up working directory and control file name
-string cname;
+	// set up working directory and control file name
+	string cname;
 #if LINUX_CLUSTER || RS_RCPP
 if (argc > 1) {
 	// full path name of directory passed as a parameter
@@ -145,7 +137,7 @@ if (argc > 1) {
 	if (argc > 2) {
 		// control file number also passed as a parameter
 		int i = atoi(argv[2]);
-		cname  = paramsSim->getDir(0) + "Inputs/CONTROL" + Int2Str(i) + ".txt";
+		cname  = paramsSim->getDir(0) + "Inputs/CONTROL" + to_string(i) + ".txt";
 	}
 	else {
 		// default name is CONTROL.txt
@@ -167,34 +159,6 @@ else {
 	cname  = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
 }
 #else
-#if RS_EMBARCADERO 
-if (_argc > 1) {
-	// full path name of directory passed as a parameter
-	paramsSim->setDir(_argv[1]);
-	if (_argc > 2) {
-		// control file name also passed as a parameter
-		cname  = paramsSim->getDir(0) + "Inputs\\" + _argv[2];
-	}
-	else {
-		// default name is CONTROL.txt
-		cname  = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
-	}
-}
-else {
-	// use current directory - get name from first (automatic) parameter
-	string nameS = _argv[0];
-	string path  = _argv[0];
-	unsigned int loc = nameS.find("\\",0);
-	while(loc < 999999) {
-		nameS = nameS.substr(loc+1);
-		loc = nameS.find("\\",0);
-	}
-	path = path.substr(0,path.length()-nameS.length());
-	paramsSim->setDir(path);
-	// control file name is forced to be CONTROL.txt
-	cname  = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
-}
-#else 
 if (__argc > 1) {
 	// full path name of directory passed as a parameter
 	paramsSim->setDir(__argv[1]);
@@ -208,15 +172,6 @@ if (__argc > 1) {
 	}
 }
 else {
-	// use current directory - get name from first (automatic) parameter
-//	string nameS = __argv[0];
-//	string path = __argv[0];
-//	unsigned int loc = nameS.find("\\", 0);
-//	while (loc < 999999) {
-//		nameS = nameS.substr(loc + 1);
-//		loc = nameS.find("\\", 0);
-//	}
-//	path = path.substr(0, path.length() - nameS.length());
 	// Get the current directory. 
 	char* buffer = _getcwd(NULL, 0);
 	string dir = buffer;
@@ -227,11 +182,10 @@ else {
 	cname = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
 }
 #endif
-#endif
 #if RSDEBUG
-cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
-cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
-cout << endl << "Control file:      " << cname << endl << endl;
+	cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
+	cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
+	cout << endl << "Control file:      " << cname << endl << endl;
 #endif
 
 bool errorfolder = CheckDirectory();
@@ -241,9 +195,8 @@ if (errorfolder) {
 	cout << "***** Working directory must contain Inputs, Outputs and Output_Maps folders"
 		<< endl << endl;
 	cout << "*****" << endl;
-	cout << "***** Simulation ABORTED - enter any number to terminate program" << endl;
+	cout << "***** Simulation ABORTED" << endl;
 	cout << "*****" << endl;
-	cin >> i;
 	return 666;
 }
 
@@ -253,94 +206,11 @@ string name = paramsSim->getDir(2) + "DebugLog.txt";
 DEBUGLOG.open(name.c_str());
 name = paramsSim->getDir(2) + "MutnLog.txt";
 MUTNLOG.open(name.c_str());
-//DEBUGLOG << "Main(): random integers:";
-//for (int i = 0; i < 5; i++) {
-//	int rrrr = pRandom->IRandom(1000,2000); DEBUGLOG << " " << rrrr;
-//}
-//DEBUGLOG << endl;
-//DEBUGLOG << "Main(): paramsSim = " << paramsSim << endl;
 if (DEBUGLOG.is_open())
 	cout << endl << "Main(): DEBUGLOG is open" << endl << endl;
 else
 	cout << endl << "Main(): DEBUGLOG is NOT open" << endl << endl;
 #endif
-
-/*
-for (int i = 0; i < 10; i++) {
-//	DEBUGLOG << pRandom->Random() << endl;
-//	DEBUGLOG << pRandom->IRandom(5,55) << endl;
-//	DEBUGLOG << pRandom->Poisson(4.2) << endl;
-//	DEBUGLOG << pRandom->Bernoulli(0.6045) << endl;
-	DEBUGLOG << pRandom->Normal(-564.7,123.4) << endl;
-}
-*/
-
-/*
-
-DEBUGLOG << endl << "Random():" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 10; j++) {
-		DEBUGLOG << pRandom->Random() << " ";
-	}
-	DEBUGLOG << endl;
-}
-DEBUGLOG << endl << "IRandom(5,55):" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 50; j++) {
-		DEBUGLOG << pRandom->IRandom(5,55) << " ";
-	}
-	DEBUGLOG << endl;
-}
-DEBUGLOG << endl << "Poisson(4.2):" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 10; j++) {
-		DEBUGLOG << pRandom->Poisson(4.2) << " ";
-	}
-	DEBUGLOG << endl;
-}
-DEBUGLOG << endl << "Bernoulli(0.6):" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 20; j++) {
-		DEBUGLOG << pRandom->Bernoulli(0.6) << " ";
-	}
-	DEBUGLOG << endl;
-}
-DEBUGLOG << endl << "Normal(0.0,1.0):" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 10; j++) {
-		DEBUGLOG << pRandom->Normal(0.0,1.0) << " ";
-	}
-	DEBUGLOG << endl;
-}
-DEBUGLOG << endl << "Normal(2.5,0.35):" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 10; j++) {
-		DEBUGLOG << pRandom->Normal(2.5,0.35) << " ";
-	}
-	DEBUGLOG << endl;
-}
-DEBUGLOG << endl << "Normal(-564.7,123.4):" << endl;
-for (int i = 0; i < 5; i++) {
-	for (int j = 0; j < 10; j++) {
-		DEBUGLOG << pRandom->Normal(-564.7,123.4) << " ";
-	}
-	DEBUGLOG << endl;
-}
-
-*/
-
-/*
-DEBUGLOG.close();
-DEBUGLOG.clear();
-
-cout << "*****" << endl;
-cout << "***** Simulation completed - enter any number to terminate program" << endl;
-cout << "*****" << endl;
-cin >> i;
-
-return 0;
-*/
-
 
 // set up species
 // FOR MULTI-SPECIES MODEL, THERE WILL BE AN ARRAY OF SPECIES POINTERS
@@ -350,84 +220,90 @@ demogrParams dem = pSpecies->getDemogr();
 stageParams sstruct = pSpecies->getStage();
 trfrRules trfr = pSpecies->getTrfr();
 
-batchfiles b;
-string indir  = paramsSim->getDir(1);
-string outdir = paramsSim->getDir(2);
-b = ParseControlFile(cname,indir,outdir);       
-if (b.ok) { 
-	nSimuls = b.nSimuls;
-	nLandscapes = b.nLandscapes;
-	dem.repType = b.reproductn;
-	dem.repSeasons = b.repseasons;
-	if (b.stagestruct == 0) dem.stageStruct = false; else dem.stageStruct = true;
-	sstruct.nStages = b.stages;
-	if (b.transfer == 0) trfr.moveModel = false;
-	else {
-		trfr.moveModel = true;
-		trfr.moveType = b.transfer;
+	batchfiles b;
+	string indir = paramsSim->getDir(1);
+	string outdir = paramsSim->getDir(2);
+	b = ParseControlFile(cname, indir, outdir);
+	if (b.ok) {
+		nSimuls = b.nSimuls;
+		nLandscapes = b.nLandscapes;
+		dem.repType = b.reproductn;
+		dem.repSeasons = b.repseasons;
+		if (b.stagestruct == 0) dem.stageStruct = false; else dem.stageStruct = true;
+		sstruct.nStages = b.stages;
+		if (b.transfer == 0) trfr.moveModel = false;
+		else {
+			trfr.moveModel = true;
+			trfr.moveType = b.transfer;
+		}
+		cout << endl << "Batch input files OK" << endl;
+		pSpecies->setDemogr(dem);
+		pSpecies->setStage(sstruct);
+		pSpecies->setTrfr(trfr);
+		simParams sim = paramsSim->getSim();
+		sim.batchMode = true;
+		sim.batchNum = b.batchNum;
+		paramsSim->setSim(sim);
 	}
-	cout << endl << "Batch input files OK" << endl;
-	pSpecies->setDemogr(dem);
-	pSpecies->setStage(sstruct);
-	pSpecies->setTrfr(trfr);
-	simParams sim = paramsSim->getSim();
-	sim.batchMode = true;
-	sim.batchNum = b.batchNum;  
-	paramsSim->setSim(sim);
-}
-else {
-	cout << endl << "Error in parsing batch input files - see BatchLog file for details" << endl;
-}
+	else {
+		cout << endl << "Error in parsing batch input files - see BatchLog file for details" << endl;
+	}
 #if RSDEBUG
-DEBUGLOG << "Main(): dem.repType = " << dem.repType << endl;
+	DEBUGLOG << "Main(): dem.repType = " << dem.repType << endl;
 #endif
 
-// set up random number class
+	// set up random number class
 #if RS_RCPP
-	#if RSDEBUG
-		pRandom = new RSrandom(666);
-	#else
-		pRandom = new RSrandom(-1);  // need to be replaced with parameter from control file
-	#endif
+#if RSDEBUG
+	pRandom = new RSrandom(666);
+#else
+	pRandom = new RSrandom(-1);  // need to be replaced with parameter from control file
+#endif
 #else
 	pRandom = new RSrandom();
 #endif
 
 
 #if RANDOMCHECK
-randomCheck();
+	randomCheck();
 #else
 if (b.ok) {
-	RunBatch(nSimuls,nLandscapes);
+	try
+	{
+		RunBatch(nSimuls, nLandscapes);
+	}
+	catch (const std::exception& e)
+	{
+		cerr << endl << "Error: " << e.what() << endl;
+	}
 }
 #endif
 
-delete pRandom;
+	delete pRandom;
 
 #if RSDEBUG
-if (DEBUGLOG.is_open()) {
-	DEBUGLOG.close(); DEBUGLOG.clear();
-}
-if (MUTNLOG.is_open()) {
-	MUTNLOG.close(); MUTNLOG.clear();
-}
+	if (DEBUGLOG.is_open()) {
+		DEBUGLOG.close(); DEBUGLOG.clear();
+	}
+	if (MUTNLOG.is_open()) {
+		MUTNLOG.close(); MUTNLOG.clear();
+	}
 #endif
 
-delete paramsGrad;
-delete paramsStoch;
-delete paramsInit;
-delete paramsSim;     
-delete pSpecies;
+	delete paramsGrad;
+	delete paramsStoch;
+	delete paramsInit;
+	delete paramsSim;
+	delete pSpecies;
 
-t1 = (int)time(0);
-cout << endl << "***** Elapsed time " << t1-t0 << " seconds" << endl << endl;
+	t1 = (int)time(0);
+	cout << endl << "***** Elapsed time " << t1 - t0 << " seconds" << endl << endl;
 
 cout << "*****" << endl;
-cout << "***** Simulation completed - enter any number to terminate program" << endl;
+cout << "***** Simulation completed." << endl;
 cout << "*****" << endl;
-cin >> i;
 
-return 0;
+	return 0;
 }
 
 //---------------------------------------------------------------------------
@@ -439,17 +315,6 @@ To do so, we would need a form of bit map which is portable across platforms
 and operating systems, rather than the Embarcadero VCL classes.
 Does such exist?
 */
-
-traitCanvas SetupTraitCanvas(void) {
-traitCanvas tcanv;
-for (int i = 0; i < NTRAITS; i++) { tcanv.pcanvas[i] = 0; }
-return tcanv;
-}
-
-void Landscape::setLandMap(void) { }
-void Landscape::drawLandscape(int rep,int yr,int landnum) { }
-void Community::viewOccSuit(int year,double mn,double se) { }
-void Community::draw(int rep,int yr,int gen,int landNum) { }
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
