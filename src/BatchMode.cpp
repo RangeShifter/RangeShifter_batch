@@ -902,7 +902,7 @@ int ParseParameterFile(void)
 #if SEASONAL
 	for (int j = 0; j < nseasons; j++) {
 		for (i = 0; i < maxNhab; i++) {
-			Kheader = "K" + Int2Str(i + 1) + "_" + Int2Str(j);
+			Kheader = "K" + to_string(i + 1) + "_" + to_string(j);
 			bParamFile >> header; if (header != Kheader) Kerrors++;
 		}
 	}
@@ -1224,7 +1224,7 @@ int ParseParameterFile(void)
 			for (i = 0; i < maxNhab; i++) {
 				bParamFile >> infloat;
 				if (infloat < 0.0) {
-					Kheader = "K" + Int2Str(i + 1) + "_" + Int2Str(s);
+					Kheader = "K" + to_string(i + 1) + "_" + to_string(s);
 					BatchError(filetype, line, 19, Kheader); errors++;
 				}
 				else {
@@ -1802,7 +1802,7 @@ int ParseLandFile(int landtype, string indir)
 			bool filenull[2];
 			for (int mm = 0; mm < 2; mm++) {
 				int fnum = mm + 1;
-				ftype = "MortFile" + Int2Str(fnum);
+				ftype = "MortFile" + to_string(fnum);
 				bLandFile >> intext;
 				if (intext == "NULL") {
 					filenull[mm] = true;
@@ -3574,7 +3574,7 @@ int ParseTransferFile(string indir)
 		bTransferFile >> header; if (header != "SigmaW") errors++;
 		bTransferFile >> header; if (header != "Hc") errors++;
 		for (i = 1; i < stages; i++) {
-			colheader = "Hr" + Int2Str(i);
+			colheader = "Hr" + to_string(i);
 			bTransferFile >> header; if (header != colheader) hrerrors++;
 		}
 		bTransferFile >> header; if (header != "Vt") errors++;
@@ -4099,7 +4099,7 @@ int ParseTransferFile(string indir)
 			}
 			for (int i = 1; i < stages; i++) {
 				bTransferFile >> hr;
-				colheader = "Hr" + Int2Str(i);
+				colheader = "Hr" + to_string(i);
 				if (hr <= 0.0) {
 					BatchError(filetype, line, 10, colheader); errors++;
 				}
@@ -4729,7 +4729,7 @@ int ParseManageFile(string indir)
 	//bManageFile >> header; if (header != "EdgeBias" ) errors++;
 	//if (stagestruct) {
 	//	for (i = 0; i < stages; i++) {
-	//		colheader = "CullStage" + Int2Str(i);
+	//		colheader = "CullStage" + to_string(i);
 	//		bManageFile >> header; if (header != colheader ) cullerrors++;
 	//	}
 	//}
@@ -4874,7 +4874,7 @@ int ParseManageFile(string indir)
 		//		for (i = 0; i < stages; i++) {
 		//			bManageFile >> inint;
 		//			if (inint < 0 || inint > 1) {
-		//				colheader = "CullStage" + Int2Str(i);
+		//				colheader = "CullStage" + to_string(i);
 		//				BatchError(filetype,line,1,colheader); errors++;
 		//			}
 		//		}
@@ -8261,7 +8261,7 @@ int ReadMortalities(string mortfile) {
 	int year;
 	float gradient;
 #if RSDEBUG
-	//string msg = "No. of chromosomes set is " + Int2Str(nchromset);
+	//string msg = "No. of chromosomes set is " + to_string(nchromset);
 	//MessageDlg(msg.c_str(),mtWarning, TMsgDlgButtons() << mbOK,0);
 #endif
 	year = -98765;

@@ -754,13 +754,6 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				}
 #endif
 
-#if VCL
-				if (gen == 0 && v.viewGraph) {
-					// popn graphics for first generation only
-					// NOTE: CURRENTLY SHOWING TOTAL OF ALL SPECIES COMBINED
-					DrawPopnGraph(pComm, yr);
-				}
-#endif
 
 #if RS_ABC
 				if (yr == yearABC && gen == 0) abcYear = true;

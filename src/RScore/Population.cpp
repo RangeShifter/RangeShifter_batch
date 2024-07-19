@@ -3101,11 +3101,11 @@ bool Population::outCullHeaders(Landscape* pLand, int landNr, bool patchModel) {
 
 	if (sim.batchMode) {
 		name = paramsSim->getDir(2)
-			+ "Batch" + Int2Str(sim.batchNum) + "_"
-			+ "Sim" + Int2Str(sim.simulation) + "_Land" + Int2Str(landNr) + "_Cull.txt";
+			+ "Batch" + to_string(sim.batchNum) + "_"
+			+ "Sim" + to_string(sim.simulation) + "_Land" + to_string(landNr) + "_Cull.txt";
 	}
 	else {
-		name = paramsSim->getDir(2) + "Sim" + Int2Str(sim.simulation) + "_Cull.txt";
+		name = paramsSim->getDir(2) + "Sim" + to_string(sim.simulation) + "_Cull.txt";
 	}
 	outCull.open(name.c_str());
 #if SEASONAL

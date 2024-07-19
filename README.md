@@ -42,6 +42,16 @@ Alternatively, RangeShifter can also be built directly with the GNU C++ compiler
 g++ -o RangeShifter.exe ./src/*.cpp ./src/RScore/*.cpp -DRSDEBUG -DRSWIN64 -DLINUX_CLUSTER
 ```
 
+### Building with a specific macro enabled
+
+To build RangeShifter with CMake enabling some of the optional macros (e.g. SEASONAL and GROUPDISP), run the following commands:
+
+```bash
+mkdir build && cd build
+cmake .. -DSEASONAL= -DPARTMIGRN=
+cmake --build .
+```
+
 ## Running RangeShifter
 
 For instructions on how to setup the project directory and input files, please refer to section 3.3 of the [User Manual](https://raw.githubusercontent.com/RangeShifter/RangeShifter-software-and-documentation/master/RangeShifter_v2.0_UserManual.pdf), and to the [documentation repository](https://github.com/RangeShifter/RangeShifter-software-and-documentation) for examples.

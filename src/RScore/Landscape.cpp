@@ -960,8 +960,8 @@ void Landscape::setDamage(int x, int y, intptr ppatch, int dmg)
 			//DEBUGLOG << "Landscape::setDamage(): y=" << y << " x=" << x
 			//	<< " ppatch=" << ppatch << " dmg=" << dmg 
 			//	<< endl;
-			//DebugGUI(("Landscape::setDamage(): ppatch=" + Int2Str(ppatch)
-			//	+ " y=" + Int2Str(y) + " x=" + Int2Str(x) + " dmg=" + Int2Str(dmg)
+			//DebugGUI(("Landscape::setDamage(): ppatch=" + to_string(ppatch)
+			//	+ " y=" + to_string(y) + " x=" + to_string(x) + " dmg=" + to_string(dmg)
 			//	).c_str());
 #endif
 			dmglocns.push_back(new DamageLocn(x, y, ppatch, dmg));
@@ -970,8 +970,8 @@ void Landscape::setDamage(int x, int y, intptr ppatch, int dmg)
 				pPatch = (Patch*)ppatch;
 				pPatch->setDamageLocns(true);
 #if RSDEBUG
-				//DebugGUI(("Landscape::setDamage(): ppatch=" + Int2Str(ppatch)
-				//	+ " PatchNum=" + Int2Str(pPatch->getPatchNum())  
+				//DebugGUI(("Landscape::setDamage(): ppatch=" + to_string(ppatch)
+				//	+ " PatchNum=" + to_string(pPatch->getPatchNum())  
 				//	).c_str());
 #endif
 			}
@@ -2773,12 +2773,12 @@ bool Landscape::outSummDmgHeaders(int landNr) {
 
 	if (sim.batchMode) {
 		name = paramsSim->getDir(2)
-			+ "Batch" + Int2Str(sim.batchNum) + "_"
-			+ "Sim" + Int2Str(sim.simulation) + "_Land"
-			+ Int2Str(landNr) + "_SummDamage.txt";
+			+ "Batch" + to_string(sim.batchNum) + "_"
+			+ "Sim" + to_string(sim.simulation) + "_Land"
+			+ to_string(landNr) + "_SummDamage.txt";
 	}
 	else {
-		name = paramsSim->getDir(2) + "Sim" + Int2Str(sim.simulation) + "_SummDamage.txt";
+		name = paramsSim->getDir(2) + "Sim" + to_string(sim.simulation) + "_SummDamage.txt";
 	}
 	outsummdmg.open(name.c_str());
 	outsummdmg << "Rep\tYear\tDamage";
@@ -2828,12 +2828,12 @@ bool Landscape::outDamageHeaders(int landNr) {
 
 	if (sim.batchMode) {
 		name = paramsSim->getDir(2)
-			+ "Batch" + Int2Str(sim.batchNum) + "_"
-			+ "Sim" + Int2Str(sim.simulation) + "_Land"
-			+ Int2Str(landNr) + "_Damage.txt";
+			+ "Batch" + to_string(sim.batchNum) + "_"
+			+ "Sim" + to_string(sim.simulation) + "_Land"
+			+ to_string(landNr) + "_Damage.txt";
 	}
 	else {
-		name = paramsSim->getDir(2) + "Sim" + Int2Str(sim.simulation) + "_Damage.txt";
+		name = paramsSim->getDir(2) + "Sim" + to_string(sim.simulation) + "_Damage.txt";
 	}
 	outdamage.open(name.c_str());
 	outdamage << "Rep\tYear\tX\tY\tMaxDamage\tDamage";
@@ -3409,10 +3409,10 @@ void Landscape::outVisits(int rep, int landNr) {
 
 void Landscape::addExtEvent(extEvent e) {
 #if RSDEBUG
-	//DebugGUI(("Landscape::addExtEvent(): e.year=" + Int2Str(e.year)
-	//	+ " e.season=" + Int2Str(e.season)
-	//	+ " e.patchID=" + Int2Str(e.patchID)
-	//	+ " e.x=" + Int2Str(e.x) + " e.y=" + Int2Str(e.y)
+	//DebugGUI(("Landscape::addExtEvent(): e.year=" + to_string(e.year)
+	//	+ " e.season=" + to_string(e.season)
+	//	+ " e.patchID=" + to_string(e.patchID)
+	//	+ " e.x=" + to_string(e.x) + " e.y=" + to_string(e.y)
 	//	).c_str());
 #endif
 	extevents.push_back(e);

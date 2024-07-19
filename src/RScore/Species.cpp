@@ -475,8 +475,8 @@ void Species::resetDem(short hab) {
 
 void Species::setFec(short hab, short ssn, short stg, short sex, float f) {
 #if RSDEBUG
-	DebugGUI("Species::setFec(): hab=" + Int2Str(hab) + " ssn=" + Int2Str(ssn)
-		+ " stg=" + Int2Str(stg) + " sex=" + Int2Str(sex) + " f=" + Float2Str(f)
+	DebugGUI("Species::setFec(): hab=" + to_string(hab) + " ssn=" + to_string(ssn)
+		+ " stg=" + to_string(stg) + " sex=" + to_string(sex) + " f=" + Float2Str(f)
 	);
 #endif
 	// NB fecundity for stage 0 must always be zero
@@ -550,9 +550,9 @@ void Species::resetDem(short hab) {
 
 void Species::setFec(short hab, short stg, short sex, float f) {
 #if RSDEBUG
-	DebugGUI("Species::setFec(): hab=" + Int2Str(hab)
-		+ " stg=" + Int2Str(stg)
-		+ " sex=" + Int2Str(sex)
+	DebugGUI("Species::setFec(): hab=" + to_string(hab)
+		+ " stg=" + to_string(stg)
+		+ " sex=" + to_string(sex)
 		+ " f=" + Float2Str(f)
 	);
 #endif
@@ -1404,7 +1404,7 @@ traitAllele Species::getSampleLocus(const short i) {
 
 void Species::setEmig(const emigRules e) {
 #if RSDEBUG
-	//DebugGUI("Species::setEmig(): e.indVar=" + Int2Str((int)e.indVar));
+	//DebugGUI("Species::setEmig(): e.indVar=" + to_string((int)e.indVar));
 #endif
 	densDepEmig = e.densDep; stgDepEmig = e.stgDep; sexDepEmig = e.sexDep;
 	indVarEmig = e.indVar;
@@ -1772,8 +1772,8 @@ void Species::updateMortality(int yr) {
 	//}
 #endif
 #if RSDEBUG
-//DebugGUI("Species::updateMortality(): yr=" + Int2Str(yr)
-//	+ " nchanges=" + Int2Str(nchanges)
+//DebugGUI("Species::updateMortality(): yr=" + to_string(yr)
+//	+ " nchanges=" + to_string(nchanges)
 //);
 //DEBUGLOG << "Species::updateMortality(): yr=" << yr
 //	<< " nchanges=" << nchanges
@@ -1808,9 +1808,9 @@ void Species::updateMortality(int yr) {
 	if (currentMortality < 0.000001) currentMortality = 0.000001;
 
 #if RSDEBUG
-	//DebugGUI("Species::updateMortality(): yr=" + Int2Str(yr)
-	//	+ " nextChange=" + Int2Str(nextChange)
-	//	+ " nextYear=" + Int2Str(nextYear)
+	//DebugGUI("Species::updateMortality(): yr=" + to_string(yr)
+	//	+ " nextChange=" + to_string(nextChange)
+	//	+ " nextYear=" + to_string(nextYear)
 	//);
 	DEBUGLOG << "Species::updateMortality(): yr=" << yr
 		<< " nextChange=" << nextChange << " nextYear=" << nextYear << " nextGradient=" << nextGradient
