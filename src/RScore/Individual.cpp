@@ -24,29 +24,14 @@
 
 #include "Individual.h"
 //---------------------------------------------------------------------------
-#if RS_EMBARCADERO 
-#pragma package(smart_init)
-#endif
 
 int Individual::indCounter = 0;
 
 //---------------------------------------------------------------------------
 
-#if GROUPDISP
-Individual::Individual() // Default constructor
-{
-	pPrevCell = 0; pCurrCell = 0; pNatalPatch = 0;
-	path = 0; crw = 0; smsData = 0;
-	emigtraits = 0; kerntraits = 0; setttraits = 0;
-	pGenome = 0;
-}
-#endif
 
 // Individual constructor
-#if RS_CONTAIN
-Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short repInt,
-	short mstg, float probmale, bool movt, short moveType)
-#else
+
 #if PARTMIGRN
 Individual::Individual(Species* pSpecies, Cell* pCell, Patch* pPatch, short stg, short a,
 	short repInt, float probmale, bool movt, short moveType)
@@ -54,26 +39,11 @@ Individual::Individual(Species* pSpecies, Cell* pCell, Patch* pPatch, short stg,
 Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short repInt,
 	float probmale, bool movt, short moveType)
 #endif // PARTMIGRN 
-#endif // RS_CONTAIN 
+
 {
 	indId = indCounter; indCounter++; // unique identifier for each individual
-#if GROUPDISP
-	parentId[0] = parentId[1] = groupId = -1;
-	//groupId = -1;
-#if PEDIGREE
-	pParent[0] = pParent[1] = 0;
-	matPosn = -1;
-#endif // PEDIGREE
-#endif // GROUPDISP
-#if BUTTERFLYDISP
-	//nJuvs = 0;
-	pMate = 0;
-#endif
 
 	stage = stg;
-#if RS_CONTAIN
-	motherstage = mstg;
-#endif // RS_CONTAIN 
 	if (probmale <= 0.0) sex = 0;
 	else sex = pRandom->Bernoulli(probmale);
 	age = a;
@@ -166,19 +136,6 @@ Individual::~Individual(void) {
 
 //---------------------------------------------------------------------------
 
-#if BUTTERFLYDISP
-void Individual::setMate(Individual* pmate) {
-	if (pmate >= 0) pMate = pmate;
-	else pMate = 0;
-}
-//void Individual::setMated(short njuvs,Individual *pmate) {
-//if (njuvs >= 0) nJuvs = njuvs;
-//pMate = pmate;
-//}
-//int Individual::getNJuvs(void) { return (int)nJuvs; }
-Individual* Individual::getMate(void) { return pMate; }
-#endif
-
 //---------------------------------------------------------------------------
 
 // Set genes for individual variation from species initialisation parameters
@@ -202,71 +159,6 @@ void Individual::setGenes(Species* pSpecies, int resol) {
 	int gposn = 0;	// current position on genome
 	int expr = 0;		// gene expression type - NOT CURRENTLY USED
 
-#if GOBYMODEL
-	// NB for consistency, and possible future inclusion in general RS model,
-	// some redundant coding here mimics that for dispersal traits
-	int socialposn = 0;
-	socialposn = gposn;
-	socialParams socparams;
-	ntraits = 1;
-	double socval;
-	for (int g = 0; g < ntraits; g++) { // ONLY trait for females/all
-		socparams = pSpecies->getSocialParams();
-		socval = pRandom->Normal(0.0, socparams.socSD) / socparams.socScale;
-		if (gen.trait1Chromosome) {
-			pGenome->setGene(gposn++, expr, socval, gen.alleleSD);
-		}
-		else {
-			pGenome->setTrait(pSpecies, gposn++, socval, gen.alleleSD);
-		}
-	}
-	// record phenotypic trait
-	double genval = 0.0;
-	if (pGenome != 0) {
-		if (pSpecies->has1ChromPerTrait()) {
-			genval = pGenome->express(0, 0, 0);
-		}
-		else {
-			genval = pGenome->express(pSpecies, 0);
-		}
-	}
-	socparams = pSpecies->getSocialParams();
-	double phenval = genval * socparams.socScale + socparams.socMean;
-	if (phenval < 0.0) asocial = true; else asocial = false;
-#endif // GOBYMODEL
-
-#if SOCIALMODEL
-	// NB for consistency, and possible future inclusion in general RS model,
-	// some redundant coding here mimics that for dispersal traits
-	int socialposn = 0;
-	socialposn = gposn;
-	socialParams socparams;
-	ntraits = 1;
-	double socval;
-	for (int g = 0; g < ntraits; g++) { // ONLY trait for females/all
-		socparams = pSpecies->getSocialParams();
-		socval = pRandom->Normal(0.0, socparams.socSD) / socparams.socScale;
-		if (gen.trait1Chromosome) {
-			pGenome->setGene(gposn++, expr, socval, gen.alleleSD);
-		}
-		else {
-			pGenome->setTrait(pSpecies, gposn++, socval, gen.alleleSD);
-		}
-	}
-	// record phenotypic trait
-	double genval = 0.0;
-	if (pGenome != 0) {
-		if (pSpecies->has1ChromPerTrait()) {
-			genval = pGenome->express(0, 0, 0);
-		}
-		else {
-			genval = pGenome->express(pSpecies, 0);
-		}
-	}
-	socparams = pSpecies->getSocialParams();
-	double phenval = genval * socparams.socScale + socparams.socMean;
-	if (phenval < 0.0) asocial = true; else asocial = false;
-#endif // SOCIALMODEL
 
 	//int emigposn = 0;
 #if RSDEBUG
@@ -391,22 +283,17 @@ void Individual::setGenes(Species* pSpecies, int resol) {
 			for (int g = 0; g < ntraits; g++) { // first traits for females/all, second for males
 				k = pSpecies->getKernParams(0, g);
 				dist1 = pRandom->Normal(0.0, k.dist1SD) / k.dist1Scale;
-#if RS_CONTAIN
-				if (trfr.kernType == 1)
-#else
+
 				if (trfr.twinKern)
-#endif // RS_CONTAIN 
+
 				{
 					dist2 = pRandom->Normal(0.0, k.dist2SD) / k.dist2Scale;
 					prob1 = pRandom->Normal(0.0, k.PKern1SD) / k.PKern1Scale;
 				}
 				if (gen.trait1Chromosome) {
 					pGenome->setGene(gposn++, expr, dist1, gen.alleleSD);
-#if RS_CONTAIN
-					if (trfr.kernType == 1)
-#else
+
 					if (trfr.twinKern)
-#endif // RS_CONTAIN 
 					{
 						pGenome->setGene(gposn++, expr, dist2, gen.alleleSD);
 						pGenome->setGene(gposn++, expr, prob1, gen.alleleSD);
@@ -414,11 +301,8 @@ void Individual::setGenes(Species* pSpecies, int resol) {
 				}
 				else {
 					pGenome->setTrait(pSpecies, gposn++, dist1, gen.alleleSD);
-#if RS_CONTAIN
-					if (trfr.kernType == 1)
-#else
+
 					if (trfr.twinKern)
-#endif // RS_CONTAIN 
 					{
 						pGenome->setTrait(pSpecies, gposn++, dist2, gen.alleleSD);
 						pGenome->setTrait(pSpecies, gposn++, prob1, gen.alleleSD);
@@ -426,11 +310,8 @@ void Individual::setGenes(Species* pSpecies, int resol) {
 				}
 			}
 			// record phenotypic traits
-#if RS_CONTAIN
-			if (trfr.kernType == 1)
-#else
+
 			if (trfr.twinKern)
-#endif // RS_CONTAIN 
 			{
 				setKernTraits(pSpecies, trfrposn, 3, resol, trfr.sexDep);
 			}
@@ -496,59 +377,10 @@ void Individual::setGenes(Species* pSpecies, Individual* mother, Individual* fat
 	trfrRules trfr = pSpecies->getTrfr();
 	settleType sett = pSpecies->getSettle();
 
-#if GROUPDISP
-	parentId[0] = mother->getId();
-#if PEDIGREE
-	pParent[0] = mother;
-#endif // PEDIGREE
-#endif // GROUPDISP 
 
 	Genome* pFatherGenome;
-#if GROUPDISP
-	if (father == 0) pFatherGenome = 0;
-	else {
-		pFatherGenome = father->pGenome;
-		parentId[1] = father->getId();
-#if PEDIGREE
-		pParent[1] = father;
-#endif // PEDIGREE
-	}
-#else
 	if (father == 0) pFatherGenome = 0; else pFatherGenome = father->pGenome;
-#endif // GROUPDISP 
-
 	pGenome = new Genome(pSpecies, mother->pGenome, pFatherGenome);
-
-#if GOBYMODEL
-	// record phenotypic trait
-	double genval = 0.0;
-	if (pGenome != 0) {
-		if (pSpecies->has1ChromPerTrait()) {
-			genval = pGenome->express(0, 0, 0);
-		}
-		else {
-			genval = pGenome->express(pSpecies, 0);
-		}
-	}
-	socialParams socparams = pSpecies->getSocialParams();
-	double phenval = genval * socparams.socScale + socparams.socMean;
-	if (phenval < 0.0) asocial = true; else asocial = false;
-#endif
-#if SOCIALMODEL
-	// record phenotypic trait
-	double genval = 0.0;
-	if (pGenome != 0) {
-		if (pSpecies->has1ChromPerTrait()) {
-			genval = pGenome->express(0, 0, 0);
-		}
-		else {
-			genval = pGenome->express(pSpecies, 0);
-		}
-	}
-	socialParams socparams = pSpecies->getSocialParams();
-	double phenval = genval * socparams.socScale + socparams.socMean;
-	if (phenval < 0.0) asocial = true; else asocial = false;
-#endif
 
 	if (emig.indVar) {
 		// record emigration traits

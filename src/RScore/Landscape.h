@@ -91,9 +91,6 @@ using namespace std;
 #include <Rcpp.h>
 #endif
 #endif
-#if RS_CONTAIN
-#include "Control.h"
-#endif // RS_CONTAIN 
 
 //---------------------------------------------------------------------------
 
@@ -150,9 +147,6 @@ private:
 struct landParams {
 	bool patchModel; bool spDist; bool generated;
 	bool dynamic;
-#if RS_CONTAIN
-	bool dmgLoaded;
-#endif // RS_CONTAIN 
 	int landNum; int resol; int spResol; int nHab; int nHabMax;
 	int dimX, dimY, minX, minY, maxX, maxY;
 	short rasterType;
@@ -308,40 +302,7 @@ public:
 		int,    // y co-ordinate
 		float   // habitat quality value
 	);
-#if RS_CONTAIN
-	void setDamage(
-		//		Patch*, // pointer to Patch
-		int,    // x co-ordinate
-		int,    // y co-ordinate
-		intptr,	// pointer (cast as integer) to the Patch in which cell lies (if any)
-		int			// damage index 
-	);
-	void updateDamage(
-		int,    // x co-ordinate
-		int,    // y co-ordinate
-		intptr	// pointer (cast as integer) to the Patch in which cell lies (if any)
-	);
-	void updateDamageIndices(void);
-	void setAlpha(double);
-	double getAlpha(void);
-	void resetDamageLocns(void);
-	//	void updateDamageLocns(Species*);
-	double totalDamage(
-		bool		// transfer by SMS?
-	);
-	void viewDamage(	// Update the damage graph on the screen
-		// NULL for the batch version
-		int,		// year
-		double,	// mean damage
-		double,	// standard error of damage
-		bool		// show standard error?
-	);
-	void createTotDamage(int nrows, int reps);
-	void updateTotDamage(unsigned short row, unsigned short rep, float damage);
-	void deleteTotDamage(int nrows);
-	void outTotDamage(bool view);
-	//	void resetPrevDamage(void);
-#endif // RS_CONTAIN 
+
 	patchData getPatchData(
 		int		// index no. of Patch in patches vector
 	);
@@ -379,12 +340,7 @@ public:
 	void setGlobalStoch(
 		int		// no. of years
 	);
-#if BUTTERFLYDISP
-	void readGlobalStoch(
-		int,		// no. of years
-		string	// filename
-	);
-#endif // BUTTERFLYDISP 
+
 	float getGlobalStoch(
 		int		// year
 	);
@@ -434,15 +390,6 @@ public:
 	costChange getCostChange(
 		int	// cost change number
 	);
-
-#if SPATIALMORT
-	// functions to handle spatial mortality
-
-	int readMortalityFiles(
-		string,	// mortality file name period 0
-		string	// mortality file name period 1
-	);
-#endif // SPATIALMORT 
 
 	// functions to handle species distributions
 
@@ -533,45 +480,7 @@ public:
 
 	// functions to handle input and output
 
-#if RS_CONTAIN
-#if SEASONAL
-	int readLandscape(
-		int,		// no. of seasonss
-		int,		// fileNum == 0 for (first) habitat file and optional patch file
-		// fileNum > 0  for subsequent habitat files under the %cover option
-		string,	// habitat file name
-		string,	// patch file name
-		string,	// cost file name (may be NULL)
-		string	// damage file name (may be NULL)
-	);
-#else
-	int readLandscape(
-		int,		// fileNum == 0 for (first) habitat file and optional patch file
-		// fileNum > 0  for subsequent habitat files under the %cover option
-		string,	// habitat file name
-		string,	// patch file name
-		string,	// cost file name (may be NULL)
-		string	// damage file name (may be NULL)
-	);
-#endif // SEASONAL 
-	bool outSummDmgHeaders( // Open summary damage file and write header record
-		int				// Landscape number (-999 to close the file)
-	);
-	void outSummDmg( // Write record to summary damage file
-		int,			// replicate
-		int,			// year
-		bool,			// transfer by SMS?
-		bool			// view damage on screen
-	);
-	bool outDamageHeaders( // Open damage file and write header record
-		int				// Landscape number (-999 to close the file)
-	);
-	void outDamage( // Write record to damage file
-		int,			// replicate
-		int,			// year
-		bool			// transfer by SMS?
-	);
-#else
+
 #if SEASONAL
 	int readLandscape(
 		int,		// no. of seasonss
@@ -590,21 +499,15 @@ public:
 		string	// cost file name (may be NULL)
 	);
 #endif // SEASONAL
-#endif // RS_CONTAIN
+
 	void listPatches(void);
 	int readCosts(
 		string	// costs file name
 	);
 	void resetVisits(void);
-#if VCL
-	void saveVisits(int, int); // save SMS path visits map to .bmp file
-#endif
+
 	void outVisits(int, int);	// save SMS path visits map to raster text file
 
-#if RS_ABC
-	// Returns connectivity (no. of successful dispersers) for given start and end patches
-	int outABCconnect(int, int);
-#endif
 
 #if SEASONAL
 	//#if PARTMIGRN
@@ -624,9 +527,7 @@ private:
 	bool continuous;			//
 	bool dynamic;					// landscape changes during simulation
 	bool habIndexed;			// habitat codes have been converted to index numbers
-#if RS_CONTAIN
-	bool dmgLoaded;				// economic / environmental damage values have been input
-#endif // RS_CONTAIN 
+
 	short rasterType;			// 0 = habitat codes 1 = % cover 2 = quality 9 = artificial landscape
 	int landNum;					// landscape number
 	int resol;						// cell size (m)
@@ -644,9 +545,7 @@ private:
 	float gpix;						// image display ratio for gradient map
 	double minEast;				// ) real world min co-ordinates
 	double minNorth;			// ) read from habitat raster
-#if RS_CONTAIN
-	double alpha;					// economic / environmental damage distance decay coefficient
-#endif // RS_CONTAIN 
+
 
 	// list of cells in the landscape
 	// cells MUST be loaded in the sequence ascending x within descending y
@@ -692,10 +591,6 @@ private:
 	//#endif // PARTMIGRN 
 #endif // SEASONAL 
 
-#if RS_CONTAIN
-	std::vector <DamageLocn*> dmglocns;
-	float** totDamage;	// total damage record to view on screen
-#endif // RS_CONTAIN 
 
 };
 

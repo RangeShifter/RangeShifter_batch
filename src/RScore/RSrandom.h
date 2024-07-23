@@ -58,11 +58,8 @@ class RSrandom
 {
 
 public:
-#if RS_ABC
-	RSrandom(int);
-#else
+
 	RSrandom(void);
-#endif
 	~RSrandom(void);
 	double Random(void);
 	int IRandom(int, int);

@@ -56,9 +56,7 @@ using namespace std;
 #include "Cell.h"
 #include "Genome.h"
 
-#if RS_CONTAIN
-#include "Control.h"
-#endif // RS_CONTAIN 
+
 
 #define NODATACOST 100000 // cost to use in place of nodata value for SMS
 #define ABSNODATACOST 100 // cost to use in place of nodata value for SMS
@@ -74,12 +72,6 @@ struct indStats {
 #endif // PARTMIGRN 
 #endif
 	bool isDeveloping;
-#if GOBYMODEL
-	bool asocial;
-#endif
-#if SOCIALMODEL
-	bool asocial;
-#endif
 };
 struct pathData { // to hold path data common to SMS and CRW models
 	int year, total, out; // nos. of steps
@@ -131,22 +123,7 @@ class Individual {
 
 public:
 	static int indCounter; // used to create ID, held by class, not members of class
-#if GROUPDISP
-	Individual(); // Default constructor
-#endif
-#if RS_CONTAIN
-	Individual( // Individual constructor
-		Cell*,	// pointer to Cell
-		Patch*,	// pointer to patch
-		short,	// stage
-		short,	// age
-		short,	// reproduction interval (no. of years/seasons between breeding attempts)
-		short,	// mother's stage
-		float,	// probability that sex is male
-		bool,		// TRUE for a movement model, FALSE for kernel-based transfer
-		short		// movement type: 1 = SMS, 2 = CRW
-	);
-#else
+
 #if PARTMIGRN
 	Individual( // Individual constructor
 		Species*,	// pointer to Species
@@ -171,14 +148,8 @@ public:
 		short		// movement type: 1 = SMS, 2 = CRW
 	);
 #endif // PARTMIGRN 
-#endif // RS_CONTAIN 
 	~Individual(void);
-#if BUTTERFLYDISP
-	void setMate(Individual*);
-	//void setMated(short,Individual*);
-	//int getNJuvs(void);
-	Individual* getMate(void);
-#endif
+
 	void setGenes( // Set genes for individual variation from species initialisation parameters
 		Species*,			// pointer to Species
 		int						// Landscape resolution
@@ -189,9 +160,7 @@ public:
 		Individual*,	// pointer to father (must be 0 for an asexual Species)
 		int						// Landscape resolution
 	);
-#if VIRTUALECOLOGIST
-	Genome* getGenome(void);
-#endif
+
 	void setEmigTraits( // Set phenotypic emigration traits
 		Species*,	// pointer to Species
 		short,		// location of emigration genes on genome
@@ -236,18 +205,6 @@ public:
 	// if so, return her stage, otherwise return 0
 	int breedingFem(void);
 	int getId(void);
-#if GROUPDISP
-	int getParentId(short);
-#if PEDIGREE
-	Individual* getParent(short);
-#endif // PEDIGREE
-	void setGroupId(int);
-	int getGroupId(void);
-#endif // GROUPDISP 
-#if PEDIGREE
-	void setMatPosn(unsigned int);	// Set position in relatedness matrix
-	unsigned int getMatPosn(void);	// Get position in relatedness matrix
-#endif
 	int getSex(void);
 	int getStatus(void);
 #if SEASONAL
@@ -256,12 +213,7 @@ public:
 #endif // PARTMIGRN 
 #endif
 	indStats getStats(void);
-#if GOBYMODEL
-	bool isAsocial(void);
-#endif
-#if SOCIALMODEL
-	bool isAsocial(void);
-#endif
+
 	Cell* getLocn( // Return location (as pointer to Cell)
 		const short	// option: 0 = get natal locn, 1 = get current locn
 	); //
@@ -306,11 +258,7 @@ public:
 	void moveto( // Move to a specified neighbouring cell
 		Cell*	// pointer to the new cell
 	);
-#if GROUPDISP
-	void moveTo( // Move to any specified cell
-		Cell*	// pointer to the new cell
-	);
-#endif
+
 	// Move to a new cell by sampling a dispersal distance from a single or double
 	// negative exponential kernel
 	// Returns 1 if still dispersing (including having found a potential patch), otherwise 0
@@ -381,82 +329,13 @@ public:
 		const short,	// landscape change index
 		const bool    // absorbing boundaries?
 	);
-#if GROUPDISP || ROBFITT
-	void outGenetics( // Write records to genetics file
-		const int,		 	// replicate
-		const int,		 	// year
-		const int,		 	// species number
-		const int,	 	 	// landscape number
-		const bool,  		// patch-based landscape
-		const bool	 		// output as cross table?
-	);
-#else
-	void outGenetics( // Write records to genetics file
-		const int,		 	// replicate
-		const int,		 	// year
-		const int,		 	// species number
-		const int,		 	// landscape number
-		const bool	 		// output as cross table?
-	);
-#endif
+
 #if RS_RCPP
 	void outMovePath( // Write records to movement paths file
 		const int		 	// year
 	);
 #endif
 
-#if GROUPDISP
-
-protected:
-	short stage;
-	short sex;
-	Cell* pPrevCell;						// pointer to previous Cell
-	Cell* pCurrCell;						// pointer to current Cell
-	Patch* pNatalPatch;					// pointer to natal Patch
-	short status;	// 0 = initial status in natal patch / philopatric recruit
-	// 1 = disperser
-	// 2 = disperser awaiting settlement in possible suitable patch
-	// 3 = waiting between dispersal events
-	// 4 = completed settlement
-	// 5 = completed settlement in a suitable neighbouring cell
-	// 6 = died during transfer by failing to find a suitable patch
-	//     (includes exceeding maximum number of steps or crossing
-	//			absorbing boundary)
-	// 7 = died during transfer by constant, step-dependent,
-	//     habitat-dependent or distance-dependent mortality
-	// 8 = failed to survive annual (demographic) mortality
-	// 9 = exceeded maximum age
-	pathData* path; 						// pointer to path data for movement model
-	crwParams* crw;     				// pointer to CRW traits and data
-	smsdata* smsData;						// pointer to variables required for SMS
-	emigTraits* emigtraits;			// pointer to emigration traits
-	trfrKernTraits* kerntraits;	// pointers to transfer by kernel traits
-	settleTraits* setttraits;		// pointer to settlement traits
-	Genome* pGenome;
-
-private:
-	int indId;
-#if PEDIGREE
-	Individual* pParent[2];
-#endif
-	int parentId[2];
-	int groupId;
-#if PEDIGREE
-	unsigned int matPosn;	// position in relatedness matrix
-#endif
-	short age;
-	short fallow; // reproductive seasons since last reproduction
-	bool isDeveloping;
-#if GOBYMODEL
-	bool asocial;
-#endif
-#if SOCIALMODEL
-	bool asocial;
-#endif
-	std::queue <locn> memory;		// memory of last N squares visited for SMS
-
-#else
-
 private:
 	int indId;
 	short stage;
@@ -475,9 +354,7 @@ private:
 	//     habitat-dependent or distance-dependent mortality
 	// 8 = failed to survive annual (demographic) mortality
 	// 9 = exceeded maximum age
-#if RS_CONTAIN
-	short motherstage;	// mother's stage for purpose of implementing WALD kernel
-#endif // RS_CONTAIN 
+
 #if SEASONAL
 #if PARTMIGRN
 	short migrnstatus;	// 0 = not yet determined
@@ -491,17 +368,7 @@ private:
 	short npatches; 		// no. of patches held in memory
 #endif // SEASONAL 
 	short fallow; // reproductive seasons since last reproduction
-#if BUTTERFLYDISP
-	//	short nJuvs;
-	Individual* pMate;
-#endif
 	bool isDeveloping;
-#if GOBYMODEL
-	bool asocial;
-#endif
-#if SOCIALMODEL
-	bool asocial;
-#endif
 	Cell* pPrevCell;						// pointer to previous Cell
 	Cell* pCurrCell;						// pointer to current Cell
 	Patch* pNatalPatch;					// pointer to natal Patch
@@ -521,7 +388,6 @@ private:
 
 	Genome* pGenome;
 
-#endif // GROUPDISP
 
 };
 

@@ -20,17 +20,10 @@
  --------------------------------------------------------------------------*/
 
 
- //---------------------------------------------------------------------------
-#if RS_EMBARCADERO
-#pragma hdrstop
-#endif
 
 #include "Cell.h"
 
-//---------------------------------------------------------------------------
-#if RS_EMBARCADERO 
-#pragma package(smart_init)
-#endif
+
 
 //---------------------------------------------------------------------------
 
@@ -45,9 +38,6 @@ Cell::Cell(int xx, int yy, intptr patch, int hab)
 	habIxx.push_back(hab);
 
 	visits = 0;
-#if RS_CONTAIN
-	pDamage = 0;
-#endif // RS_CONTAIN
 	smsData = 0;
 }
 
@@ -59,9 +49,7 @@ Cell::Cell(int xx, int yy, intptr patch, float hab)
 	envDev = eps = 0.0;
 	habitats.push_back(hab);
 	visits = 0;
-#if RS_CONTAIN
-	pDamage = 0;
-#endif // RS_CONTAIN
+
 	smsData = 0;
 }
 
@@ -140,21 +128,6 @@ void Cell::updateEps(float ac, float randpart) {
 
 float Cell::getEps(void) { return eps; }
 
-#if SPATIALMORT
-// Functions to handle additional spatial mortality
-
-void Cell::setMort(float mort0, float mort1) {
-	if (mort0 >= 0.0 && mort0 <= 1.0) mort[0] = mort0;
-	if (mort1 >= 0.0 && mort1 <= 1.0) mort[1] = mort1;
-}
-
-float Cell::getMort(short period) {
-	float m = 0.0;
-	if (period == 0 || period == 1) m = mort[period];
-	return m;
-}
-
-#endif // SPATIALMORT 
 
 // Functions to handle costs for SMS
 
@@ -212,14 +185,7 @@ void Cell::resetVisits(void) { visits = 0; }
 void Cell::incrVisits(void) { visits++; }
 unsigned long int Cell::getVisits(void) { return visits; }
 
-#if RS_CONTAIN
 
-//void Cell::setDamage(unsigned int d) { damage = d; }
-//unsigned int Cell::getDamage(void) { return damage; }
-void Cell::setDamage(DamageLocn* pDmg) { pDamage = pDmg; }
-DamageLocn* Cell::getDamage(void) { return pDamage; }
-
-#endif // RS_CONTAIN 
 
 //---------------------------------------------------------------------------
 

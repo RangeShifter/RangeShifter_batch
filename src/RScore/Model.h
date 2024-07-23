@@ -60,30 +60,12 @@
 using namespace std::filesystem;
 #endif
 
-#if VIRTUALECOLOGIST
-#include "VirtualEcologist.h"
-#endif
-#if RS_ABC
-#include "ABC.h"
-#endif
-#if PEDIGREE
-#include "Pedigree.h"
-#endif
-#if RS_CONTAIN
-#include "Control.h"
-#endif // RS_CONTAIN 
 
 #if RSDEBUG
 extern ofstream DEBUGLOG;
 #endif
 
-#if RS_ABC
-int RunModel(
-	Landscape*,	// pointer to Landscape
-	int,				// sequential simulation number (always 0 for VCL version)
-	ABCmaster*	// pointer to ABC master object
-);
-#else
+
 #if RS_RCPP && !R_CMD
 Rcpp::List RunModel(
 	Landscape*,	// pointer to Landscape
@@ -95,7 +77,7 @@ int RunModel(
 	int					// sequential simulation number
 );
 #endif // RS_RCPP && !R_CMD
-#endif // RS_ABC
+
 bool CheckDirectory(void);
 void PreReproductionOutput(
 	Landscape*,	// pointer to Landscape
@@ -104,26 +86,14 @@ void PreReproductionOutput(
 	int,				// year
 	int					// generation
 );
-#if RS_ABC
-void RangePopOutput(
-	Community*, // pointer to Community
-	int,				// replicate
-	int,				// year
-	int,				// generation
-	ABCmaster*,	// pointer to ABC master object
-	bool				// TRUE if ABC observations in current year
-);
-#else
+
 void RangePopOutput(
 	Community*, // pointer to Community
 	int,				// replicate
 	int,				// year
 	int					// generation
 );
-#endif
-#if RS_CONTAIN
-void ManagementCull(Landscape*, int, int);
-#endif // RS_CONTAIN 
+
 void OutParameters(
 	Landscape*	// pointer to Landscape
 );
@@ -134,19 +104,10 @@ extern Species* pSpecies;
 extern paramSim* paramsSim;
 extern paramInit* paramsInit;
 extern Community* pComm;
-#if VIRTUALECOLOGIST
-extern VirtualEcologist* pVirt;
-#endif
-#if RS_CONTAIN
-extern Cull* pCull;
-extern DamageParams* pDamageParams;
-#endif // RS_CONTAIN 
 
-#if VCL
-extern bool batchMode;
-#else
+
+
 const bool batchMode = true;
-#endif
 extern string landFile;
 extern vector <string> hfnames;
 extern string habmapname;		// see FormLand.cpp (VCL) OR Main.cpp (batch)
@@ -154,22 +115,6 @@ extern string patchmapname;	// see FormLand.cpp (VCL) OR Main.cpp (batch)
 extern string distnmapname;	// see FormLand.cpp (VCL) OR Main.cpp (batch)
 extern string costmapname;	// see FormMove.cpp (VCL) OR Main.cpp (batch)
 extern string genfilename;	// see FormGenetics.cpp (VCL) OR Main.cpp (batch)
-#if RS_CONTAIN
-extern string dmgmapname;		// see FormLand.cpp (VCL) OR Main.cpp (batch)
-#endif // RS_CONTAIN 
-#if SPATIALMORT
-extern string mortmapname[2];	// see FormLand.cpp (VCL) OR Main.cpp (batch)
-#endif // SPATIALMORT 
-#if TEMPMORT
-extern string mortfilename;	// see [NOT YET CODED FOR GUI] (VCL) OR Main.cpp (batch)
-#endif // TEMPMORT  
-#if VIRTUALECOLOGIST
-extern string locfilename;		// see FormVirtEcol.cpp (VCL) OR Main.cpp (batch)
-extern string patchfilename;	// see [NOT YET CODED FOR GUI] (VCL) OR Main.cpp (batch)
-#endif // VIRTUALECOLOGIST 
-#if BUTTERFLYDISP
-extern string envstochfilename;
-#endif // BUTTERFLYDISP 
 extern RSrandom* pRandom;
 
 
