@@ -6031,7 +6031,12 @@ int ReadSettlement(int option)
 			simNbFirstLine = simNb;
 			sett.stgDep = (inStageDep == 1);
 			sett.sexDep = (inSexDep == 1);
-			sett.indVar = (inIndVar == 1) && trfr.usesMovtProc; // no ind var for kernels
+			if (trfr.usesMovtProc) {// no ind var for kernels
+				sett.indVar = (inIndVar == 1);
+			}
+			else {
+				sett.indVar = false;
+			}
 			pSpecies->setSettle(sett);
 
 			// update no.of lines according to known stage- and sex-dependency
