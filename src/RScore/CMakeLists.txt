@@ -25,6 +25,47 @@ if(NOT DEFINED release)
 	add_compile_definitions(RSDEBUG)
 endif()
 
+
+if(DEFINED RS_CONTAIN)
+	add_compile_definitions(RS_CONTAIN)
+endif()
+
+if(DEFINED TEMPMORT)
+	add_compile_definitions(TEMPMORT)
+endif()
+
+if(DEFINED GROUPDISP)
+	add_compile_definitions(GROUPDISP)
+endif()
+
+if(DEFINED PARTMIGRN)
+	add_compile_definitions(PARTMIGRN)
+endif()
+
+if(DEFINED SEASONAL)
+	add_compile_definitions(SEASONAL)
+endif()
+
+if(DEFINED RS_ABC)
+	add_compile_definitions(RS_ABC)
+endif()
+
+if(DEFINED GOBYMODEL)
+	add_compile_definitions(GOBYMODEL)
+endif()
+
+if(DEFINED VIRTUALECOLOGIST)
+	add_compile_definitions(VIRTUALECOLOGIST)
+endif()
+
+if(DEFINED BUTTERFLYDISP)
+	add_compile_definitions(BUTTERFLYDISP)
+endif()
+
+if(DEFINED PEDIGREE)
+	add_compile_definitions(PEDIGREE)
+endif()
+
 if(NOT batchmode)
 	target_include_directories(RScore PUBLIC "${PROJECT_BINARY_DIR}")
 endif() 
