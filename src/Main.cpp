@@ -36,10 +36,6 @@ Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
  Last updated: 14 January 2021 by Anne-Kathleen Malchow, Potsdam University
 
  ------------------------------------------------------------------------------*/
-#if RS_EMBARCADERO
-#pragma hdrstop
-#pragma argsused 
-#endif
 
 #include <string>
 #include <stdio.h>
@@ -109,10 +105,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	cout << "RangeShifter Release Mode" << endl;
 #endif
 
-#if RS_CONTAIN
-	cout << "RS_CONTAIN macro is enabled." << endl;
-#endif
-
 #if SEASONAL
 	cout << "SEASONAL macro is enabled." << endl;
 #endif
@@ -121,33 +113,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	cout << "PARTMIGRN macro is enabled." << endl;
 #endif
 
-#if GROUPDISP
-	cout << "GROUPDISP macro is enabled." << endl;
-#endif
-
-#if TEMPMORT
-	cout << "TEMPMORT macro is enabled." << endl;
-#endif
-
-#if PEDIGREE
-	cout << "PEDIGREE macro is enabled." << endl;
-#endif
-
-#if VIRTUALECOLOGIST
-	cout << "VIRTUALECOLOGIST macro is enabled." << endl;
-#endif
-
-#if RS_ABC
-	cout << "RS_ABC macro is enabled." << endl;
-#endif
-
-#if BUTTERFLYDISP
-	cout << "BUTTERFLYDISP macro is enabled." << endl;
-#endif
-
-#if GOBYMODEL
-	cout << "GOBYMODEL macro is enabled." << endl;
-#endif
 
 #if RSDEBUG
 	assert(0.1 > 0.0); // assert does run correctly
@@ -268,7 +233,11 @@ trfrRules trfr = pSpecies->getTrfr();
 		nSimuls = b.nSimuls;
 		nLandscapes = b.nLandscapes;
 		dem.repType = b.reproductn;
-		dem.repSeasons = b.repseasons;
+#if SEASONAL
+		dem.nSeasons = b.nseasons;
+#else
+		dem.repSeasons = b.repSeasons;
+#endif
 		if (b.stagestruct == 0) dem.stageStruct = false; else dem.stageStruct = true;
 		sstruct.nStages = b.stages;
 		if (b.transfer == 0) trfr.moveModel = false;

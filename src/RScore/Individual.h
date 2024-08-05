@@ -329,6 +329,13 @@ public:
 		const short,	// landscape change index
 		const bool    // absorbing boundaries?
 	);
+	void outGenetics( // Write records to genetics file
+		const int,		 	// replicate
+		const int,		 	// year
+		const int,		 	// species number
+		const int,		 	// landscape number
+		const bool	 		// output as cross table?
+	);
 
 #if RS_RCPP
 	void outMovePath( // Write records to movement paths file

@@ -1,0 +1,26 @@
+BatchNum	123
+PatchModel	1
+Resolution	100
+LandType	0
+MaxHabitats	4
+SpeciesDist	1
+DistResolution	100
+Reproduction	2
+NSeasons	4
+StageStruct	1
+Stages	3
+Transfer	2
+ParameterFile	ParameterFile_name.txt
+LandFile	LandFile_name.txt
+SeasonFile	SeasonFile_name.txt
+StageStructFile	StageStructFile_name.txt
+EmigrationFile	EmigrationFile_name.txt
+TransferFile	TransferFile_name.txt
+SettlementFile	SettlementFile_name.txt
+GeneticsFile	GeneticsFile_name.txt
+InitialisationFile	InitialisationFile_name.txt
+
+ANY ADDITIONAL LINES ARE NOT READ, AND CAN THEREFORE BE USED FOR COMMENTS
+
+Example RangeShifter v2.0 Control File for a PARTIAL MIGRATION patch-based model of a stage-structured population moving by SMS
+

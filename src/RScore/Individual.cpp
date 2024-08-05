@@ -418,11 +418,8 @@ void Individual::setGenes(Species* pSpecies, Individual* mother, Individual* fat
 		}
 		else { // kernel
 			if (father == 0) { // haploid
-#if RS_CONTAIN
-				if (trfr.kernType == 1)
-#else
-				if (trfr.twinKern)
-#endif // RS_CONTAIN 
+
+				if (trfr.twinKern) 
 				{
 					setKernTraits(pSpecies, trfr.movtTrait[0], 3, resol, 0);
 				}
@@ -431,11 +428,8 @@ void Individual::setGenes(Species* pSpecies, Individual* mother, Individual* fat
 				}
 			}
 			else { // diploid
-#if RS_CONTAIN
-				if (trfr.kernType == 1)
-#else
+
 				if (trfr.twinKern)
-#endif // RS_CONTAIN 
 				{
 					setKernTraits(pSpecies, trfr.movtTrait[0], 3, resol, trfr.sexDep);
 				}
@@ -457,9 +451,6 @@ void Individual::setGenes(Species* pSpecies, Individual* mother, Individual* fat
 	}
 }
 
-#if VIRTUALECOLOGIST
-Genome* Individual::getGenome(void) { return pGenome; }
-#endif
 
 //---------------------------------------------------------------------------
 
@@ -475,20 +466,6 @@ int Individual::breedingFem(void) {
 
 int Individual::getId(void) { return indId; }
 
-#if GROUPDISP
-int Individual::getParentId(short i) {
-	if (i >= 0 && i <= 1) return parentId[i];
-	else return -1;
-}
-#if PEDIGREE
-Individual* Individual::getParent(short i) {
-	if (i >= 0 && i <= 1) return pParent[i];
-	else return 0;
-}
-#endif // PEDIGREE
-void Individual::setGroupId(int g) { if (g >= 0) groupId = g; }
-int Individual::getGroupId(void) { return groupId; }
-#endif // GROUPDISP
 
 int Individual::getSex(void) { return sex; }
 
@@ -508,20 +485,8 @@ indStats Individual::getStats(void) {
 	s.migrnstatus = migrnstatus;
 #endif // PARTMIGRN 
 #endif // SEASONAL
-#if GOBYMODEL
-	s.asocial = asocial;
-#endif
-#if SOCIALMODEL
-	s.asocial = asocial;
-#endif
 	return s;
 }
-#if GOBYMODEL
-bool Individual::isAsocial(void) { return asocial; }
-#endif
-#if SOCIALMODEL
-bool Individual::isAsocial(void) { return asocial; }
-#endif
 
 Cell* Individual::getLocn(const short option) {
 #if SEASONAL
@@ -1100,22 +1065,12 @@ void Individual::moveto(Cell* newCell) {
 	}
 }
 
-#if GROUPDISP
-//---------------------------------------------------------------------------
-// Move to any specified cell
-void Individual::moveTo(Cell* newCell) {
-	if (newCell != 0) {
-		pCurrCell = newCell;
-	}
-}
-#endif
+
 
 //---------------------------------------------------------------------------
 // Move to a new cell by sampling a dispersal distance from a single or double
 // negative exponential kernel
-#if RS_CONTAIN
-// or the 2Dt kernel or the WALD kernel
-#endif // RS_CONTAIN 
+
 // Returns 1 if still dispersing (including having found a potential patch), otherwise 0
 #if SEASONAL
 int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies,
@@ -1151,11 +1106,8 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies,
 		//	kparams = pSpecies->getKernParams(stage,sex);
 		if (pGenome != 0) {
 			kern.meanDist1 = kerntraits->meanDist1;
-#if RS_CONTAIN
-			if (trfr.kernType == 1)
-#else
+
 			if (trfr.twinKern)
-#endif // RS_CONTAIN 
 			{
 				kern.meanDist2 = kerntraits->meanDist2;
 				kern.probKern1 = kerntraits->probKern1;
@@ -1182,11 +1134,8 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies,
 	}
 
 // scale the appropriate kernel mean to the cell size
-#if RS_CONTAIN
-	if (trfr.kernType == 1)
-#else
+
 	if (trfr.twinKern)
-#endif // RS_CONTAIN 
 	{
 		if (pRandom->Bernoulli(kern.probKern1))
 			meandist = kern.meanDist1 / (float)land.resol;
@@ -1198,65 +1147,6 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies,
 // scaled mean may not be less than 1 unless emigration derives from the kernel
 // (i.e. the 'use full kernel' option is applied)
 	if (!usefullkernel && meandist < 1.0) meandist = 1.0;
-
-#if RS_CONTAIN
-
-// simple 2Dt model (no environmental effects) 
-	trfr2Dt t2 = pSpecies->getTrfr2Dt();
-	double propkern1 = t2.propKernel1;
-	double p, u, f, f0;
-	bool reject;
-
-	// WALD model
-	trfrWald w = pSpecies->getTrfrWald();
-	double hr = pSpecies->getTrfrHr(motherstage);
-	double mu = w.meanU * hr / w.vt;
-	double gamma = (w.meanU * hr * hr) / (2.0 * w.kappa * w.hc * w.sigma_w);
-
-	// select kernel to sample for this individual (if 2Dt) and
-	// find a suitable maximum x-value for the range of distances to sample
-	int maxdim = max(land.dimX, land.dimY) * land.resol;
-	double maxx = (double)maxdim;
-	bool ok = false;
-	double fdim;
-	if (trfr.kernType == 2) {
-		if (pRandom->Bernoulli(propkern1)) { // sample from kernel 1
-			u = exp(t2.u0Kernel1); p = exp(t2.p0Kernel1); f0 = p / (PI * u);
-			while (!ok) {
-				fdim = p / (PI * u * pow((1.0 + (maxx * maxx / u)), (p + 1.0)));
-				if (fdim >= f0 / 1000.0) ok = true; else maxx /= 1.25;
-			}
-		}
-		else { // sample from kernel 2
-			u = exp(t2.u0Kernel2); p = exp(t2.p0Kernel2); f0 = p / (PI * u);
-			while (!ok) {
-				fdim = p / (PI * u * pow((1.0 + (maxx * maxx / u)), (p + 1.0)));
-				if (fdim >= f0 / 1000.0) ok = true; else maxx /= 1.25;
-			}
-		}
-	}
-#if RSDEBUG
-	//DEBUGLOG << "Individual::moveKernel(): indId=" << indId << " x=" << loc.x << " y=" << loc.y
-	//	<< " maxx=" << maxx 
-	//	<< " u=" << u << " p=" << p << " f0=" << f0 
-	//	<< endl;
-#endif
-	if (trfr.kernType == 3) {
-		f0 = 1.0;
-		while (!ok) {
-			fdim = sqrt(gamma / (2.0 * PI * maxx * maxx * maxx))
-				* exp(-1.0 * gamma * (maxx - mu) * (maxx - mu) / (2.0 * maxx * mu * mu));
-			if (fdim >= f0 / 10000.0) ok = true; else maxx /= 1.25;
-		}
-	}
-#if RSDEBUG
-	DEBUGLOG << "Individual::moveKernel(): indId=" << indId << " x=" << loc.x << " y=" << loc.y
-		<< " stage=" << stage << " hr=" << hr << " mu=" << mu << " gamma=" << gamma
-		<< " maxx=" << maxx
-		<< endl;
-#endif
-
-#endif // RS_CONTAIN 
 
 	int loopsteps = 0; // new counter to prevent infinite loop added 14/8/15
 	do {
@@ -1278,120 +1168,11 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies,
 				xrand = (double)loc.x + pRandom->Random() * 0.999;
 				yrand = (double)loc.y + pRandom->Random() * 0.999;
 
-#if RS_CONTAIN
-
-				/*
-				if (trfr.kernType == 2) { // 2Dt kernel
-
-				// sample distance from 2Dt kernel by method of REJECTION SAMPLING
-
-				// NOTE: sampling must be in real-world co-ordinates (not cell co-ordinates)
-				// as kernel units are metres
-
-				reject = true;
-				while (reject) {
-					// sample a random distance along the x-axis
-					dist = pRandom->Random() * maxx;
-					// sample a random y-axis variate between zero and max. possible
-					r1 = pRandom->Random() * f0;
-					// calculate value of kernel at dist;
-					f = p / (PI * u * pow((1.0 + (dist*dist/u)),(p+1.0)));
-					if (r1 <= f) reject = false;
-	
-					}
-	
-				// convert sampled distance to cell co-ordinates
-				dist /= (double)land.resol;
-	//			rndangle = pRandom->Random() * 2.0 * PI;
-	//			nx = (xrand + dist * cos(rndangle)) / land.resol;
-	//			ny = (yrand + dist * sin(rndangle)) / land.resol;
-
-				}
-				else { // negative exponential kernel
-					r1 = 0.0000001 + pRandom->Random()*(1.0-0.0000001);
-					dist = (-1.0*meandist)*log(r1);  // for CLUSTER
-				}
-				*/
-
-				switch (trfr.kernType) {
-
-				case 0: // single negative exponential
-				case 1: // single negative exponential
-					r1 = 0.0000001 + pRandom->Random() * (1.0 - 0.0000001);
-					dist = (-1.0 * meandist) * log(r1);  // for LINUX_CLUSTER
-					break;
-
-				case 2: // 2Dt
-
-					// sample distance from 2Dt kernel by method of REJECTION SAMPLING 
-
-					// NOTE: sampling must be in real-world co-ordinates (not cell co-ordinates)
-					// as kernel units are metres
-
-					reject = true;
-					while (reject) {
-						// sample a random distance along the x-axis
-						dist = pRandom->Random() * maxx;
-						// sample a random y-axis variate between zero and max. possible 
-						r1 = pRandom->Random() * f0;
-						// calculate value of kernel at dist;
-						f = p / (PI * u * pow((1.0 + (dist * dist / u)), (p + 1.0)));
-						if (r1 <= f) reject = false;
-					}
-			// convert sampled distance to cell co-ordinates 
-					dist /= (double)land.resol;
-					//			rndangle = pRandom->Random() * 2.0 * PI;
-					//			nx = (xrand + dist * cos(rndangle)) / land.resol;
-					//			ny = (yrand + dist * sin(rndangle)) / land.resol;
-
-					break;
-
-				case 3: // Wald
-
-					//			dist = 2 * land.resol;
-
-								// sample distance from 2Dt kernel by method of REJECTION SAMPLING 
-
-								// NOTE: sampling must be in real-world co-ordinates (not cell co-ordinates)
-								// as kernel units are metres
-
-					reject = true;
-					while (reject) {
-						// sample a random distance along the x-axis
-						dist = pRandom->Random() * maxx;
-						// sample a random y-axis variate between zero and max. possible 
-						r1 = pRandom->Random() * f0;
-						// calculate value of kernel at dist;
-						f = sqrt(gamma / (2.0 * PI * dist * dist * dist))
-							* exp(-1.0 * gamma * (dist - mu) * (dist - mu) / (2.0 * dist * mu * mu));
-						if (r1 <= f) reject = false;
-
-					}
-
-			// convert sampled distance to cell co-ordinates 
-					dist /= (double)land.resol;
-
-					break;
-
-				}
-
-#else
-
 				r1 = 0.0000001 + pRandom->Random() * (1.0 - 0.0000001);
 				//			dist = (-1.0*meandist)*std::log(r1);
 				dist = (-1.0 * meandist) * log(r1);  // for LINUX_CLUSTER
 
-#endif // RS_CONTAIN 
-
-#if RS_CONTAIN
-				rndangle = pRandom->Normal(w.meanDirn, w.sdDirn);
-				if (rndangle < 0.0) rndangle += 360.0;
-				if (rndangle >= 360.0) rndangle -= 360.0;
-				rndangle *= 2.0 * PI / 360.00;
-
-#else
 				rndangle = pRandom->Random() * 2.0 * PI;
-#endif // RS_CONTAIN 
 				nx = xrand + dist * sin(rndangle);
 				ny = yrand + dist * cos(rndangle);
 				if (nx < 0.0) newX = -1; else newX = (int)nx;
@@ -1512,9 +1293,6 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 
 	intptr patch;
 	int patchNum;
-#if VCL
-	int oldX, oldY;
-#endif
 	int newX, newY;
 	locn loc;
 	int dispersing = 1;
@@ -1527,9 +1305,7 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 	//int popsize;
 
 	landData land = pLandscape->getLandData();
-#if VCL
-	simView v = paramsSim->getViews();
-#endif
+
 	simParams sim = paramsSim->getSim();
 
 	trfrRules trfr = pSpecies->getTrfr();
@@ -1547,24 +1323,7 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 		patchNum = pPatch->getPatchNum();
 	}
 	// apply step-dependent mortality risk ...
-#if TEMPMORT
-	int h;
-	switch (trfr.smType) {
-	case 0: // constant
-		mortprob = movt.stepMort;
-		break;
-	case 1: // habitat-dependent
-		h = pCurrCell->getHabIndex(landIx);
-		if (h < 0) { // no-data cell - should not occur, but if it does, individual dies
-			mortprob = 1.0;
-		}
-		else mortprob = pSpecies->getHabMort(h);
-		break;
-	case 2: // temporally variable
-		mortprob = pSpecies->getMortality();
-		break;
-	}
-#else
+
 	if (trfr.habMort)
 	{ // habitat-dependent
 		int h = pCurrCell->getHabIndex(landIx);
@@ -1575,7 +1334,7 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 
 	}
 	else mortprob = movt.stepMort;
-#endif // TEMPMORT 
+
 	// ... unless individual has not yet left natal patch in emigration year
 	if (pPatch == pNatalPatch && path->out == 0 && path->year == path->total) {
 		mortprob = 0.0;
@@ -1598,9 +1357,6 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 		}
 		loc = pCurrCell->getLocn();
 		newX = loc.x; newY = loc.y;
-#if VCL
-		oldX = loc.x; oldY = loc.y;
-#endif
 
 
 		switch (trfr.moveType) {
@@ -1635,20 +1391,6 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 				if (sim.saveVisits && pPatch != pNatalPatch) {
 					pCurrCell->incrVisits();
 				}
-#if VCL
-				if (v.viewPaths) {
-					if ((Patch*)patch != pNatalPatch) {
-						loc = pCurrCell->getLocn();
-						drawMove((float)oldX + 0.5, (float)oldY + 0.5, (float)loc.x + 0.5, (float)loc.y + 0.5);
-					}
-				}
-#endif
-#if RS_CONTAIN
-				if (status < 6) {
-					DamageLocn* pDamageLocn = pCurrCell->getDamage();
-					if (pDamageLocn != 0) pDamageLocn->updateTraversalDamage();
-				}
-#endif // RS_CONTAIN 
 			}
 			break;
 
@@ -1702,18 +1444,7 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 				else
 					patch = pCurrCell->getPatch();
 			} while (!absorbing && pCurrCell == 0 && loopsteps < 1000);
-#if VCL
-			if (v.viewPaths) {
-				if (newX >= land.minX && newX <= land.maxX && newY >= land.minY && newY <= land.maxY) {
-					if (patch > 0) {
-						if ((Patch*)patch != pNatalPatch) drawMove(crw->xc, crw->yc, xcnew, ycnew);
-					}
-					else {
-						drawMove(crw->xc, crw->yc, xcnew, ycnew);
-					}
-				}
-			}
-#endif
+
 			crw->prevdrn = (float)angle;
 			crw->xc = (float)xcnew; crw->yc = (float)ycnew;
 			if (absorbed) { // beyond absorbing boundary or in no-data square
@@ -2298,33 +2029,7 @@ array3x3f Individual::getHabMatrix(Landscape* pLand, Species* pSpecies,
 
 //---------------------------------------------------------------------------
 // Write records to individuals file
-#if GROUPDISP  || ROBFITT
-void Individual::outGenetics(const int rep, const int year, const int spnum,
-	const int landNr, const bool patchmodel, const bool xtab)
-{
-	if (landNr == -1) {
-		if (pGenome != 0) {
-			int X = -1; int Y = -1;
-			if (patchmodel) {
-				intptr ppatch = pCurrCell->getPatch();
-				if (ppatch != 0) {
-					Patch* pPatch = (Patch*)ppatch;
-					X = pPatch->getPatchNum();
-				}
-			}
-			else {
-				locn loc = pCurrCell->getLocn();
-				X = loc.x; Y = loc.y;
-			}
-			pGenome->outGenetics(rep, year, spnum, indId, X, Y, patchmodel, xtab);
-		}
-	}
-	else { // open/close file
-		pGenome->outGenHeaders(rep, landNr, patchmodel, xtab);
-	}
 
-}
-#else
 void Individual::outGenetics(const int rep, const int year, const int spnum,
 	const int landNr, const bool xtab)
 {
@@ -2338,7 +2043,7 @@ void Individual::outGenetics(const int rep, const int year, const int spnum,
 	}
 
 }
-#endif
+
 
 #if RS_RCPP
 //---------------------------------------------------------------------------
@@ -2387,15 +2092,6 @@ void Individual::outMovePath(const int year)
 		}
 	}
 }
-#endif
-
-//---------------------------------------------------------------------------
-
-#if PEDIGREE
-// Set position in relatedness matrix
-void Individual::setMatPosn(unsigned int pos) { matPosn = pos; }
-// Get position in relatedness matrix
-unsigned int Individual::getMatPosn(void) { return matPosn; }
 #endif
 
 //---------------------------------------------------------------------------
