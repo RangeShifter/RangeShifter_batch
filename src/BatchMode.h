@@ -202,8 +202,8 @@ int ReadTransferCRW(transferRules, const landParams&);
 int ReadSettlement(int);
 int ReadInitialisation(int, Landscape*);
 int ReadInitIndsFile(int, Landscape*, string);
-int ReadGeneticsFile(int, Landscape*);
-int ReadTraitsFile(int);
+int ReadGeneticsFile(Landscape*);
+int ReadTraitsFile();
 
 // Helper functions to ReadGenetics and ReadTraits
 void setUpSpeciesTrait(vector<string>);

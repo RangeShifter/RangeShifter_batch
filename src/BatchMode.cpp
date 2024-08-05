@@ -4736,7 +4736,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 
 //--------------------------------------------------------------------------
 
-int ReadGeneticsFile(int simulationN, Landscape* pLandscape) {
+int ReadGeneticsFile(Landscape* pLandscape) {
 
 	string indir = paramsSim->getDir(1);
 	ifstream inFile(geneticsFile.c_str());
@@ -4759,45 +4759,39 @@ int ReadGeneticsFile(int simulationN, Landscape* pLandscape) {
 			vector<string> parameters;
 			while (std::getline(ss, value, '	'))
 				parameters.push_back(value);
+			// Assumes all input is correct after errors being handled by CheckGenetics
+			int genomeSize = stoi(parameters[1]);
+			set<int> chrEnds = stringToChromosomeEnds(parameters[2], genomeSize);
+			float recombinationRate = parameters[3] == "#" ? 0.0 : stof(parameters[3]);
+			outputGeneValues = (parameters[4] == "TRUE");
+			outputWCFstat = (parameters[5] == "TRUE");
+			outputPerLocusWCFstat = (parameters[6] == "TRUE");
+			outputPairwiseFst = (parameters[7] == "TRUE");
+			outputStartGenetics = stoi(parameters[8]);
+			outputGeneticInterval = stoi(parameters[9]);
 
-			if (stoi(parameters[0]) != simulationN) {
-				throw logic_error("Simulation number in genetics file is incorrect.");
+			string inPatches = parameters[10];
+			string patchSamplingOption;
+			int nPatchesToSample = stoi(parameters[11]);
+			if (inPatches != "all" && inPatches != "random" && inPatches != "random_occupied") {
+				// then must be a list of indices
+				patchSamplingOption = "list";
+				patchList = stringToPatches(inPatches);
+				if (patchList.contains(0)) throw logic_error("Patch sampling: ID 0 is reserved for the matrix and should not be sampled.");
 			}
 			else {
-				// Assumes all input is correct after errors being handled by CheckGenetics
-				int genomeSize = stoi(parameters[1]);
-				set<int> chrEnds = stringToChromosomeEnds(parameters[2], genomeSize);
-				float recombinationRate = parameters[3] == "#" ? 0.0 : stof(parameters[3]);
-				outputGeneValues = (parameters[4] == "TRUE");
-				outputWCFstat = (parameters[5] == "TRUE");
-				outputPerLocusWCFstat = (parameters[6] == "TRUE");
-				outputPairwiseFst = (parameters[7] == "TRUE");
-				outputStartGenetics = stoi(parameters[8]);
-				outputGeneticInterval = stoi(parameters[9]);
-
-				string inPatches = parameters[10];
-				string patchSamplingOption;
-				int nPatchesToSample = stoi(parameters[11]);
-				if (inPatches != "all" && inPatches != "random" && inPatches != "random_occupied") {
-					// then must be a list of indices
-					patchSamplingOption = "list";
-					patchList = stringToPatches(inPatches);
-					if (patchList.contains(0)) throw logic_error("Patch sampling: ID 0 is reserved for the matrix and should not be sampled.");
-				}
-				else {
-					patchSamplingOption = inPatches;
-					// patchList remains empty, filled when patches are sampled every gen
-				}
-				const string strNbInds = parameters[12];
-				const int nbStages = pSpecies->getStageParams().nStages;
-				set<int> stagesToSampleFrom = stringToStages(parameters[13], nbStages);
-
-				pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate,
-					patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
-				paramsSim->setGeneticSim(patchSamplingOption, outputGeneValues, outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputStartGenetics, outputGeneticInterval);
-				
-				gPathToTraitsFile = indir + parameters[14];
+				patchSamplingOption = inPatches;
+				// patchList remains empty, filled when patches are sampled every gen
 			}
+			const string strNbInds = parameters[12];
+			const int nbStages = pSpecies->getStageParams().nStages;
+			set<int> stagesToSampleFrom = stringToStages(parameters[13], nbStages);
+
+			pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate,
+				patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
+			paramsSim->setGeneticSim(patchSamplingOption, outputGeneValues, outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputStartGenetics, outputGeneticInterval);
+
+			gPathToTraitsFile = indir + parameters[14];
 		}
 		inFile.close();
 		inFile.clear();
@@ -4805,7 +4799,7 @@ int ReadGeneticsFile(int simulationN, Landscape* pLandscape) {
 	return 0;
 }
 
-int ReadTraitsFile(int simulationN) {
+int ReadTraitsFile() {
 
 	pSpecies->clearTraitTable();
 
@@ -4826,11 +4820,8 @@ int ReadTraitsFile(int simulationN) {
 				parameters.push_back(entry);
 			}
 
-			if (stoi(parameters[0]) != simulationN)
-				throw logic_error("Simulation number in TraitsFile is invalid.");
-			else
-				// Create trait from parameters 
-				setUpSpeciesTrait(parameters);
+			// Create trait from parameters 
+			setUpSpeciesTrait(parameters);
 		}
 		inFile.close();
 		inFile.clear();
@@ -6554,13 +6545,13 @@ void RunBatch(int nSimuls, int nLandscapes)
 					params_ok = false;
 				}
 
-				read_error = ReadGeneticsFile(i + 1, pLandscape); //simulations numbered >= 1 not 0
+				read_error = ReadGeneticsFile(pLandscape);
 				if (read_error) {
 					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
 
-				read_error = ReadTraitsFile(i + 1); //simulations numbered >= 1 not 0
+				read_error = ReadTraitsFile();
 				if (read_error) {
 					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
