@@ -25,6 +25,14 @@ if(NOT DEFINED release)
 	add_compile_definitions(RSDEBUG)
 endif()
 
+if(DEFINED PARTMIGRN)
+	add_compile_definitions(PARTMIGRN)
+endif()
+
+if(DEFINED SEASONAL)
+	add_compile_definitions(SEASONAL)
+endif()
+
 if(NOT batchmode)
 	target_include_directories(RScore PUBLIC "${PROJECT_BINARY_DIR}")
 endif() 
