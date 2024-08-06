@@ -2193,10 +2193,10 @@ int CheckEmigFile(void)
 				BatchError(whichInputFile, lineNb, 20, "D0"); 
 				nbErrors++;
 			}
-			if (inAlpha < 0.0) {
-				BatchError(whichInputFile, lineNb, 10, "alpha");
-				nbErrors++;
-			}
+			// if (inAlpha < 0.0) {
+			//	BatchError(whichInputFile, lineNb, 10, "alpha");
+			//	nbErrors++;
+			// }
 			if (inBeta < 0.0) {
 				BatchError(whichInputFile, lineNb, 10, "beta");
 				nbErrors++;
@@ -2217,7 +2217,7 @@ int CheckEmigFile(void)
 					<< "if density-dependence is disabled alpha must be " << gEmptyVal << endl;
 				nbErrors++;
 			}
-			if (inAlpha != gEmptyVal) {
+			if (inBeta != gEmptyVal) {
 				batchLog << "*** Error in " << whichInputFile << ": "
 					<< "if density-dependence is disabled beta must be " << gEmptyVal << endl;
 				nbErrors++;
@@ -6231,16 +6231,18 @@ int ReadInitialisation(int option, Landscape* pLandscape)
 
 	init.restrictRange = (init.seedType == 0 && init.restrictRows > 0);
 
-	if (dem.stageStruct) {
+	if (dem.stageStruct && seedType!=2) {
 		float propStage;
 		initFile >> init.initAge;
 		totalProps = 0.0;
 		for (int stg = 1; stg < sstruct.nStages; stg++) {
 			initFile >> propStage;
-			totalProps += propStage;
-			paramsInit->setProp(stg, propStage);
+			if(seedType!=2){
+				totalProps += propStage;
+				paramsInit->setProp(stg, propStage);
+			}
 		}
-		if (totalProps != 1.0)
+		if (seedType!=2 && totalProps != 1.0)
 		{ 
 			throw logic_error("The proportion of initial individuals in each stage doesn not sum to 1.");
 		}
