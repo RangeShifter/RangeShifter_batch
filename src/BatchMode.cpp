@@ -4844,7 +4844,6 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 
 		//	for (int j = 1; j < sstruct.nStages; j++)
 		for (int j = 1; j < nstages; j++)
-
 #if SEASONAL
 		{
 			pSpecies->setFec(season, j, 0, matrix[j][0]);
