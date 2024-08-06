@@ -6231,18 +6231,18 @@ int ReadInitialisation(int option, Landscape* pLandscape)
 
 	init.restrictRange = (init.seedType == 0 && init.restrictRows > 0);
 
-	if (dem.stageStruct && seedType!=2) {
+	if (dem.stageStruct) {
 		float propStage;
 		initFile >> init.initAge;
 		totalProps = 0.0;
 		for (int stg = 1; stg < sstruct.nStages; stg++) {
 			initFile >> propStage;
-			if(seedType!=2){
+			if(init.seedType!=2){
 				totalProps += propStage;
 				paramsInit->setProp(stg, propStage);
 			}
 		}
-		if (seedType!=2 && totalProps != 1.0)
+		if (init.seedType!=2 && totalProps != 1.0)
 		{ 
 			throw logic_error("The proportion of initial individuals in each stage doesn not sum to 1.");
 		}
