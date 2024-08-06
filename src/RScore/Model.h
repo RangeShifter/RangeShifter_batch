@@ -79,6 +79,7 @@ int RunModel(
 #endif // RS_RCPP && !R_CMD
 
 bool CheckDirectory(void);
+
 void PreReproductionOutput(
 	Landscape*,	// pointer to Landscape
 	Community*, // pointer to Community
@@ -86,6 +87,7 @@ void PreReproductionOutput(
 	int,				// year
 	int					// generation
 );
+
 
 void RangePopOutput(
 	Community*, // pointer to Community

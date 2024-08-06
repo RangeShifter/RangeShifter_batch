@@ -2127,7 +2127,13 @@ double cauchy(double location, double scale) {
 
 void testIndividual() {
 
+#if SEASONAL
+	Patch* pPatch = new Patch(0, 0, 0);
+#else
 	Patch* pPatch = new Patch(0, 0);
+#endif // SEASONAL 
+
+	
 	int cell_x = 2;
 	int cell_y = 5;
 	int cell_hab = 2;
@@ -2140,7 +2146,18 @@ void testIndividual() {
 	float probmale = 0;
 	bool uses_movt_process = true;
 	short moveType = 1;
+
+#if PARTMIGRN
+	Species* pSpecies = new Species();
+	Individual ind(pSpecies, pCell, pPatch, stg, age, repInt, probmale, uses_movt_process, moveType);
+#else
 	Individual ind(pCell, pPatch, stg, age, repInt, probmale, uses_movt_process, moveType);
+#endif // PARTMIGRN 
+
+
+
+
+	
 
 	// An individual can move to a neighbouring cell
 	//ind.moveto();

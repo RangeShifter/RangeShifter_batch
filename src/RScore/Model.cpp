@@ -982,7 +982,11 @@ void PreReproductionOutput(Landscape* pLand, Community* pComm, int rep, int yr, 
 		pComm->outTraits(pSpecies, rep, yr, gen);
 	}
 	if (sim.outOccup && yr % sim.outIntOcc == 0 && gen == 0)
+#if SEASONAL
+		pComm->updateOccupancy(yr / sim.outIntOcc, rep, gen);
+#else
 		pComm->updateOccupancy(yr / sim.outIntOcc, rep);
+#endif
 }
 
 //For outputs and population visualisations pre-reproduction

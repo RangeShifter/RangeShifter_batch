@@ -440,6 +440,99 @@ void Population::reproduction(const float localK, const float envval, const int 
 
 
 // set up local copy of species fecundity table
+#if SEASONAL
+	float fec[NSEASONS][NSTAGES][NSEXES];
+	for (int ssn = 0; ssn < NSEASONS; ssn++) {
+		for (int stg = 0; stg < sstruct.nStages; stg++) {
+			for (int sex = 0; sex < nsexes; sex++) {
+				if (dem.stageStruct) {
+					if (dem.repType == 1) { // simple sexual model
+						// both sexes use fecundity recorded for females
+						fec[ssn][stg][sex] = pSpecies->getFec(ssn, stg, 0);
+					}
+					else
+						fec[ssn][stg][sex] = pSpecies->getFec(ssn, stg, sex);
+				}
+				else { // non-structured population
+					if (stg == 1) fec[ssn][stg][sex] = dem.lambda; // adults
+					else fec[ssn][stg][sex] = 0.0; // juveniles
+				}
+			}
+		}
+	}
+
+	if (dem.stageStruct) {
+
+		// apply environmental effects and density dependence
+		// to all non-zero female non-juvenile stages
+		for (int ssn = 0; ssn < NSEASONS; ssn++) {
+			for (int stg = 1; stg < nStages; stg++) {
+				if (fec[ssn][stg][0] > 0.0) {
+					// apply any effect of environmental gradient and/or stochasticty
+					fec[ssn][stg][0] *= envval;
+					if (env.stoch && !env.inK) {
+						// fecundity (at low density) is constrained to lie between limits specified
+						// for the species
+						float limit;
+						limit = pSpecies->getMinMax(0);
+						if (fec[ssn][stg][0] < limit) fec[ssn][stg][0] = limit;
+						limit = pSpecies->getMinMax(1);
+						if (fec[ssn][stg][0] > limit) fec[ssn][stg][0] = limit;
+					}
+					if (sstruct.fecDens) { // apply density dependence
+						float effect = 0.0;
+						if (sstruct.fecStageDens) { // stage-specific density dependence
+							// NOTE: matrix entries represent effect of ROW on COLUMN 
+							// AND males precede females
+							float weight = 0.0;
+							for (int effstg = 0; effstg < nStages; effstg++) {
+								for (int effsex = 0; effsex < nSexes; effsex++) {
+									if (dem.repType == 2) {
+										if (effsex == 0) weight = pSpecies->getDDwtFec(2 * stg + 1, 2 * effstg + 1);
+										else weight = pSpecies->getDDwtFec(2 * stg + 1, 2 * effstg);
+									}
+									else {
+										weight = pSpecies->getDDwtFec(stg, effstg);
+									}
+									effect += (float)nInds[effstg][effsex] * weight;
+								}
+							}
+						}
+						else // not stage-specific
+							effect = (float)totalPop();
+
+						if (localK > 0.0) fec[ssn][stg][0] *= exp(-effect / localK);
+
+					}
+				}
+			}
+		}
+	}
+	else { // non-structured - set fecundity for adult females only
+		// apply any effect of environmental gradient and/or stochasticty
+		for (int ssn = 0; ssn < NSEASONS; ssn++) {
+			fec[ssn][1][0] *= envval;
+			if (env.stoch && !env.inK) {
+				// fecundity (at low density) is constrained to lie between limits specified
+				// for the species
+				float limit;
+				limit = pSpecies->getMinMax(0);
+				if (fec[ssn][1][0] < limit) fec[ssn][1][0] = limit;
+				limit = pSpecies->getMinMax(1);
+				if (fec[ssn][1][0] > limit) fec[ssn][1][0] = limit;
+			}
+			// apply density dependence
+			if (localK > 0.0) {
+				if (dem.repType == 1 || dem.repType == 2) { // sexual model
+					// apply factor of 2 (as in manual, eqn. 6)
+					fec[ssn][1][0] *= 2.0;
+				}
+				fec[ssn][1][0] /= (1.0f + fabs(dem.lambda - 1.0f) * pow(((float)ninds / localK), dem.bc));
+
+			}
+		}
+	}
+#else
 float fec[NSTAGES][NSEXES];
 for (int stg = 0; stg < sstruct.nStages; stg++) {
 	for (int sex = 0; sex < nsexes; sex++) {
@@ -526,6 +619,7 @@ for (int stg = 0; stg < sstruct.nStages; stg++) {
 		}
 
 	}
+#endif
 
 	double propBreed;
 	Individual* father;
@@ -554,7 +648,11 @@ for (int stg = 0; stg < sstruct.nStages; stg++) {
 				else { // attempt to breed
 					inds[i]->resetFallow();
 
+#if SEASONAL
+					expected = fec[season][stage][0];
+#else
 					expected = fec[stage][0];
+#endif
 
 					if (expected <= 0.0) njuvs = 0;
 					else njuvs = pRandom->Poisson(expected);
@@ -562,13 +660,6 @@ for (int stg = 0; stg < sstruct.nStages; stg++) {
 						nj = (int)juvs.size();
 						pCell = pPatch->getRandomCell();
 						for (int j = 0; j < njuvs; j++) {
-#if RSDEBUG
-						// NOTE: CURRENTLY SETTING ALL INDIVIDUALS TO RECORD NO. OF STEPS ...
-						juvs.push_back(new Individual(pCell, pPatch, 0, 0, 0, 0.0, true, trfr.moveType));
-#else
-						juvs.push_back(new Individual(pCell, pPatch, 0, 0, 0, 0.0, trfr.moveModel, trfr.moveType));
-#endif
-
 #if PARTMIGRN
 #if RSDEBUG
 							// NOTE: CURRENTLY SETTING ALL INDIVIDUALS TO RECORD NO. OF STEPS ...
@@ -605,12 +696,19 @@ for (int stg = 0; stg < sstruct.nStages; stg++) {
 		nfemales = nmales = 0;
 		for (int i = 0; i < ninds; i++) {
 			ind = inds[i]->getStats();
+#if SEASONAL
+			if (ind.sex == 0 && fec[season][ind.stage][0] > 0.0) nfemales++;
+			if (ind.sex == 1 && fec[season][ind.stage][1] > 0.0) {
+				fathers.push_back(inds[i]);
+				nmales++;
+			}
+#else
 			if (ind.sex == 0 && fec[ind.stage][0] > 0.0) nfemales++;
 			if (ind.sex == 1 && fec[ind.stage][1] > 0.0) {
 				fathers.push_back(inds[i]);
 				nmales++;
-
 			}
+#endif
 		}
 
 		if (nfemales > 0 && nmales > 0)
@@ -624,7 +722,11 @@ for (int stg = 0; stg < sstruct.nStages; stg++) {
 			else propBreed = 1.0;
 			for (int i = 0; i < ninds; i++) {
 				stage = inds[i]->breedingFem();
+#if SEASONAL
+				if (stage > 0 && fec[season][stage][0] > 0.0) {
+#else
 				if (stage > 0 && fec[stage][0] > 0.0) { // (potential) breeding female
+#endif
 					if (dem.stageStruct) {
 						// determine whether she must miss current breeding attempt
 						ind = inds[i]->getStats();
@@ -643,7 +745,11 @@ for (int stg = 0; stg < sstruct.nStages; stg++) {
 						// NOTE: FOR COMPLEX SEXUAL MODEL, NO. OF FEMALES *ACTUALLY* BREEDING DOES NOT
 						// NECESSARILY EQUAL THE EXPECTED NO. FROM EQN. 7 IN THE MANUAL...
 						if (pRandom->Bernoulli(propBreed)) {
+#if SEASONAL
+							expected = fec[season][stage][0]; // breeds
+#else
 							expected = fec[stage][0]; // breeds
+#endif
 						}
 						else expected = 0.0; // fails to breed
 						if (expected <= 0.0) njuvs = 0;
