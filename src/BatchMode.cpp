@@ -5021,8 +5021,15 @@ set<int> stringToChromosomeEnds(string str, const int& genomeSize) {
 
 set<int> selectRandomLociPositions(int nbLoci, const int& genomeSize) {
 	set<int> positions;
+	if (nbLoci > genomeSize) throw logic_error("Number of random loci exceeds genome size.");
+	int rndLocus;
 	for (int i = 0; i < nbLoci; ++i)
-		positions.insert(pRandom->IRandom(0, genomeSize));
+	{
+		do {
+			rndLocus = pRandom->IRandom(0, genomeSize);
+		} while (positions.contains(rndLocus));
+		positions.insert(rndLocus);
+	}
 	return positions;
 }
 
