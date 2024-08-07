@@ -46,12 +46,10 @@ g++ -o RangeShifter.exe ./src/*.cpp ./src/RScore/*.cpp -DRSDEBUG -DRSWIN64 -DLIN
 
 Building RangeShifter-batch with CMake can be done easily within Visual Studio. 
 This requires the CMake and C++ modules to be installed (please refer to the Visual Studio installer for this).
+
 Simply clone this repo, then open it in Visual Studio using the Open Folder option. 
 Visual Studio will then recognise the CMakeLists file and automatically configure the build.
-Once this is done, you should be able to select Rangeshifter.exe in the Startup Item panel:
-
-<img title="Running RangeShifter-batch in Visual Studio" src="https://github.com/RangeShifter/RangeShifter_batch_dev/blob/develop/doc/rs_in_vs.png" alt="" align="right" height="200">
-
+Once this is done, you should be able to select Rangeshifter.exe in the Startup Item panel ([Screenshot](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/develop/doc/rs_in_vs.png)).
 Hit the button to build and run RangeShifter. The executable should be built in a folder inside `out/build/`. 
 
 ## Running RangeShifter-batch
