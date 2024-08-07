@@ -63,7 +63,7 @@ struct batchfiles {
 #if SEASONAL
 	int nseasons;
 #else
-	int repseasons;
+	int repSeasons;
 #endif // SEASONAL  
 	int stagestruct, stages, transfer;
 	int sexesDem;		// no. of explicit sexes for demographic model

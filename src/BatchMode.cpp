@@ -68,7 +68,7 @@ int reproductn;
 #if SEASONAL
 int nseasons;
 #else
-int repseasons;
+int repSeasons;
 #endif // SEASONAL 
 int stagestruct, stages, transfer;
 int sexesDem;		// no. of explicit sexes for demographic model
@@ -300,12 +300,12 @@ batchfiles ParseControlFile(string ctrlfile, string indir, string outdir)
 		else b.nseasons = nseasons;
 	}
 #else
-	controlfile >> paramname >> repseasons;
+	controlfile >> paramname >> repSeasons;
 	if (paramname == "RepSeasons") {
-		if (repseasons < 1) {
+		if (repSeasons < 1) {
 			BatchError(filetype, -999, 11, "RepSeasons"); errors++;
 		}
-		else b.repseasons = repseasons;
+		else b.repSeasons = repSeasons;
 	}
 #endif
 	else controlFormatError = true; // wrong control file format
