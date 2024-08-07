@@ -19,7 +19,7 @@ In Batch Mode, RangeShifter can be run from the command line (e.g., `./rangeshif
 This allows the user to run large batches of simulations with different parameters, which would need to be specified individually in the GUI version.
 The Batch Mode also enables running RangeShifter on machines with a non-interactive interface, for example a high-performance cluster.
 
-## Building RangeShifter
+## Building RangeShifter-batch
 
 The compiled software can be found in the [Software and Documentation](https://github.com/RangeShifter/RangeShifter-software-and-documentation) repo. 
 
@@ -42,7 +42,19 @@ Alternatively, RangeShifter can also be built directly with the GNU C++ compiler
 g++ -o RangeShifter.exe ./src/*.cpp ./src/RScore/*.cpp -DRSDEBUG -DRSWIN64 -DLINUX_CLUSTER
 ```
 
-## Running RangeShifter
+### Building with Visual Studio (Windows)
+
+Building RangeShifter-batch with CMake can be done easily within Visual Studio. 
+This requires the CMake and C++ modules to be installed (please refer to the Visual Studio installer for this).
+Simply clone this repo, then open it in Visual Studio using the Open Folder option. 
+Visual Studio will then recognise the CMakeLists file and automatically configure the build.
+Once this is done, you should be able to select Rangeshifter.exe in the Startup Item panel:
+
+<img title="Running RangeShifter-batch in Visual Studio" src="https://github.com/RangeShifter/RangeShifter_batch_dev/blob/develop/doc/rs_in_vs.png" alt="" align="right" height="200">
+
+Hit the button to build and run RangeShifter. The executable should be built in a folder inside `out/build/`. 
+
+## Running RangeShifter-batch
 
 For instructions on how to setup the project directory and input files, please refer to section 3.3 of the [User Manual](https://raw.githubusercontent.com/RangeShifter/RangeShifter-software-and-documentation/master/RangeShifter_v2.0_UserManual.pdf), and to the [documentation repository](https://github.com/RangeShifter/RangeShifter-software-and-documentation) for examples.
 
