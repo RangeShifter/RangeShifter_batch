@@ -5026,7 +5026,7 @@ set<int> selectRandomLociPositions(int nbLoci, const int& genomeSize) {
 	for (int i = 0; i < nbLoci; ++i)
 	{
 		do {
-			rndLocus = pRandom->IRandom(0, genomeSize);
+			rndLocus = pRandom->IRandom(0, genomeSize - 1);
 		} while (positions.contains(rndLocus));
 		positions.insert(rndLocus);
 	}
