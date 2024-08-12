@@ -1,0 +1,2 @@
+Simulation	GenomeSize	ChromosomeEnds	RecombinationRate	OutputGeneValues	OutputNeutralStatistics	OutputPerLocusWCFstat	OutputPairwiseFst	OutputStartGenetics	OutputInterval	PatchList	NbrPatchesToSample	nIndividualsToSample	Stages	TraitsFile
+10	3	#	#	FALSE	TRUE	TRUE	TRUE	0	1	random	400	5	1	TraitsFile1.txt

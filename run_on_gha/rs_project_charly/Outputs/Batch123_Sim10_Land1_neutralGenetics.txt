@@ -1,0 +1,5 @@
+Rep	Year	RepSeason	nExtantPatches	nIndividuals	fst	fis	fit	meanAllelePerLocus	meanAllelePerLocusPatches	meanFixedLoci	meanFixedLociPatches	meanObHeterozygosity
+0	1	0	400	1998	0.0319458	0.484649	0.501112	3	2.93583	0	0	0.667334
+0	2	0	399	1995	0.0954376	0.457921	0.509655	3	2.85297	0	0.0125313	0.660317
+0	3	0	400	2000	0.100433	0.476033	0.528656	3	2.84833	0	0.005	0.635
+0	4	0	400	1997	0.120812	0.483559	0.545951	3	2.83333	0	0.0125	0.613086

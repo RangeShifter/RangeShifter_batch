@@ -1,0 +1,59 @@
+Checking Control file Inputs/CONTROL.txt
+
+Checking ParameterFile Inputs/ParameterFile.txt
+ParameterFile OK: total no. of simulations = 1
+
+Checking LandFile Inputs/LandFile.txt
+LandscapeFile headers OK: Inputs/initial_map.asc
+Checking DynLandFile Inputs/DynLandFile_Rep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.txt
+LandChangeFile headers OK: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandChangeFile headers OK: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+LandFile OK: total no. of landscapes = 1
+
+Checking StageStructFile Inputs/StageStructFile.txt
+Checking TransMatrixFile Inputs/TransMatrix.txt
+TransMatrixFile OK
+Checking SurvStageWtsFile Inputs/SurvivalStageWeights.txt
+SurvStageWtsFile OK
+StageStructFile OK: total no. of simulations = 1
+
+Checking EmigrationFile Inputs/EmigrationFile.txt
+EmigrationFile OK: total no. of simulations = 1
+
+Checking TransferFile Inputs/TransferFile.txt
+Checking dispersal kernel format file
+TransferFile OK: total no. of simulations = 1
+
+Checking SettlementFile Inputs/SettlementFile.txt
+SettlementFile OK: total no. of simulations = 1
+
+Checking GeneticsFile Inputs/GeneticsFile.txt
+Checking Traits file Inputs/TraitsFile1.txt
+Traits file OK
+GeneticsFile OK: total no. of simulations = 1
+
+Checking InitialisationFile Inputs/InitialisationFile.txt
+InitialisationFile OK: total no. of simulations = 1

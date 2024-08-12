@@ -1,0 +1,25 @@
+BatchNum	123
+PatchModel	0
+Resolution	100
+LandType	2
+MaxHabitats	1
+SpeciesDist	0
+DistResolution	100
+Reproduction	1
+RepSeasons	1
+StageStruct	1
+Stages	2
+Transfer	0
+ParameterFile	ParameterFile.txt
+LandFile	LandFile.txt
+StageStructFile	StageStructFile.txt
+EmigrationFile	EmigrationFile.txt
+TransferFile	TransferFile.txt
+SettlementFile	SettlementFile.txt
+GeneticsFile	GeneticsFile.txt
+InitialisationFile	InitialisationFile.txt
+
+ANY ADDITIONAL LINES ARE NOT READ, AND CAN THEREFORE BE USED FOR COMMENTS
+
+If multiple generations per year change RepSeasons > 1
+
