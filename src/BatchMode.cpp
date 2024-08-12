@@ -2922,12 +2922,6 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 				nbErrors++;
 			}
 		}
-		// Neutral traits without enabling output is an error
-		else if (!anyNeutralGenetics && tr == NEUTRAL) {
-			BatchError(whichInputFile, whichLine, 0, " ");
-			batchLog << "A neutral trait should not be specified if all neutral stats outputs are turned off in the genetics file." << endl;
-			nbErrors++;
-		}
 		else if (traitExists(tr, allReadTraits)) {
 			BatchError(whichInputFile, whichLine, 0, " ");
 			batchLog << "Trait " << tr << " is supplied multiple times." << endl;
