@@ -4853,6 +4853,8 @@ void setUpSpeciesTrait(vector<string> parameters) {
 		mutationParameters = stringToParameterMap(parameters[12]);
 	}
 
+	int ploidy = gNbSexesDisp;
+
 	// Create species trait
 	SpeciesTrait* trait = new SpeciesTrait(
 		traitType, sex, 
@@ -4861,7 +4863,7 @@ void setUpSpeciesTrait(vector<string> parameters) {
 		dominanceDist, dominanceParams, 
 		isInherited, mutationRate, 
 		mutationDistribution, mutationParameters,
-		pSpecies
+		ploidy
 	);
 	pSpecies->addTrait(traitType, *trait);
 }
