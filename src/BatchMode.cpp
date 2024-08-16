@@ -2825,7 +2825,7 @@ int CheckSettleFile(void)
 int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 {
 	string header, colheader;
-	int simNb;
+	int simNb, nextLineSimNb;
 	string filename, inTraitType, inSex, inInitDist, inInitParams,
 		inDominanceDist, inDominanceParams, inIsInherited, inMutationDist, 
 		inMutationParams, inPositions, inNbPositions, inExpressionType, inMutationRate;
@@ -2864,6 +2864,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 	simNb = simNbNotRead;
 	prev.simNb = -999;
 	prev.simLines = prev.reqdSimLines = 0;
+
 	bTraitsFile >> simNb;
 
 	bool stopReading = (simNb == simNbNotRead);
@@ -3233,13 +3234,34 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 			}
 		}
 
-		// read next simulation
-		whichLine++;
-		simNb = simNbNotRead;
-		bTraitsFile >> simNb;
-		if (simNb == simNbNotRead || bTraitsFile.eof())
+		// Preview next line
+		nextLineSimNb = simNbNotRead;
+		bTraitsFile >> nextLineSimNb;
+		if (nextLineSimNb == simNbNotRead // something went wrong
+			|| bTraitsFile.eof()) 
 			stopReading = true;
+		else if (nextLineSimNb != simNb) {
+			// about to change sim, conduct checks of all read traits
+			nbErrors += checkTraitSetCoherency(allReadTraits, anyNeutralGenetics);
+			allReadTraits.clear();
+			simNb = nextLineSimNb;
+		} // else continue reading traits for same sim
+		whichLine++; 
 	} // end of while loop
+
+	if (!bTraitsFile.eof()) {
+		EOFerror(whichInputFile);
+		nbErrors++;
+	}
+
+	if (nbErrors > 0) 
+		return -111;
+	else return 0;
+}
+
+int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const bool& anyNeutralGenetics) {
+	int nbErrors = 0;
+	const string whichInputFile = "TraitsFile";
 
 	// If genetic output is enabled, a neutral trait must exists
 	bool hasNeutral = traitExists(NEUTRAL, allReadTraits);
@@ -3251,7 +3273,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 
 	//// Check dispersal traits and sex-dependencies are complete 
 	// and consistent with parameters in dispersal input files
-	
+
 	// Emigration traits
 	bool hasD0 = traitExists(E_D0, allReadTraits) || traitExists(E_D0_F, allReadTraits) || traitExists(E_D0_M, allReadTraits);
 	bool hasEmigAlpha = (traitExists(E_ALPHA, allReadTraits) || traitExists(E_ALPHA_F, allReadTraits) || traitExists(E_ALPHA_M, allReadTraits));
@@ -3271,7 +3293,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 			BatchError(whichInputFile, -999, 0, " ");
 			batchLog << "EP or d0 is missing." << endl;
 			nbErrors++;
-		} 
+		}
 		if (gDispTraitOpt.isEmigSexDep) {
 			if (anyEmigNeitherSex) {
 				BatchError(whichInputFile, -999, 0, " ");
@@ -3283,7 +3305,8 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 				batchLog << "Either sex is missing for D0 trait." << endl;
 				nbErrors++;
 			}
-		} else if (anyEmigSexDep) {
+		}
+		else if (anyEmigSexDep) {
 			BatchError(whichInputFile, -999, 0, " ");
 			batchLog << "Emigration SexDep is off but a trait has been supplied with a sex." << endl;
 			nbErrors++;
@@ -3337,7 +3360,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 	bool hasKern1 = traitExists(KERNEL_MEANDIST_1, allReadTraits) || traitExists(KERNEL_MEANDIST_1_F, allReadTraits) || traitExists(KERNEL_MEANDIST_1_M, allReadTraits);
 	bool hasKern2 = traitExists(KERNEL_MEANDIST_2, allReadTraits) || traitExists(KERNEL_MEANDIST_2_F, allReadTraits) || traitExists(KERNEL_MEANDIST_2_M, allReadTraits);
 	bool hasKernProb = traitExists(KERNEL_PROBABILITY, allReadTraits) || traitExists(KERNEL_PROBABILITY_F, allReadTraits) || traitExists(KERNEL_PROBABILITY_M, allReadTraits);
-	
+
 	bool anyKernelNeitherSex = traitExists(KERNEL_MEANDIST_1, allReadTraits) || traitExists(KERNEL_MEANDIST_2, allReadTraits) || traitExists(KERNEL_PROBABILITY, allReadTraits);
 	bool eitherSexMeanDist1 = traitExists(KERNEL_MEANDIST_1_F, allReadTraits) || traitExists(KERNEL_MEANDIST_1_M, allReadTraits);
 	bool bothSexesMeanDist1 = traitExists(KERNEL_MEANDIST_1_F, allReadTraits) && traitExists(KERNEL_MEANDIST_1_M, allReadTraits);
@@ -3552,22 +3575,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		batchLog << "Specified settlement trait, but settlement not set to be variable." << endl;
 		nbErrors++;
 	}
-
-	// check for correct number of lines for previous simulation
-	if (!(current.simLines >= current.reqdSimLines)) {
-		BatchError(whichInputFile, whichLine, 0, " "); nbErrors++;
-		batchLog << gNbLinesStr << current.simNb
-			<< gShouldBeStr << current.reqdSimLines << endl;
-	}
-	if (!bTraitsFile.eof()) {
-		EOFerror(whichInputFile);
-		nbErrors++;
-	}
-
-	if (nbErrors > 0) 
-		return -111;
-	else 
-		return nbSims;
+	return nbErrors;
 }
 
 bool traitExists(const TraitType& tr, const vector<TraitType>& existingTraits) {
