@@ -2841,7 +2841,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 	int simNb, nextLineSimNb;
 	string filename, inTraitType, inSex, inInitDist, inInitParams,
 		inDominanceDist, inDominanceParams, inIsInherited, inMutationDist, 
-		inMutationParams, inPositions, inNbPositions, inExpressionType, inMutationRate;
+		inMutationParams, inPositions, inNbPositions, inExpressionType, inMutationRate, inIsOutput;
 	int nbErrors = 0;
 	int nbSims = 0;
 	int nbGenLoadTraits = 0;
@@ -2864,6 +2864,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 	bTraitsFile >> header; if (header != "MutationDistribution") nbErrors++;
 	bTraitsFile >> header; if (header != "MutationParameters") nbErrors++;
 	bTraitsFile >> header; if (header != "MutationRate") nbErrors++;
+	bTraitsFile >> header; if (header != "OutputValues") nbErrors++;
 
 	if (nbErrors > 0) {
 		FormatError(whichInputFile, nbErrors);
@@ -2890,7 +2891,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 		bTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions >> inExpressionType >> inInitDist >> inInitParams
 			>> inDominanceDist >> inDominanceParams >> inIsInherited >> inMutationDist >> inMutationParams
-			>> inMutationRate;
+			>> inMutationRate >> inIsOutput;
 
 		current = CheckStageSex(whichInputFile, lineNb, simNb, prev, 0, 0, 0, 0, 0, true, false);
 		if (current.isNewSim) nbSims++;
@@ -3136,7 +3137,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		else if (isDisp) {
 			if (inIsInherited != "TRUE" && inIsInherited != "FALSE") {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "IsInherited must be either TRUE or FALSEfor dispersal traits." << endl;
+				batchLog << "IsInherited must be either TRUE or FALSE for dispersal traits." << endl;
 				nbErrors++;
 			}
 		}
@@ -3245,6 +3246,12 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 				batchLog << "For genetic load traits, mutationDistribution must be either uniform, gamma, negExp or normal" << endl;
 				nbErrors++;
 			}
+		}
+
+		if (inIsOutput != "TRUE" && inIsOutput != "FALSE") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "OutputValues must be either TRUE or FALSE." << endl;
+			nbErrors++;
 		}
 
 		// Preview next line
@@ -4868,6 +4875,7 @@ void setUpSpeciesTrait(vector<string> parameters) {
 	}
 
 	int ploidy = gNbSexesDisp;
+	const bool isOutput = parameters[14] == "TRUE";
 
 	// Create species trait
 	SpeciesTrait* trait = new SpeciesTrait(
@@ -4877,7 +4885,8 @@ void setUpSpeciesTrait(vector<string> parameters) {
 		dominanceDist, dominanceParams, 
 		isInherited, mutationRate, 
 		mutationDistribution, mutationParameters,
-		ploidy
+		ploidy,
+		isOutput
 	);
 	pSpecies->addTrait(traitType, *trait);
 }
