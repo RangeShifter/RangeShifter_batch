@@ -4846,6 +4846,9 @@ int ReadTraitsFile(ifstream& ifs, const int& whichSim) {
 			setUpSpeciesTrait(parameters);
 		}
 	}
+	else {
+		throw runtime_error("TraitsFile is not open.");
+	}
 	return 0;
 }
 
