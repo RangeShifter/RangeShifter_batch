@@ -1306,7 +1306,6 @@ int CheckLandFile(int landtype, string indir)
 			// read first field on next line
 			inint = -98765;
 			bLandFile >> inint;
-			//		batchlog << "ParseLandFile(): first item of next line = " << inint << endl;
 		} // end of while loop
 		landlist.clear();
 	} // end of real landscape
@@ -1339,8 +1338,6 @@ int CheckLandFile(int landtype, string indir)
 						BatchError(filetype, line, 666, "LandNum"); j = (int)landlist.size() + 1; errors++;
 					}
 				}
-				//		batchlog << "ParseLandFile(): Adding landscape no. " << inint
-				//			<< " to landscape list" << endl;
 				landlist.push_back(inint);
 				bLandFile >> fractal;
 				if (fractal < 0 || fractal > 1) {
@@ -4750,7 +4747,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 
 void flushHeader(ifstream& ifs) {
 	string headerLine;
-	// Pass the first line (headers) to an e;pty string...
+	// Pass the first line (headers) to an empty string...
 	std::getline(ifs, headerLine);
 	// ... and do nothing with it 
 }
@@ -4809,7 +4806,15 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 			patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
 		paramsSim->setGeneticSim(patchSamplingOption, outputGeneValues, outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputStartGenetics, outputGeneticInterval);
 
-		gPathToTraitsFile = indir + parameters[14];
+		string strTraitsFile = parameters[14];
+		// Line breaks and carriage returns may cause issues on some unix systems
+		strTraitsFile.erase(std::remove(strTraitsFile.begin(), strTraitsFile.end(), '\n'), strTraitsFile.cend());
+		strTraitsFile.erase(std::remove(strTraitsFile.begin(), strTraitsFile.end(), '\r'), strTraitsFile.cend());
+
+		gPathToTraitsFile = indir +strTraitsFile;
+	}
+	else {
+		throw runtime_error("GeneticsFile is not open.");
 	}
 	return 0;
 }
