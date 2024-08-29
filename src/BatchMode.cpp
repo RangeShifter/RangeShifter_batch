@@ -3706,7 +3706,6 @@ int CheckGeneticsFile(string inputDirectory) {
 		nbErrors++;
 	}
 	while (simNb != -98765) {
-		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutputNeutralStatistics >>
 			inOutputPerLocusWCFstat >> inOutputPairwiseFst >> inOutStartGenetics >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
 			>> inNIndsToSample >> inStages;
@@ -3735,7 +3734,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 
 		// Check RecombinationRate
-		if (gNbSexesDisp && inRecombinationRate != "#") {
+		if (gNbSexesDisp == 1 && inRecombinationRate != "#") {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLog << "Do not specify a recombination rate for haploid/asexual systems." << endl;
 			nbErrors++;
