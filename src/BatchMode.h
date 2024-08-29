@@ -73,6 +73,7 @@ struct batchfiles {
 	string transferFile;
 	string settleFile;
 	string geneticsFile;
+	string traitsFile;
 	string initFile;
 };
 
@@ -96,7 +97,7 @@ struct DispersalTraitInputOptions {
 
 bool traitExists(const TraitType& tr, const vector<TraitType>& existingTraits);
 TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex);
-int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const bool& anyNeutralGenetics);
+int checkTraitSetCoherency(const vector <TraitType>& allReadTraits);
 
 constexpr int gEmptyVal = -9;
 constexpr int nHeadersEmig = 13;
@@ -120,6 +121,8 @@ int CheckSettleFile(void);
 int CheckInitFile(string);
 int CheckInitIndsFile(void);
 simCheck CheckStageSex(string, int, int, simCheck, int, int, int, int, int, bool, bool);
+int CheckGeneticsFile(string inputDirectory);
+int CheckTraitsFile(string indir);
 
 void BatchError(
 	string,	// file name

@@ -68,7 +68,7 @@ string parameterFile;
 string landFile;
 string name_landscape, name_patch, name_dynland, name_sp_dist, gNameCostFile;
 string stageStructFile, transMatrix;
-string emigrationFile, transferFile, settleFile, geneticsFile, gPathToTraitsFile, initialFile;
+string emigrationFile, transferFile, settleFile, geneticsFile, traitsFile, initialFile;
 string prevInitialIndsFile = " ";
 
 const string gNbLinesStr = "No. of lines for final Simulation ";
@@ -330,7 +330,7 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 			}
 			else {
 				FileOK(paramname, b.nSimuls, 0);
-				b.parameterFile = fname;
+				parameterFile = fname;
 			}
 			bParamFile.close();
 		}
@@ -343,9 +343,11 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 			batchLog << endl
 				<< "*** ParameterFile must be corrected before further input file checks are conducted"
 				<< endl;
-			batchLog.close(); batchLog.clear();
+			batchLog.close(); 
+			batchLog.clear();
 			b.ok = false;
-			controlFile.close(); controlFile.clear();
+			controlFile.close(); 
+			controlFile.clear();
 			return b;
 		}
 	}
@@ -368,7 +370,8 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 			}
 			else {
 				FileOK(paramname, lines, 1);
-				b.landFile = fname; b.nLandscapes = lines;
+				landFile = fname; 
+				b.nLandscapes = lines;
 			}
 			bLandFile.close();
 		}
@@ -405,7 +408,7 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 						if (nSimuls != b.nSimuls) {
 							SimulnCountError(filename); b.ok = false;
 						}
-						else b.stageStructFile = fname;
+						else stageStructFile = fname;
 					}
 					bStageStructFile.close();
 				}
@@ -442,7 +445,7 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 					SimulnCountError(filename); 
 					b.ok = false;
 				}
-				else b.emigrationFile = fname;
+				else emigrationFile = fname;
 			}
 			bEmigrationFile.close();
 		}
@@ -470,7 +473,7 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 				if (nSimuls != b.nSimuls) {
 					SimulnCountError(filename); b.ok = false;
 				}
-				else b.transferFile = fname;
+				else transferFile = fname;
 			}
 			bTransferFile.close(); bTransferFile.clear();
 		}
@@ -498,7 +501,7 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 					SimulnCountError(filename); 
 					b.ok = false;
 				}
-				else b.settleFile = fname;
+				else settleFile = fname;
 			}
 			bSettlementFile.close();
 		}
@@ -521,7 +524,7 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 				|| gDispTraitOpt.isSMSTransfIndVar
 				)
 			{
-				batchLog << "Error: one or more dispersal traits has been set to IndVar." << endl;
+				batchLog << "Error: GeneticsFile is NULL but one or more dispersal traits has been set to IndVar." << endl;
 				b.ok = false;
 			}
 			else {
@@ -541,17 +544,54 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 				}
 				else {
 					FileOK(paramname, nSimuls, 0);
-					b.geneticsFile = fname;
+					geneticsFile = fname;
 				}
 				bGeneticsFile.close();
 			}
 			else {
-				OpenError(paramname, fname); b.ok = false;
+				OpenError(paramname, fname); 
+				b.ok = false;
 			}
 			bGeneticsFile.clear();
 		}
 	}
 	else anyFormatError = true; // wrong control file format
+
+	// Check TraitsFile
+	controlFile >> paramname >> filename;
+	batchLog << endl;
+
+	if (paramname == "TraitsFile" && !anyFormatError) {
+		if (filename == "NULL") {
+			if (gHasGenetics)
+			{
+				batchLog << "Error: Genetics are enabled but no TraitsFile is provided." << endl;
+				b.ok = false;
+			}
+		}
+		else {
+			fname = indir + filename;
+			batchLog << "Checking " << paramname << " " << fname << endl;
+			bTraitsFile.open(fname.c_str());
+			if (bTraitsFile.is_open()) {
+				nSimuls = CheckTraitsFile(indir);
+				if (nSimuls < 0) {
+					b.ok = false;
+				}
+				else {
+					FileOK(paramname, nSimuls, 0);
+					traitsFile = fname;
+				}
+				bTraitsFile.close();
+			}
+			else {
+				OpenError(paramname, filename);
+				b.ok = false;
+			}
+			if (bTraitsFile.is_open()) bTraitsFile.close();
+			bTraitsFile.clear();
+		}
+	}
 
 	// Check initialisation file
 	controlFile >> paramname >> filename;
@@ -569,7 +609,7 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 				if (nSimuls != b.nSimuls) {
 					SimulnCountError(filename); b.ok = false;
 				}
-				else b.initFile = fname;
+				else initialFile = fname;
 			}
 			bInitFile.close();
 		}
@@ -587,16 +627,6 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 
 	if (controlFile.is_open()) { controlFile.close(); controlFile.clear(); }
 	if (batchLog.is_open()) { batchLog.close(); batchLog.clear(); }
-
-	// NOTE: THE FOLLOWING ELEMENTS COULD BE REMOVED FROM b ...
-	parameterFile = b.parameterFile;
-	landFile = b.landFile;
-	stageStructFile = b.stageStructFile;
-	emigrationFile = b.emigrationFile;
-	transferFile = b.transferFile;
-	settleFile = b.settleFile;
-	geneticsFile = b.geneticsFile;
-	initialFile = b.initFile;
 
 	return b;
 }
@@ -2832,7 +2862,7 @@ int CheckSettleFile(void)
 }
 
 //---------------------------------------------------------------------------
-int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
+int CheckTraitsFile(string indir)
 {
 	string header, colheader;
 	int simNb, nextLineSimNb;
@@ -2884,7 +2914,9 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		BatchError(whichInputFile, lineNb, 111, "Simulation"); 
 		nbErrors++;
 	}
+	int nbRowsToRead = 0;
 	while (!stopReading) {
+
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 		bTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions >> inExpressionType >> inInitDist >> inInitParams
 			>> inDominanceDist >> inDominanceParams >> inIsInherited >> inMutationDist >> inMutationParams
@@ -2894,6 +2926,7 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		if (current.isNewSim) nbSims++;
 		nbErrors += current.errors;
 		prev = current;
+		nbRowsToRead++;
 
 		////  Validate parameters
 
@@ -3255,15 +3288,17 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 		nextLineSimNb = simNbNotRead;
 		bTraitsFile >> nextLineSimNb;
 		if (nextLineSimNb == simNbNotRead
+			// Exit loop
 			|| bTraitsFile.eof()) {
 			stopReading = true;
-			gNbTraitFileRows.push_back(lineNb);
+			gNbTraitFileRows.push_back(nbRowsToRead);
 		}
 		else if (nextLineSimNb != simNb) {
-			// about to change sim, conduct checks of all read traits
-			nbErrors += checkTraitSetCoherency(allReadTraits, anyNeutralGenetics);
+			// About to change sim, conduct checks of all read traits
+			nbErrors += checkTraitSetCoherency(allReadTraits);
 			// Store nb of rows to help reading file later on
-			gNbTraitFileRows.push_back(lineNb);
+			gNbTraitFileRows.push_back(nbRowsToRead);
+			nbRowsToRead = 0; // reset for next sim
 			allReadTraits.clear();
 			simNb = nextLineSimNb;
 		} // else continue reading traits for same sim
@@ -3280,17 +3315,9 @@ int CheckTraitsFile(string indir, const bool& anyNeutralGenetics)
 	else return 0;
 }
 
-int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const bool& anyNeutralGenetics) {
+int checkTraitSetCoherency(const vector <TraitType>& allReadTraits) {
 	int nbErrors = 0;
 	const string whichInputFile = "TraitsFile";
-
-	// If genetic output is enabled, a neutral trait must exists
-	bool hasNeutral = traitExists(NEUTRAL, allReadTraits);
-	if (anyNeutralGenetics && !hasNeutral) {
-		BatchError(whichInputFile, -999, 0, " ");
-		batchLog << "A neutral stats output option is turned on in genetics file but no neutral trait is specified in traits file." << endl;
-		nbErrors++;
-	}
 
 	//// Check dispersal traits and sex-dependencies are complete 
 	// and consistent with parameters in dispersal input files
@@ -3635,7 +3662,7 @@ TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex) {
 
 int CheckGeneticsFile(string inputDirectory) {
 
-	string header, traitFileName, traitFileStr;
+	string header;
 	int simNb, prevSimNb, errCode;
 	string inChromosomeEnds, inRecombinationRate, inTraitsFile, inPatchList, inStages,
 		inOutGeneValues, inOutputNeutralStatistics, inOutputPerLocusWCFstat, inOutputPairwiseFst,
@@ -3663,7 +3690,6 @@ int CheckGeneticsFile(string inputDirectory) {
 	bGeneticsFile >> header; if (header != "NbrPatchesToSample") nbErrors++;
 	bGeneticsFile >> header; if (header != "nIndividualsToSample") nbErrors++;
 	bGeneticsFile >> header; if (header != "Stages") nbErrors++;
-	bGeneticsFile >> header; if (header != "TraitsFile") nbErrors++;
 
 	if (nbErrors > 0) {
 		FormatError(whichFile, nbErrors);
@@ -3683,7 +3709,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutputNeutralStatistics >>
 			inOutputPerLocusWCFstat >> inOutputPairwiseFst >> inOutStartGenetics >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
-			>> inNIndsToSample >> inStages >> inTraitsFile;
+			>> inNIndsToSample >> inStages;
 
 		//// Validate parameters
 		
@@ -3744,10 +3770,10 @@ int CheckGeneticsFile(string inputDirectory) {
 			nbErrors++;
 		}
 
-		bool anyNeutralGenetics = inOutputNeutralStatistics == "TRUE"
+		bool anyGeneticsOutput = inOutGeneValues == "TRUE" 
+			|| inOutputNeutralStatistics == "TRUE"
 			|| inOutputPerLocusWCFstat == "TRUE"
 			|| inOutputPairwiseFst == "TRUE";
-		bool anyGeneticsOutput = inOutGeneValues == "TRUE" || anyNeutralGenetics;
 
 		if (anyGeneticsOutput) {
 			if (inOutStartGenetics == "#") {
@@ -3873,32 +3899,6 @@ int CheckGeneticsFile(string inputDirectory) {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLog << "Stages must be blank (#) if all genetic output options are FALSE." << endl;
 			nbErrors++;
-		}
-
-		// Check TraitsFile
-		if (inTraitsFile == "NULL") {
-			batchLog << "*** " << inTraitsFile << " is compulsory for genetic models" << endl;
-			nbErrors++;
-		}
-		else {
-			traitFileName = inputDirectory + inTraitsFile;
-			traitFileStr = "Traits file";
-			batchLog << "Checking " << traitFileStr << " " << traitFileName << endl;
-			bTraitsFile.open(traitFileName.c_str());
-			if (bTraitsFile.is_open()) {
-				errCode = CheckTraitsFile(inputDirectory, anyNeutralGenetics);
-				if (errCode >= 0) 
-					FileHeadersOK(traitFileStr); 
-				else 
-					nbErrors++;
-				bTraitsFile.close();
-			}
-			else {
-				OpenError(traitFileStr, traitFileName); 
-				nbErrors++;
-			}
-			if (bTraitsFile.is_open()) bTraitsFile.close();
-			bTraitsFile.clear();
 		}
 
 		// read next simulation
@@ -4805,13 +4805,6 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate,
 			patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
 		paramsSim->setGeneticSim(patchSamplingOption, outputGeneValues, outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputStartGenetics, outputGeneticInterval);
-
-		string strTraitsFile = parameters[14];
-		// Line breaks and carriage returns may cause issues on some unix systems
-		strTraitsFile.erase(std::remove(strTraitsFile.begin(), strTraitsFile.end(), '\n'), strTraitsFile.cend());
-		strTraitsFile.erase(std::remove(strTraitsFile.begin(), strTraitsFile.end(), '\r'), strTraitsFile.cend());
-
-		gPathToTraitsFile = indir +strTraitsFile;
 	}
 	else {
 		throw runtime_error("GeneticsFile is not open.");
@@ -4819,11 +4812,10 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 	return 0;
 }
 
-int ReadTraitsFile(ifstream& ifs, const int& whichSim) {
+int ReadTraitsFile(ifstream& ifs, const int& nbRowsToRead) {
 
 	pSpecies->clearTraitTable();
-	int prevsimNb = -998, simNb;
-	int nbRowsToRead = gNbTraitFileRows[whichSim];
+	int prevsimNb = -998;
 
 	if (ifs.is_open()) {
 		//read first header line
@@ -6468,14 +6460,8 @@ void RunBatch(int nSimuls, int nLandscapes)
 			else cname = paramsSim->getDir(1) + gNameCostFile;
 			if (paramsLand.patchModel) {
 				string pname = paramsSim->getDir(1) + name_patch;
-#if RSDEBUG
-				time_t t02a = time(0);
-#endif
+
 				landcode = pLandscape->readLandscape(0, hname, pname, cname);
-#if RSDEBUG
-				time_t t02b = time(0);
-				DEBUGLOG << "RunBatch(): TIME for readLandscape() " << t02b - t02a << endl;
-#endif
 			}
 			else {
 				landcode = pLandscape->readLandscape(0, hname, " ", cname);
@@ -6486,14 +6472,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 				landOK = false;
 			}
 			if (paramsLand.dynamic) {
-#if RSDEBUG
-				time_t t03a = time(0);
-#endif
 				landcode = ReadDynLandFile(pLandscape);
-#if RSDEBUG
-				time_t t03b = time(0);
-				DEBUGLOG << "RunBatch(): TIME for ReadDynLandFile() " << t03b - t03a << endl;
-#endif
 				if (landcode != 0) {
 					rsLog << "Landscape," << land_nr << ",ERROR,CODE," << landcode << endl;
 					cout << endl << "Error reading landscape " << land_nr << " - aborting" << endl;
@@ -6546,6 +6525,8 @@ void RunBatch(int nSimuls, int nLandscapes)
 			if (gHasGenetics) {
 				ifsGenetics.open(geneticsFile.c_str());
 				flushHeader(ifsGenetics);
+				ifsTraits.open(traitsFile.c_str());
+				flushHeader(ifsTraits);
 			}
 
 			// nSimuls is the total number of lines (simulations) in
@@ -6594,13 +6575,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 						rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 						params_ok = false;
 					}
-
-					if (!ifsTraits.is_open()) {
-						// First simulation
-						ifsTraits.open(gPathToTraitsFile.c_str());
-						flushHeader(ifsTraits);
-					}
-					read_error = ReadTraitsFile(ifsTraits, i);
+					read_error = ReadTraitsFile(ifsTraits, gNbTraitFileRows[i]);
 					if (read_error) {
 						rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 						params_ok = false;
