@@ -17,6 +17,7 @@ EmigrationFile	EmigrationFile_name.txt
 TransferFile	TransferFile_name.txt
 SettlementFile	SettlementFile_name.txt
 GeneticsFile	GeneticsFile_name.txt
+TraitsFile	TraitsFile_name.txt
 InitialisationFile	InitialisationFile_name.txt
 
 ANY ADDITIONAL LINES ARE NOT READ, AND CAN THEREFORE BE USED FOR COMMENTS
