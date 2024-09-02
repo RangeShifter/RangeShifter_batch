@@ -3665,7 +3665,7 @@ int CheckGeneticsFile(string inputDirectory) {
 	string header;
 	int simNb, prevSimNb, errCode;
 	string inChromosomeEnds, inRecombinationRate, inTraitsFile, inPatchList, inStages,
-		inOutGeneValues, inOutputNeutralStatistics, inOutputPerLocusWCFstat, inOutputPairwiseFst,
+		inOutGeneValues, inOutWeirCockerham, inOutWeirHill,
 		inOutStartGenetics, inOutputInterval, inNbrPatchesToSample, inNIndsToSample;
 	int inGenomeSize;
 	int nbErrors = 0;
@@ -3681,9 +3681,8 @@ int CheckGeneticsFile(string inputDirectory) {
 	bGeneticsFile >> header; if (header != "ChromosomeEnds") nbErrors++;
 	bGeneticsFile >> header; if (header != "RecombinationRate") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputGeneValues") nbErrors++;
-	bGeneticsFile >> header; if (header != "OutputNeutralStatistics") nbErrors++;
-	bGeneticsFile >> header; if (header != "OutputPerLocusWCFstat") nbErrors++;
-	bGeneticsFile >> header; if (header != "OutputPairwiseFst") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputFstatsWeirCockerham") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputFstatsWeirHill") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputStartGenetics") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputInterval") nbErrors++;
 	bGeneticsFile >> header; if (header != "PatchList") nbErrors++;
@@ -3706,8 +3705,8 @@ int CheckGeneticsFile(string inputDirectory) {
 		nbErrors++;
 	}
 	while (simNb != -98765) {
-		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutputNeutralStatistics >>
-			inOutputPerLocusWCFstat >> inOutputPairwiseFst >> inOutStartGenetics >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
+		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutWeirCockerham >>
+			inOutWeirHill >> inOutStartGenetics >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
 			>> inNIndsToSample >> inStages;
 
 		//// Validate parameters
@@ -3753,26 +3752,20 @@ int CheckGeneticsFile(string inputDirectory) {
 			batchLog << "OutGeneValues must be either TRUE or FALSE" << endl;
 			nbErrors++;
 		}
-		if (inOutputNeutralStatistics != "TRUE" && inOutputNeutralStatistics != "FALSE") {
+		if (inOutWeirCockerham != "TRUE" && inOutWeirCockerham != "FALSE") {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "OutputNeutralStatistics must be either TRUE or FALSE" << endl;
+			batchLog << "OutputFstatsWeirCockerham must be either TRUE or FALSE" << endl;
 			nbErrors++;
 		}
-		if (inOutputPerLocusWCFstat != "TRUE" && inOutputPerLocusWCFstat != "FALSE") {
+		if (inOutWeirHill != "TRUE" && inOutWeirHill != "FALSE") {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "OutputPerLocusWCFstat must be either TRUE or FALSE" << endl;
-			nbErrors++;
-		}
-		if (inOutputPairwiseFst != "TRUE" && inOutputPairwiseFst != "FALSE") {
-			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "OutputPairwiseFst must be either TRUE or FALSE" << endl;
+			batchLog << "OutputFstatsWeirHill must be either TRUE or FALSE" << endl;
 			nbErrors++;
 		}
 
 		bool anyGeneticsOutput = inOutGeneValues == "TRUE" 
-			|| inOutputNeutralStatistics == "TRUE"
-			|| inOutputPerLocusWCFstat == "TRUE"
-			|| inOutputPairwiseFst == "TRUE";
+			|| inOutWeirCockerham == "TRUE"
+			|| inOutWeirHill == "TRUE";
 
 		if (anyGeneticsOutput) {
 			if (inOutStartGenetics == "#") {
@@ -4754,7 +4747,7 @@ void flushHeader(ifstream& ifs) {
 int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 
 	string indir = paramsSim->getDir(1);
-	bool outputGeneValues, outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst;
+	bool outputGeneValues, outputWeirCockerham, outputWeirHill;
 	int outputStartGenetics, outputGeneticInterval;
 	set<int> patchList;
 
@@ -4778,15 +4771,14 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		set<int> chrEnds = stringToChromosomeEnds(parameters[2], genomeSize);
 		float recombinationRate = parameters[3] == "#" ? 0.0 : stof(parameters[3]);
 		outputGeneValues = (parameters[4] == "TRUE");
-		outputWCFstat = (parameters[5] == "TRUE");
-		outputPerLocusWCFstat = (parameters[6] == "TRUE");
-		outputPairwiseFst = (parameters[7] == "TRUE");
-		outputStartGenetics = stoi(parameters[8]);
-		outputGeneticInterval = stoi(parameters[9]);
+		outputWeirCockerham = (parameters[5] == "TRUE");
+		outputWeirHill = (parameters[6] == "TRUE");
+		outputStartGenetics = stoi(parameters[7]);
+		outputGeneticInterval = stoi(parameters[8]);
 
-		string inPatches = parameters[10];
+		string inPatches = parameters[9];
 		string patchSamplingOption;
-		int nPatchesToSample = stoi(parameters[11]);
+		int nPatchesToSample = stoi(parameters[10]);
 		if (inPatches != "all" && inPatches != "random" && inPatches != "random_occupied") {
 			// then must be a list of indices
 			patchSamplingOption = "list";
@@ -4797,13 +4789,13 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 			patchSamplingOption = inPatches;
 			// patchList remains empty, filled when patches are sampled every gen
 		}
-		const string strNbInds = parameters[12];
+		const string strNbInds = parameters[11];
 		const int nbStages = pSpecies->getStageParams().nStages;
-		set<int> stagesToSampleFrom = stringToStages(parameters[13], nbStages);
+		set<int> stagesToSampleFrom = stringToStages(parameters[12], nbStages);
 
 		pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate,
 			patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
-		paramsSim->setGeneticSim(patchSamplingOption, outputGeneValues, outputWCFstat, outputPerLocusWCFstat, outputPairwiseFst, outputStartGenetics, outputGeneticInterval);
+		paramsSim->setGeneticSim(patchSamplingOption, outputGeneValues, outputWeirCockerham, outputWeirHill, outputStartGenetics, outputGeneticInterval);
 	}
 	else {
 		throw runtime_error("GeneticsFile is not open.");
