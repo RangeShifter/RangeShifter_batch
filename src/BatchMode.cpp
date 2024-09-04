@@ -3725,7 +3725,8 @@ int CheckGeneticsFile(string inputDirectory) {
 			float recombinationRate = stof(inRecombinationRate);
 			if (recombinationRate < 0.0 || recombinationRate > 0.5) {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "RecombinationRate must be positive cannot exceed 0.5." << endl;
+				batchLog << "RecombinationRate must be positive and not exceed 0.5." << endl;
+				nbErrors++;
 			}
 		}
 
@@ -4761,18 +4762,18 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 
 		string inPatches = parameters[9];
 		string patchSamplingOption;
-		int nPatchesToSample;
+		int nPatchesToSample = 0;
 		if (inPatches != "all" && inPatches != "random" && inPatches != "random_occupied") {
 			// then must be a list of indices
 			patchSamplingOption = "list";
 			patchList = stringToPatches(inPatches);
 			if (patchList.contains(0)) throw logic_error("Patch sampling: ID 0 is reserved for the matrix and should not be sampled.");
-			nPatchesToSample = 0;
 		}
 		else {
 			patchSamplingOption = inPatches;
+			if (inPatches == "random" || inPatches == "random_occupied")
+				nPatchesToSample = stoi(parameters[10]);
 			// patchList remains empty, filled when patches are sampled every gen
-			nPatchesToSample = stoi(parameters[10]);
 		}
 		const string strNbInds = parameters[11];
 		const int nbStages = pSpecies->getStageParams().nStages;
