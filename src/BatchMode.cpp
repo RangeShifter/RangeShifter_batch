@@ -2524,15 +2524,6 @@ int CheckTransferFile(string indir)
 			else {
 				gDispTraitOpt.usesSMSGoalBias = (inGoalType == 2);
 			}
-
-			if (!inIndVar && inGoalType == 2) { // dispersal bias
-				if (inAlphaDispBias <= 0.0) {
-					BatchError(whichFile, whichLine, 10, "AlphaDB"); errors++;
-				}
-				if (inBetaDispBias <= 0.0) {
-					BatchError(whichFile, whichLine, 10, "BetaDB"); errors++;
-				}
-			}
 			bTransferFile >> inStraightenPath >> inSMType >> inSMConst;
 			if (inStraightenPath != 0 && inStraightenPath != 1) {
 				BatchError(whichFile, whichLine, 1, "StraightenPath"); errors++;
