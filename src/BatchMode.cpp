@@ -2233,14 +2233,6 @@ int CheckEmigFile(void)
 				BatchError(whichInputFile, lineNb, 20, "D0"); 
 				nbErrors++;
 			}
-			// if (inAlpha < 0.0) {
-			//	BatchError(whichInputFile, lineNb, 10, "alpha");
-			//	nbErrors++;
-			// }
-			if (inBeta < 0.0) {
-				BatchError(whichInputFile, lineNb, 10, "beta");
-				nbErrors++;
-			}
 		}
 		else { // !densdepset
 			if (inEP < 0.0 || inEP > 1.0) {
