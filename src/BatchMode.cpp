@@ -4761,16 +4761,18 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 
 		string inPatches = parameters[9];
 		string patchSamplingOption;
-		int nPatchesToSample = stoi(parameters[10]);
+		int nPatchesToSample;
 		if (inPatches != "all" && inPatches != "random" && inPatches != "random_occupied") {
 			// then must be a list of indices
 			patchSamplingOption = "list";
 			patchList = stringToPatches(inPatches);
 			if (patchList.contains(0)) throw logic_error("Patch sampling: ID 0 is reserved for the matrix and should not be sampled.");
+			nPatchesToSample = 0;
 		}
 		else {
 			patchSamplingOption = inPatches;
 			// patchList remains empty, filled when patches are sampled every gen
+			nPatchesToSample = stoi(parameters[10]);
 		}
 		const string strNbInds = parameters[11];
 		const int nbStages = pSpecies->getStageParams().nStages;
@@ -4958,6 +4960,7 @@ set<int> stringToPatches(const string& str) {
 	int pch;
 	// Read comma-separated values
 	while (std::getline(ss, strPch, ',')) {
+		strPch.erase(remove(strPch.begin(), strPch.end(), '\"'), strPch.end());
 		pch = std::stoi(strPch);
 		patches.insert(pch);
 	}
@@ -4979,6 +4982,7 @@ set<int> stringToStages(const string& str, const int& nbStages) {
 		int stg;
 		// Read comma-separated values
 		while (std::getline(ss, strStg, ',')) {
+			strStg.erase(remove(strStg.begin(), strStg.end(), '\"'), strStg.end());
 			stg = std::stoi(strStg);
 			if (stg > nbStages - 1)
 				throw logic_error("Genetics file: ERROR - sampled stage exceeds number of stages.");
