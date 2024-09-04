@@ -66,9 +66,22 @@ See [CONTRIBUTING](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/m
 - [RScore](https://github.com/RangeShifter/RScore), source for RangeShifter's core code
 - [RangeShiftR-pkg](https://github.com/RangeShifter/RangeShiftR-pkg), source for the R interface
 
-## Maintainer
+## Authors
+**Developers:**
+- Theo Pannetier ([@TheoPannetier](https://github.com/TheoPannetier))
+- Jette Reeg ([@JetteReeg](https://github.com/JetteReeg))
+- Steve Palmer
+- Roslyn Henry ([@RoslynHenry](https://github.com/RoslynHenry))
 
-- [@TheoPannetier](https://github.com/TheoPannetier)
+**Maintainer:**
+- Theo Pannetier ([@TheoPannetier](https://github.com/TheoPannetier))
+
+Concepts:
+- Damaris Zurell ([@damariszurell](https://github.com/damariszurell))
+- Greta Bocedi ([@GretaBocedi](https://github.com/GretaBocedi))
+- Justin Travis
+- Steve Palmer
+- Roslyn Henry ([@RoslynHenry](https://github.com/RoslynHenry))
 
 ## References
 
