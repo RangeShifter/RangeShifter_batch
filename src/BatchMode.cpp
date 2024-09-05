@@ -2997,9 +2997,9 @@ int CheckTraitsFile(string indir)
 		}
 
 		// Check InitialDistribution
-		if (tr == NEUTRAL && inInitDist != "#" && inInitDist != "uniform") {
+		if (tr == NEUTRAL && inInitDist != "uniform") {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLog << "InitialDistribution must be either uniform or left blank (#) for the neutral trait." << endl;
+			batchLog << "InitialDistribution must be uniform for the neutral trait." << endl;
 			nbErrors++;
 		}
 		if (tr == GENETIC_LOAD && inInitDist != "#") {
@@ -3038,9 +3038,9 @@ int CheckTraitsFile(string indir)
 				}
 			}
 			// if not uniform then initDist must be blank, no params
-			else if (inInitParams != "#") {
+			else {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "For neutral trait with no initialisation, InitialParameters must be blank (#)" << endl;
+				batchLog << "For neutral trait with uniform initialisation, InitialParameters must have form max=int" << endl;
 				nbErrors++;
 			}
 		}
@@ -3175,7 +3175,7 @@ int CheckTraitsFile(string indir)
 					nbErrors++;
 				}
 				else {
-					const int maxVal = stoi(inInitParams.substr(4));
+					const int maxVal = stoi(inMutationParams.substr(4));
 					if (maxVal > 255) {
 						BatchError(whichInputFile, lineNb, 0, " ");
 						batchLog << "For the neutral trait mutation max parameter must be between 0 and 255." << endl;
