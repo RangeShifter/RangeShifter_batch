@@ -5046,17 +5046,18 @@ set<int> stringToLoci(string pos, string nLoci, const int& genomeSize) {
 			vector<int> positionRange;
 			// Read single positions and dash-separated ranges
 			while (std::getline(sss, valueWithin, '-')) {
+				valueWithin.erase(remove(valueWithin.begin(), valueWithin.end(), '\"'), valueWithin.end());
 				positionRange.push_back(stoi(valueWithin));
 			}
 			switch (positionRange.size())
 			{
 			case 1: // single position
-				if (positionRange[0] > genomeSize)
+				if (positionRange[0] >= genomeSize)
 					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
 				positions.insert(positionRange[0]);
 				break;
 			case 2: // dash-separated range
-				if (positionRange[0] > genomeSize || positionRange[1] > genomeSize) {
+				if (positionRange[0] >= genomeSize || positionRange[1] >= genomeSize) {
 					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
 				}
 				for (int i = positionRange[0]; i < positionRange[1] + 1; ++i) {
@@ -5070,8 +5071,8 @@ set<int> stringToLoci(string pos, string nLoci, const int& genomeSize) {
 		}
 
 		for (auto position : positions) {
-			if (position > genomeSize)
-				cout << endl << "Traits file: ERROR - trait positions " << position << " must not exceed genome size" << endl;
+			if (position >= genomeSize)
+				throw logic_error("Traits file: ERROR - trait positions " + to_string(position) + " must not exceed genome size.\n");
 		}
 	}
 	else { // random
