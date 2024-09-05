@@ -5060,6 +5060,8 @@ set<int> stringToLoci(string pos, string nLoci, const int& genomeSize) {
 				if (positionRange[0] >= genomeSize || positionRange[1] >= genomeSize) {
 					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
 				}
+				if (positionRange[0] >= positionRange[1])
+					throw logic_error("Position ranges must be in ascending order");
 				for (int i = positionRange[0]; i < positionRange[1] + 1; ++i) {
 					positions.insert(i);
 				}
