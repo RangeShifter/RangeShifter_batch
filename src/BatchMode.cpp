@@ -3274,6 +3274,7 @@ int CheckTraitsFile(string indir)
 			// Exit loop
 			|| bTraitsFile.eof()) {
 			stopReading = true;
+			nbErrors += checkTraitSetCoherency(allReadTraits);
 			gNbTraitFileRows.push_back(nbRowsToRead);
 		}
 		else if (nextLineSimNb != simNb) {
