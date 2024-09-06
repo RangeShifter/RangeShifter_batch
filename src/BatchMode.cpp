@@ -2690,13 +2690,15 @@ int CheckTransferFile(string indir)
 					errors++;
 				}
 			}
-
-			if (inStepLength <= 0.0) {
-				BatchError(whichFile, whichLine, 10, "SL"); errors++;
+			else {
+				if (inStepLength <= 0.0) {
+					BatchError(whichFile, whichLine, 10, "SL"); errors++;
+				}
+				if (inStepCorr <= 0.0 || inStepCorr >= 1.0) {
+					BatchError(whichFile, whichLine, 20, "Rho"); errors++;
+				}
 			}
-			if (inStepCorr <= 0.0 || inStepCorr >= 1.0) {
-				BatchError(whichFile, whichLine, 20, "Rho"); errors++;
-			}
+			
 			if (inStraightenPath != 0 && inStraightenPath != 1) {
 				BatchError(whichFile, whichLine, 1, "StraightenPath"); errors++;
 			}
@@ -2903,14 +2905,13 @@ int CheckSettleFile(void)
 						nbErrors++;
 					}
 			}
-
-			if (inDensDep == 1) {
+			else if (inDensDep == 1) {
 
 				if (inS0 <= 0.0 || inS0 > 1.0) {
 					BatchError(whichFile, whichLine, 20, "S0"); 
 					nbErrors++;
 				}
-				// NOTE: alphaS and betaS can take any value
+				// alphaS and betaS can take any value
 			}
 		}
 		// read next simulation
@@ -3682,7 +3683,7 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits) {
 			batchLog << "Settlement alpha trait is missing." << endl;
 			nbErrors++;
 		}
-		if (!hasSMSBeta) {
+		if (!hasSettBeta) {
 			BatchError(whichInputFile, -999, 0, " ");
 			batchLog << "Settlement beta trait is missing." << endl;
 			nbErrors++;
