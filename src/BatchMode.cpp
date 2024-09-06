@@ -2223,7 +2223,29 @@ int CheckEmigFile(void)
 		// read remaining columns of the current record
 		bEmigrationFile >> inEP >> inD0 >> inAlpha >> inBeta;
 
-		if (isDensDep) {
+		if (gDispTraitOpt.isEmigIndVar) {
+			if (inEP != gEmptyVal) {
+				batchLog << "*** Error in " << whichInputFile << ": "
+					<< "if individual variability is enabled EP must be " << gEmptyVal << endl;
+				nbErrors++;
+			}
+			if (inD0 != gEmptyVal) {
+				batchLog << "*** Error in " << whichInputFile << ": "
+					<< "if individual variability is enabled D0 must be " << gEmptyVal << endl;
+				nbErrors++;
+			}
+			if (inAlpha != gEmptyVal) {
+				batchLog << "*** Error in " << whichInputFile << ": "
+					<< "if individual variability is enabled alpha must be " << gEmptyVal << endl;
+				nbErrors++;
+			}
+			if (inBeta != gEmptyVal) {
+				batchLog << "*** Error in " << whichInputFile << ": "
+					<< "if individual variability is enabled beta must be " << gEmptyVal << endl;
+				nbErrors++;
+			}
+		}
+		else if (isDensDep) {
 			if (inEP != gEmptyVal) {
 				batchLog << "*** Error in " << whichInputFile << ": "
 					<< "if density-dependence is enabled EP must be " << gEmptyVal << endl;
@@ -2454,7 +2476,24 @@ int CheckTransferFile(string indir)
 				BatchError(whichFile, whichLine, 1, "DistMort"); errors++;
 			}
 
-			if (!inIndVar) {
+			if (gDispTraitOpt.isKernTransfIndVar) {
+				if (meanDistI != gEmptyVal) {
+					batchLog << "*** Error in " << whichFile << ": "
+						<< "if individual variability is enabled meanDistI must be " << gEmptyVal << endl;
+					errors++;
+				}
+				if (meanDistII != gEmptyVal) {
+					batchLog << "*** Error in " << whichFile << ": "
+						<< "if individual variability is enabled meanDistII must be " << gEmptyVal << endl;
+					errors++;
+				}
+				if (ProbKernelI != gEmptyVal) {
+					batchLog << "*** Error in " << whichFile << ": "
+						<< "if individual variability is enabled ProbKernelI must be " << gEmptyVal << endl;
+					errors++;
+				}
+			}
+			else {
 				if (meanDistI < resolution) {
 					// NOTE - should also check whether emigration prob is constant and equal to 1
 					//but checks across diffferent input files are not yet implemented
@@ -2508,6 +2547,29 @@ int CheckTransferFile(string indir)
 			if (inPercRangeMethod < 1 || inPercRangeMethod > 3) {
 				BatchError(whichFile, whichLine, 33, "PRmethod"); errors++;
 			}
+			if (gDispTraitOpt.isSMSTransfIndVar) {
+				if (inGoalBias != gEmptyVal) {
+					batchLog << "*** Error in " << whichFile << ": "
+						<< "if individual variability is enabled GB must be " << gEmptyVal << endl;
+					errors++;
+				}
+				if (inDirPersistence != gEmptyVal) {
+					batchLog << "*** Error in " << whichFile << ": "
+						<< "if individual variability is enabled DP must be " << gEmptyVal << endl;
+					errors++;
+				}
+				if (inAlphaDispBias != gEmptyVal) {
+					batchLog << "*** Error in " << whichFile << ": "
+						<< "if individual variability is enabled AlphaDB must be " << gEmptyVal << endl;
+					errors++;
+				}
+				if (inBetaDispBias != gEmptyVal) {
+					batchLog << "*** Error in " << whichFile << ": "
+						<< "if individual variability is enabled BetaDB must be " << gEmptyVal << endl;
+					errors++;
+				}
+			}
+
 			if (!inIndVar && inDirPersistence < 1.0) {
 				BatchError(whichFile, whichLine, 11, "DP"); errors++;
 			}
@@ -2549,7 +2611,6 @@ int CheckTransferFile(string indir)
 			switch (landtype) {
 
 			case 0: { // raster map with unique habitat codes
-				//			batchlog << "for LandType = 0" << endl;
 				for (i = 0; i < maxNhab; i++) {
 					bTransferFile >> morthab;
 					if (inSMType == 1)
@@ -2615,6 +2676,19 @@ int CheckTransferFile(string indir)
 			}
 			else {
 				gDispTraitOpt.isCRWTransfIndVar = (inIndVar == 1);
+			}
+
+			if (gDispTraitOpt.isCRWTransfIndVar) {
+				if (inStepLength != gEmptyVal) {
+					batchLog << "*** Error in " << whichFile << ": "
+						<< "if individual variability is enabled SL must be " << gEmptyVal << endl;
+					errors++;
+				}
+				if (inStepCorr != gEmptyVal) {
+					batchLog << "*** Error in " << whichFile << ": "
+						<< "if individual variability is enabled Rho must be " << gEmptyVal << endl;
+					errors++;
+				}
 			}
 
 			if (inStepLength <= 0.0) {
@@ -2811,6 +2885,24 @@ int CheckSettleFile(void)
 				nbErrors++;
 			}
 			bSettlementFile >> inS0 >> inAlphaS >> inBetaS;
+
+			if (gDispTraitOpt.isSettIndVar) {
+					if (inS0 != gEmptyVal) {
+						batchLog << "*** Error in " << whichFile << ": "
+							<< "if individual variability is enabled S0 must be " << gEmptyVal << endl;
+						nbErrors++;
+					}
+					if (inAlphaS != gEmptyVal) {
+						batchLog << "*** Error in " << whichFile << ": "
+							<< "if individual variability is enabled AlphaS must be " << gEmptyVal << endl;
+						nbErrors++;
+					}
+					if (inBetaS != gEmptyVal) {
+						batchLog << "*** Error in " << whichFile << ": "
+							<< "if individual variability is enabled BetaS must be " << gEmptyVal << endl;
+						nbErrors++;
+					}
+			}
 
 			if (inDensDep == 1) {
 
