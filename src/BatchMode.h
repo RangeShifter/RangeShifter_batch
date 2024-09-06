@@ -77,7 +77,8 @@ struct batchfiles {
 	string initFile;
 };
 
-struct DispersalTraitInputOptions {
+struct TraitInputOptions {
+	bool anyNeutral = false;
 	bool isEmigIndVar = false;
 	bool isEmigDensDep = false;
 	bool isEmigSexDep = false;
