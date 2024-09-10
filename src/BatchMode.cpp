@@ -4955,7 +4955,7 @@ void setUpSpeciesTrait(vector<string> parameters) {
 	const bool isOutput = parameters[14] == "TRUE";
 
 	// Create species trait
-	SpeciesTrait* trait = new SpeciesTrait(
+	unique_ptr<SpeciesTrait> trait(new SpeciesTrait(
 		traitType, sex, 
 		positions, expressionType, 
 		initDist, initParams, 
@@ -4964,7 +4964,7 @@ void setUpSpeciesTrait(vector<string> parameters) {
 		mutationDistribution, mutationParameters,
 		ploidy,
 		isOutput
-	);
+	));
 	pSpecies->addTrait(traitType, *trait);
 }
 
@@ -6478,7 +6478,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 	bool params_ok;
 	simParams sim = paramsSim->getSim();
 
-	Landscape* pLandscape = NULL;  		// pointer to landscape
+	Landscape* pLandscape = nullptr;  		// pointer to landscape
 
 	t0 = (int)time(0);
 
@@ -6503,7 +6503,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 
 	for (int j = 0; j < nLandscapes; j++) {
 		// create new landscape
-		if (pLandscape != NULL) delete pLandscape;
+		if (pLandscape != nullptr) delete pLandscape;
 		pLandscape = new Landscape;
 		bool landOK = true;
 
@@ -6698,10 +6698,10 @@ void RunBatch(int nSimuls, int nLandscapes)
 				ifsTraits.clear();
 			}
 
-			if (pLandscape != NULL)
+			if (pLandscape != nullptr)
 			{
 				delete pLandscape; 
-				pLandscape = NULL;
+				pLandscape = nullptr;
 			}
 
 		} // end of landOK condition
