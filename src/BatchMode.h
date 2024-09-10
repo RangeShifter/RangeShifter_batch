@@ -225,7 +225,7 @@ set<int> stringToStages(const string&, const int&);
 set<int> stringToChromosomeEnds(string, const int&);
 GenParamType strToGenParamType(const string& str);
 
-#if RSDEBUG
+#ifndef NDEBUG
 extern ofstream DEBUGLOG;
 #endif
 

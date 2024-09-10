@@ -63,13 +63,13 @@ using namespace std;
 #include <direct.h>
 #endif
 
-#if RSDEBUG
+#ifndef NDEBUG
 void run_batch_unit_tests() {
 	cout << "******* Unit test output for batch interface *******" << endl;
 	// call tests here
 	cout << endl << "************************" << endl;
 }
-#endif // RSDEBUG
+#endif // NDEBUG
 
 string habmapname,patchmapname,distnmapname;	// req'd for compilation, but not used
 string costmapname,genfilename;					 			// ditto
@@ -84,7 +84,7 @@ Species *pSpecies;  				// pointer to species
 Community *pComm;						// pointer to community
 RSrandom *pRandom;          // pointer to random number routines
 
-#if RSDEBUG
+#ifndef NDEBUG
 ofstream DEBUGLOG;
 ofstream MUTNLOG;
 #endif
@@ -97,13 +97,13 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 {
 
-#if RSDEBUG
+#ifndef NDEBUG
 	cout << "RangeShifter Debug Mode" << endl;
 #else
 	cout << "RangeShifter Release Mode" << endl;
 #endif
 
-#if RSDEBUG
+#ifndef NDEBUG
 	assert(0.1 > 0.0); // assert does run correctly
 	run_batch_unit_tests();
 #else
@@ -176,7 +176,7 @@ else {
 	pathToControlFile = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
 }
 #endif
-#if RSDEBUG
+#ifndef NDEBUG
 cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
 cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
 cout << endl << "Control file:      " << pathToControlFile << endl << endl;
@@ -194,7 +194,7 @@ if (errorfolder) {
 	return 666;
 }
 
-#if RSDEBUG
+#ifndef NDEBUG
 // set up debugging log file
 string name = paramsSim->getDir(2) + "DebugLog.txt";
 DEBUGLOG.open(name.c_str());
@@ -246,7 +246,7 @@ else {
 
 // set up random number class
 #if RS_RCPP
-	#if RSDEBUG
+	#ifndef NDEBUG
 		pRandom = new RSrandom(666);
 	#else
 		pRandom = new RSrandom(-1);  // need to be replaced with parameter from control file
@@ -273,7 +273,7 @@ if (b.ok) {
 
 delete pRandom;
 
-#if RSDEBUG
+#ifndef NDEBUG
 if (DEBUGLOG.is_open()) {
 	DEBUGLOG.close(); DEBUGLOG.clear();
 }
