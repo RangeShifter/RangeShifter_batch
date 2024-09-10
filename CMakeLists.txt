@@ -21,10 +21,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	add_compile_definitions(LINUX_CLUSTER)
 endif()
 
-# Debug Mode by default, unless "release" is passed i.e. `cmake -Drelease=`
-if(NOT DEFINED release)
-	add_compile_definitions(RSDEBUG)
-endif()
 # link RScore to the executable as a library
 target_link_libraries(RangeShifter PUBLIC RScore)
 
