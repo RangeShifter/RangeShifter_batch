@@ -97,10 +97,10 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 {
 
-#ifndef NDEBUG
-	cout << "RangeShifter Debug Mode" << endl;
-#else
+#ifdef NDEBUG
 	cout << "RangeShifter Release Mode" << endl;
+#else
+	cout << "RangeShifter Debug Mode" << endl;
 #endif
 
 #ifndef NDEBUG
