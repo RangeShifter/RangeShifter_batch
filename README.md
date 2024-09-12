@@ -41,7 +41,7 @@ In this case, some #define macros must be passed to it, and RScore/Main.cpp must
 
 ```bash
 shopt -s extglob # enable the !(file) pattern below
-g++ --std=c++20 -o RangeShifter.exe ./src/*.cpp ./src/RScore/!(Main).cpp -DRSWIN64 -DLINUX_CLUSTER
+g++ --std=c++20 -o RangeShifter.exe ./src/*.cpp ./src/RScore/!(Main).cpp -DLINUX_CLUSTER -O3 -s -DNDEBUG
 ```
 
 ## Running RangeShifter
