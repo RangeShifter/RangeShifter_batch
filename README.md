@@ -1,4 +1,5 @@
 # RangeShifter Batch Mode <img src="doc/RS_logo.png" align="right" height = 100/>
+
 C++ code for the RangeShifter v2 batch mode application
 
 <img title="" src="https://github.com/RangeShifter/RangeShifter_batch_dev/blob/main/doc/rs_batch_logo.png" alt="" align="right" height="150">
@@ -24,12 +25,12 @@ The compiled software can be found in the [Software and Documentation](https://g
 
 Building RangeShifter from the source code requires CMake. If you haven't done so yet, you will need to [download and install it](https://cmake.org/download/).
 
-RangeShifter can then be configured and built (out-of-source) from `CMakeLists.txt`, with the usual CMake commands:
+RangeShifter can then be configured and built from `CMakeLists.txt`:
 
 ```bash
 mkdir build && cd build
 cmake ..
-cmake --build .
+cmake --build . --config Release
 ```
 
 If you use Visual Studio as your IDE, CMake should be recognised automatically when `RangeShifter_batch_dev` is opened as a new folder. 
@@ -40,7 +41,7 @@ In this case, some #define macros must be passed to it, and RScore/Main.cpp must
 
 ```bash
 shopt -s extglob # enable the !(file) pattern below
-g++ --std=c++20 -o RangeShifter.exe ./src/*.cpp ./src/RScore/!(Main).cpp -DRSDEBUG -DRSWIN64 -DLINUX_CLUSTER
+g++ --std=c++20 -o RangeShifter.exe ./src/*.cpp ./src/RScore/!(Main).cpp -DLINUX_CLUSTER -O3 -s -DNDEBUG
 ```
 
 ## Running RangeShifter
@@ -63,7 +64,7 @@ See [CONTRIBUTING](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/m
 
 ## References
 
- - Bocedi G, Palmer SCF, Pe’er G, Heikkinen RK, Matsinos YG, Watts K, Travis JMJ (2014). 
- *RangeShifter: A Platform for Modelling Spatial Eco-Evolutionary Dynamics and 
- Species’ Responses to Environmental Changes.* Methods in Ecology and Evolution 5: 388–96. 
- - Bocedi G, Palmer SCF, Malchow AK, Zurell D, Watts K, Travis JMJ (2021) *RangeShifter 2.0: An extended and enhanced platform for modelling spatial eco-evolutionary dynamics and species’ responses to environmental changes.* Ecography 44:1453-1462.
+- Bocedi G, Palmer SCF, Pe’er G, Heikkinen RK, Matsinos YG, Watts K, Travis JMJ (2014). 
+  *RangeShifter: A Platform for Modelling Spatial Eco-Evolutionary Dynamics and 
+  Species’ Responses to Environmental Changes.* Methods in Ecology and Evolution 5: 388–96. 
+- Bocedi G, Palmer SCF, Malchow AK, Zurell D, Watts K, Travis JMJ (2021) *RangeShifter 2.0: An extended and enhanced platform for modelling spatial eco-evolutionary dynamics and species’ responses to environmental changes.* Ecography 44:1453-1462.

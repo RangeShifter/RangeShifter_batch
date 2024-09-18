@@ -1451,7 +1451,7 @@ int CheckLandFile(int landtype, string indir)
 }
 
 int CheckDynamicFile(string indir, string costfile) {
-#if RSDEBUG
+#ifndef NDEBUG
 	DEBUGLOG << "ParseDynamicFile(): costfile=" << costfile << endl;
 #endif
 	string header, filename, fname, ftype, intext;
@@ -5328,7 +5328,7 @@ int ReadParameters(int option, Landscape* pLandscape)
 	else {
 		if (sim.outConnect) error = 105;
 	}
-#if RSDEBUG
+#ifndef NDEBUG
 	DEBUGLOG << "ReadParameters(): outRange=" << sim.outRange << " outInt=" << sim.outIntRange
 		<< endl;
 #endif
