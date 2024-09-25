@@ -25,9 +25,18 @@ The compiled software can be found in the [Software and Documentation](https://g
 
 Building RangeShifter from the source code requires CMake. If you haven't done so yet, you will need to [download and install it](https://cmake.org/download/).
 
-RangeShifter can then be configured and built from `CMakeLists.txt`:
+RangeShifter can then be configured and built from `CMakeLists.txt`.
+If you are not seeking to develop the code yourself, it is best (=faster) to build RangeShifter in Release mode, whihc requires slightly different command on Unix vs Windows systems:
 
 ```bash
+# Unix
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+```
+
+```bash
+# Windows (Visual Studio)
 mkdir build && cd build
 cmake ..
 cmake --build . --config Release
