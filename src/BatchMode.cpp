@@ -3391,6 +3391,7 @@ int CheckTraitsFile(string indir)
 			// Store nb of rows to help reading file later on
 			gNbTraitFileRows.push_back(nbRowsToRead);
 			nbRowsToRead = 0; // reset for next sim
+			nbGenLoadTraits = 0;
 			allReadTraits.clear();
 			simNb = nextLineSimNb;
 		} // else continue reading traits for same sim
