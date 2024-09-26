@@ -98,7 +98,7 @@ struct TraitInputOptions {
 
 bool traitExists(const TraitType& tr, const vector<TraitType>& existingTraits);
 TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex);
-int checkTraitSetCoherency(const vector <TraitType>& allReadTraits);
+int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& simNb);
 
 constexpr int gEmptyVal = -9;
 constexpr int nHeadersEmig = 13;
@@ -109,7 +109,7 @@ struct simCheck {
 };
 
 batchfiles ParseControlAndCheckInputFiles(string, string, string);
-int CheckParameterFile(void);
+int CheckParameterFile();
 int CheckLandFile(int, string);
 int CheckGeneticsFile(string);
 int CheckDynamicFile(string, string);
