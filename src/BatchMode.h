@@ -225,10 +225,6 @@ set<int> stringToStages(const string&, const int&);
 set<int> stringToChromosomeEnds(string, const int&);
 GenParamType strToGenParamType(const string& str);
 
-#ifndef NDEBUG
-extern ofstream DEBUGLOG;
-#endif
-
 // external pointers to parameter sets
 extern paramGrad* paramsGrad;
 extern paramStoch* paramsStoch;

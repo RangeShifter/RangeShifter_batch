@@ -76,9 +76,6 @@ Species* pSpecies;  				// pointer to species
 Community* pComm;						// pointer to community
 RSrandom* pRandom;          // pointer to random number routines
 
-#ifndef NDEBUG
-ofstream DEBUGLOG;
-#endif
 
 //---------------------------------------------------------------------------
 #if LINUX_CLUSTER || RS_RCPP
@@ -177,16 +174,6 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 666;
 	}
 
-#ifndef NDEBUG
-	// set up debugging log file
-	string name = paramsSim->getDir(2) + "DebugLog.txt";
-	DEBUGLOG.open(name.c_str());
-	if (DEBUGLOG.is_open())
-		cout << endl << "Main(): DEBUGLOG is open" << endl << endl;
-	else
-		cout << endl << "Main(): DEBUGLOG is NOT open" << endl << endl;
-#endif
-
 	// set up species
 	pSpecies = new Species;
 	demogrParams dem = pSpecies->getDemogrParams();
@@ -253,13 +240,6 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 
 	delete pRandom;
-
-#ifndef NDEBUG
-	if (DEBUGLOG.is_open()) {
-		DEBUGLOG.close(); DEBUGLOG.clear();
-	}
-#endif
-
 	delete paramsGrad;
 	delete paramsStoch;
 	delete paramsInit;
@@ -268,7 +248,6 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	t1 = (int)time(0);
 	cout << endl << "***** Elapsed time " << t1 - t0 << " seconds" << endl << endl;
-
 	cout << "*****" << endl;
 	cout << "***** Simulation completed." << endl;
 	cout << "*****" << endl;

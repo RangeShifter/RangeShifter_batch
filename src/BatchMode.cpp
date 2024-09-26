@@ -1464,9 +1464,7 @@ int CheckLandFile(int landtype, string indir)
 }
 
 int CheckDynamicFile(string indir, string costfile) {
-#ifndef NDEBUG
-	DEBUGLOG << "ParseDynamicFile(): costfile=" << costfile << endl;
-#endif
+
 	string header, filename, fname, ftype, intext;
 	int change, prevchange, year, prevyear = 0;
 	rasterdata landchgraster, patchchgraster, costchgraster;
@@ -5342,10 +5340,6 @@ int ReadParameters(int option, Landscape* pLandscape)
 	else {
 		if (sim.outConnect) error = 105;
 	}
-#ifndef NDEBUG
-	DEBUGLOG << "ReadParameters(): outRange=" << sim.outRange << " outInt=" << sim.outIntRange
-		<< endl;
-#endif
 	parameters >> iiii >> sim.mapInt;
 	if (iiii == 0) sim.saveMaps = false;
 	else sim.saveMaps = true;
@@ -6487,14 +6481,11 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 void RunBatch(int nSimuls, int nLandscapes)
 {
 	int land_nr;
-	int t0, t1, t00, t01;
 	int read_error;
 	bool params_ok;
 	simParams sim = paramsSim->getSim();
 
 	Landscape* pLandscape = nullptr;  		// pointer to landscape
-
-	t0 = (int)time(0);
 
 	// Open landscape batch file and read header record
 	if (ReadLandFile(0)) {
@@ -6508,7 +6499,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 		pLandscape = new Landscape;
 		bool landOK = true;
 
-		t00 = (int)time(0);
 		land_nr = ReadLandFile(1, pLandscape);
 		if (land_nr <= 0) { // error condition
 			string msg = "Error code " + to_string(-land_nr)
@@ -6609,7 +6599,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 
 			for (int i = 0; i < nSimuls; i++) {
 
-				t00 = (int)time(0);
 				params_ok = true;
 				read_error = ReadParameters(1, pLandscape);
 				simParams sim = paramsSim->getSim();
