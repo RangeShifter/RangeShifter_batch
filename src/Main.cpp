@@ -1,39 +1,39 @@
 /*----------------------------------------------------------------------------
- *	
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell 
- *	
+ *
+ *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *
  *	This file is part of RangeShifter.
- *	
+ *
  *	RangeShifter is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 3 of the License, or
  *	(at your option) any later version.
- *	
+ *
  *	RangeShifter is distributed in the hope that it will be useful,
  *	but WITHOUT ANY WARRANTY; without even the implied warranty of
  *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  *	GNU General Public License for more details.
- *	
+ *
  *	You should have received a copy of the GNU General Public License
  *	along with RangeShifter. If not, see <https://www.gnu.org/licenses/>.
- *	
+ *
  --------------------------------------------------------------------------*/
- 
-/*------------------------------------------------------------------------------
 
-RangeShifter v2.0 Main
+ /*------------------------------------------------------------------------------
 
-Entry level function for BATCH MODE version
+ RangeShifter v2.0 Main
 
-For full details of RangeShifter, please see:
-Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
-and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
-eco-evolutionary dynamics and species’ responses to environmental changes.
-Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
+ Entry level function for BATCH MODE version
 
-Author: Steve Palmer, University of Aberdeen
+ For full details of RangeShifter, please see:
+ Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+ and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
+ eco-evolutionary dynamics and species’ responses to environmental changes.
+ Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
-------------------------------------------------------------------------------*/
+ Author: Steve Palmer, University of Aberdeen
+
+ ------------------------------------------------------------------------------*/
 
 #include <string>
 #include <stdio.h>
@@ -63,30 +63,21 @@ using namespace std;
 #include <direct.h>
 #endif
 
-#ifndef NDEBUG
-void run_batch_unit_tests() {
-	cout << "******* Unit test output for batch interface *******" << endl;
-	// call tests here
-	cout << endl << "************************" << endl;
-}
-#endif // NDEBUG
-
-string habmapname,patchmapname,distnmapname;	// req'd for compilation, but not used
-string costmapname,genfilename;					 			// ditto
+string habmapname, patchmapname, distnmapname;	// req'd for compilation, but not used
+string costmapname, genfilename;					 			// ditto
 vector <string> hfnames;											// ditto
 
-paramGrad *paramsGrad;			// pointer to environmental gradient parameters
-paramStoch *paramsStoch;		// pointer to environmental stochasticity parameters
-paramInit *paramsInit;			// pointer to initialisation parameters
-paramSim *paramsSim;				// pointer to simulation parameters
+paramGrad* paramsGrad;			// pointer to environmental gradient parameters
+paramStoch* paramsStoch;		// pointer to environmental stochasticity parameters
+paramInit* paramsInit;			// pointer to initialisation parameters
+paramSim* paramsSim;				// pointer to simulation parameters
 
-Species *pSpecies;  				// pointer to species
-Community *pComm;						// pointer to community
-RSrandom *pRandom;          // pointer to random number routines
+Species* pSpecies;  				// pointer to species
+Community* pComm;						// pointer to community
+RSrandom* pRandom;          // pointer to random number routines
 
 #ifndef NDEBUG
 ofstream DEBUGLOG;
-ofstream MUTNLOG;
 #endif
 
 //---------------------------------------------------------------------------
@@ -103,199 +94,186 @@ int _tmain(int argc, _TCHAR* argv[])
 	cout << "RangeShifter Debug Mode" << endl;
 #endif
 
-#ifndef NDEBUG
-	assert(0.1 > 0.0); // assert does run correctly
-	run_batch_unit_tests();
-#else
-	// assert does not run in Release mode
-	assert(1 == 2);
-#endif
+	int t0, t1;
+	int nSimuls = 0, nLandscapes = 0; // no. of simulations and landscapes in batch
 
-int t0,t1;
-int nSimuls = 0, nLandscapes = 0; // no. of simulations and landscapes in batch
+	t0 = (int)time(0);
 
-t0 = (int)time(0);
+	// set up parameter objects
+	paramsGrad = new paramGrad;
+	paramsStoch = new paramStoch;
+	paramsInit = new paramInit;
+	paramsSim = new paramSim;
 
-// set up parameter objects
-paramsGrad = new paramGrad;
-paramsStoch = new paramStoch;
-paramsInit = new paramInit;
-paramsSim = new paramSim;                
-
-// set up working directory and control file name
-string pathToControlFile;
+	// set up working directory and control file name
+	string pathToControlFile;
 #if LINUX_CLUSTER || RS_RCPP
-if (argc > 1) {
-	// full path name of directory passed as a parameter
-	paramsSim->setDir(argv[1]);
-	if (argc > 2) {
-		// control file number also passed as a parameter
-		int i = atoi(argv[2]);
-		pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL" + to_string(i) + ".txt";
+	if (argc > 1) {
+		// full path name of directory passed as a parameter
+		paramsSim->setDir(argv[1]);
+		if (argc > 2) {
+			// control file number also passed as a parameter
+			int i = atoi(argv[2]);
+			pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL" + to_string(i) + ".txt";
+		}
+		else {
+			// default name is CONTROL.txt
+			pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
+		}
 	}
 	else {
-		// default name is CONTROL.txt
+		// use current directory - get name from first (automatic) parameter
+		string nameS = argv[0];
+		string path = argv[0];
+		unsigned int loc = nameS.find("/", 0);
+		while (loc < 999999) {
+			nameS = nameS.substr(loc + 1);
+			loc = nameS.find("/", 0);
+		}
+		path = path.substr(0, path.length() - nameS.length());
+		paramsSim->setDir(path);
+		// control file name is forced to be CONTROL.txt
 		pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
 	}
-}
-else {
-	// use current directory - get name from first (automatic) parameter
-	string nameS = argv[0];
-	string path  = argv[0];
-	unsigned int loc = nameS.find("/",0);
-	while(loc < 999999) {
-		nameS = nameS.substr(loc+1);
-		loc = nameS.find("/",0);
-	}
-	path = path.substr(0,path.length()-nameS.length());
-	paramsSim->setDir(path);
-	// control file name is forced to be CONTROL.txt
-	pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
-}
 #else
-if (__argc > 1) {
-	// full path name of directory passed as a parameter
-	paramsSim->setDir(__argv[1]);
-	if (__argc > 2) {
-		// control file name also passed as a parameter
-		pathToControlFile = paramsSim->getDir(0) + "Inputs\\" + __argv[2];
-}
+	if (__argc > 1) {
+		// full path name of directory passed as a parameter
+		paramsSim->setDir(__argv[1]);
+		if (__argc > 2) {
+			// control file name also passed as a parameter
+			pathToControlFile = paramsSim->getDir(0) + "Inputs\\" + __argv[2];
+		}
+		else {
+			// default name is CONTROL.txt
+			pathToControlFile = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
+		}
+	}
 	else {
-		// default name is CONTROL.txt
+		// Get the current directory. 
+		char* buffer = _getcwd(NULL, 0);
+		string dir = buffer;
+		free(buffer);
+		dir = dir + "\\"; //Current directory path
+		paramsSim->setDir(dir);
+		// control file name is forced to be CONTROL.txt
 		pathToControlFile = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
 	}
-}
-else {
-	// Get the current directory. 
-	char* buffer = _getcwd(NULL, 0);
-	string dir = buffer;
-	free(buffer);
-	dir = dir + "\\"; //Current directory path
-	paramsSim->setDir(dir);
-	// control file name is forced to be CONTROL.txt
-	pathToControlFile = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
-}
 #endif
 #ifndef NDEBUG
-cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
-cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
-cout << endl << "Control file:      " << pathToControlFile << endl << endl;
+	cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
+	cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
+	cout << endl << "Control file:      " << pathToControlFile << endl << endl;
 #endif
 
-bool errorfolder = CheckDirectory();
-if (errorfolder) {
-	cout << endl << "***** Invalid working directory: " << paramsSim->getDir(0)
-		<< endl << endl;
-	cout << "***** Working directory must contain Inputs, Outputs and Output_Maps folders"
-		<< endl << endl;
-	cout << "*****" << endl;
-	cout << "***** Simulation ABORTED" << endl;
-	cout << "*****" << endl;
-	return 666;
-}
-
-#ifndef NDEBUG
-// set up debugging log file
-string name = paramsSim->getDir(2) + "DebugLog.txt";
-DEBUGLOG.open(name.c_str());
-name = paramsSim->getDir(2) + "MutnLog.txt";
-MUTNLOG.open(name.c_str());
-if (DEBUGLOG.is_open())
-	cout << endl << "Main(): DEBUGLOG is open" << endl << endl;
-else
-	cout << endl << "Main(): DEBUGLOG is NOT open" << endl << endl;
-#endif
-
-// set up species
-pSpecies = new Species;
-demogrParams dem = pSpecies->getDemogrParams();
-stageParams sstruct = pSpecies->getStageParams();
-transferRules trfr = pSpecies->getTransferRules();
-
-batchfiles b;
-string indir  = paramsSim->getDir(1);
-string outdir = paramsSim->getDir(2);
-b = ParseControlAndCheckInputFiles(pathToControlFile, indir, outdir);       
-if (b.ok) { 
-	nSimuls = b.nSimuls;
-	nLandscapes = b.nLandscapes;
-	dem.repType = b.reproductn;
-	dem.repSeasons = b.repseasons;
-	if (b.stagestruct == 0) 
-		dem.stageStruct = false; 
-	else dem.stageStruct = true;
-	sstruct.nStages = b.stages;
-	if (b.transfer == 0) 
-		trfr.usesMovtProc = false;
-	else {
-		trfr.usesMovtProc = true;
-		trfr.moveType = b.transfer;
+	bool errorfolder = CheckDirectory();
+	if (errorfolder) {
+		cout << endl << "***** Invalid working directory: " << paramsSim->getDir(0)
+			<< endl << endl;
+		cout << "***** Working directory must contain Inputs, Outputs and Output_Maps folders"
+			<< endl << endl;
+		cout << "*****" << endl;
+		cout << "***** Simulation ABORTED" << endl;
+		cout << "*****" << endl;
+		return 666;
 	}
-	cout << endl << "Batch input files OK" << endl;
-	pSpecies->setDemogr(dem);
-	pSpecies->setStage(sstruct);
-	pSpecies->setTrfrRules(trfr);
-	simParams sim = paramsSim->getSim();
-	sim.batchMode = true;
-	sim.batchNum = b.batchNum;  
-	paramsSim->setSim(sim);
-}
-else {
-	cout << endl << "Error in parsing batch input files - see BatchLog file for details" << endl;
-}
 
-// set up random number class
+#ifndef NDEBUG
+	// set up debugging log file
+	string name = paramsSim->getDir(2) + "DebugLog.txt";
+	DEBUGLOG.open(name.c_str());
+	if (DEBUGLOG.is_open())
+		cout << endl << "Main(): DEBUGLOG is open" << endl << endl;
+	else
+		cout << endl << "Main(): DEBUGLOG is NOT open" << endl << endl;
+#endif
+
+	// set up species
+	pSpecies = new Species;
+	demogrParams dem = pSpecies->getDemogrParams();
+	stageParams sstruct = pSpecies->getStageParams();
+	transferRules trfr = pSpecies->getTransferRules();
+
+	batchfiles b;
+	string indir = paramsSim->getDir(1);
+	string outdir = paramsSim->getDir(2);
+	b = ParseControlAndCheckInputFiles(pathToControlFile, indir, outdir);
+	if (b.ok) {
+		nSimuls = b.nSimuls;
+		nLandscapes = b.nLandscapes;
+		dem.repType = b.reproductn;
+		dem.repSeasons = b.repseasons;
+		if (b.stagestruct == 0)
+			dem.stageStruct = false;
+		else dem.stageStruct = true;
+		sstruct.nStages = b.stages;
+		if (b.transfer == 0)
+			trfr.usesMovtProc = false;
+		else {
+			trfr.usesMovtProc = true;
+			trfr.moveType = b.transfer;
+		}
+		cout << endl << "Batch input files OK" << endl;
+		pSpecies->setDemogr(dem);
+		pSpecies->setStage(sstruct);
+		pSpecies->setTrfrRules(trfr);
+		simParams sim = paramsSim->getSim();
+		sim.batchMode = true;
+		sim.batchNum = b.batchNum;
+		paramsSim->setSim(sim);
+	}
+	else {
+		cout << endl << "Error in parsing batch input files - see BatchLog file for details" << endl;
+	}
+
+	// set up random number class
 #if RS_RCPP
-	#ifndef NDEBUG
-		pRandom = new RSrandom(666);
-	#else
-		pRandom = new RSrandom(-1);  // need to be replaced with parameter from control file
-	#endif
+#ifndef NDEBUG
+	pRandom = new RSrandom(666);
+#else
+	pRandom = new RSrandom(-1);  // need to be replaced with parameter from control file
+#endif
 #else
 	pRandom = new RSrandom();
 #endif
 
 
 #if RANDOMCHECK
-randomCheck();
+	randomCheck();
 #else
-if (b.ok) {
-	try
-	{
-		RunBatch(nSimuls, nLandscapes);
+	if (b.ok) {
+		try
+		{
+			RunBatch(nSimuls, nLandscapes);
+		}
+		catch (const std::exception& e)
+		{
+			cerr << endl << "Error: " << e.what() << endl;
+		}
 	}
-	catch (const std::exception& e)
-	{
-		cerr << endl << "Error: " << e.what() << endl;
-	}
-}
 #endif
 
-delete pRandom;
+	delete pRandom;
 
 #ifndef NDEBUG
-if (DEBUGLOG.is_open()) {
-	DEBUGLOG.close(); DEBUGLOG.clear();
-}
-if (MUTNLOG.is_open()) {
-	MUTNLOG.close(); MUTNLOG.clear();
-}
+	if (DEBUGLOG.is_open()) {
+		DEBUGLOG.close(); DEBUGLOG.clear();
+	}
 #endif
 
-delete paramsGrad;
-delete paramsStoch;
-delete paramsInit;
-delete paramsSim;     
-delete pSpecies;
+	delete paramsGrad;
+	delete paramsStoch;
+	delete paramsInit;
+	delete paramsSim;
+	delete pSpecies;
 
-t1 = (int)time(0);
-cout << endl << "***** Elapsed time " << t1-t0 << " seconds" << endl << endl;
+	t1 = (int)time(0);
+	cout << endl << "***** Elapsed time " << t1 - t0 << " seconds" << endl << endl;
 
-cout << "*****" << endl;
-cout << "***** Simulation completed." << endl;
-cout << "*****" << endl;
+	cout << "*****" << endl;
+	cout << "***** Simulation completed." << endl;
+	cout << "*****" << endl;
 
-return 0;
+	return 0;
 }
 
 //---------------------------------------------------------------------------
