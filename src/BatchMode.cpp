@@ -36,8 +36,6 @@ ifstream bInitFile, bInitIndsFile;
 
 ofstream batchLog;
 
-ofstream rsLog; // performance log for recording simulation times, etc.
-
 // NOTE: THE STREAMS USED TO READ THE DATA AT RUN TIME COULD TAKE THE SAME NAMES AS
 // USED DURING PARSING (ABOVE)
 ifstream parameters;
@@ -6482,19 +6480,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 
 	t0 = (int)time(0);
 
-	string name = paramsSim->getDir(2) + "Batch" + to_string(sim.batchNum) + "_RS_log.csv";
-	if (rsLog.is_open()) {
-		rsLog.close(); rsLog.clear();
-	}
-	rsLog.open(name.c_str());
-	if (!rsLog.is_open()) {
-		cout << endl << "Error - unable to open Batch" << sim.batchNum
-			<< "_RS_log.csv file - aborting batch run" << endl;
-		return;
-	}
-	rsLog << "Event,Number,Reps,Years,Time" << endl;
-	rsLog << "RANDOM SEED," << RS_random_seed << ",,," << endl;
-
 	// Open landscape batch file and read header record
 	if (ReadLandFile(0)) {
 		cout << endl << "Error opening landFile - aborting batch run" << endl;
@@ -6549,15 +6534,11 @@ void RunBatch(int nSimuls, int nLandscapes)
 				landcode = pLandscape->readLandscape(0, hname, " ", cname);
 			}
 			if (landcode != 0) {
-				rsLog << "Landscape," << land_nr << ",ERROR,CODE," << landcode << endl;
-				cout << endl << "Error reading landscape " << land_nr << " - aborting" << endl;
 				landOK = false;
 			}
 			if (paramsLand.dynamic) {
 				landcode = ReadDynLandFile(pLandscape);
 				if (landcode != 0) {
-					rsLog << "Landscape," << land_nr << ",ERROR,CODE," << landcode << endl;
-					cout << endl << "Error reading landscape " << land_nr << " - aborting" << endl;
 					landOK = false;
 				}
 			}
@@ -6573,19 +6554,12 @@ void RunBatch(int nSimuls, int nLandscapes)
 				if (landcode == 0) {
 				}
 				else {
-					rsLog << "Landscape," << land_nr << ",ERROR,CODE," << landcode << endl;
 					cout << endl << "Error reading initial distribution for landscape "
 						<< land_nr << " - aborting" << endl;
 					landOK = false;
 				}
 			}
 			paramsSim->setSim(sim);
-
-			if (landOK) {
-				t01 = static_cast<int>(time(0));
-				rsLog << "Landscape," << land_nr << ",,," << t01 - t00 << endl;
-
-			} // end of landOK condition
 
 		} // end of imported landscape
 
@@ -6624,7 +6598,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 				read_error = ReadParameters(1, pLandscape);
 				simParams sim = paramsSim->getSim();
 				if (read_error) {
-					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
 				if (stagestruct) {
@@ -6632,34 +6605,28 @@ void RunBatch(int nSimuls, int nLandscapes)
 				}
 				read_error = ReadEmigration(1);
 				if (read_error) {
-					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
 				read_error = ReadTransferFile(1, pLandscape);
 				if (read_error) {
-					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
 				read_error = ReadSettlement(1);
 				if (read_error) {
-					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
 				read_error = ReadInitialisation(1, pLandscape);
 				if (read_error) {
-					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
 
 				if (gHasGenetics) {
 					read_error = ReadGeneticsFile(ifsGenetics, pLandscape);
 					if (read_error) {
-						rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 						params_ok = false;
 					}
 					read_error = ReadTraitsFile(ifsTraits, gNbTraitFileRows[i]);
 					if (read_error) {
-						rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 						params_ok = false;
 					}
 				}
@@ -6674,9 +6641,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 					OutParameters(pLandscape);
 					RunModel(pLandscape, i);
 
-					t01 = (int)time(0);
-					rsLog << msgsim << sim.simulation << "," << sim.reps
-						<< "," << sim.years << "," << t01 - t00 << endl;
 				} // end of if (params_ok)
 				else {
 					cout << endl << "Error in reading parameter file(s)" << endl;
@@ -6709,14 +6673,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 	} // end of nLandscapes loop
 
 	ReadLandFile(9); // close the landFile
-
-	// Write performance data to log file
-	t1 = (int)time(0);
-	rsLog << endl << "Batch,,,," << t1 - t0 << endl;
-
-	if (rsLog.is_open()) {
-		rsLog.close(); rsLog.clear();
-	}
 }
 
 //---------------------------------------------------------------------------
