@@ -92,8 +92,6 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 
 	int t0, t1;
-	int nSimuls = 0, nLandscapes = 0; // no. of simulations and landscapes in batch
-
 	t0 = (int)time(0);
 
 	// set up parameter objects
@@ -180,29 +178,21 @@ int _tmain(int argc, _TCHAR* argv[])
 	stageParams sstruct = pSpecies->getStageParams();
 	transferRules trfr = pSpecies->getTransferRules();
 
-	batchfiles b;
 	string indir = paramsSim->getDir(1);
 	string outdir = paramsSim->getDir(2);
-	b = ParseControlAndCheckInputFiles(pathToControlFile, indir, outdir);
+	batchfiles b = ParseControlAndCheckInputFiles(pathToControlFile, indir, outdir);
+
 	if (b.ok) {
-		nSimuls = b.nSimuls;
-		nLandscapes = b.nLandscapes;
-		dem.repType = b.reproductn;
-		dem.repSeasons = b.repseasons;
-		if (b.stagestruct == 0)
-			dem.stageStruct = false;
-		else dem.stageStruct = true;
-		sstruct.nStages = b.stages;
-		if (b.transfer == 0)
-			trfr.usesMovtProc = false;
-		else {
-			trfr.usesMovtProc = true;
-			trfr.moveType = b.transfer;
-		}
+		pSpecies = new Species(
+			b.reproductn,
+			b.repseasons,
+			b.stagestruct == 0,
+			b.stages,
+			b.transfer == 0,
+			b.transfer
+		);
 		cout << endl << "Batch input files OK" << endl;
-		pSpecies->setDemogr(dem);
-		pSpecies->setStage(sstruct);
-		pSpecies->setTrfrRules(trfr);
+
 		simParams sim = paramsSim->getSim();
 		sim.batchMode = true;
 		sim.batchNum = b.batchNum;
@@ -223,21 +213,16 @@ int _tmain(int argc, _TCHAR* argv[])
 	pRandom = new RSrandom();
 #endif
 
-
-#if RANDOMCHECK
-	randomCheck();
-#else
 	if (b.ok) {
 		try
 		{
-			RunBatch(nSimuls, nLandscapes);
+			RunBatch(b.nSimuls, b.nLandscapes);
 		}
 		catch (const std::exception& e)
 		{
 			cerr << endl << "Error: " << e.what() << endl;
 		}
 	}
-#endif
 
 	delete pRandom;
 	delete paramsGrad;
