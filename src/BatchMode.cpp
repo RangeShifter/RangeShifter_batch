@@ -4706,7 +4706,6 @@ int ReadLandFile(int option, Landscape* pLandscape)
 {
 	landParams ppLand = pLandscape->getLandParams();
 	genLandParams ppGenLand = pLandscape->getGenLandParams();
-	simParams sim = paramsSim->getSim();
 
 	if (landtype == 9) { //artificial landscape
 		ppLand.rasterType = 9;
@@ -4744,7 +4743,7 @@ int ReadLandFile(int option, Landscape* pLandscape)
 			ppLand.nHab = 1; // habitat quality landscape has one habitat class
 	}
 
-	pLandscape->setLandParams(ppLand, sim.batchMode);
+	pLandscape->setLandParams(ppLand, true);
 	pLandscape->setGenLandParams(ppGenLand);
 
 	return ppLand.landNum;
@@ -5214,8 +5213,7 @@ GenParamType strToGenParamType(const string& str) {
 //---------------------------------------------------------------------------
 int ReadParameters(int option, Landscape* pLandscape)
 {
-	int iiii;
-	int error = 0;
+	int errorCode = 0;
 	landParams paramsLand = pLandscape->getLandParams();
 
 	if (option == 0) { // open file and read header line
@@ -5239,7 +5237,6 @@ int ReadParameters(int option, Landscape* pLandscape)
 	envStochParams env = paramsStoch->getStoch();
 	demogrParams dem = pSpecies->getDemogrParams();
 	simParams sim = paramsSim->getSim();
-	simView v = paramsSim->getViews();
 
 	if (!parameters.is_open()) {
 		cout << endl << "ReadParameters(): ERROR - ParameterFile is not open" << endl;
@@ -5247,32 +5244,34 @@ int ReadParameters(int option, Landscape* pLandscape)
 	}
 
 	int gradType, shift_begin, shift_stop;
-	float grad_inc, opt_y, f, optEXT, shift_rate;
+	float k, grad_inc, opt_y, f, optEXT, shift_rate;
 	bool shifting;
+	string inAbsorbing, inShifting, inEnvStoch, inEnvStochType, inLocalExt,
+		inSaveMaps, inHeatMaps, inDrawLoaded, inFixRepSeed;
 
+	parameters >> inFixRepSeed;
 	parameters >> sim.simulation >> sim.reps >> sim.years;
-	parameters >> iiii;
-	if (iiii == 1) sim.absorbing = true; else sim.absorbing = false;
+	parameters >> inAbsorbing;
+	sim.absorbing = (inAbsorbing == "1");
+
+	// Environmental gradient
 	parameters >> gradType;
-	parameters >> grad_inc >> opt_y >> f >> optEXT >> iiii >> shift_rate;
-	if (iiii == 1 && gradType != 0) shifting = true; else shifting = false;
+	parameters >> grad_inc >> opt_y >> f >> optEXT >> inShifting >> shift_rate;
+
+	shifting = (inShifting == "1" && gradType != 0);
 	parameters >> shift_begin >> shift_stop;
 	paramsGrad->setGradient(gradType, grad_inc, opt_y, f, optEXT);
 	if (shifting) paramsGrad->setShifting(shift_rate, shift_begin, shift_stop);
 	else paramsGrad->noShifting();
 
-	parameters >> iiii;
-	if (iiii == 0) env.stoch = false;
-	else {
-		env.stoch = true;
-		if (iiii == 2) env.local = true; else env.local = false;
-	}
-	if (paramsLand.patchModel && env.local) error = 101;
-	parameters >> iiii;
-	if (iiii == 1) env.inK = true; else env.inK = false;
-	// as from v1.1, there is just one pair of min & max values,
-	// which are attributes of the species
-	// ULTIMATELY, THE PARAMETER FILE SHOULD HAVE ONLY TWO COLUMNS ...
+	// Environmental Stochasticity
+	parameters >> inEnvStoch;
+	env.stoch = inEnvStoch == "1" || inEnvStoch == "2";
+	env.local = inEnvStoch == "2";
+	if (paramsLand.patchModel && env.local) errorCode = 101;
+
+	parameters >> inEnvStochType;
+	env.inK = (inEnvStochType == "1");
 	float minR, maxR, minK, maxK;
 	parameters >> env.ac >> env.std >> minR >> maxR >> minK >> maxK;
 	if (env.inK) {
@@ -5282,28 +5281,31 @@ int ReadParameters(int option, Landscape* pLandscape)
 		pSpecies->setMinMax(minKK, maxKK);
 	}
 	else pSpecies->setMinMax(minR, maxR);
-	parameters >> iiii;
-	if (iiii == 1) env.localExt = true; else env.localExt = false;
-	if (paramsLand.patchModel && env.localExt) error = 102;
+
+	// Local extinction
+	parameters >> inLocalExt;
+	env.localExt = (inLocalExt == "1");
+	if (paramsLand.patchModel && env.localExt) errorCode = 102;
+
 	parameters >> env.locExtProb;
 	paramsStoch->setStoch(env);
 
+	// Demographic parameters
 	parameters >> dem.propMales >> dem.harem >> dem.bc >> dem.lambda;
 	pSpecies->setDemogr(dem);
 
-	float k;
-
-	if (landtype == 9) { // artificial landscape
+	// Artificial landscape
+	if (landtype == 9) {
 		// only one value of K is read, but it must be applied as the second habitat if the
 		// landscape is discrete (the first is the matrix where K = 0) or as the first 
 		// (only) habitat if the landscape is continuous
 		genLandParams genland = pLandscape->getGenLandParams();
-		int nhab;
-		if (genland.continuous) nhab = 1;
-		else nhab = 2;
+		int nhab = genland.continuous ? 1 : 2;
+
 		pSpecies->createHabK(nhab);
 		parameters >> k;
 		k *= (((float)paramsLand.resol * (float)paramsLand.resol)) / 10000.0f;
+
 		if (genland.continuous) {
 			pSpecies->setHabK(0, k);
 		}
@@ -5321,40 +5323,43 @@ int ReadParameters(int option, Landscape* pLandscape)
 		}
 	}
 
-	parameters >> sim.outStartPop >> sim.outStartInd
-		>> sim.outStartTraitCell >> sim.outStartTraitRow >> sim.outStartConn;
-	parameters >> sim.outIntRange >> sim.outIntOcc >> sim.outIntPop >> sim.outIntInd
-		>> sim.outIntTraitCell >> sim.outIntTraitRow >> sim.outIntConn;
-	if (sim.outIntRange > 0)     sim.outRange = true; else sim.outRange = false;
-	if (sim.outIntOcc > 0)       sim.outOccup = true; else sim.outOccup = false;
-	if (sim.outIntPop > 0)       sim.outPop = true; else sim.outPop = false;
-	if (sim.outIntInd > 0)       sim.outInds = true; else sim.outInds = false;
-	if (sim.outIntRange > 0)     sim.outRange = true; else sim.outRange = false;
-	if (sim.outIntTraitCell > 0) sim.outTraitsCells = true; else sim.outTraitsCells = false;
-	if (sim.outIntTraitRow > 0)  sim.outTraitsRows = true; else sim.outTraitsRows = false;
-	if (sim.outIntConn > 0)      sim.outConnect = true; else sim.outConnect = false;
-	if (sim.outOccup && sim.reps < 2) error = 103;
+	// Output parameters
+	parameters	>> sim.outStartPop	>> sim.outStartInd
+				>> sim.outStartTraitCell >> sim.outStartTraitRow 
+				>> sim.outStartConn >> sim.outIntRange 
+				>> sim.outIntOcc >> sim.outIntPop 
+				>> sim.outIntInd >> sim.outIntTraitCell 
+				>> sim.outIntTraitRow >> sim.outIntConn;
+
+	sim.outRange = sim.outIntRange > 0;
+	sim.outOccup = sim.outIntOcc > 0;
+	sim.outPop = sim.outIntPop > 0;
+	sim.outInds = sim.outIntInd > 0;
+	sim.outTraitsCells = sim.outIntTraitCell > 0;
+	sim.outTraitsRows = sim.outIntTraitRow > 0;
+	sim.outConnect = sim.outIntConn > 0;
+
+	if (sim.outOccup && sim.reps < 2) errorCode = 103;
 	if (paramsLand.patchModel) {
-		if (sim.outTraitsRows) error = 104;
+		if (sim.outTraitsRows) errorCode = 104;
 	}
 	else {
-		if (sim.outConnect) error = 105;
+		if (sim.outConnect) errorCode = 105;
 	}
-	parameters >> iiii >> sim.mapInt;
-	if (iiii == 0) sim.saveMaps = false;
-	else sim.saveMaps = true;
-	parameters >> iiii;
-	if (iiii == 0) sim.saveVisits = false;
-	else sim.saveVisits = true;
-	parameters >> iiii;
-	if (iiii == 0) sim.drawLoaded = false; else sim.drawLoaded = true;
-	parameters >> iiii;
-	if (iiii == 1) sim.fixReplicateSeed = true; else sim.fixReplicateSeed = false;
+
+	// Output maps
+	parameters >> inSaveMaps >> sim.mapInt;
+	sim.saveMaps = inSaveMaps == "1";
+	parameters >> inHeatMaps;
+	sim.saveVisits = inHeatMaps == "1";
+	parameters >> inDrawLoaded;
+	sim.drawLoaded = inDrawLoaded == "1";
+
+	parameters >> inFixRepSeed;
+	sim.fixReplicateSeed = inFixRepSeed == "1";
 
 	paramsSim->setSim(sim);
-	paramsSim->setViews(v);
-
-	return error;
+	return errorCode;
 }
 
 //---------------------------------------------------------------------------
@@ -6523,7 +6528,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 		paramsLand.nHabMax = maxNhab;
 		paramsLand.spDist = speciesdist;
 		paramsLand.spResol = distresolution;
-		pLandscape->setLandParams(paramsLand, sim.batchMode);
+		pLandscape->setLandParams(paramsLand, true);
 
 		if (landtype != 9) { // imported landscape
 			string hname = paramsSim->getDir(1) + name_landscape;
@@ -6565,8 +6570,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 					landOK = false;
 				}
 			}
-			paramsSim->setSim(sim);
-
 		} // end of imported landscape
 
 		if (landOK) {
