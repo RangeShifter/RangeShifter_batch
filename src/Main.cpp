@@ -134,6 +134,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	string outdir = paramsSim->getDir(2);
 	batchfiles b = ParseControlAndCheckInputFiles(pathToControlFile, indir, outdir);
 	if (b.ok) {
+		paramsSim->setBatchNum(b.batchNum);
 		// Set up species
 		pSpecies = new Species(
 			b.reproductn,
@@ -144,11 +145,6 @@ int _tmain(int argc, _TCHAR* argv[])
 			b.transfer
 		);
 		cout << endl << "Batch input files OK" << endl;
-
-		simParams sim = paramsSim->getSim();
-		sim.batchMode = true;
-		sim.batchNum = b.batchNum;
-		paramsSim->setSim(sim);
 	}
 	else {
 		cout << endl << "Error in parsing batch input files - see BatchLog file for details" << endl;
