@@ -59,6 +59,27 @@ using namespace std;
 #include <direct.h>
 #endif
 
+string getProjectDir(const vector<string>& mainArgs) {
+	
+	string pathToProjectDir;
+	if (mainArgs.size() > 1) {
+		// full path name of directory passed as a parameter
+		pathToProjectDir = mainArgs[1];
+	}
+	else {
+		// use current directory - get name from first (automatic) parameter
+		string nameS = mainArgs[0];
+		pathToProjectDir = mainArgs[0];
+		unsigned int loc = nameS.find("/", 0);
+		while (loc < 999999) {
+			nameS = nameS.substr(loc + 1);
+			loc = nameS.find("/", 0);
+		}
+		pathToProjectDir = pathToProjectDir.substr(0, pathToProjectDir.length() - nameS.length());
+	}
+	return pathToProjectDir;
+}
+
 paramGrad* paramsGrad;		// pointer to environmental gradient parameters
 paramStoch* paramsStoch;	// pointer to environmental stochasticity parameters
 paramInit* paramsInit;		// pointer to initialisation parameters
@@ -89,62 +110,18 @@ int _tmain(int argc, _TCHAR* argv[])
 	paramsGrad = new paramGrad;
 	paramsStoch = new paramStoch;
 	paramsInit = new paramInit;
-	paramsSim = new paramSim;
 
 	// set up working directory and control file name
-	string pathToControlFile;
-#if LINUX_CLUSTER || RS_RCPP
-	if (argc > 1) {
-		// full path name of directory passed as a parameter
-		paramsSim->setDir(argv[1]);
-		if (argc > 2) {
-			// control file number also passed as a parameter
-			int i = atoi(argv[2]);
-			pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL" + to_string(i) + ".txt";
-		}
-		else {
-			// default name is CONTROL.txt
-			pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
-		}
-	}
-	else {
-		// use current directory - get name from first (automatic) parameter
-		string nameS = argv[0];
-		string path = argv[0];
-		unsigned int loc = nameS.find("/", 0);
-		while (loc < 999999) {
-			nameS = nameS.substr(loc + 1);
-			loc = nameS.find("/", 0);
-		}
-		path = path.substr(0, path.length() - nameS.length());
-		paramsSim->setDir(path);
-		// control file name is forced to be CONTROL.txt
-		pathToControlFile = paramsSim->getDir(0) + "Inputs/CONTROL.txt";
-	}
-#else
-	if (__argc > 1) {
-		// full path name of directory passed as a parameter
-		paramsSim->setDir(__argv[1]);
-		if (__argc > 2) {
-			// control file name also passed as a parameter
-			pathToControlFile = paramsSim->getDir(0) + "Inputs\\" + __argv[2];
-		}
-		else {
-			// default name is CONTROL.txt
-			pathToControlFile = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
-		}
-	}
-	else {
-		// Get the current directory. 
-		char* buffer = _getcwd(NULL, 0);
-		string dir = buffer;
-		free(buffer);
-		dir = dir + "\\"; //Current directory path
-		paramsSim->setDir(dir);
-		// control file name is forced to be CONTROL.txt
-		pathToControlFile = paramsSim->getDir(0) + "Inputs\\CONTROL.txt";
-	}
-#endif
+	vector<string> args(argc);
+	args[0] = argv[0];
+	if (argc > 1) args[1] = argv[1];
+
+	string pathToProjectDir = getProjectDir(args);
+	paramsSim = new paramSim(pathToProjectDir);
+
+	string pathToControlFile = paramsSim->getDir(0) +
+		"Inputs/CONTROL" + (argc > 2 ? argv[2] : "") + ".txt";
+
 #ifndef NDEBUG
 	cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
 	cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
@@ -163,7 +140,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 666;
 	}
 
-	// set up species
+	// Set up species
 	pSpecies = new Species;
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
@@ -171,8 +148,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	string indir = paramsSim->getDir(1);
 	string outdir = paramsSim->getDir(2);
-	batchfiles b = ParseControlAndCheckInputFiles(pathToControlFile, indir, outdir);
 
+	batchfiles b = ParseControlAndCheckInputFiles(pathToControlFile, indir, outdir);
 	if (b.ok) {
 		pSpecies = new Species(
 			b.reproductn,
@@ -230,16 +207,6 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	return 0;
 }
-
-//---------------------------------------------------------------------------
-
-// Dummy functions corresponding to those used in GUI version
-
-/* Batch mode of v2.0 currently has no facility to save maps (unless initiated from GUI).
-To do so, we would need a form of bit map which is portable across platforms
-and operating systems, rather than the Embarcadero VCL classes.
-Does such exist?
-*/
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
