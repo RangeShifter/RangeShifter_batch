@@ -177,9 +177,9 @@ int _tmain(int argc, _TCHAR* argv[])
 		pSpecies = new Species(
 			b.reproductn,
 			b.repseasons,
-			b.stagestruct == 0,
+			b.stagestruct == 1, // int to bool
 			b.stages,
-			b.transfer == 0,
+			b.transfer == 1,
 			b.transfer
 		);
 		cout << endl << "Batch input files OK" << endl;
