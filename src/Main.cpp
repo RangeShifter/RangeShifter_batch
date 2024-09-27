@@ -128,29 +128,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	cout << endl << "Control file:      " << pathToControlFile << endl << endl;
 #endif
 
-	bool errorfolder = CheckDirectory();
-	if (errorfolder) {
-		cout << endl << "***** Invalid working directory: " << paramsSim->getDir(0)
-			<< endl << endl;
-		cout << "***** Working directory must contain Inputs, Outputs and Output_Maps folders"
-			<< endl << endl;
-		cout << "*****" << endl;
-		cout << "***** Simulation ABORTED" << endl;
-		cout << "*****" << endl;
-		return 666;
-	}
-
-	// Set up species
-	pSpecies = new Species;
-	demogrParams dem = pSpecies->getDemogrParams();
-	stageParams sstruct = pSpecies->getStageParams();
-	transferRules trfr = pSpecies->getTransferRules();
+	if (!CheckDirectory(pathToProjectDir)) return 1;
 
 	string indir = paramsSim->getDir(1);
 	string outdir = paramsSim->getDir(2);
-
 	batchfiles b = ParseControlAndCheckInputFiles(pathToControlFile, indir, outdir);
 	if (b.ok) {
+		// Set up species
 		pSpecies = new Species(
 			b.reproductn,
 			b.repseasons,
