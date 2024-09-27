@@ -187,11 +187,10 @@ void FileHeadersOK(string);
 void SimulnCountError(string);
 
 void RunBatch(int, int);
-int ReadParameters(int, Landscape*);
-int ReadLandFile(int);
-int ReadLandFile(int, Landscape*);
+int ReadParameters(Landscape*);
+int ReadLandFile(Landscape*);
 int ReadDynLandFile(Landscape*);
-int ReadStageStructure(int);
+int ReadStageStructure();
 int ReadTransitionMatrix(
 	short,	// no. of stages
 	short,	// no. of sexes represented for demography 
@@ -199,17 +198,16 @@ int ReadTransitionMatrix(
 	short		// season
 );
 int ReadStageWeights(int);
-int ReadEmigration(int);
-int ReadTransferFile(int, Landscape*);
+int ReadEmigration();
+int ReadTransferFile(Landscape*);
 int ReadTransferKernels(transferRules, const landParams&);
 void ReadTransferSMS(transferRules, const landParams&);
 int ReadTransferCRW(transferRules, const landParams&);
-int ReadSettlement(int);
-int ReadInitialisation(int, Landscape*);
+int ReadSettlement();
+int ReadInitialisation(Landscape*);
 int ReadInitIndsFile(int, Landscape*, string);
 int ReadGeneticsFile(ifstream& ifs, Landscape*);
 int ReadTraitsFile(ifstream& ifs, const int& whichSim);
-void flushHeader(ifstream& ifs);
 
 // Helper functions to ReadGenetics and ReadTraits
 void setUpSpeciesTrait(vector<string>);
