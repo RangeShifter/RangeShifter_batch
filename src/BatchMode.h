@@ -232,8 +232,6 @@ extern paramInit* paramsInit;
 extern paramSim* paramsSim;
 
 extern Species* pSpecies;
-extern string costmapname;
-extern string genfilename;
 extern int RS_random_seed;
 
 //---------------------------------------------------------------------------

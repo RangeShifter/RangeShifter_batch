@@ -51,10 +51,6 @@ using namespace std;
 #include "./RScore/SubCommunity.h"
 #include "./BatchMode.h"
 
-#if RANDOMCHECK
-#include "./RScore/RandomCheck.h"
-#endif
-
 #if LINUX_CLUSTER || R_CMD
 #include <unistd.h>
 #else
@@ -63,19 +59,14 @@ using namespace std;
 #include <direct.h>
 #endif
 
-string habmapname, patchmapname, distnmapname;	// req'd for compilation, but not used
-string costmapname, genfilename;					 			// ditto
-vector <string> hfnames;											// ditto
+paramGrad* paramsGrad;		// pointer to environmental gradient parameters
+paramStoch* paramsStoch;	// pointer to environmental stochasticity parameters
+paramInit* paramsInit;		// pointer to initialisation parameters
+paramSim* paramsSim;		// pointer to simulation parameters
 
-paramGrad* paramsGrad;			// pointer to environmental gradient parameters
-paramStoch* paramsStoch;		// pointer to environmental stochasticity parameters
-paramInit* paramsInit;			// pointer to initialisation parameters
-paramSim* paramsSim;				// pointer to simulation parameters
-
-Species* pSpecies;  				// pointer to species
-Community* pComm;						// pointer to community
-RSrandom* pRandom;          // pointer to random number routines
-
+Species* pSpecies;		// pointer to species
+Community* pComm;		// pointer to community
+RSrandom* pRandom;		// pointer to random number routines
 
 //---------------------------------------------------------------------------
 #if LINUX_CLUSTER || RS_RCPP
