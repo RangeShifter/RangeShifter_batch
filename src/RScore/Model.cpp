@@ -42,7 +42,6 @@ int RunModel(Landscape* pLandscape, int seqsim)
 	envStochParams env = paramsStoch->getStoch();
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
-	//emigRules emig = pSpecies->getEmig();
 	transferRules trfr = pSpecies->getTransferRules();
 	initParams init = paramsInit->getInit();
 	simParams sim = paramsSim->getSim();
@@ -402,20 +401,6 @@ int RunModel(Landscape* pLandscape, int seqsim)
 
 			for (int gen = 0; gen < dem.repSeasons; gen++) // generation loop
 			{
-#ifndef NDEBUG
-				// TEMPORARY RANDOM STREAM CHECK
-				if (yr % 1 == 0)
-				{
-					DEBUGLOG << endl << "RunModel(): start of gen " << gen << " in year " << yr
-						<< " for rep " << rep << " (";
-					for (int i = 0; i < 5; i++) {
-						int rrrr = pRandom->IRandom(1000, 2000);
-						DEBUGLOG << " " << rrrr;
-					}
-					DEBUGLOG << " )" << endl;
-				}
-#endif
-
 				// Output and pop. visualisation before reproduction
 				if (v.viewPop || v.viewTraits || sim.outOccup
 					|| sim.outTraitsCells || sim.outTraitsRows || sim.saveMaps)
@@ -688,44 +673,41 @@ bool is_directory(const char* pathname) {
 #endif
 
 //---------------------------------------------------------------------------
-bool CheckDirectory(void)
+bool CheckDirectory(const string& pathToProjDir)
 {
 	bool errorfolder = false;
 
 	string subfolder;
 
-	subfolder = paramsSim->getDir(0) + "Inputs";
+	subfolder = pathToProjDir + "Inputs";
 	const char* inputs = subfolder.c_str();
 	if (!is_directory(inputs)) errorfolder = true;
-	subfolder = paramsSim->getDir(0) + "Outputs";
+	subfolder = pathToProjDir + "Outputs";
 	const char* outputs = subfolder.c_str();
 	if (!is_directory(outputs)) errorfolder = true;
-	subfolder = paramsSim->getDir(0) + "Output_Maps";
+	subfolder = pathToProjDir + "Output_Maps";
 	const char* outputmaps = subfolder.c_str();
 	if (!is_directory(outputmaps)) errorfolder = true;
 
-	return errorfolder;
+	if (errorfolder) {
+		cout << endl << "***** Invalid working directory: " << pathToProjDir
+			<< endl << endl;
+		cout << "***** Working directory must contain Inputs, Outputs and Output_Maps folders"
+			<< endl << endl;
+		cout << "*****" << endl;
+		cout << "***** Simulation ABORTED" << endl;
+		cout << "*****" << endl;
+		return false;
+	}
+	else return true;
 }
 
 //---------------------------------------------------------------------------
 //For outputs and population visualisations pre-reproduction
 void PreReproductionOutput(Landscape* pLand, Community* pComm, int rep, int yr, int gen)
 {
-#ifndef NDEBUG
-	landParams ppLand = pLand->getLandParams();
-#endif
 	simParams sim = paramsSim->getSim();
 	simView v = paramsSim->getViews();
-
-#ifndef NDEBUG
-	DEBUGLOG << "PreReproductionOutput(): 11111 rep=" << rep << " yr=" << yr << " gen=" << gen
-		<< " landNum=" << ppLand.landNum << " maxX=" << ppLand.maxX << " maxY=" << ppLand.maxY
-		<< endl;
-	DEBUGLOG << "PreReproductionOutput(): 11112 outRange=" << sim.outRange
-		<< " outIntRange=" << sim.outIntRange
-		<< " outPop=" << sim.outPop << " outIntPop=" << sim.outIntPop
-		<< endl;
-#endif
 
 	// trait outputs and visualisation
 	if (v.viewTraits
@@ -792,10 +774,9 @@ void OutParameters(Landscape* pLandscape)
 	outPar << endl << endl;
 
 	outPar << "BATCH MODE \t";
-	if (sim.batchMode) outPar << "yes" << endl; else outPar << "no" << endl;
-#if RS_RCPP
-	outPar << "SEED \t" << RS_random_seed << endl;
-#endif
+	if (sim.batchMode) outPar << "yes" << endl; 
+	else outPar << "no" << endl;
+	outPar << "SEED \t" << pRandom->getSeed() << endl;
 	outPar << "REPLICATES \t" << sim.reps << endl;
 	outPar << "YEARS \t" << sim.years << endl;
 	outPar << "REPRODUCTIVE SEASONS / YEAR\t" << dem.repSeasons << endl;
@@ -851,17 +832,6 @@ void OutParameters(Landscape* pLandscape)
 		}
 #else
 		if (sim.batchMode) outPar << " (see batch file) " << landFile << endl;
-		else {
-			outPar << habmapname << endl;
-			if (ppLand.rasterType == 1) { // habitat % cover - list additional layers
-				for (int i = 0; i < ppLand.nHab - 1; i++) {
-					outPar << "           " << hfnames[i] << endl;
-				}
-			}
-			if (ppLand.patchModel) {
-				outPar << "PATCH FILE: " << patchmapname << endl;
-			}
-		}
 #endif
 		outPar << "No. HABITATS:\t" << ppLand.nHab << endl;
 	}
@@ -883,8 +853,6 @@ void OutParameters(Landscape* pLandscape)
 			if (chg.costfile != "none" && chg.costfile != "NULL") {
 				outPar << "Costs    : " << chg.costfile << endl;
 			}
-			//		outPar << "Change no. " << chg.chgnum << " in year " << chg.chgyear
-			//			<< " habitat map: " << chg.habfile << endl;
 		}
 	}
 	outPar << endl << "SPECIES DISTRIBUTION LOADED: \t";
@@ -895,9 +863,6 @@ void OutParameters(Landscape* pLandscape)
 		outPar << "FILE NAME: ";
 #if !RS_RCPP
 		if (sim.batchMode) outPar << " (see batch file) " << landFile << endl;
-		else {
-			outPar << distnmapname << endl;
-		}
 #else
 		outPar << name_sp_dist << endl;
 #endif
@@ -1273,9 +1238,6 @@ void OutParameters(Landscape* pLandscape)
 			straightenPath = move.straightenPath;
 			if (trfr.costMap) {
 				outPar << "SMS\tcosts from imported cost map" << endl;
-#if !RS_RCPP
-				outPar << "FILE NAME: " << costmapname << endl;
-#endif
 			}
 			else {
 				outPar << "SMS\tcosts:" << endl;

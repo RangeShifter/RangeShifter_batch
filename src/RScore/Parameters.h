@@ -333,7 +333,7 @@ struct simView {
 class paramSim {
 
 public:
-	paramSim(void);
+	paramSim(const string& pathToProjDir);
 	~paramSim(void);
 	void setSim(simParams);
 	void setGeneticSim(string patchSamplingOption, bool outputGeneticValues, bool outputWeirCockerham, bool outputWeirHill, int outputStartGenetics, int outputGeneticInterval);
@@ -341,8 +341,11 @@ public:
 	int getSimNum(void);
 	void setViews(simView);
 	simView getViews(void);
-	void setDir(string);
 	string getDir(int);
+	void setBatchNum(const int& batchNb) {
+		batchNum = batchNb;
+		batchMode = true;
+	}
 #if RS_RCPP
 	bool getReturnPopRaster(void);
 	bool getCreatePopFile(void);
@@ -405,10 +408,6 @@ private:
 	int outputStartGenetics;
 	int outputGeneticInterval;
 };
-
-#ifndef NDEBUG
-extern ofstream DEBUGLOG;
-#endif
 
 extern RSrandom* pRandom;
 

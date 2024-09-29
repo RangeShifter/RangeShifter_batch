@@ -36,8 +36,6 @@ ifstream bInitFile, bInitIndsFile;
 
 ofstream batchLog;
 
-ofstream rsLog; // performance log for recording simulation times, etc.
-
 // NOTE: THE STREAMS USED TO READ THE DATA AT RUN TIME COULD TAKE THE SAME NAMES AS
 // USED DURING PARSING (ABOVE)
 ifstream parameters;
@@ -1466,9 +1464,7 @@ int CheckLandFile(int landtype, string indir)
 }
 
 int CheckDynamicFile(string indir, string costfile) {
-#ifndef NDEBUG
-	DEBUGLOG << "ParseDynamicFile(): costfile=" << costfile << endl;
-#endif
+
 	string header, filename, fname, ftype, intext;
 	int change, prevchange, year, prevyear = 0;
 	rasterdata landchgraster, patchchgraster, costchgraster;
@@ -4681,36 +4677,10 @@ void SimulnCountError(string filename)
 }
 
 //---------------------------------------------------------------------------
-int ReadLandFile(int option)
-{
-	if (option == 0) { // open file and read header line
-		landfile.open(landFile.c_str());
-		if (landfile.is_open()) {
-			string header;
-			int nheaders;
-			if (landtype == 9) nheaders = 9; // artificial landscape
-			else { // imported raster map
-				nheaders = 7;
-			}
-			for (int i = 0; i < nheaders; i++) landfile >> header;
-		}
-		else return 1;
-	}
-
-	if (option == 9) { // close file
-		if (landfile.is_open()) {
-			landfile.close();  landfile.clear();
-		}
-	}
-	return 0;
-}
-
-//---------------------------------------------------------------------------
-int ReadLandFile(int option, Landscape* pLandscape)
+int ReadLandFile(Landscape* pLandscape)
 {
 	landParams ppLand = pLandscape->getLandParams();
 	genLandParams ppGenLand = pLandscape->getGenLandParams();
-	simParams sim = paramsSim->getSim();
 
 	if (landtype == 9) { //artificial landscape
 		ppLand.rasterType = 9;
@@ -4748,7 +4718,7 @@ int ReadLandFile(int option, Landscape* pLandscape)
 			ppLand.nHab = 1; // habitat quality landscape has one habitat class
 	}
 
-	pLandscape->setLandParams(ppLand, sim.batchMode);
+	pLandscape->setLandParams(ppLand, true);
 	pLandscape->setGenLandParams(ppGenLand);
 
 	return ppLand.landNum;
@@ -4837,7 +4807,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 
 //--------------------------------------------------------------------------
 
-void flushHeader(ifstream& ifs) {
+void flushHeaders(ifstream& ifs) {
 	string headerLine;
 	// Pass the first line (headers) to an empty string...
 	std::getline(ifs, headerLine);
@@ -5216,34 +5186,14 @@ GenParamType strToGenParamType(const string& str) {
 }
 
 //---------------------------------------------------------------------------
-int ReadParameters(int option, Landscape* pLandscape)
+int ReadParameters(Landscape* pLandscape)
 {
-	int iiii;
-	int error = 0;
+	int errorCode = 0;
 	landParams paramsLand = pLandscape->getLandParams();
-
-	if (option == 0) { // open file and read header line
-		parameters.open(parameterFile.c_str());
-		if (parameters.is_open()) {
-			string header;
-			int nheaders = 44 + paramsLand.nHabMax;
-			for (int i = 0; i < nheaders; i++) parameters >> header;
-			return 0;
-		}
-		else return 1;
-	}
-
-	if (option == 9) { // close file
-		if (parameters.is_open()) {
-			parameters.close();  parameters.clear();
-		}
-		return 0;
-	}
 
 	envStochParams env = paramsStoch->getStoch();
 	demogrParams dem = pSpecies->getDemogrParams();
 	simParams sim = paramsSim->getSim();
-	simView v = paramsSim->getViews();
 
 	if (!parameters.is_open()) {
 		cout << endl << "ReadParameters(): ERROR - ParameterFile is not open" << endl;
@@ -5251,32 +5201,34 @@ int ReadParameters(int option, Landscape* pLandscape)
 	}
 
 	int gradType, shift_begin, shift_stop;
-	float grad_inc, opt_y, f, optEXT, shift_rate;
+	float k, grad_inc, opt_y, f, optEXT, shift_rate;
 	bool shifting;
+	string inAbsorbing, inShifting, inEnvStoch, inEnvStochType, inLocalExt,
+		inSaveMaps, inHeatMaps, inDrawLoaded, inFixRepSeed;
 
+	parameters >> inFixRepSeed;
 	parameters >> sim.simulation >> sim.reps >> sim.years;
-	parameters >> iiii;
-	if (iiii == 1) sim.absorbing = true; else sim.absorbing = false;
+	parameters >> inAbsorbing;
+	sim.absorbing = (inAbsorbing == "1");
+
+	// Environmental gradient
 	parameters >> gradType;
-	parameters >> grad_inc >> opt_y >> f >> optEXT >> iiii >> shift_rate;
-	if (iiii == 1 && gradType != 0) shifting = true; else shifting = false;
+	parameters >> grad_inc >> opt_y >> f >> optEXT >> inShifting >> shift_rate;
+
+	shifting = (inShifting == "1" && gradType != 0);
 	parameters >> shift_begin >> shift_stop;
 	paramsGrad->setGradient(gradType, grad_inc, opt_y, f, optEXT);
 	if (shifting) paramsGrad->setShifting(shift_rate, shift_begin, shift_stop);
 	else paramsGrad->noShifting();
 
-	parameters >> iiii;
-	if (iiii == 0) env.stoch = false;
-	else {
-		env.stoch = true;
-		if (iiii == 2) env.local = true; else env.local = false;
-	}
-	if (paramsLand.patchModel && env.local) error = 101;
-	parameters >> iiii;
-	if (iiii == 1) env.inK = true; else env.inK = false;
-	// as from v1.1, there is just one pair of min & max values,
-	// which are attributes of the species
-	// ULTIMATELY, THE PARAMETER FILE SHOULD HAVE ONLY TWO COLUMNS ...
+	// Environmental Stochasticity
+	parameters >> inEnvStoch;
+	env.stoch = inEnvStoch == "1" || inEnvStoch == "2";
+	env.local = inEnvStoch == "2";
+	if (paramsLand.patchModel && env.local) errorCode = 101;
+
+	parameters >> inEnvStochType;
+	env.inK = (inEnvStochType == "1");
 	float minR, maxR, minK, maxK;
 	parameters >> env.ac >> env.std >> minR >> maxR >> minK >> maxK;
 	if (env.inK) {
@@ -5286,28 +5238,31 @@ int ReadParameters(int option, Landscape* pLandscape)
 		pSpecies->setMinMax(minKK, maxKK);
 	}
 	else pSpecies->setMinMax(minR, maxR);
-	parameters >> iiii;
-	if (iiii == 1) env.localExt = true; else env.localExt = false;
-	if (paramsLand.patchModel && env.localExt) error = 102;
+
+	// Local extinction
+	parameters >> inLocalExt;
+	env.localExt = (inLocalExt == "1");
+	if (paramsLand.patchModel && env.localExt) errorCode = 102;
+
 	parameters >> env.locExtProb;
 	paramsStoch->setStoch(env);
 
+	// Demographic parameters
 	parameters >> dem.propMales >> dem.harem >> dem.bc >> dem.lambda;
 	pSpecies->setDemogr(dem);
 
-	float k;
-
-	if (landtype == 9) { // artificial landscape
+	// Artificial landscape
+	if (landtype == 9) {
 		// only one value of K is read, but it must be applied as the second habitat if the
 		// landscape is discrete (the first is the matrix where K = 0) or as the first 
 		// (only) habitat if the landscape is continuous
 		genLandParams genland = pLandscape->getGenLandParams();
-		int nhab;
-		if (genland.continuous) nhab = 1;
-		else nhab = 2;
+		int nhab = genland.continuous ? 1 : 2;
+
 		pSpecies->createHabK(nhab);
 		parameters >> k;
 		k *= (((float)paramsLand.resol * (float)paramsLand.resol)) / 10000.0f;
+
 		if (genland.continuous) {
 			pSpecies->setHabK(0, k);
 		}
@@ -5325,68 +5280,52 @@ int ReadParameters(int option, Landscape* pLandscape)
 		}
 	}
 
-	parameters >> sim.outStartPop >> sim.outStartInd
-		>> sim.outStartTraitCell >> sim.outStartTraitRow >> sim.outStartConn;
-	parameters >> sim.outIntRange >> sim.outIntOcc >> sim.outIntPop >> sim.outIntInd
-		>> sim.outIntTraitCell >> sim.outIntTraitRow >> sim.outIntConn;
-	if (sim.outIntRange > 0)     sim.outRange = true; else sim.outRange = false;
-	if (sim.outIntOcc > 0)       sim.outOccup = true; else sim.outOccup = false;
-	if (sim.outIntPop > 0)       sim.outPop = true; else sim.outPop = false;
-	if (sim.outIntInd > 0)       sim.outInds = true; else sim.outInds = false;
-	if (sim.outIntRange > 0)     sim.outRange = true; else sim.outRange = false;
-	if (sim.outIntTraitCell > 0) sim.outTraitsCells = true; else sim.outTraitsCells = false;
-	if (sim.outIntTraitRow > 0)  sim.outTraitsRows = true; else sim.outTraitsRows = false;
-	if (sim.outIntConn > 0)      sim.outConnect = true; else sim.outConnect = false;
-	if (sim.outOccup && sim.reps < 2) error = 103;
+	// Output parameters
+	parameters	>> sim.outStartPop	>> sim.outStartInd
+				>> sim.outStartTraitCell >> sim.outStartTraitRow 
+				>> sim.outStartConn >> sim.outIntRange 
+				>> sim.outIntOcc >> sim.outIntPop 
+				>> sim.outIntInd >> sim.outIntTraitCell 
+				>> sim.outIntTraitRow >> sim.outIntConn;
+
+	sim.outRange = sim.outIntRange > 0;
+	sim.outOccup = sim.outIntOcc > 0;
+	sim.outPop = sim.outIntPop > 0;
+	sim.outInds = sim.outIntInd > 0;
+	sim.outTraitsCells = sim.outIntTraitCell > 0;
+	sim.outTraitsRows = sim.outIntTraitRow > 0;
+	sim.outConnect = sim.outIntConn > 0;
+
+	if (sim.outOccup && sim.reps < 2) errorCode = 103;
 	if (paramsLand.patchModel) {
-		if (sim.outTraitsRows) error = 104;
+		if (sim.outTraitsRows) errorCode = 104;
 	}
 	else {
-		if (sim.outConnect) error = 105;
+		if (sim.outConnect) errorCode = 105;
 	}
-#ifndef NDEBUG
-	DEBUGLOG << "ReadParameters(): outRange=" << sim.outRange << " outInt=" << sim.outIntRange
-		<< endl;
-#endif
-	parameters >> iiii >> sim.mapInt;
-	if (iiii == 0) sim.saveMaps = false;
-	else sim.saveMaps = true;
-	parameters >> iiii;
-	if (iiii == 0) sim.saveVisits = false;
-	else sim.saveVisits = true;
-	parameters >> iiii;
-	if (iiii == 0) sim.drawLoaded = false; else sim.drawLoaded = true;
-	parameters >> iiii;
-	if (iiii == 1) sim.fixReplicateSeed = true; else sim.fixReplicateSeed = false;
+
+	// Output maps
+	parameters >> inSaveMaps >> sim.mapInt;
+	sim.saveMaps = inSaveMaps == "1";
+	parameters >> inHeatMaps;
+	sim.saveVisits = inHeatMaps == "1";
+	parameters >> inDrawLoaded;
+	sim.drawLoaded = inDrawLoaded == "1";
+
+	parameters >> inFixRepSeed;
+	sim.fixReplicateSeed = inFixRepSeed == "1";
 
 	paramsSim->setSim(sim);
-	paramsSim->setViews(v);
-
-	return error;
+	return errorCode;
 }
 
 //---------------------------------------------------------------------------
-int ReadStageStructure(int option)
+int ReadStageStructure()
 {
 	string name;
 	int simulation, postDestructn;
 	stageParams sstruct = pSpecies->getStageParams();
 	string Inputs = paramsSim->getDir(1);
-
-	if (option == 0) { // open file and read header line
-		ssfile.open(stageStructFile.c_str());
-		string header;
-		int nheaders = 18;
-		for (int i = 0; i < nheaders; i++) ssfile >> header;
-		return 0;
-	}
-
-	if (option == 9) { // close file
-		if (ssfile.is_open()) {
-			ssfile.close(); ssfile.clear();
-		}
-		return 0;
-	}
 
 	ssfile >> simulation;
 	ssfile >> postDestructn >> sstruct.probRep >> sstruct.repInterval >> sstruct.maxAge;
@@ -5641,25 +5580,9 @@ int ReadStageWeights(int option)
 }
 
 //---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
-int ReadEmigration(int option)
+int ReadEmigration()
 {
 	int errorCode = 0;
-
-	if (option == 0) { // open file and read header line
-		emigFile.open(emigrationFile.c_str());
-		string header;
-		for (int i = 0; i < nHeadersEmig; i++) emigFile >> header;
-		return 0;
-	}
-	if (option == 9) { // close file
-		if (emigFile.is_open()) {
-			emigFile.close(); emigFile.clear();
-		}
-		return 0;
-	}
-
 	int inFullKernel, inDensDep, inStgDep, inSexDep, inIndVar;
 	int Nlines, simulationNb, simNbFirstLine = 0, inStage, inSex, inEmigstage;
 	float inEp, inD0, inAlpha, inBeta;
@@ -5782,57 +5705,11 @@ int ReadEmigration(int option)
 }
 
 //---------------------------------------------------------------------------
-int ReadTransferFile(int option, Landscape* pLandscape)
+int ReadTransferFile(Landscape* pLandscape)
 {
 	int error = 0;
 	landParams paramsLand = pLandscape->getLandParams();
 	transferRules trfr = pSpecies->getTransferRules();
-
-	if (option == 0) { // open file and read header line
-		transFile.open(transferFile.c_str());
-		string header;
-		int nheaders = 0;
-		if (trfr.usesMovtProc) {
-
-			if (paramsLand.generated)
-				pSpecies->createHabCostMort(paramsLand.nHab);
-			else
-				pSpecies->createHabCostMort(paramsLand.nHabMax);
-
-			if (trfr.moveType == 1) { // SMS
-				int standardcols = 10;
-				if (paramsLand.generated) {
-					nheaders = standardcols + 6; // artificial landscape
-				}
-				else { // real landscape
-					if (paramsLand.rasterType == 0)
-						nheaders = standardcols + 3 + 2 * paramsLand.nHabMax; // habitat codes
-					else nheaders = standardcols + 3; // habitat quality
-				}
-			}
-			else { // CRW
-				if (paramsLand.generated) {
-					nheaders = 7;
-				}
-				else {
-					if (paramsLand.rasterType == 0) nheaders = 7 + paramsLand.nHabMax;
-					else nheaders = 7;
-				}
-			}
-		} else { // dispersal kernel
-			nheaders = 14;
-		}
-		for (int i = 0; i < nheaders; i++) 
-			transFile >> header;
-		return 0;
-	}
-
-	if (option == 9) { // close file
-		if (transFile.is_open()) {
-			transFile.close(); transFile.clear();
-		}
-		return 0;
-	}
 
 	// new local variable to replace former global variable
 	int TransferType = trfr.usesMovtProc ? trfr.moveType : 0; 
@@ -6091,7 +5968,7 @@ int ReadTransferCRW(transferRules trfr, const landParams& paramsLand) {
 }
 
 //---------------------------------------------------------------------------
-int ReadSettlement(int option)
+int ReadSettlement()
 {
 	int Nlines, simNb, simNbFirstLine = 0, inStageDep, inSexDep, inStage, inSex;
 	bool isFirstline = true;
@@ -6105,24 +5982,6 @@ int ReadSettlement(int option)
 	settleSteps ssteps;
 	settleTraits settleDD;
 	int sexSettle = 0, inSettleType = 0, inDensDep, inIndVar, inFindMate;
-
-	if (option == 0) { // open file and read header line
-		settFile.open(settleFile.c_str());
-		string header;
-		int nheaders = 0;
-		if (trfr.usesMovtProc) nheaders = 14;
-		else nheaders = 7;
-		for (int i = 0; i < nheaders; i++) {
-			settFile >> header;
-		}
-		return 0;
-	}
-	if (option == 9) { // close file
-		if (settFile.is_open()) {
-			settFile.close(); settFile.clear();
-		}
-		return 0;
-	}
 
 	isFirstline = true;
 
@@ -6309,7 +6168,7 @@ int ReadSettlement(int option)
 }
 
 //---------------------------------------------------------------------------
-int ReadInitialisation(int option, Landscape* pLandscape)
+int ReadInitialisation(Landscape* pLandscape)
 {
 	landParams paramsLand = pLandscape->getLandParams();
 	demogrParams dem = pSpecies->getDemogrParams();
@@ -6320,21 +6179,6 @@ int ReadInitialisation(int option, Landscape* pLandscape)
 	int simNb, maxcells;
 	float totalProps;
 	int error = 0;
-
-	if (option == 0) { // open file and read header line
-		initFile.open(initialFile.c_str());
-		string header;
-		int nheaders = 17;
-		if (dem.stageStruct) nheaders += 1 + sstruct.nStages - 1;
-		for (int i = 0; i < nheaders; i++) initFile >> header;
-		return 0;
-	}
-	if (option == 9) { // close file
-		if (initFile.is_open()) {
-			initFile.close(); initFile.clear();
-		}
-		return 0;
-	}
 
 	initFile >> simNb >> init.seedType >> init.freeType >> init.spDistType;
 
@@ -6489,33 +6333,19 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 void RunBatch(int nSimuls, int nLandscapes)
 {
 	int land_nr;
-	int t0, t1, t00, t01;
 	int read_error;
 	bool params_ok;
 	simParams sim = paramsSim->getSim();
 
 	Landscape* pLandscape = nullptr;  		// pointer to landscape
 
-	t0 = (int)time(0);
-
-	string name = paramsSim->getDir(2) + "Batch" + to_string(sim.batchNum) + "_RS_log.csv";
-	if (rsLog.is_open()) {
-		rsLog.close(); rsLog.clear();
-	}
-	rsLog.open(name.c_str());
-	if (!rsLog.is_open()) {
-		cout << endl << "Error - unable to open Batch" << sim.batchNum
-			<< "_RS_log.csv file - aborting batch run" << endl;
-		return;
-	}
-	rsLog << "Event,Number,Reps,Years,Time" << endl;
-	rsLog << "RANDOM SEED," << RS_random_seed << ",,," << endl;
-
 	// Open landscape batch file and read header record
-	if (ReadLandFile(0)) {
+	landfile.open(landFile);
+	if (!landfile.is_open()) {
 		cout << endl << "Error opening landFile - aborting batch run" << endl;
 		return;
 	}
+	flushHeaders(landfile);
 
 	for (int j = 0; j < nLandscapes; j++) {
 		// create new landscape
@@ -6523,13 +6353,13 @@ void RunBatch(int nSimuls, int nLandscapes)
 		pLandscape = new Landscape;
 		bool landOK = true;
 
-		t00 = (int)time(0);
-		land_nr = ReadLandFile(1, pLandscape);
+		land_nr = ReadLandFile(pLandscape);
 		if (land_nr <= 0) { // error condition
 			string msg = "Error code " + to_string(-land_nr)
 				+ " returned from reading LandFile - aborting batch run";
 			cout << endl << msg << endl;
-			ReadLandFile(9); // close the landscape file
+			landfile.close();  
+			landfile.clear();
 			return;
 		}
 		landParams paramsLand = pLandscape->getLandParams();
@@ -6548,7 +6378,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 		paramsLand.nHabMax = maxNhab;
 		paramsLand.spDist = speciesdist;
 		paramsLand.spResol = distresolution;
-		pLandscape->setLandParams(paramsLand, sim.batchMode);
+		pLandscape->setLandParams(paramsLand, true);
 
 		if (landtype != 9) { // imported landscape
 			string hname = paramsSim->getDir(1) + name_landscape;
@@ -6565,15 +6395,11 @@ void RunBatch(int nSimuls, int nLandscapes)
 				landcode = pLandscape->readLandscape(0, hname, " ", cname);
 			}
 			if (landcode != 0) {
-				rsLog << "Landscape," << land_nr << ",ERROR,CODE," << landcode << endl;
-				cout << endl << "Error reading landscape " << land_nr << " - aborting" << endl;
 				landOK = false;
 			}
 			if (paramsLand.dynamic) {
 				landcode = ReadDynLandFile(pLandscape);
 				if (landcode != 0) {
-					rsLog << "Landscape," << land_nr << ",ERROR,CODE," << landcode << endl;
-					cout << endl << "Error reading landscape " << land_nr << " - aborting" << endl;
 					landOK = false;
 				}
 			}
@@ -6589,42 +6415,49 @@ void RunBatch(int nSimuls, int nLandscapes)
 				if (landcode == 0) {
 				}
 				else {
-					rsLog << "Landscape," << land_nr << ",ERROR,CODE," << landcode << endl;
 					cout << endl << "Error reading initial distribution for landscape "
 						<< land_nr << " - aborting" << endl;
 					landOK = false;
 				}
 			}
-			paramsSim->setSim(sim);
-
-			if (landOK) {
-				t01 = static_cast<int>(time(0));
-				rsLog << "Landscape," << land_nr << ",,," << t01 - t00 << endl;
-
-			} // end of landOK condition
-
 		} // end of imported landscape
 
 		if (landOK) {
 
 			// Open all other batch files and read header records
-			if (ReadParameters(0, pLandscape)) {
+			parameters.open(parameterFile);
+			if (!parameters.is_open()) {
 				cout << endl << "Error opening ParameterFile - aborting batch run" << endl;
 				return;
 			}
+			flushHeaders(parameters);
+
 			if (stagestruct) {
-				ReadStageStructure(0);
+				ssfile.open(stageStructFile);
+				flushHeaders(ssfile);
 			}
-			ReadEmigration(0);
-			ReadTransferFile(0, pLandscape);
-			ReadSettlement(0);
-			ReadInitialisation(0, pLandscape);
+
+			emigFile.open(emigrationFile);
+			flushHeaders(emigFile);
+
+			transFile.open(transferFile);
+			flushHeaders(transFile);
+			if (pSpecies->getTransferRules().usesMovtProc) {
+				if (paramsLand.generated)
+					pSpecies->createHabCostMort(paramsLand.nHab);
+				else pSpecies->createHabCostMort(paramsLand.nHabMax);
+			}
+			settFile.open(settleFile);
+			flushHeaders(settFile);
+
+			initFile.open(initialFile);
+			flushHeaders(initFile);
 
 			if (gHasGenetics) {
 				ifsGenetics.open(geneticsFile.c_str());
-				flushHeader(ifsGenetics);
+				flushHeaders(ifsGenetics);
 				ifsTraits.open(traitsFile.c_str());
-				flushHeader(ifsTraits);
+				flushHeaders(ifsTraits);
 			}
 
 			// nSimuls is the total number of lines (simulations) in
@@ -6635,53 +6468,43 @@ void RunBatch(int nSimuls, int nLandscapes)
 
 			for (int i = 0; i < nSimuls; i++) {
 
-				t00 = (int)time(0);
 				params_ok = true;
-				read_error = ReadParameters(1, pLandscape);
-				simParams sim = paramsSim->getSim();
+				read_error = ReadParameters(pLandscape);
 				if (read_error) {
-					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
 				if (stagestruct) {
-					ReadStageStructure(1);
+					ReadStageStructure();
 				}
-				read_error = ReadEmigration(1);
+				read_error = ReadEmigration();
 				if (read_error) {
-					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
-				read_error = ReadTransferFile(1, pLandscape);
+				read_error = ReadTransferFile(pLandscape);
 				if (read_error) {
-					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
-				read_error = ReadSettlement(1);
+				read_error = ReadSettlement();
 				if (read_error) {
-					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
-				read_error = ReadInitialisation(1, pLandscape);
+				read_error = ReadInitialisation(pLandscape);
 				if (read_error) {
-					rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 					params_ok = false;
 				}
 
 				if (gHasGenetics) {
 					read_error = ReadGeneticsFile(ifsGenetics, pLandscape);
 					if (read_error) {
-						rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 						params_ok = false;
 					}
 					read_error = ReadTraitsFile(ifsTraits, gNbTraitFileRows[i]);
 					if (read_error) {
-						rsLog << msgsim << sim.simulation << msgerr << read_error << msgabt << endl;
 						params_ok = false;
 					}
 				}
 				
 				if (params_ok) {
-					simParams sim = paramsSim->getSim();
 
 					cout << endl << "Running simulation nr. " << to_string(sim.simulation)
 						<< " on landscape no. " << to_string(land_nr) << endl;
@@ -6690,9 +6513,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 					OutParameters(pLandscape);
 					RunModel(pLandscape, i);
 
-					t01 = (int)time(0);
-					rsLog << msgsim << sim.simulation << "," << sim.reps
-						<< "," << sim.years << "," << t01 - t00 << endl;
 				} // end of if (params_ok)
 				else {
 					cout << endl << "Error in reading parameter file(s)" << endl;
@@ -6700,13 +6520,21 @@ void RunBatch(int nSimuls, int nLandscapes)
 			} // end of nSimuls for loop
 
 			// close input files
-			ReadParameters(9, pLandscape);
-			if (stagestruct) 
-				ReadStageStructure(9);
-			ReadEmigration(9);
-			ReadTransferFile(9, pLandscape);
-			ReadSettlement(9);
-			ReadInitialisation(9, pLandscape);
+			parameters.close();
+			parameters.clear();
+			if (stagestruct) {
+				ssfile.close(); 
+				ssfile.clear();
+			}
+			emigFile.close(); 
+			emigFile.clear();
+			transFile.close(); 
+			transFile.clear();
+			settFile.close();
+			settFile.clear();
+			initFile.close(); 
+			initFile.clear();
+
 			if (gHasGenetics) {
 				ifsGenetics.close();
 				ifsGenetics.clear();
@@ -6724,15 +6552,8 @@ void RunBatch(int nSimuls, int nLandscapes)
 
 	} // end of nLandscapes loop
 
-	ReadLandFile(9); // close the landFile
-
-	// Write performance data to log file
-	t1 = (int)time(0);
-	rsLog << endl << "Batch,,,," << t1 - t0 << endl;
-
-	if (rsLog.is_open()) {
-		rsLog.close(); rsLog.clear();
-	}
+	landfile.close();  
+	landfile.clear();
 }
 
 //---------------------------------------------------------------------------

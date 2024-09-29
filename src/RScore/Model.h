@@ -61,10 +61,6 @@
 using namespace std::filesystem;
 #endif
 
-#ifndef NDEBUG
-extern ofstream DEBUGLOG;
-#endif
-
 #if RS_RCPP && !R_CMD
 Rcpp::List RunModel(
 	Landscape*,	// pointer to Landscape
@@ -76,7 +72,9 @@ int RunModel(
 	int					// sequential simulation number
 );
 #endif // RS_RCPP && !R_CMD
-bool CheckDirectory(void);
+
+bool CheckDirectory(const string& pathToProjDir);
+
 void PreReproductionOutput(
 	Landscape*,	// pointer to Landscape
 	Community*, // pointer to Community
@@ -102,18 +100,10 @@ extern paramSim* paramsSim;
 extern paramInit* paramsInit;
 extern Community* pComm;
 
-const bool batchMode = true;
 extern string landFile;
-extern vector <string> hfnames;
-extern string habmapname;	// see Main.cpp (batch)
-extern string patchmapname;	// see Main.cpp (batch)
-extern string distnmapname;	// see Main.cpp (batch)
-extern string costmapname;	// see Main.cpp (batch)
-extern string genfilename;	// see Main.cpp (batch)
 extern RSrandom *pRandom;
 
 #if RS_RCPP
-extern std::uint32_t RS_random_seed;
 extern string name_landscape, name_patch, name_costfile, name_sp_dist;
 #endif
 //---------------------------------------------------------------------------
