@@ -258,7 +258,6 @@ public:
 	void setEmigTraits(const emigTraits& emig);
 	void setSettleTraits(const settleTraits& settle);
 
-
 	// Identify whether an individual is a potentially breeding female -
 	// if so, return her stage, otherwise return 0
 	int breedingFem(void);

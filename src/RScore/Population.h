@@ -231,7 +231,7 @@ public:
 
 #ifndef NDEBUG
 	// Testing only
-	void clearInds() { inds.clear(); } // empty inds vector to avoid deallocating individual is used separately in test
+	void clearInds() { inds.clear(); } // empty inds vector to avoid deallocating inds when used in test
 #endif // NDEBUG
 
 private:
@@ -241,8 +241,8 @@ private:
 	Patch* pPatch;			// pointer to the patch
 	int nInds[gMaxNbStages][gMaxNbSexes];		// no. of individuals in each stage/sex
 
-	vector <Individual*> inds; // all individuals in population except ...
-	vector <Individual*> juvs; // ... juveniles until reproduction of ALL species
+	vector<Individual*> inds; // all individuals in population except ...
+	vector<Individual*> juvs; // ... juveniles until reproduction of ALL species
 	// has been completed
 
 	vector<Individual*> sampledInds;

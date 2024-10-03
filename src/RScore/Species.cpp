@@ -33,6 +33,9 @@ Species::Species(const short& repro, const short& nbRepSeasons, const bool& hasS
 	usesMovtProcess{usesMovtProc},
 	moveType{movementType}
 {
+
+	spNum = 0; // overwritten later
+
 	// initialise demographic parameters
 	propMales = 0.0; 
 	harem = 1.0; 
@@ -130,8 +133,6 @@ Species::Species(const short& repro, const short& nbRepSeasons, const bool& hasS
 			betaS[i][j] = 1.0;
 		}
 	}
-	// initialise attribute defaults
-	spNum = 0;
 	resetGeneticParameters();
 }
 

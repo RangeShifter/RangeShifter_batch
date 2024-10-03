@@ -59,7 +59,7 @@ using namespace std;
 class SubCommunity {
 
 public:
-	SubCommunity(Patch*, int);
+	SubCommunity(Patch* pPch, int subCommId);
 	~SubCommunity(void);
 	intptr getNum(void);
 	Patch* getPatch(void);
@@ -79,8 +79,8 @@ public:
 	void resetPopns(void);
 	void resetPossSettlers(void);
 	void localExtinction( // Extirpate all populations
-		int	// option: 	0 - random local extinction probability
-				//					1 - local extinction probability gradient
+		int		// option: 	0 - random local extinction probability
+				//			1 - local extinction probability gradient
 	);
 	void patchChange(void);
 	void reproduction(

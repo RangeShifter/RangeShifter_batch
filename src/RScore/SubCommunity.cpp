@@ -29,8 +29,8 @@ ofstream outtraits;
 
 //---------------------------------------------------------------------------
 
-SubCommunity::SubCommunity(Patch* pPch, int num) {
-	subCommNum = num;
+SubCommunity::SubCommunity(Patch* pPch, int subCommId) {
+	subCommNum = subCommId;
 	pPatch = pPch;
 	// record the new sub-community no. in the patch
 	pPatch->setSubComm((intptr)this);
@@ -123,28 +123,30 @@ void SubCommunity::initialInd(Landscape* pLandscape, Species* pSpecies,
 	// create new individual
 	initInd iind = paramsInit->getInitInd(ix);
 	if (dem.stageStruct) {
-		stg = iind.stage; age = iind.age;   repInt = sstruct.repInterval;
+		stg = iind.stage; 
+		age = iind.age;   
+		repInt = sstruct.repInterval;
 	}
 	else {
-		age = stg = 1;   repInt = 0;
+		age = stg = 1;
+		repInt = 0;
 	}
 	if (dem.repType == 0) {
 		probmale = 0.0;
 	}
 	else {
-		if (iind.sex == 1) probmale = 1.0; else probmale = 0.0;
+		if (iind.sex == 1) probmale = 1.0; 
+		else probmale = 0.0;
 	}
 	pInd = new Individual(pCell, pPatch, stg, age, repInt, probmale, trfr.usesMovtProc, trfr.moveType);
 
 	// add new individual to the population
-	// NB THIS WILL NEED TO BE CHANGED FOR MULTIPLE SPECIES...
 	popns[0]->recruit(pInd);
 
 	if (pSpecies->getNTraits() > 0)
 	{
 		// individual variation - set up genetics
-		landData land = pLandscape->getLandData();
-		pInd->setUpGenes(pSpecies, land.resol);
+		pInd->setUpGenes(pSpecies, pLandscape->getLandData().resol);
 	}
 
 }
@@ -161,8 +163,12 @@ Population* SubCommunity::newPopn(Landscape* pLandscape, Species* pSpecies,
 
 popStats SubCommunity::getPopStats(void) {
 	popStats p, pop;
-	p.pSpecies = 0; p.spNum = 0; p.nInds = p.nAdults = p.nNonJuvs = 0; p.breeding = false;
+	p.pSpecies = 0; 
+	p.spNum = 0;
+	p.nInds = p.nAdults = p.nNonJuvs = 0; 
+	p.breeding = false;
 	p.pPatch = pPatch;
+
 	// FOR SINGLE SPECIES IMPLEMENTATION, THERE IS ONLY ONE POPULATION IN THE PATCH
 	int npops = (int)popns.size();
 	for (int i = 0; i < npops; i++) { // all populations
@@ -250,8 +256,7 @@ void SubCommunity::reproduction(int resol, float epsGlobal, short rasterType, bo
 	envGradParams grad = paramsGrad->getGradient();
 	envStochParams env = paramsStoch->getStoch();
 
-	int npops = (int)popns.size();
-	// THE FOLLOWING MAY BE MORE EFFICIENT WHILST THERE IS ONLY ONE SPECIES ...
+	int npops = popns.size();
 	if (npops < 1) return;
 
 	localK = pPatch->getK();
@@ -300,7 +305,9 @@ void SubCommunity::emigration(void)
 
 // Remove emigrants from their natal patch and add to patch 0 (matrix)
 void SubCommunity::initiateDispersal(SubCommunity* matrix) {
+
 	if (subCommNum == 0) return; // no dispersal initiation in the matrix
+	
 	popStats pop;
 	disperser disp;
 
