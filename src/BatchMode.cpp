@@ -5206,7 +5206,6 @@ int ReadParameters(Landscape* pLandscape)
 	string inAbsorbing, inShifting, inEnvStoch, inEnvStochType, inLocalExt,
 		inSaveMaps, inHeatMaps, inDrawLoaded, inFixRepSeed;
 
-	parameters >> inFixRepSeed;
 	parameters >> sim.simulation >> sim.reps >> sim.years;
 	parameters >> inAbsorbing;
 	sim.absorbing = (inAbsorbing == "1");
