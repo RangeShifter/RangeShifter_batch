@@ -6505,7 +6505,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 				
 				if (params_ok) {
 
-					cout << endl << "Running simulation nr. " << to_string(sim.simulation)
+					cout << endl << "Running simulation nr. " << to_string(paramsSim->getSim().simulation)
 						<< " on landscape no. " << to_string(land_nr) << endl;
 
 					// for batch processing, include landscape number in parameter file name
