@@ -4711,8 +4711,8 @@ int ReadLandFile(Landscape* pLandscape)
 			ppLand.nHab = 1;
 	}
 	else { // imported raster map
-		string inNHabPlaceholder; // no longer necessary to read no. of habitats from landFile
-		landfile >> ppLand.landNum >> inNHabPlaceholder >> name_landscape >> name_patch;
+		string inNbHab;
+		landfile >> ppLand.landNum >> inNbHab >> name_landscape >> name_patch;
 		landfile >> gNameCostFile >> name_dynland >> name_sp_dist;
 		if (landtype == 2) 
 			ppLand.nHab = 1; // habitat quality landscape has one habitat class
