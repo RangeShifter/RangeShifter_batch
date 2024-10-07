@@ -4938,6 +4938,11 @@ void setUpSpeciesTrait(vector<string> parameters) {
 	}
 
 	int ploidy = gNbSexesDisp;
+	parameters[14].erase(
+		// send windows line endings to hell where they belong
+		remove(parameters[14].begin(), parameters[14].end(), '\r'),
+		parameters[14].end()
+	);
 	const bool isOutput = parameters[14] == "TRUE";
 
 	// Create species trait
