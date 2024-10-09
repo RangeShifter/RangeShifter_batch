@@ -59,6 +59,9 @@ using namespace std;
 #include "Patch.h"
 #include "Cell.h"
 #include "NeutralStatsManager.h"
+#include "Population.h"
+
+class Patch;
 
 //---------------------------------------------------------------------------
 

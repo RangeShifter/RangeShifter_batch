@@ -71,6 +71,9 @@ using namespace std;
 #include "Parameters.h"
 #include "Cell.h"
 #include "Species.h"
+#include "Patch.h"
+
+class Population;
 
  //---------------------------------------------------------------------------
 
@@ -159,6 +162,7 @@ private:
 	std::vector <Cell*> cells;
 	std::vector <patchPopn> popns;
 
+	Population* pippo;
 };
 
 //---------------------------------------------------------------------------
