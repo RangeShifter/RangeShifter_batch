@@ -1572,8 +1572,6 @@ void Landscape::deletePatchChgMatrix(void) {
 // Create & initialise costs change matrix
 void Landscape::createCostsChgMatrix(void)
 {
-	//intptr patch;
-	//Patch *pPatch;
 	Cell* pCell;
 	if (costsChgMatrix != 0) deleteCostsChgMatrix();
 	costsChgMatrix = new int** [dimY];

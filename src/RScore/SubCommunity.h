@@ -60,13 +60,13 @@ class SubCommunity {
 
 public:
 	SubCommunity(Patch* pPch, int subCommId);
-	~SubCommunity(void);
-	intptr getNum(void);
-	Patch* getPatch(void);
-	locn getLocn(void);
+	~SubCommunity();
+	int getNum();
+	Patch* getPatch();
+	locn getLocn();
 
 	// functions to manage populations occurring in the SubCommunity
-	popStats getPopStats(void);
+	popStats getPopStats();
 	void setInitial(bool);
 	void initialise(Landscape*, Species*);
 	void initialInd(Landscape*, Species*, Patch*, Cell*, int);
@@ -76,20 +76,20 @@ public:
 		Patch*,			// pointer to Patch
 		int					// no. of Individuals
 	);
-	void resetPopns(void);
-	void resetPossSettlers(void);
+	void resetPopns();
+	void resetPossSettlers();
 	void localExtinction( // Extirpate all populations
 		int		// option: 	0 - random local extinction probability
 				//			1 - local extinction probability gradient
 	);
-	void patchChange(void);
+	void patchChange();
 	void reproduction(
 		int,		// Landscape resolution
 		float,	// epsilon - global stochasticity value 
 		short,	// raster type (see Landscape)
 		bool		// TRUE for a patch-based model, FALSE for a cell-based model
 	);
-	void emigration(void);
+	void emigration();
 	// Remove emigrants from their natal patch and add to patch 0 (matrix)
 	void initiateDispersal(
 		SubCommunity*	// pointer to matrix SubCommunity
@@ -126,7 +126,7 @@ public:
 		short 	// option1:	0 - development only (when survival is annual)
 						//	  	 		1 - development and survival
 	);
-	void ageIncrement(void);
+	void ageIncrement();
 
 	// Find the population of a given species in a given patch
 	Population* findPop(Species*, Patch*);
@@ -140,7 +140,7 @@ public:
 	int getOccupancy(
 		int	// row = (no. of years / interval)
 	);
-	void deleteOccupancy(void);
+	void deleteOccupancy();
 
 	bool outPopHeaders( // Open population file and write header record
 		Landscape*,	// pointer to Landscape
@@ -179,7 +179,7 @@ public:
 	);
 
 private:
-	intptr subCommNum;	// SubCommunity number
+	int subCommNum;	// SubCommunity number
 		// 0 is reserved for the SubCommunity in the inter-patch matrix
 	Patch *pPatch;
 	int *occupancy;	// pointer to occupancy array

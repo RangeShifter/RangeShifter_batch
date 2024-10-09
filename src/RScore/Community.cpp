@@ -1450,9 +1450,9 @@ Rcpp::IntegerMatrix Community::addYearToPopList(int rep, int yr) {  // TODO: def
 
 	landParams ppLand = pLandscape->getLandParams();
 	Rcpp::IntegerMatrix pop_map_year(ppLand.dimY, ppLand.dimX);
-	intptr patch = 0;
+	Patch* patch = 0;
 	Patch* pPatch = 0;
-	intptr subcomm = 0;
+	SubCommunity* subcomm = 0;
 	SubCommunity* pSubComm = 0;
 	popStats pop;
 	pop.nInds = pop.nAdults = pop.nNonJuvs = 0;
