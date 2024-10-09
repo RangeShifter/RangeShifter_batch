@@ -149,7 +149,7 @@ private:
 	int nCells;			// no. of cells in the patch
 	int xMin, xMax, yMin, yMax; 	// min and max cell co-ordinates
 	int x, y;				// centroid co-ordinates (approx.)
-	intptr subCommPtr; // pointer (cast as integer) to sub-community associated with the patch
+	Population* pPop; // pointer to population associated with the patch
 	// NOTE: FOR MULTI-SPECIES MODEL, PATCH WILL NEED TO STORE K FOR EACH SPECIES
 	float localK;		// patch carrying capacity (individuals)
 	bool changed;

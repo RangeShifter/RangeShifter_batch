@@ -210,7 +210,7 @@ private:
 	Landscape* pLandscape;
 	int indIx;				// index used to apply initial individuals
 	float** occSuit;	// occupancy of suitable cells / patches
-	std::vector <SubCommunity*> subComms;
+	std::vector <Population*> popns;
 
 	//below won't work for multispecies
 	unique_ptr<NeutralStatsManager> pNeutralStatistics;

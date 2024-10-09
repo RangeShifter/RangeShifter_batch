@@ -455,12 +455,10 @@ void Community::ageIncrement(void) {
 
 // Calculate total no. of individuals of all species
 int Community::totalInds(void) {
-	popStats p;
 	int total = 0;
-	int nsubcomms = (int)subComms.size();
-	for (int i = 0; i < nsubcomms; i++) { // all communities (including in matrix)
-		p = subComms[i]->getPopStats();
-		total += p.nInds;
+	const int nPops = popns.size();
+	for (int i = 0; i < nPops; i++) { // all communities (including in matrix)
+		total += popns[i]->getStats().nInds;
 	}
 	return total;
 }
@@ -524,9 +522,9 @@ commStats Community::getStats(void)
 	s.minX = ppLand.maxX; s.minY = ppLand.maxY; s.maxX = s.maxY = 0;
 	float localK;
 	popStats patchPop;
-	int nsubcomms = (int)subComms.size();
-	for (int i = 0; i < nsubcomms; i++) { // all sub-communities
-		patchPop = subComms[i]->getPopStats();
+	int nbPops = popns.size();
+	for (int i = 0; i < nbPops; i++) { // all sub-communities
+		patchPop = popns[i]->getStats();
 		s.ninds += patchPop.nInds;
 		s.nnonjuvs += patchPop.nNonJuvs;
 		if (patchPop.pPatch != 0) { // not the matrix patch
@@ -1476,7 +1474,6 @@ Rcpp::IntegerMatrix Community::addYearToPopList(int rep, int yr) {  // TODO: def
 						pSubComm = (SubCommunity*)subcomm;
 						pop = pSubComm->getPopStats();
 						pop_map_year(ppLand.dimY - 1 - y, x) = pop.nInds; // use indices like this because matrix gets transposed upon casting it into a raster on R-level
-						//pop_map_year(ppLand.dimY-1-y,x) = pop.nAdults;
 					}
 				}
 			}

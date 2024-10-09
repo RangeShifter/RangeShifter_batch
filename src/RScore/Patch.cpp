@@ -257,15 +257,15 @@ void Patch::removeCell(Cell* pCell) {
 	}
 }
 
-void Patch::setSubComm(intptr sc)
+void Patch::setPop(Population* p)
 {
-	subCommPtr = sc;
+	pPop = p;
 }
 
 // Get pointer to corresponding Sub-community (cast as an integer)
-intptr Patch::getSubComm(void)
+Population* Patch::getPop(void)
 {
-	return subCommPtr;
+	return pPop;
 }
 
 void Patch::addPopn(patchPopn pop) {
