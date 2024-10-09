@@ -1058,7 +1058,7 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 	int disperser;
 	short othersex;
 	bool mateOK, densdepOK;
-	intptr patch;
+	Patch* patch;
 	Population* popn;
 	int patchnum;
 	double localK, popsize, settprob;
@@ -1098,7 +1098,7 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 					pCell = inds[i]->getLocn(1);
 					patch = pCell->getPatch();
 					if (patch != 0) { // not no-data area
-						pPatch = (Patch*)patch;
+						pPatch = patch;
 						pPatch->incrPossSettler(pSpecies, inds[i]->getSex());
 					}
 				}
@@ -1144,7 +1144,7 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 				{
 					patch = pCell->getPatch();
 					if (patch != 0) { // not no-data area
-						pPatch = (Patch*)patch;
+						pPatch = patch;
 						if (settle.settleStatus == 0
 							|| settle.pSettPatch != pPatch)
 							// note: second condition allows for having moved from one patch to another
@@ -1249,7 +1249,7 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 							if (pCell != 0) { // not no-data area
 								patch = pCell->getPatch();
 								if (patch != 0) { // not no-data area
-									pPatch = (Patch*)patch;
+									pPatch = patch;
 									patchnum = pPatch->getPatchNum();
 									if (patchnum > 0 && pPatch != inds[i]->getNatalPatch())
 									{ // not the matrix or natal patch

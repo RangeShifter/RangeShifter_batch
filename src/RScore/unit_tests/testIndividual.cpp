@@ -688,7 +688,7 @@ void testIndividual() {
 		// (both freq. have p < 0.001 from a binomial with p 0.5 and 100 trials) 
 	{
 		Patch* pPatch = new Patch(0, 0);
-		Cell* pCell = new Cell(0, 0, (intptr)pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0);
 
 		const float recombinationRate = 0.01;
 		const int genomeSz = 10;
@@ -746,7 +746,7 @@ void testIndividual() {
 	/// Emigration probability is 1 initially, but female trait mutates.
 	{
 		Patch* pPatch = new Patch(0, 0);
-		Cell* pCell = new Cell(0, 0, (intptr)pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0);
 
 		// Species-level paramters
 		const int genomeSz = 6;
@@ -838,7 +838,7 @@ void testIndividual() {
 		float indEmigProb = 0.0;
 
 		Patch* pPatch = new Patch(0, 0);
-		Cell* pCell = new Cell(0, 0, (intptr)pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0);
 
 		// Species-level paramters
 		const int genomeSz = 1;
@@ -908,7 +908,7 @@ void testIndividual() {
 	// Individuals with genetic fitness = 0 are never viable
 	{
 		Patch* pPatch = new Patch(0, 0);
-		Cell* pCell = new Cell(0, 0, (intptr)pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0);
 
 		// Species-level paramters
 		const int genomeSz = 1;
@@ -961,7 +961,7 @@ void testIndividual() {
 	// A largely dominant alleles overrides the expression of its homologue
 	{
 		Patch* pPatch = new Patch(0, 0);
-		Cell* pCell = new Cell(0, 0, (intptr)pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0);
 
 		// Species-level paramters
 		const int genomeSz = 1;
@@ -1024,7 +1024,7 @@ void testIndividual() {
 			const float mutationRate = 0.0; // no mutations
 
 			Patch* pPatch = new Patch(0, 0);
-			Cell* pCell = new Cell(0, 0, (intptr)pPatch, 0);
+			Cell* pCell = new Cell(0, 0, pPatch, 0);
 
 			// Genome-level settings
 			Species* pSpecies = createDefaultSpecies();
@@ -1146,7 +1146,7 @@ void testIndividual() {
 			const float mutationRate = 0.0; // no mutations
 
 			Patch* pPatch = new Patch(0, 0);
-			Cell* pCell = new Cell(0, 0, (intptr)pPatch, 0);
+			Cell* pCell = new Cell(0, 0, pPatch, 0);
 
 			// Genome-level settings
 			Species* pSpecies = createDefaultSpecies();
@@ -1228,7 +1228,7 @@ void testIndividual() {
 			const float mutationRate = 0.0; // no mutations
 
 			Patch* pPatch = new Patch(0, 0);
-			Cell* pCell = new Cell(0, 0, (intptr)pPatch, 0);
+			Cell* pCell = new Cell(0, 0, pPatch, 0);
 
 			// Genome-level settings
 			Species* pSpecies = createDefaultSpecies();

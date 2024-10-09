@@ -63,7 +63,7 @@ void Community::initialise(Species* pSpecies, int year)
 	locn distloc;
 	patchData pch;
 	patchLimits limits = patchLimits();
-	intptr ppatch;
+	Patch* ppatch;
 	SubCommunity* subcomm;
 	std::vector <SubCommunity*> subcomms;
 	std::vector <bool> selected;
@@ -172,7 +172,7 @@ void Community::initialise(Species* pSpecies, int year)
 			break;
 
 		} // end of switch (init.freeType)
-		nsubcomms = (int)subComms.size();
+		nsubcomms = subComms.size();
 		for (int i = 0; i < nsubcomms; i++) { // all sub-communities
 			subComms[i]->initialise(pLandscape, pSpecies);
 		}
@@ -210,7 +210,7 @@ void Community::initialise(Species* pSpecies, int year)
 							if (pCell != 0) { // not a no-data cell
 								ppatch = pCell->getPatch();
 								if (ppatch != 0) {
-									pPatch = (Patch*)ppatch;
+									pPatch = ppatch;
 									if (pPatch->getSeqNum() != 0) { // not the matrix patch
 										subcomm = pPatch->getSubComm();
 										if (subcomm != 0) {
@@ -269,9 +269,9 @@ void Community::initialise(Species* pSpecies, int year)
 					else { // cell-based model
 						pCell = pLandscape->findCell(iind.x, iind.y);
 						if (pCell != 0) {
-							intptr ppatch = pCell->getPatch();
+							Patch* ppatch = pCell->getPatch();
 							if (ppatch != 0) {
-								pPatch = (Patch*)ppatch;
+								pPatch = ppatch;
 								if (pPatch->getK() > 0.0)
 								{ // patch is suitable
 									subcomm = pPatch->getSubComm();
@@ -311,7 +311,7 @@ void Community::initialise(Species* pSpecies, int year)
 // Add manually selected patches/cells to the selected set for initialisation
 void Community::addManuallySelected(void) {
 	int npatches;
-	intptr patch;
+	Patch* patch;
 	SubCommunity* subcomm;
 	locn initloc;
 	Cell* pCell;
@@ -344,7 +344,7 @@ void Community::addManuallySelected(void) {
 				if (pCell != 0) { // not no-data cell
 					patch = pCell->getPatch();
 					if (patch != 0) {
-						pPatch = (Patch*)patch;
+						pPatch = patch;
 						subcomm = pPatch->getSubComm();
 						if (subcomm != 0) {
 							pSubComm = subcomm;
@@ -417,7 +417,7 @@ void Community::dispersal(short landIx)
 {
 	simParams sim = paramsSim->getSim();
 
-	int nsubcomms = (int)subComms.size();
+	int nsubcomms = subComms.size();
 	// initiate dispersal - all emigrants leave their natal community and join matrix community
 	SubCommunity* matrix = subComms[0]; // matrix community is always the first
 	for (int i = 0; i < nsubcomms; i++) { // all populations
@@ -442,14 +442,14 @@ void Community::dispersal(short landIx)
 
 void Community::survival(short part, short option0, short option1)
 {
-	int nsubcomms = (int)subComms.size();
+	int nsubcomms = subComms.size();
 	for (int i = 0; i < nsubcomms; i++) { // all communities (including in matrix)
 		subComms[i]->survival(part, option0, option1);
 	}
 }
 
 void Community::ageIncrement(void) {
-	int nsubcomms = (int)subComms.size();
+	int nsubcomms = subComms.size();
 	for (int i = 0; i < nsubcomms; i++) { // all communities (including in matrix)
 		subComms[i]->ageIncrement();
 	}

@@ -50,6 +50,8 @@ using namespace std;
 
 #include "Parameters.h"
 
+class Patch;
+
 //---------------------------------------------------------------------------
 
 struct array3x3f { float cell[3][3]; }; 	// neighbourhood cell array (SMS)
@@ -59,71 +61,47 @@ struct smscosts { int cost; array3x3f* effcosts; };	// cell costs for SMS
 
 class Cell {
 public:
-	Cell( // Constructor for habitat codes
-		int,				// x co-ordinate
-		int,				// y co-ordinate
-		intptr,			// pointer (cast as integer) to the Patch to which Cell belongs
-		int					// habitat index number
-	);
-	Cell( // Constructor for habitat % cover or habitat quality
-		int,				// x co-ordinate
-		int,				// y co-ordinate
-		intptr,			// pointer (cast as integer) to the Patch to which Cell belongs
-		float				// habitat proportion or cell quality score
-	);
+	// Constructor for habitat codes
+	Cell(int xx, int yy, Patch* patch, int hab);
+
+	// Constructor for habitat % cover or habitat quality
+	Cell(int xx, int yy, Patch* patch, float hab);
+
 	~Cell();
-	void setHabIndex(
-		short	// habitat index number
-	);
-	void changeHabIndex(
-		short,	// landscape change number
-		short		// habitat index number
-	);
-	int getHabIndex(
-		int		// landscape change number
-	);
+	void setHabIndex(short hx);
+	void changeHabIndex(short ix, short hx);
+	int getHabIndex(int ix);
 	int nHabitats(void);
-	void setHabitat(
-		float	// habitat proportions or cell quality score
-	);
-	float getHabitat( // Get habitat proportion / quality score
-		int		// habitat index number / landscape change number
-	);
-	void setPatch(
-		intptr		// pointer (cast as integer) to the Patch to which Cell belongs
-	);
-	intptr getPatch(void);
-	locn getLocn(void);
+	void setHabitat(float q); // habitat prop or cell quality score
+	float getHabitat(int ix); // Get habitat proportion / quality score
+	void setPatch(Patch* p);
+	Patch* getPatch();
+	locn getLocn();
 	void setEnvDev(
 		float	// local environmental deviation
 	);
-	float getEnvDev(void);
-	void setEnvVal(
-		float	// environmental value
-	);
-	float getEnvVal(void);
-	void updateEps( // Update local environmental stochasticity (epsilon)
-		float,	// autocorrelation coefficient
-		float		// random adjustment
-	);
-	float getEps(void);
+	float getEnvDev();
+	void setEnvVal(float e);
+	float getEnvVal();
+	void updateEps(float ac, float randpart); // Update local environmental stochasticity (epsilon)
+	float getEps();
 	void setCost(
 		int		// cost value for SMS
 	);
-	int getCost(void);
-	void resetCost(void);
-	array3x3f getEffCosts(void);
+	int getCost();
+	void resetCost();
+	array3x3f getEffCosts();
 	void setEffCosts(
 		array3x3f	// 3 x 3 array of effective costs for neighbouring cells
 	);
-	void resetEffCosts(void); // Reset the effective cost, but not the cost, of the cell
-	void resetVisits(void);
-	void incrVisits(void);
-	unsigned long int getVisits(void);
+	void resetEffCosts(); // Reset the effective cost, but not the cost, of the cell
+	void resetVisits();
+	void incrVisits();
+	unsigned long int getVisits();
 
 private:
 	int x, y;			// cell co-ordinates
-	intptr pPatch; 	// pointer (cast as integer) to the Patch to which cell belongs
+	Patch* pPatch; 	// pointer (cast as integer) to the Patch to which cell belongs
 	// NOTE: THE FOLLOWING ENVIRONMENTAL VARIABLES COULD BE COMBINED IN A STRUCTURE
 	// AND ACCESSED BY A POINTER ...
 	float envVal; // environmental value, representing one of:
@@ -162,7 +140,6 @@ public:
 private:
 	int x, y;					// cell co-ordinates
 	bool initialise;  // cell is to be initialised
-
 };
 
 //---------------------------------------------------------------------------

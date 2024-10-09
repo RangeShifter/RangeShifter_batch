@@ -31,7 +31,7 @@ void testPopulation()
 		for (float mutationRate : mutationRates) {
 			Landscape* pLandscape = new Landscape;
 			Patch* pPatch = pLandscape->newPatch(1);
-			Cell* pCell = new Cell(0, 0, (intptr)pPatch, 0);
+			Cell* pCell = new Cell(0, 0, pPatch, 0);
 			pPatch->addCell(pCell, 0, 0);
 
 			Species* pSpecies = createDefaultSpecies();
@@ -90,7 +90,7 @@ void testPopulation()
 		for (float mutationRate : mutationRates) {
 			Landscape* pLandscape = new Landscape;
 			Patch* pPatch = pLandscape->newPatch(1);
-			Cell* pCell = new Cell(0, 0, (intptr)pPatch, 0);
+			Cell* pCell = new Cell(0, 0, pPatch, 0);
 			pPatch->addCell(pCell, 0, 0);
 
 			Species* pSpecies = createDefaultSpecies();
@@ -171,7 +171,7 @@ void testPopulation()
 
 		Landscape* pLandscape = new Landscape;
 		Patch* pPatch = pLandscape->newPatch(1);
-		Cell* pCell = new Cell(0, 0, (intptr)pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0);
 		pPatch->addCell(pCell, 0, 0);
 
 		Species* pSpecies = new Species();
@@ -245,7 +245,7 @@ void testPopulation()
 
 		Landscape* pLandscape = new Landscape;
 		Patch* pPatch = pLandscape->newPatch(1);
-		Cell* pCell = new Cell(0, 0, (intptr)pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0);
 		pPatch->addCell(pCell, 0, 0);
 
 		Species* pSpecies = new Species();

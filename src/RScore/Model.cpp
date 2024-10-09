@@ -336,7 +336,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 									pPatch = pLandscape->findPatch(patchchange.newpatch);
 									pPatch->addCell(pCell, patchchange.x, patchchange.y);
 								}
-								pCell->setPatch((intptr)pPatch);
+								pCell->setPatch(pPatch);
 								// get next patch change
 								patchchange = pLandscape->getPatchChange(ixpchchg++);
 							}
@@ -560,7 +560,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 					pPatch = pLandscape->findPatch(patchchange.newpatch);
 					pPatch->addCell(pCell, patchchange.x, patchchange.y);
 				}
-				pCell->setPatch((intptr)pPatch);
+				pCell->setPatch(pPatch);
 				// get next patch change
 				patchchange = pLandscape->getPatchChange(ixpchchg++);
 			}

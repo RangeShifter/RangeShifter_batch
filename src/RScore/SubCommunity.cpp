@@ -396,9 +396,9 @@ void SubCommunity::completeDispersal(Landscape* pLandscape, bool connect)
 				if (connect) { // increment connectivity totals
 					int newpatch = pNewPatch->getSeqNum();
 					pPrevCell = settler.pInd->getLocn(0); // previous cell
-					intptr patch = pPrevCell->getPatch();
+					Patch* patch = pPrevCell->getPatch();
 					if (patch != 0) {
-						pPrevPatch = (Patch*)patch;
+						pPrevPatch = patch;
 						int prevpatch = pPrevPatch->getSeqNum();
 						pLandscape->incrConnectMatrix(prevpatch, newpatch);
 					}
