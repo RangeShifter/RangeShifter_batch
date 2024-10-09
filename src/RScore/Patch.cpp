@@ -32,7 +32,7 @@ Patch::Patch(int seqnum, int num)
 {
 	patchSeqNum = seqnum; patchNum = num; nCells = 0;
 	xMin = yMin = 999999999; xMax = yMax = 0; x = y = 0;
-	subCommPtr = 0;
+	subCommPtr = nullptr;
 	localK = 0.0;
 	for (int sex = 0; sex < gMaxNbSexes; sex++) {
 		nTemp[sex] = 0;
@@ -45,13 +45,13 @@ Patch::~Patch() {
 	popns.clear();
 }
 
-int Patch::getSeqNum(void) { return patchSeqNum; }
+int Patch::getSeqNum() { return patchSeqNum; }
 
-int Patch::getPatchNum(void) { return patchNum; }
+int Patch::getPatchNum() { return patchNum; }
 
-int Patch::getNCells(void) { return nCells; }
+int Patch::getNCells() { return nCells; }
 
-patchLimits Patch::getLimits(void) {
+patchLimits Patch::getLimits() {
 	patchLimits p;
 	p.xMin = xMin; p.xMax = xMax; p.yMin = yMin; p.yMax = yMax;
 	return p;
@@ -70,7 +70,7 @@ bool Patch::withinLimits(patchLimits rect) {
 		}
 		else {
 			// check for any cell of the patch lying within the rectangle
-			int ncells = (int)cells.size();
+			int ncells = cells.size();
 			for (int i = 0; i < ncells; i++) {
 				loc = getCellLocn(i);
 				if (loc.x >= rect.xMin && loc.x <= rect.xMax
@@ -85,7 +85,7 @@ bool Patch::withinLimits(patchLimits rect) {
 }
 
 // Reset minimum and maximum co-ordinates of the patch if it has been changed
-void Patch::resetLimits(void) {
+void Patch::resetLimits() {
 	if (changed) {
 		// remove any deleted cells
 		std::vector <Cell*> newcells; // for all retained and added cells
@@ -145,7 +145,7 @@ void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits,
 		return;
 	}
 
-	int ncells = (int)cells.size();
+	int ncells = cells.size();
 	xsum = ysum = 0;
 	for (int i = 0; i < ncells; i++) {
 		if (gradK) // gradient in carrying capacity
@@ -208,8 +208,7 @@ void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits,
 	}
 }
 
-
-float Patch::getK(void) { return localK; }
+float Patch::getK() { return localK; }
 
 // Return co-ordinates of a specified cell
 locn Patch::getCellLocn(int ix) {
@@ -258,13 +257,13 @@ void Patch::removeCell(Cell* pCell) {
 	}
 }
 
-void Patch::setSubComm(intptr sc)
+void Patch::setSubComm(SubCommunity* sc)
 {
 	subCommPtr = sc;
 }
 
 // Get pointer to corresponding Sub-community (cast as an integer)
-intptr Patch::getSubComm(void)
+SubCommunity* Patch::getSubComm()
 {
 	return subCommPtr;
 }
@@ -274,7 +273,7 @@ void Patch::addPopn(patchPopn pop) {
 }
 
 // Return pointer (cast as integer) to the Population of the specified Species
-intptr Patch::getPopn(intptr sp)
+Population* Patch::getPopn(Species* sp)
 {
 	int npops = (int)popns.size();
 	for (int i = 0; i < npops; i++) {
@@ -283,11 +282,11 @@ intptr Patch::getPopn(intptr sp)
 	return 0;
 }
 
-void Patch::resetPopn(void) {
+void Patch::resetPopn() {
 	popns.clear();
 }
 
-void Patch::resetPossSettlers(void) {
+void Patch::resetPossSettlers() {
 	for (int sex = 0; sex < gMaxNbSexes; sex++) {
 		nTemp[sex] = 0;
 	}
@@ -309,7 +308,7 @@ int Patch::getPossSettlers(Species* pSpecies, int sex) {
 }
 
 bool Patch::speciesIsPresent(Species* pSpecies) {
-	const auto pPop = this->getPopn((intptr)pSpecies);
+	const auto pPop = this->getPopn(pSpecies);
 	return pPop != 0;
 }
 

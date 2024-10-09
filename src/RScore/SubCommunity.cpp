@@ -33,7 +33,7 @@ SubCommunity::SubCommunity(Patch* pPch, int subCommId) {
 	subCommNum = subCommId;
 	pPatch = pPch;
 	// record the new sub-community no. in the patch
-	pPatch->setSubComm((intptr)this);
+	pPatch->setSubComm(this);
 	initial = false;
 	occupancy = 0;
 }
@@ -386,7 +386,7 @@ void SubCommunity::completeDispersal(Landscape* pLandscape, bool connect)
 			// find new patch
 				pNewPatch = (Patch*)settler.pCell->getPatch();
 				// find population within the patch (if there is one)
-				pPop = (Population*)pNewPatch->getPopn((intptr)pSpecies);
+				pPop = (Population*)pNewPatch->getPopn(pSpecies);
 				if (pPop == 0) { // settler is the first in a previously uninhabited patch
 					// create a new population in the corresponding sub-community
 					pSubComm = (SubCommunity*)pNewPatch->getSubComm();

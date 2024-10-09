@@ -82,7 +82,8 @@ struct patchLimits {
 	int xMin, xMax, yMin, yMax;
 };
 struct patchPopn {
-	intptr pSp, pPop; // pointers to Species and Population cast as integers
+	Species* pSp;
+	Population* pPop;
 };
 
 class Patch {
@@ -110,11 +111,11 @@ public:
 	void removeCell(Cell* pCell);
 	Cell* getRandomCell();
 
-	void setSubComm(intptr sc);
+	void setSubComm(SubCommunity* sc);
 
-	intptr getSubComm();
+	SubCommunity* getSubComm();
 	void addPopn(patchPopn pop);
-	intptr getPopn(intptr sp);
+	Population* getPopn(Species* sp);
 
 	void resetPopn();
 	void resetPossSettlers();
@@ -137,7 +138,7 @@ private:
 	int nCells;			// no. of cells in the patch
 	int xMin, xMax, yMin, yMax; 	// min and max cell co-ordinates
 	int x, y;				// centroid co-ordinates (approx.)
-	intptr subCommPtr; // pointer (cast as integer) to sub-community associated with the patch
+	SubCommunity* subCommPtr; // pointer (cast as integer) to sub-community associated with the patch
 	float localK;		// patch carrying capacity (individuals)
 	bool changed;
 	short nTemp[gMaxNbSexes];	// no. of potential settlers in each sex
