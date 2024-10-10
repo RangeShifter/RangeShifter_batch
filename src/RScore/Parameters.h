@@ -67,12 +67,6 @@ constexpr int gMaxNbStages = 10;		// maximum number of stages permitted
 constexpr int gMaxNbSexes = 2;			// maximum number of sexes permitted
 
 #if RS_RCPP
-typedef intptr_t intptr;
-#else
-typedef unsigned long long intptr;
-#endif // RS_RCPP
-
-#if RS_RCPP
 #ifndef R_EXT_CONSTANTS_H_  // the R headers define PI as a macro, so that the 'else' line results in an error
 #define M_2PI 6.283185307179586
 const double PI = 3.141592653589793238462643383279502884197169399375;

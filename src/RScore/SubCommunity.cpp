@@ -33,7 +33,7 @@ SubCommunity::SubCommunity(Patch* pPch, int subCommId) {
 	subCommNum = subCommId;
 	pPatch = pPch;
 	// record the new sub-community no. in the patch
-	pPatch->setSubComm((intptr)this);
+	pPatch->setSubComm(this);
 	initial = false;
 	occupancy = 0;
 }
@@ -48,7 +48,7 @@ SubCommunity::~SubCommunity() {
 	if (occupancy != 0) delete[] occupancy;
 }
 
-intptr SubCommunity::getNum(void) { return subCommNum; }
+int SubCommunity::getNum(void) { return subCommNum; }
 
 Patch* SubCommunity::getPatch(void) { return pPatch; }
 
@@ -386,7 +386,7 @@ void SubCommunity::completeDispersal(Landscape* pLandscape, bool connect)
 			// find new patch
 				pNewPatch = (Patch*)settler.pCell->getPatch();
 				// find population within the patch (if there is one)
-				pPop = (Population*)pNewPatch->getPopn((intptr)pSpecies);
+				pPop = (Population*)pNewPatch->getPopn(pSpecies);
 				if (pPop == 0) { // settler is the first in a previously uninhabited patch
 					// create a new population in the corresponding sub-community
 					pSubComm = (SubCommunity*)pNewPatch->getSubComm();
@@ -396,9 +396,9 @@ void SubCommunity::completeDispersal(Landscape* pLandscape, bool connect)
 				if (connect) { // increment connectivity totals
 					int newpatch = pNewPatch->getSeqNum();
 					pPrevCell = settler.pInd->getLocn(0); // previous cell
-					intptr patch = pPrevCell->getPatch();
+					Patch* patch = pPrevCell->getPatch();
 					if (patch != 0) {
-						pPrevPatch = (Patch*)patch;
+						pPrevPatch = patch;
 						int prevpatch = pPrevPatch->getSeqNum();
 						pLandscape->incrConnectMatrix(prevpatch, newpatch);
 					}

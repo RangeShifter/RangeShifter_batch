@@ -643,7 +643,7 @@ void Individual::moveto(Cell* newCell) {
 // Returns 1 if still dispersing (including having found a potential patch), otherwise 0
 int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool absorbing)
 {
-	intptr patch;
+	Patch* patch;
 	int patchNum = 0;
 	int newX = 0, newY = 0;
 	int dispersing = 1;
@@ -769,7 +769,7 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool 
 							patchNum = 0;
 						}
 						else {
-							pPatch = (Patch*)patch;
+							pPatch = patch;
 							patchNum = pPatch->getPatchNum();
 						}
 					}
@@ -845,7 +845,7 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 {
 	if (status != 1) return 0; // not currently dispersing
 
-	intptr patch;
+	Patch* patch;
 	int patchNum;
 	int newX, newY;
 	locn loc;
@@ -872,7 +872,7 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 		patchNum = 0;
 	}
 	else {
-		pPatch = (Patch*)patch;
+		pPatch = patch;
 		patchNum = pPatch->getPatchNum();
 	}
 	// apply step-dependent mortality risk ...
@@ -1008,9 +1008,9 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 
 		} // end of switch (trfr.moveType)
 
-		if (patch > 0  // not no-data area or matrix
+		if (patch != 0  // not no-data area or matrix
 			&& path->total >= settsteps.minSteps) {
-			pPatch = (Patch*)patch;
+			pPatch = patch;
 			if (pPatch != pNatalPatch)
 			{
 				// determine whether the new patch is potentially suitable

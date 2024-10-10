@@ -71,6 +71,10 @@ using namespace std;
 #include "Parameters.h"
 #include "Cell.h"
 #include "Species.h"
+#include "Patch.h"
+
+class Population;
+class SubCommunity;
 
  //---------------------------------------------------------------------------
 
@@ -78,69 +82,54 @@ struct patchLimits {
 	int xMin, xMax, yMin, yMax;
 };
 struct patchPopn {
-	intptr pSp, pPop; // pointers to Species and Population cast as integers
+	Species* pSp;
+	Population* pPop;
 };
 
 class Patch {
 public:
-	Patch(
-		int,	 // internal sequential number
-		int		 // patch id number
-	);
+	Patch(int seqnum, int num);
 	~Patch();
-	int getSeqNum(void);
-	int getPatchNum(void);
-	int getNCells(void);
-	patchLimits getLimits(void); // Returns the minimum and maximum co-ordinates of the patch
+	int getSeqNum();
+	int getPatchNum();
+	int getNCells();
+	patchLimits getLimits(); // Returns the minimum and maximum co-ordinates of the patch
 	bool withinLimits( // Does the patch fall (partially) within a specified rectangle?
-		patchLimits // structure holding the SW and NE co-ordinates of the rectangle
+		patchLimits rect// structure holding the SW and NE co-ordinates of the rectangle
 	);
-	void resetLimits(void); // Reset minimum and maximum co-ordinates of the patch
-	void addCell(
-		Cell*,	// pointer to the Cell to be added to the Patch
-		int, int	// x (column) and y (row) co-ordinates of the Cell
-	);
-	locn getCellLocn( // Return co-ordinates of a specified cell
-		int			// index no. of the Cell within the vector cells
-	);
-	Cell* getCell( // Return pointer to a specified cell
-		int			// index no. of the Cell within the vector cells
-	);
-	locn getCentroid(void); // Return co-ordinates of patch centroid
-	void removeCell(
-		Cell*	// pointer to the Cell to be removed from the Patch
-	);
-	Cell* getRandomCell(void);
-	void setSubComm(
-		intptr		// pointer to the Sub-community cast as an integer
-	);
-	intptr getSubComm(void);
-	void addPopn(
-		patchPopn // structure holding pointers to Species and Population cast as integers
-	);
-	intptr getPopn( // return pointer (cast as integer) to the Population of the Species
-		intptr // pointer to Species cast as integer
-	);
-	void resetPopn(void);
-	void resetPossSettlers(void);
-	void incrPossSettler( // Record the presence of a potential settler within the Patch
-		Species*,	// pointer to the Species
-		int				// sex of the settler
-	);
-	int getPossSettlers( // Get number of a potential settlers within the Patch
-		Species*, // pointer to the Species
-		int       // sex of the settlers
-	);
-	void setCarryingCapacity( // Calculate total Patch carrying capacity (no. of inds)
-		Species*, 		// pointer to the Species
-		patchLimits,	// current min and max limits of landscape
-		float,				// global stochasticity value (epsilon) for the current year
-		short,				// no. of habitat classes in the Landscape
-		short,				// rasterType (see Landscape)
-		short,				// landscape change index (always zero if not dynamic)
-		bool					// TRUE if there is a gradient in carrying capacity across the Landscape
-	);
-	float getK(void);
+	void resetLimits(); // Reset minimum and maximum co-ordinates of the patch
+	void addCell(Cell* pCell, int x, int y);
+
+	// Return co-ordinates of a specified cell
+	locn getCellLocn(int ix);
+
+	// Return pointer to a specified cell
+	Cell* getCell(int ix);
+
+	// Return co-ordinates of patch centroid
+	locn getCentroid(); 
+	void removeCell(Cell* pCell);
+	Cell* getRandomCell();
+
+	void setSubComm(SubCommunity* sc);
+
+	SubCommunity* getSubComm();
+	void addPopn(patchPopn pop);
+	Population* getPopn(Species* sp);
+
+	void resetPopn();
+	void resetPossSettlers();
+	// Record the presence of a potential settler within the Patch
+	void incrPossSettler(Species* pSpecies, int sex);
+
+	// Get number of a potential settlers within the Patch
+	int getPossSettlers(Species* pSpecies, int sex);
+
+	// Calculate total Patch carrying capacity (no. of inds)
+	void setCarryingCapacity(Species* pSpecies, patchLimits landlimits,
+		float epsGlobal, short nHab, short rasterType, short landIx, bool gradK);
+
+	float getK();
 	bool speciesIsPresent(Species* sp);
 
 private:
@@ -150,15 +139,12 @@ private:
 	int xMin, xMax, yMin, yMax; 	// min and max cell co-ordinates
 	int x, y;				// centroid co-ordinates (approx.)
 	Population* pPop; // pointer to population associated with the patch
-	// NOTE: FOR MULTI-SPECIES MODEL, PATCH WILL NEED TO STORE K FOR EACH SPECIES
 	float localK;		// patch carrying capacity (individuals)
 	bool changed;
-	// NOTE: THE FOLLOWING ARRAY WILL NEED TO BE MADE SPECIES-SPECIFIC...
-	short nTemp[gMaxNbSexes];						// no. of potential settlers in each sex
+	short nTemp[gMaxNbSexes];	// no. of potential settlers in each sex
 
 	std::vector <Cell*> cells;
 	std::vector <patchPopn> popns;
-
 };
 
 //---------------------------------------------------------------------------
