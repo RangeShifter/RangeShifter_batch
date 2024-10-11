@@ -66,7 +66,6 @@ public:
 	locn getLocn();
 
 	// functions to manage populations occurring in the SubCommunity
-	popStats getPopStats();
 	void setInitial(bool);
 	void initialise(Landscape*, Species*);
 	void initialInd(Landscape*, Species*, Patch*, Cell*, int);
@@ -184,7 +183,7 @@ private:
 	Patch *pPatch;
 	int *occupancy;	// pointer to occupancy array
 	std::vector <Population*> popns;
-	bool initial; 	// WILL NEED TO BE CHANGED FOR MULTIPLE SPECIES ...
+	bool initialSubComm; 
 
 };
 

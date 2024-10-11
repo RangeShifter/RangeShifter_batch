@@ -856,7 +856,6 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 	movedata move;
 	Patch* pPatch = 0;
 	bool absorbed = false;
-	//int popsize;
 
 	landData land = pLandscape->getLandData();
 	simParams sim = paramsSim->getSim();
@@ -920,14 +919,11 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 				// WOULD IT BE MORE EFFICIENT FOR smsMove TO RETURN A POINTER TO THE NEW CELL? ...
 
 				patch = pCurrCell->getPatch();
-				//int patchnum;
 				if (patch == 0) {
 					pPatch = 0;
-					//patchnum = 0;
 				}
 				else {
 					pPatch = (Patch*)patch;
-					//patchnum = pPatch->getPatchNum();
 				}
 				if (sim.saveVisits && pPatch != pNatalPatch) {
 					pCurrCell->incrVisits();

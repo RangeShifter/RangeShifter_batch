@@ -218,7 +218,9 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			pLandscape->createConnectMatrix();
 
 		// variables to control dynamic landscape
-		landChange landChg; landChg.chgnum = 0; landChg.chgyear = 999999;
+		landChange landChg; 
+		landChg.chgnum = 0; 
+		landChg.chgyear = 999999;
 		if (!ppLand.generated && ppLand.dynamic) {
 			landChg = pLandscape->getLandChange(0); // get first change year
 		}

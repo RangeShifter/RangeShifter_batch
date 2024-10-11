@@ -73,7 +73,7 @@ void Community::initialise(Species* pSpecies, int year)
 	landParams ppLand = pLandscape->getLandParams();
 	initParams init = paramsInit->getInit();
 
-	nsubcomms = (int)subComms.size();
+	nsubcomms = subComms.size();
 
 	spratio = ppLand.spResol / ppLand.resol;
 
@@ -409,11 +409,11 @@ void Community::emigration(void)
 	}
 }
 
-#if RS_RCPP // included also SEASONAL
+#if RS_RCPP
 void Community::dispersal(short landIx, short nextseason)
 #else
 void Community::dispersal(short landIx)
-#endif // RS_RCPP
+#endif
 {
 	simParams sim = paramsSim->getSim();
 
@@ -1462,12 +1462,11 @@ Rcpp::IntegerMatrix Community::addYearToPopList(int rep, int yr) {  // TODO: def
 				pop_map_year(ppLand.dimY - 1 - y, x) = NA_INTEGER;
 			}
 			else {
-				patch = pCell->getPatch();
-				if (patch == 0) { // matrix cell
+				pPatch = pCell->getPatch();
+				if (pPatch == 0) { // matrix cell
 					pop_map_year(ppLand.dimY - 1 - y, x) = 0;
 				}
 				else {
-					pPatch = (Patch*)patch;
 					subcomm = pPatch->getSubComm();
 					if (subcomm == 0) { // check if sub-community exists
 						pop_map_year(ppLand.dimY - 1 - y, x) = 0;

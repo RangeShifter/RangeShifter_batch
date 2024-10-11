@@ -34,7 +34,7 @@ SubCommunity::SubCommunity(Patch* pPch, int subCommId) {
 	pPatch = pPch;
 	// record the new sub-community no. in the patch
 	pPatch->setSubComm(this);
-	initial = false;
+	initialSubComm = false;
 	occupancy = 0;
 }
 
@@ -57,7 +57,7 @@ locn SubCommunity::getLocn(void) {
 	return loc;
 }
 
-void SubCommunity::setInitial(bool b) { initial = b; }
+void SubCommunity::setInitial(bool b) { initialSubComm = b; }
 
 void SubCommunity::initialise(Landscape* pLandscape, Species* pSpecies)
 {
@@ -68,7 +68,7 @@ void SubCommunity::initialise(Landscape* pLandscape, Species* pSpecies)
 	// determine size of initial population
 	int nInds = 0;
 	if (subCommNum == 0 // matrix patch
-		|| !initial)   		// not in initial region or distribution
+		|| !initialSubComm)   		// not in initial region or distribution
 		nInds = 0;
 	else {
 		float k = pPatch->getK();
@@ -159,28 +159,6 @@ Population* SubCommunity::newPopn(Landscape* pLandscape, Species* pSpecies,
 	int npopns = (int)popns.size();
 	popns.push_back(new Population(pSpecies, pPatch, nInds, land.resol));
 	return popns[npopns];
-}
-
-popStats SubCommunity::getPopStats(void) {
-	popStats p, pop;
-	p.pSpecies = 0; 
-	p.spNum = 0;
-	p.nInds = p.nAdults = p.nNonJuvs = 0; 
-	p.breeding = false;
-	p.pPatch = pPatch;
-
-	// FOR SINGLE SPECIES IMPLEMENTATION, THERE IS ONLY ONE POPULATION IN THE PATCH
-	int npops = (int)popns.size();
-	for (int i = 0; i < npops; i++) { // all populations
-		pop = popns[i]->getStats();
-		p.pSpecies = pop.pSpecies;
-		p.spNum = pop.spNum;
-		p.nInds += pop.nInds;
-		p.nNonJuvs += pop.nNonJuvs;
-		p.nAdults += pop.nAdults;
-		p.breeding = pop.breeding;
-	}
-	return p;
 }
 
 void SubCommunity::resetPopns(void) {
@@ -311,7 +289,7 @@ void SubCommunity::initiateDispersal(SubCommunity* matrix) {
 	popStats pop;
 	disperser disp;
 
-	int npops = (int)popns.size();
+	int npops = popns.size();
 	for (int i = 0; i < npops; i++) { // all populations
 		pop = popns[i]->getStats();
 		for (int j = 0; j < pop.nInds; j++) {
