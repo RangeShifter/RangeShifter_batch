@@ -66,48 +66,51 @@ class Patch;
 //---------------------------------------------------------------------------
 
 struct popStats {
-	Species* pSpecies; Patch* pPatch; int spNum, nInds, nNonJuvs, nAdults; bool breeding;
+	Species* pSpecies; 
+	Patch* pPatch; 
+	int spNum, nInds, nNonJuvs, nAdults; 
+	bool breeding;
 };
 struct disperser {
-	Individual* pInd; Cell* pCell; bool yes;
+	Individual* pInd; 
+	Cell* pCell; 
+	bool yes;
 };
-struct zombie {
-	Individual* pInd;
-};
-struct traitsums { // sums of trait genes for dispersal
-	int ninds[gMaxNbSexes];				// no. of individuals
-	double sumD0[gMaxNbSexes];			// sum of maximum emigration probability
-	double ssqD0[gMaxNbSexes];			// sum of squares of maximum emigration probability
-	double sumAlpha[gMaxNbSexes];	// sum of slope of emigration dens-dep reaction norm
-	double ssqAlpha[gMaxNbSexes];	// sum of squares of slope of emigration den-dep reaction norm
-	double sumBeta[gMaxNbSexes]; 	// sum of inflection point of emigration reaction norm
-	double ssqBeta[gMaxNbSexes]; 	// sum of squares of inflection point of emigration reaction norm
-	double sumDist1[gMaxNbSexes]; 	// sum of kernel I mean
-	double ssqDist1[gMaxNbSexes]; 	// sum of squares of kernel I mean
-	double sumDist2[gMaxNbSexes]; 	// sum of kernel II mean
-	double ssqDist2[gMaxNbSexes]; 	// sum of squares of kernel II mean
-	double sumProp1[gMaxNbSexes]; 	// sum of propn using kernel I
-	double ssqProp1[gMaxNbSexes]; 	// sum of squares of propn using kernel I
-	double sumDP[gMaxNbSexes]; 		// sum of SMS directional persistence
-	double ssqDP[gMaxNbSexes]; 		// sum of squares of SMS directional persistence
-	double sumGB[gMaxNbSexes]; 		// sum of SMS goal bias
-	double ssqGB[gMaxNbSexes]; 		// sum of squares of SMS goal bias
-	double sumAlphaDB[gMaxNbSexes];	// sum of SMS dispersal bias decay rate
-	double ssqAlphaDB[gMaxNbSexes]; 	// sum of squares of SMS dispersal bias decay rate
-	double sumBetaDB[gMaxNbSexes];		// sum of SMS dispersal bias decay infl. pt.
-	double ssqBetaDB[gMaxNbSexes]; 	// sum of squares of SMS dispersal bias decay infl. pt.
-	double sumStepL[gMaxNbSexes]; 	// sum of CRW step length
-	double ssqStepL[gMaxNbSexes]; 	// sum of squares of CRW step length
-	double sumRho[gMaxNbSexes]; 		// sum of CRW correlation coefficient
-	double ssqRho[gMaxNbSexes]; 		// sum of squares of CRW correlation coefficient
-	double sumS0[gMaxNbSexes];			// sum of maximum settlement probability
-	double ssqS0[gMaxNbSexes];			// sum of squares of maximum settlement probability
-	double sumAlphaS[gMaxNbSexes];	// sum of slope of settlement den-dep reaction norm
-	double ssqAlphaS[gMaxNbSexes];	// sum of squares of slope of settlement den-dep reaction norm
-	double sumBetaS[gMaxNbSexes]; 	// sum of inflection point of settlement reaction norm
-	double ssqBetaS[gMaxNbSexes]; 	// sum of squares of inflection point of settlement reaction norm
-	double sumGeneticFitness[gMaxNbSexes];
-	double ssqGeneticFitness[gMaxNbSexes];
+
+struct traitsums {
+	vector<int> ninds = vector<int>(gMaxNbSexes, 0);
+	vector<double> sumD0 = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqD0 = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumAlpha = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqAlpha = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumBeta = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqBeta = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumDist1 = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqDist1 = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumDist2 = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqDist2 = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumProp1 = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqProp1 = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumDP = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqDP = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumGB = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqGB = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumAlphaDB = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqAlphaDB = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumBetaDB = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqBetaDB = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumStepL = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqStepL = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumRho = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqRho = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumS0 = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqS0 = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumAlphaS = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqAlphaS = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumBetaS = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqBetaS = vector<double>(gMaxNbSexes, 0);
+	vector<double> sumGeneticFitness = vector<double>(gMaxNbSexes, 0);
+	vector<double> ssqGeneticFitness = vector<double>(gMaxNbSexes, 0);
 };
 
 class Population {
@@ -221,6 +224,10 @@ public:
 		int,				// generation
 		int					// Patch number
 	);
+
+	void outputTraitPatchInfo(ofstream& outtraits, int rep, int yr, int gen, bool patchModel);
+	traitsums outTraits(ofstream& outtraits);
+
 	void outputGeneValues(ofstream& ofsGenes, const int& yr, const int& gen) const;
 	void clean(void); // Remove zero pointers to dead or dispersed individuals
 

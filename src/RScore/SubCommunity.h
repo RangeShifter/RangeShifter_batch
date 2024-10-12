@@ -161,18 +161,7 @@ public:
 		int					// Landscape number (>= 0 to open the file, -999 to close the file
 								//									 -1 to write data records)
 	);
-	bool outTraitsHeaders( // Open traits file and write header record
-		Landscape*,	// pointer to Landscape
-		Species*,		// pointer to Species
-		int					// Landscape number (-999 to close the file)
-	);
-	traitsums outTraits( // Write records to traits file and return aggregated sums
-		Landscape*, 	// pointer to Landscape
-		int,					// replicate
-		int,					// year
-		int,					// generation
-		bool					// true if called to summarise data at community level
-	);
+
 	int stagePop( // Population size of a specified stage
 		int	// stage
 	);

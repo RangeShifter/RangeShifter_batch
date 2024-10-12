@@ -162,7 +162,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				}
 			}
 			if (sim.outTraitsCells)
-				if (!pComm->outTraitsHeaders(pSpecies, ppLand.landNum)) {
+				if (!pComm->outTraitsHeaders(pLandscape, pSpecies, ppLand.landNum)) {
 					filesOK = false;
 				}
 			if (sim.outTraitsRows)
@@ -190,7 +190,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				pComm->outPopHeaders(pSpecies, -999);
 			}
 			if (sim.outTraitsCells)
-				pComm->outTraitsHeaders(pSpecies, -999);
+				pComm->outTraitsHeaders(pLandscape, pSpecies, -999);
 			if (sim.outTraitsRows)
 				pComm->outTraitsRowsHeaders(pSpecies, -999);
 			if (sim.outConnect && ppLand.patchModel)
@@ -638,7 +638,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 		pComm->outPopHeaders(pSpecies, -999); // close Population file
 	}
 	if (sim.outTraitsCells)
-		pComm->outTraitsHeaders(pSpecies, -999); // close Traits file
+		pComm->outTraitsHeaders(pLandscape, pSpecies, -999); // close Traits file
 	if (sim.outTraitsRows)
 		pComm->outTraitsRowsHeaders(pSpecies, -999); // close Traits rows file
 	// close Individuals & Genetics output files if open

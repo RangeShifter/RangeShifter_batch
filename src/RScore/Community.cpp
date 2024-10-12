@@ -34,6 +34,7 @@ ofstream ofsGenes;
 ofstream outwcfstat;
 ofstream outperlocusfstat;
 ofstream outpairwisefst;
+ofstream outtraits;
 
 //---------------------------------------------------------------------------
 
@@ -758,24 +759,9 @@ void Community::outRange(Species* pSpecies, int rep, int yr, int gen)
 		traitsums scts; // sub-community traits
 		int ngenes, popsize;
 
-		for (int i = 0; i < gMaxNbSexes; i++) {
-			ts.ninds[i] = 0;
-			ts.sumD0[i] = ts.ssqD0[i] = 0.0;
-			ts.sumAlpha[i] = ts.ssqAlpha[i] = 0.0; ts.sumBeta[i] = ts.ssqBeta[i] = 0.0;
-			ts.sumDist1[i] = ts.ssqDist1[i] = 0.0; ts.sumDist2[i] = ts.ssqDist2[i] = 0.0;
-			ts.sumProp1[i] = ts.ssqProp1[i] = 0.0;
-			ts.sumDP[i] = ts.ssqDP[i] = 0.0;
-			ts.sumGB[i] = ts.ssqGB[i] = 0.0;
-			ts.sumAlphaDB[i] = ts.ssqAlphaDB[i] = 0.0;
-			ts.sumBetaDB[i] = ts.ssqBetaDB[i] = 0.0;
-			ts.sumStepL[i] = ts.ssqStepL[i] = 0.0; ts.sumRho[i] = ts.ssqRho[i] = 0.0;
-			ts.sumS0[i] = ts.ssqS0[i] = 0.0;
-			ts.sumAlphaS[i] = ts.ssqAlphaS[i] = 0.0; ts.sumBetaS[i] = ts.ssqBetaS[i] = 0.0;
-		}
-
-		int nsubcomms = (int)subComms.size();
-		for (int i = 0; i < nsubcomms; i++) { // all sub-communities (incl. matrix)
-			scts = subComms[i]->outTraits(pLandscape, rep, yr, gen, true);
+		int npops = popns.size();
+		for (int i = 0; i < npops; i++) { 
+			scts = popns[i]->outTraits(outtraits);
 			for (int j = 0; j < gMaxNbSexes; j++) {
 				ts.ninds[j] += scts.ninds[j];
 				ts.sumD0[j] += scts.sumD0[j];     ts.ssqD0[j] += scts.ssqD0[j];
@@ -1096,8 +1082,121 @@ void Community::outOccSuit(bool view) {
 }
 
 // Open traits file and write header record
-bool Community::outTraitsHeaders(Species* pSpecies, int landNr) {
-	return subComms[0]->outTraitsHeaders(pLandscape, pSpecies, landNr);
+bool Community::outTraitsHeaders(Landscape* pLandscape, Species* pSpecies, int landNr)
+{
+	landParams land = pLandscape->getLandParams();
+	if (landNr == -999) { // close file
+		if (outtraits.is_open()) outtraits.close();
+		outtraits.clear();
+		return true;
+	}
+
+	string name;
+	emigRules emig = pSpecies->getEmigRules();
+	transferRules trfr = pSpecies->getTransferRules();
+	settleType sett = pSpecies->getSettle();
+	simParams sim = paramsSim->getSim();
+
+	string DirOut = paramsSim->getDir(2);
+	if (sim.batchMode) {
+		if (land.patchModel) {
+			name = DirOut
+				+ "Batch" + to_string(sim.batchNum) + "_"
+				+ "Sim" + to_string(sim.simulation) + "_Land" + to_string(landNr)
+				+ "_TraitsXpatch.txt";
+		}
+		else {
+			name = DirOut
+				+ "Batch" + to_string(sim.batchNum) + "_"
+				+ "Sim" + to_string(sim.simulation) + "_Land" + to_string(landNr)
+				+ "_TraitsXcell.txt";
+		}
+	}
+	else {
+		if (land.patchModel) {
+			name = DirOut + "Sim" + to_string(sim.simulation) + "_TraitsXpatch.txt";
+		}
+		else {
+			name = DirOut + "Sim" + to_string(sim.simulation) + "_TraitsXcell.txt";
+		}
+	}
+	outtraits.open(name.c_str());
+
+	outtraits << "Rep\tYear\tRepSeason";
+	if (land.patchModel) outtraits << "\tPatchID";
+	else
+		outtraits << "\tx\ty";
+
+	if (emig.indVar) {
+		if (emig.sexDep) {
+			if (emig.densDep) {
+				outtraits << "\tF_meanD0\tF_stdD0\tM_meanD0\tM_stdD0";
+				outtraits << "\tF_meanAlpha\tF_stdAlpha\tM_meanAlpha\tM_stdAlpha";
+				outtraits << "\tF_meanBeta\tF_stdBeta\tM_meanBeta\tM_stdBeta";
+			}
+			else {
+				outtraits << "\tF_meanEP\tF_stdEP\tM_meanEP\tM_stdEP";
+			}
+		}
+		else {
+			if (emig.densDep) {
+				outtraits << "\tmeanD0\tstdD0\tmeanAlpha\tstdAlpha";
+				outtraits << "\tmeanBeta\tstdBeta";
+			}
+			else {
+				outtraits << "\tmeanEP\tstdEP";
+			}
+		}
+	}
+	if (trfr.indVar) {
+		if (trfr.usesMovtProc) {
+			if (trfr.moveType == 1) {
+				outtraits << "\tmeanDP\tstdDP\tmeanGB\tstdGB";
+				outtraits << "\tmeanAlphaDB\tstdAlphaDB\tmeanBetaDB\tstdBetaDB";
+			}
+			if (trfr.moveType == 2) {
+				outtraits << "\tmeanStepLength\tstdStepLength\tmeanRho\tstdRho";
+			}
+		}
+		else {
+			if (trfr.sexDep) {
+				outtraits << "\tF_mean_distI\tF_std_distI\tM_mean_distI\tM_std_distI";
+				if (trfr.twinKern)
+					outtraits << "\tF_mean_distII\tF_std_distII\tM_mean_distII\tM_std_distII"
+					<< "\tF_meanPfirstKernel\tF_stdPfirstKernel"
+					<< "\tM_meanPfirstKernel\tM_stdPfirstKernel";
+			}
+			else {
+				outtraits << "\tmean_distI\tstd_distI";
+				if (trfr.twinKern)
+					outtraits << "\tmean_distII\tstd_distII\tmeanPfirstKernel\tstdPfirstKernel";
+			}
+		}
+	}
+	if (sett.indVar) {
+		if (sett.sexDep) {
+			outtraits << "\tF_meanS0\tF_stdS0\tM_meanS0\tM_stdS0";
+			outtraits << "\tF_meanAlphaS\tF_stdAlphaS\tM_meanAlphaS\tM_stdAlphaS";
+			outtraits << "\tF_meanBetaS\tF_stdBetaS\tM_meanBetaS\tM_stdBetaS";
+		}
+		else {
+			outtraits << "\tmeanS0\tstdS0";
+			outtraits << "\tmeanAlphaS\tstdAlphaS";
+			outtraits << "\tmeanBetaS\tstdBetaS";
+		}
+	}
+	if (pSpecies->getNbGenLoadTraits() > 0) {
+		if (pSpecies->getDemogrParams().repType > 0) {
+			outtraits << "\tF_meanGenFitness\tF_stdGenFitness\tM_meanGenFitness\tM_stdGenFitness";
+		}
+		else {
+			outtraits << "\tmeanGenFitness\tstdGenFitness";
+		}
+	}
+
+	outtraits << endl;
+
+	return outtraits.is_open();
 }
 
 // Write records to traits file
@@ -1116,54 +1215,52 @@ void Community::outTraits(Species* pSpecies, int rep, int yr, int gen)
 	if (sim.outTraitsRows && yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0) {
 		// create array of traits means, etc., one for each row
 		ts = new traitsums[land.dimY];
-		for (int y = 0; y < land.dimY; y++) {
-			for (int i = 0; i < gMaxNbSexes; i++) {
-				ts[y].ninds[i] = 0;
-				ts[y].sumD0[i] = ts[y].ssqD0[i] = 0.0;
-				ts[y].sumAlpha[i] = ts[y].ssqAlpha[i] = 0.0;
-				ts[y].sumBeta[i] = ts[y].ssqBeta[i] = 0.0;
-				ts[y].sumDist1[i] = ts[y].ssqDist1[i] = 0.0;
-				ts[y].sumDist2[i] = ts[y].ssqDist2[i] = 0.0;
-				ts[y].sumProp1[i] = ts[y].ssqProp1[i] = 0.0;
-				ts[y].sumStepL[i] = ts[y].ssqStepL[i] = 0.0;
-				ts[y].sumRho[i] = ts[y].ssqRho[i] = 0.0;
-				ts[y].sumS0[i] = ts[y].ssqS0[i] = 0.0;
-				ts[y].sumAlphaS[i] = ts[y].ssqAlphaS[i] = 0.0;
-				ts[y].sumBetaS[i] = ts[y].ssqBetaS[i] = 0.0;
-				ts[y].sumGeneticFitness[i] = ts[y].ssqGeneticFitness[i] = 0.0;
-			}
-		}
 	}
 	if (v.viewTraits
 		|| ((sim.outTraitsCells && yr >= sim.outStartTraitCell && yr % sim.outIntTraitCell == 0) ||
 			(sim.outTraitsRows && yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0)))
 	{
 		// generate output for each sub-community (patch) in the community
-		int nsubcomms = (int)subComms.size();
-		for (int i = 1; i < nsubcomms; i++) { // // all except matrix sub-community
-			sctraits = subComms[i]->outTraits(pLandscape, rep, yr, gen, false);
+		int npops = popns.size();
+		for (int i = 1; i < npops; i++) { // all except matrix sub-community
+			if (sim.outTraitsCells && yr % sim.outIntTraitCell == 0) {
+				popns[i]->outputTraitPatchInfo(outtraits, rep, yr, gen, land.patchModel);
+			}
+			sctraits = popns[i]->outTraits(outtraits);
 			locn loc = subComms[i]->getLocn();
 			int y = loc.y;
 			if (sim.outTraitsRows && yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0)
 			{
 				for (int s = 0; s < gMaxNbSexes; s++) {
 					ts[y].ninds[s] += sctraits.ninds[s];
-					ts[y].sumD0[s] += sctraits.sumD0[s];     ts[y].ssqD0[s] += sctraits.ssqD0[s];
-					ts[y].sumAlpha[s] += sctraits.sumAlpha[s];  ts[y].ssqAlpha[s] += sctraits.ssqAlpha[s];
-					ts[y].sumBeta[s] += sctraits.sumBeta[s];   ts[y].ssqBeta[s] += sctraits.ssqBeta[s];
-					ts[y].sumDist1[s] += sctraits.sumDist1[s];  ts[y].ssqDist1[s] += sctraits.ssqDist1[s];
-					ts[y].sumDist2[s] += sctraits.sumDist2[s];  ts[y].ssqDist2[s] += sctraits.ssqDist2[s];
-					ts[y].sumProp1[s] += sctraits.sumProp1[s];  ts[y].ssqProp1[s] += sctraits.ssqProp1[s];
-					ts[y].sumStepL[s] += sctraits.sumStepL[s];  ts[y].ssqStepL[s] += sctraits.ssqStepL[s];
-					ts[y].sumRho[s] += sctraits.sumRho[s];    ts[y].ssqRho[s] += sctraits.ssqRho[s];
-					ts[y].sumS0[s] += sctraits.sumS0[s];     ts[y].ssqS0[s] += sctraits.ssqS0[s];
-					ts[y].sumAlphaS[s] += sctraits.sumAlphaS[s]; ts[y].ssqAlphaS[s] += sctraits.ssqAlphaS[s];
-					ts[y].sumBetaS[s] += sctraits.sumBetaS[s];  ts[y].ssqBetaS[s] += sctraits.ssqBetaS[s];
-					ts[y].sumGeneticFitness[s] += sctraits.sumGeneticFitness[s]; ts[y].ssqGeneticFitness[s] += sctraits.ssqGeneticFitness[s];
+					ts[y].sumD0[s] += sctraits.sumD0[s];    
+					ts[y].ssqD0[s] += sctraits.ssqD0[s];
+					ts[y].sumAlpha[s] += sctraits.sumAlpha[s]; 
+					ts[y].ssqAlpha[s] += sctraits.ssqAlpha[s];
+					ts[y].sumBeta[s] += sctraits.sumBeta[s]; 
+					ts[y].ssqBeta[s] += sctraits.ssqBeta[s];
+					ts[y].sumDist1[s] += sctraits.sumDist1[s]; 
+					ts[y].ssqDist1[s] += sctraits.ssqDist1[s];
+					ts[y].sumDist2[s] += sctraits.sumDist2[s]; 
+					ts[y].ssqDist2[s] += sctraits.ssqDist2[s];
+					ts[y].sumProp1[s] += sctraits.sumProp1[s]; 
+					ts[y].ssqProp1[s] += sctraits.ssqProp1[s];
+					ts[y].sumStepL[s] += sctraits.sumStepL[s];
+					ts[y].ssqStepL[s] += sctraits.ssqStepL[s];
+					ts[y].sumRho[s] += sctraits.sumRho[s]; 
+					ts[y].ssqRho[s] += sctraits.ssqRho[s];
+					ts[y].sumS0[s] += sctraits.sumS0[s];  
+					ts[y].ssqS0[s] += sctraits.ssqS0[s];
+					ts[y].sumAlphaS[s] += sctraits.sumAlphaS[s];
+					ts[y].ssqAlphaS[s] += sctraits.ssqAlphaS[s];
+					ts[y].sumBetaS[s] += sctraits.sumBetaS[s]; 
+					ts[y].ssqBetaS[s] += sctraits.ssqBetaS[s];
+					ts[y].sumGeneticFitness[s] += sctraits.sumGeneticFitness[s];
+					ts[y].ssqGeneticFitness[s] += sctraits.ssqGeneticFitness[s];
 				}
 			}
 		}
-		if (nsubcomms > 0 && sim.outTraitsRows
+		if (npops > 0 && sim.outTraitsRows
 			&& yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0) {
 			for (int y = 0; y < land.dimY; y++) {
 				if ((ts[y].ninds[0] + ts[y].ninds[1]) > 0) {
