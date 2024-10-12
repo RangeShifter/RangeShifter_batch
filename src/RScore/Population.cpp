@@ -1561,12 +1561,10 @@ bool Population::outPopHeaders(int landNr, bool patchModel) {
 
 //---------------------------------------------------------------------------
 // Write record to population file
-void Population::outPopulation(int rep, int yr, int gen, float eps,
+void Population::outPopulation(int rep, int yr, int gen, bool envLocal, float epsGlobal,
 	bool patchModel, bool writeEnv, bool gradK)
 {
 	Cell* pCell;
-
-// NEED TO REPLACE CONDITIONAL COLUMNS BASED ON ATTRIBUTES OF ONE SPECIES TO COVER
 	demogrParams dem = pSpecies->getDemogrParams();
 
 	popStats p;
@@ -1579,7 +1577,13 @@ void Population::outPopulation(int rep, int yr, int gen, float eps,
 		locn loc = pPatch->getCellLocn(0);
 		outPop << "\t" << loc.x << "\t" << loc.y;
 	}
+
+	float eps = 0.0;
 	if (writeEnv) {
+		if (envLocal) { // then override eps with local value
+			Cell* pCell = pPatch->getRandomCell();
+			if (pCell != 0) eps = pCell->getEps();
+		}
 		if (pPatch->getPatchNum() == 0) { // matrix
 			outPop << "\t0\t0\t0";
 		}

@@ -554,16 +554,51 @@ commStats Community::getStats(void)
 
 // Open population file and write header record
 bool Community::outPopHeaders(Species* pSpecies, int option) {
-	return subComms[0]->outPopHeaders(pLandscape, pSpecies, option);
+	
+	bool fileOK;
+	Population* pPop;
+	landParams land = pLandscape->getLandParams();
+
+	if (option == -999) { // close the file
+		// as all populations may have been deleted, set up a dummy one
+		// species is not necessary
+		pPop = new Population();
+		fileOK = pPop->outPopHeaders(-999, land.patchModel);
+		delete pPop;
+	}
+	else { // open the file
+		// as no population has yet been created, set up a dummy one
+		// species is necessary, as columns depend on stage and sex structure
+		pPop = new Population(pSpecies, 0, 0, land.resol);
+		fileOK = pPop->outPopHeaders(land.landNum, land.patchModel);
+		delete pPop;
+	}
+	return fileOK;
 }
 
 // Write records to population file
 void Community::outPop(int rep, int yr, int gen)
 {
-	// generate output for each sub-community (patch) in the community
-	int nsubcomms = (int)subComms.size();
-	for (int i = 0; i < nsubcomms; i++) { // all sub-communities
-		subComms[i]->outPop(pLandscape, rep, yr, gen);
+	landParams land = pLandscape->getLandParams();
+	envGradParams grad = paramsGrad->getGradient();
+	envStochParams env = paramsStoch->getStoch();
+	bool writeEnv = grad.gradient || env.stoch;
+	bool gradK = grad.gradient && grad.gradType == 1;
+
+	float eps = 0.0;
+	if (env.stoch && !env.local) {
+		eps = pLandscape->getGlobalStoch(yr);
+	}
+
+	// generate output for each population (patch x species) in the community
+	int npops = popns.size();
+	for (int i = 0; i < npops; i++) {
+		int patchnum = popns[i]->getPatch()->getPatchNum();
+		float localK = popns[i]->getPatch()->getK();
+		if ((localK > 0.0 || (land.patchModel && patchnum == 0))
+			|| popns[i]->totalPop() > 0) {
+			popns[i]->outPopulation(rep, yr, gen, env.local, eps, land.patchModel, writeEnv, gradK);
+		}
 	}
 
 }

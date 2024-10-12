@@ -141,18 +141,6 @@ public:
 	);
 	void deleteOccupancy();
 
-	bool outPopHeaders( // Open population file and write header record
-		Landscape*,	// pointer to Landscape
-		Species*,		// pointer to Species
-		int					// option: -999 to close the file
-	);
-	void outPop( // Write records to population file
-		Landscape*,	// pointer to Landscape
-		int,				// replicate
-		int,				// year
-		int					// generation
-	);
-
 	void outInds( // Write records to individuals file
 		Landscape*,	// pointer to Landscape
 		int,				// replicate

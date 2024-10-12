@@ -202,14 +202,16 @@ public:
 		int,	// Landscape number (-999 to close the file)
 		bool	// TRUE for a patch-based model, FALSE for a cell-based model
 	);
+
 	void outPopulation( // Write record to population file
-		int,		// replicate
-		int,		// year
-		int,		// generation
-		float,	// epsilon - global stochasticity value
-		bool,		// TRUE for a patch-based model, FALSE for a cell-based model
-		bool,		// TRUE to write environmental data
-		bool		// TRUE if there is a gradient in carrying capacity
+		int rep,
+		int yr,
+		int gen,
+		bool envLocal,
+		float eps,
+		bool patchModel,
+		bool writeEnv,
+		bool gradK
 	);
 
 	void outIndsHeaders( // Open individuals file and write header record
