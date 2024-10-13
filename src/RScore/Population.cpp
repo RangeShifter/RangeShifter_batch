@@ -1684,8 +1684,7 @@ void Population::outIndsHeaders(int rep, int landNr, bool patchModel)
 
 //---------------------------------------------------------------------------
 // Write records to individuals file
-void Population::outIndividual(Landscape* pLandscape, int rep, int yr, int gen,
-	int patchNum)
+void Population::outIndividual(Landscape* pLandscape, int rep, int yr, int gen)
 {
 	bool writeInd;
 	pathSteps steps;
@@ -1696,6 +1695,7 @@ void Population::outIndividual(Landscape* pLandscape, int rep, int yr, int gen,
 	transferRules trfr = pSpecies->getTransferRules();
 	settleType sett = pSpecies->getSettle();
 	short spNum = pSpecies->getSpNum();
+	int patchNum = pPatch->getPatchNum();
 
 	int ninds = (int)inds.size();
 	for (int i = 0; i < ninds; i++) {

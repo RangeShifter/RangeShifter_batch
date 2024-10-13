@@ -215,16 +215,16 @@ public:
 	);
 
 	void outIndsHeaders( // Open individuals file and write header record
-		int,	// replicate
-		int,	// Landscape number (-999 to close the file)
-		bool	// TRUE for a patch-based model, FALSE for a cell-based model
+		int rep,
+		int landnr,
+		bool patchModel
 	);
+
 	void outIndividual( // Write records to individuals file
-		Landscape*,	// pointer to Landscape
-		int,				// replicate
-		int,				// year
-		int,				// generation
-		int					// Patch number
+		Landscape* pLandscape,
+		int rep,
+		int yr,
+		int gen
 	);
 
 	void outputTraitPatchInfo(ofstream& outtraits, int rep, int yr, int gen, bool patchModel);

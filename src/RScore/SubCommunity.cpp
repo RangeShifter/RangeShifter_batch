@@ -465,30 +465,6 @@ void SubCommunity::deleteOccupancy(void) {
 	occupancy = 0;
 }
 
-// Write records to individuals file
-void SubCommunity::outInds(Landscape* pLandscape, int rep, int yr, int gen, int landNr) {
-	landParams ppLand = pLandscape->getLandParams();
-	Population* pPop;
-	if (landNr >= 0) { // open the file
-		popns[0]->outIndsHeaders(rep, landNr, ppLand.patchModel);
-		return;
-	}
-	if (landNr == -999) { // close the file
-
-		// as all populations may have been deleted, set up a dummy one
-		pPop = new Population();
-		pPop->outIndsHeaders(rep, -999, ppLand.patchModel);
-		delete pPop;
-		return;
-	}
-	// generate output for each population within the sub-community (patch)
-	int npops = (int)popns.size();
-	for (int i = 0; i < npops; i++) { // all populations
-		popns[i]->outIndividual(pLandscape, rep, yr, gen, pPatch->getPatchNum());
-	}
-}
-
-
 // Population size of a specified stage
 int SubCommunity::stagePop(int stage) {
 	int popsize = 0;

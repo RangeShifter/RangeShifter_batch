@@ -606,19 +606,25 @@ void Community::outPop(int rep, int yr, int gen)
 
 // Write records to individuals file
 void Community::outInds(int rep, int yr, int gen, int landNr) {
+	
+	landParams ppLand = pLandscape->getLandParams();
 
 	if (landNr >= 0) { // open the file
-		subComms[0]->outInds(pLandscape, rep, yr, gen, landNr);
+		popns[0]->outIndsHeaders(rep, landNr, ppLand.patchModel);
 		return;
 	}
+
 	if (landNr == -999) { // close the file
-		subComms[0]->outInds(pLandscape, rep, yr, gen, -999);
+		// as all populations may have been deleted, set up a dummy one
+		Population* pPop = new Population();
+		pPop->outIndsHeaders(rep, -999, ppLand.patchModel);
+		delete pPop;
 		return;
 	}
+
 	// generate output for each sub-community (patch) in the community
-	int nsubcomms = (int)subComms.size();
-	for (int i = 0; i < nsubcomms; i++) { // all sub-communities
-		subComms[i]->outInds(pLandscape, rep, yr, gen, landNr);
+	for (Population* pop : popns) { // all sub-communities
+		pop->outIndividual(pLandscape, rep, yr, gen);
 	}
 }
 

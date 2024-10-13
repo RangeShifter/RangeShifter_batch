@@ -141,15 +141,6 @@ public:
 	);
 	void deleteOccupancy();
 
-	void outInds( // Write records to individuals file
-		Landscape*,	// pointer to Landscape
-		int,				// replicate
-		int,				// year
-		int,				// generation
-		int					// Landscape number (>= 0 to open the file, -999 to close the file
-								//									 -1 to write data records)
-	);
-
 	int stagePop( // Population size of a specified stage
 		int	// stage
 	);
@@ -160,8 +151,7 @@ private:
 	Patch *pPatch;
 	int *occupancy;	// pointer to occupancy array
 	std::vector <Population*> popns;
-	bool initialSubComm; 
-
+	bool initialSubComm;
 };
 
 extern paramGrad* paramsGrad;
