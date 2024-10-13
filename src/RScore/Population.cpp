@@ -1029,11 +1029,7 @@ void Population::recruit(Individual* pInd) {
 //---------------------------------------------------------------------------
 
 // Transfer is run for populations in the matrix only
-#if RS_RCPP // included also SEASONAL
 int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
-#else
-int Population::transfer(Landscape* pLandscape, short landIx)
-#endif
 {
 	int ndispersers = 0;
 	int disperser;

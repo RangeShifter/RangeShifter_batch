@@ -410,11 +410,7 @@ void Community::emigration(void)
 	}
 }
 
-#if RS_RCPP
 void Community::dispersal(short landIx, short nextseason)
-#else
-void Community::dispersal(short landIx)
-#endif
 {
 	simParams sim = paramsSim->getSim();
 
@@ -432,11 +428,11 @@ void Community::dispersal(short landIx)
 		for (int i = 0; i < nsubcomms; i++) { // all populations
 			subComms[i]->resetPossSettlers();
 		}
-#if RS_RCPP // included also SEASONAL
-		ndispersers = matrix->transfer(pLandscape, landIx, nextseason);
-#else
-		ndispersers = matrix->transfer(pLandscape, landIx);
-#endif // SEASONAL || RS_RCPP
+
+		for (auto pop : popns) { // all populations
+			ndispersers += pop->transfer(pLandscape, landIx, nextseason);
+		}
+
 		matrix->completeDispersal(pLandscape, sim.outConnect);
 	} while (ndispersers > 0);
 }

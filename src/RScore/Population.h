@@ -161,12 +161,13 @@ public:
 	void sampleIndsWithoutReplacement(string n, const set<int>& sampleStages);
 	int sampleSize() const;
 	vector<Individual*> getIndividualsInStage(int stage);
-#if RS_RCPP
 	int transfer( // Executed for the Population(s) in the matrix only
-		Landscape*,	// pointer to Landscape
-		short,				// landscape change index
-		short				// year
+		Landscape* pLandscape,
+		short landIx,
+		short yr
 	);
+
+#if RS_RCPP
 	// Determine whether there is a potential mate present in a patch which a potential
 	// settler has reached
 	bool matePresent(
@@ -174,10 +175,6 @@ public:
 		short		// sex of the required mate (0 = female, 1 = male)
 	);
 #else
-	int transfer( // Executed for the Population(s) in the matrix only
-		Landscape*,	// pointer to Landscape
-		short				// landscape change index
-	);
 	// Determine whether there is a potential mate present in a patch which a potential
 	// settler has reached
 	bool matePresent(

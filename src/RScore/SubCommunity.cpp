@@ -312,26 +312,6 @@ void SubCommunity::recruit(Individual* pInd, Species* pSpecies) {
 	}
 }
 
-// Transfer through the matrix - run for the matrix sub-community only
-#if RS_RCPP
-int SubCommunity::transfer(Landscape* pLandscape, short landIx, short nextseason)
-#else
-int SubCommunity::transfer(Landscape* pLandscape, short landIx)
-#endif // RS_RCPP
-{
-	int ndispersers = 0;
-	int npops = (int)popns.size();
-	for (int i = 0; i < npops; i++) { // all populations
-#if RS_RCPP
-		ndispersers += popns[i]->transfer(pLandscape, landIx, nextseason);
-#else
-		ndispersers += popns[i]->transfer(pLandscape, landIx);
-#endif // RS_RCPP
-
-	}
-	return ndispersers;
-}
-
 //---------------------------------------------------------------------------
 
 // Remove emigrants from patch 0 (matrix) and transfer to sub-community

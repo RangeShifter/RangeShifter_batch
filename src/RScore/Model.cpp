@@ -381,11 +381,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				}
 				// apply effects of landscape change to species present in changed patches
 				pComm->patchChanges();
-#if RS_RCPP
 				pComm->dispersal(landIx, yr);
-#else
-				pComm->dispersal(landIx);
-#endif // RS_RCPP
 			}
 			if (init.restrictRange) {
 				// remove any population from region removed from restricted range
@@ -438,11 +434,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 
 				// Dispersal
 				pComm->emigration();
-#if RS_RCPP
 				pComm->dispersal(landIx, yr);
-#else
-				pComm->dispersal(landIx);
-#endif // RS_RCPP
 
 				// survival part 0
 				if (dem.stageStruct) {
