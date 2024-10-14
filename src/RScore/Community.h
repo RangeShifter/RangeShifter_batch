@@ -103,10 +103,6 @@ public:
 	);
 	void ageIncrement(void);
 	int totalInds(void);
-	Population* findPop( // Find the population of a given species in a given patch
-		Species*, // pointer to Species
-		Patch*		// pointer to Patch
-	);
 	commStats getStats(void);
 	void createOccupancy(
 		int,	// no. of rows = (no. of years / interval) + 1
@@ -205,9 +201,10 @@ private:
 	Landscape* pLandscape;
 	int indIx;				// index used to apply initial individuals
 	float** occSuit;	// occupancy of suitable cells / patches
+
+	Population* pMatrix;
 	std::vector <Population*> popns;
 
-	//below won't work for multispecies
 	unique_ptr<NeutralStatsManager> pNeutralStatistics;
 };
 

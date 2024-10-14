@@ -61,7 +61,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 		pLandscape->updateCarryingCapacity(pSpecies, 0, 0);
 		patchData ppp;
 		int npatches = pLandscape->patchCount();
-		for (int i = 0; i < npatches; i++) {
+		for (int i = 0; i < npatches; i++) { // includes matrix (index 0) ?
 			ppp = pLandscape->getPatchData(i);
 			pComm->addSubComm(ppp.pPatch, ppp.patchNum); // SET UP ALL SUB-COMMUNITIES
 		}

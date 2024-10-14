@@ -115,9 +115,6 @@ public:
 	);
 	void ageIncrement();
 
-	// Find the population of a given species in a given patch
-	Population* findPop(Species*, Patch*);
-
 	void createOccupancy(
 		int	// no. of rows = (no. of years / interval) + 1
 	);

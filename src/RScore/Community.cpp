@@ -414,11 +414,24 @@ void Community::dispersal(short landIx, short nextseason)
 {
 	simParams sim = paramsSim->getSim();
 
-	int nsubcomms = subComms.size();
+	int npops = popns.size();
 	// initiate dispersal - all emigrants leave their natal community and join matrix community
 	SubCommunity* matrix = subComms[0]; // matrix community is always the first
-	for (int i = 0; i < nsubcomms; i++) { // all populations
-		subComms[i]->initiateDispersal(matrix);
+	for (int i = 1; i < npops; i++) { // skip the matrix (popns[0])
+
+		popStats pop;
+		disperser disp;
+
+		pop = popns[i]->getStats();
+		for (int j = 0; j < pop.nInds; j++) {
+			disp = popns[i]->extractDisperser(j);
+			if (disp.yes) { // disperser - has already been removed from natal population
+				// add to matrix population
+				matrix->recruit(disp.pInd, pop.pSpecies);
+			}
+		}
+		// remove pointers to emigrants
+		popns[i]->clean();
 	}
 
 	// dispersal is undertaken by all individuals now in the matrix patch
@@ -460,17 +473,6 @@ int Community::totalInds(void) {
 		total += popns[i]->getStats().nInds;
 	}
 	return total;
-}
-
-// Find the population of a given species in a given patch
-Population* Community::findPop(Species* pSp, Patch* pPch) {
-	Population* pPop = 0;
-	int nsubcomms = (int)subComms.size();
-	for (int i = 0; i < nsubcomms; i++) { // all communities (including in matrix)
-		pPop = subComms[i]->findPop(pSp, pPch);
-		if (pPop != 0) break;
-	}
-	return pPop;
 }
 
 //---------------------------------------------------------------------------
@@ -588,12 +590,12 @@ void Community::outPop(int rep, int yr, int gen)
 
 	// generate output for each population (patch x species) in the community
 	int npops = popns.size();
-	for (int i = 0; i < npops; i++) {
-		int patchnum = popns[i]->getPatch()->getPatchNum();
-		float localK = popns[i]->getPatch()->getK();
+	for (auto pop : popns) { // ignore the matrix?
+		int patchnum = pop->getPatch()->getPatchNum();
+		float localK = pop->getPatch()->getK();
 		if ((localK > 0.0 || (land.patchModel && patchnum == 0))
-			|| popns[i]->totalPop() > 0) {
-			popns[i]->outPopulation(rep, yr, gen, env.local, eps, land.patchModel, writeEnv, gradK);
+			|| pop->totalPop() > 0) {
+			pop->outPopulation(rep, yr, gen, env.local, eps, land.patchModel, writeEnv, gradK);
 		}
 	}
 
@@ -761,14 +763,14 @@ void Community::outRange(Species* pSpecies, int rep, int yr, int gen)
 		// all non-juvenile stages
 		for (int stg = 1; stg < sstruct.nStages; stg++) {
 			stagepop = 0;
-			for (int i = 0; i < nsubcomms; i++) { // all sub-communities
+			for (int i = 0; i < nsubcomms; i++) { // all sub-communities, including matrix
 				stagepop += subComms[i]->stagePop(stg);
 			}
 			outrange << "\t" << stagepop;
 		}
 		// juveniles born in current reproductive season
 		stagepop = 0;
-		for (int i = 0; i < nsubcomms; i++) { // all sub-communities
+		for (int i = 0; i < nsubcomms; i++) { // all sub-communities incl. matrix
 			stagepop += subComms[i]->stagePop(0);
 		}
 		outrange << "\t" << stagepop;
@@ -1258,12 +1260,11 @@ void Community::outTraits(Species* pSpecies, int rep, int yr, int gen)
 			(sim.outTraitsRows && yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0)))
 	{
 		// generate output for each sub-community (patch) in the community
-		int npops = popns.size();
-		for (int i = 1; i < npops; i++) { // all except matrix sub-community
+		for (auto pop : popns) {
 			if (sim.outTraitsCells && yr % sim.outIntTraitCell == 0) {
-				popns[i]->outputTraitPatchInfo(outtraits, rep, yr, gen, land.patchModel);
+				pop->outputTraitPatchInfo(outtraits, rep, yr, gen, land.patchModel);
 			}
-			sctraits = popns[i]->outTraits(outtraits);
+			sctraits = pop->outTraits(outtraits);
 			locn loc = subComms[i]->getLocn();
 			int y = loc.y;
 			if (sim.outTraitsRows && yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0)
@@ -1297,7 +1298,7 @@ void Community::outTraits(Species* pSpecies, int rep, int yr, int gen)
 				}
 			}
 		}
-		if (npops > 0 && sim.outTraitsRows
+		if (popns.size() > 0 && sim.outTraitsRows
 			&& yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0) {
 			for (int y = 0; y < land.dimY; y++) {
 				if ((ts[y].ninds[0] + ts[y].ninds[1]) > 0) {
@@ -1664,7 +1665,7 @@ void Community::outputGeneValues(const int& year, const int& gen, Species* pSpec
 		if (patch == 0) {
 			throw runtime_error("Sampled patch does not exist");
 		}
-		const auto pPop = (Population*)patch->getPopn(pSpecies);
+		const auto pPop = patch->getPopn(pSpecies);
 		if (pPop != 0) { 
 			pPop->outputGeneValues(ofsGenes, year, gen);
 		}
@@ -1932,7 +1933,7 @@ void Community::outNeutralGenetics(Species* pSpecies, int rep, int yr, int gen, 
 		if (patch == 0) {
 			throw runtime_error("Sampled patch does not exist");
 		}
-		const auto pPop = (Population*)patch->getPopn(pSpecies);
+		const auto pPop = patch->getPopn(pSpecies);
 		if (pPop != 0) { // empty patches do not contribute
 			nInds += pPop->sampleSize();
 			nbPops++;

@@ -651,6 +651,7 @@ void Landscape::allocatePatches(Species* pSpecies)
 		if (patches[i] != NULL) delete patches[i];
 	}
 	patches.clear();
+
 	// create the matrix patch
 	patches.push_back(new Patch(0, 0));
 	Patch* matrixPatch = patches[0];

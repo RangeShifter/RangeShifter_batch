@@ -129,13 +129,8 @@ void SubCommunity::initialInd(Landscape* pLandscape, Species* pSpecies,
 		age = stg = 1;
 		repInt = 0;
 	}
-	if (dem.repType == 0) {
-		probmale = 0.0;
-	}
-	else {
-		if (iind.sex == 1) probmale = 1.0; 
-		else probmale = 0.0;
-	}
+	probmale = (dem.repType != 0 && iind.sex == 1) ? 1.0 : 0.0;
+	
 	pInd = new Individual(pCell, pPatch, stg, age, repInt, probmale, trfr.usesMovtProc, trfr.moveType);
 
 	// add new individual to the population
@@ -393,24 +388,6 @@ void SubCommunity::ageIncrement(void) {
 	for (int i = 0; i < npops; i++) { // all populations
 		popns[i]->ageIncrement();
 	}
-}
-
-// Find the population of a given species in a given patch
-Population* SubCommunity::findPop(Species* pSp, Patch* pPch) {
-
-	Population* pPop = 0;
-	popStats pop;
-	int npops = (int)popns.size();
-
-	for (int i = 0; i < npops; i++) { // all populations
-		pop = popns[i]->getStats();
-		if (pop.pSpecies == pSp && pop.pPatch == pPch) { // population located
-			pPop = popns[i];
-			break;
-		}
-		else pPop = 0;
-	}
-	return pPop;
 }
 
 //---------------------------------------------------------------------------

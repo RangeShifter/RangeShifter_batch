@@ -991,7 +991,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 	simParams sim = paramsSim->getSim();
 	// each individual takes one step
 	// for dispersal by kernel, this should be the only step taken
-	int ninds = (int)inds.size();
+	int ninds = inds.size();
 
 	for (int i = 0; i < ninds; i++) {
 		if (trfr.usesMovtProc) {
