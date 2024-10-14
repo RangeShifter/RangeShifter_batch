@@ -849,7 +849,7 @@ void Population::emigration(float localK)
 	if (localK < 1.0) localK = 1.0;
 	NK = static_cast<float>(totalPop()) / localK;
 
-	int ninds = static_cast<int>(inds.size());
+	int ninds = inds.size();
 
 	// set up local copy of emigration probability table
 	// used when there is no individual variability
@@ -860,51 +860,27 @@ void Population::emigration(float localK)
 
 	for (int stg = 0; stg < sstruct.nStages; stg++) {
 		for (int sex = 0; sex < nsexes; sex++) {
+
+			int stgId = emig.stgDep ? stg : 0;
+			int sexId = emig.sexDep ? sex : 0;
+
 			if (emig.indVar) pbEmig[stg][sex] = 0.0;
 			else {
 				if (emig.densDep) {
-					if (emig.sexDep) {
-						if (emig.stgDep) {
-							eparams = pSpecies->getSpEmigTraits(stg, sex);
-						}
-						else {
-							eparams = pSpecies->getSpEmigTraits(0, sex);
-						}
-					}
-					else { // !emig.sexDep
-						if (emig.stgDep) {
-							eparams = pSpecies->getSpEmigTraits(stg, 0);
-						}
-						else {
-							eparams = pSpecies->getSpEmigTraits(0, 0);
-						}
-					}
+					eparams = pSpecies->getSpEmigTraits(stgId, sexId);
 					pbEmig[stg][sex] = eparams.d0 / (1.0 + exp(-(NK - eparams.beta) * eparams.alpha));
 				}
-				else { // density-independent
-					if (emig.sexDep) {
-						if (emig.stgDep) {
-							pbEmig[stg][sex] = pSpecies->getSpEmigD0(stg, sex);
-						}
-						else { // !emig.stgDep
-							pbEmig[stg][sex] = pSpecies->getSpEmigD0(0, sex);
-						}
-					}
-					else { // !emig.sexDep
-						if (emig.stgDep) {
-							pbEmig[stg][sex] = pSpecies->getSpEmigD0(stg, 0);
-						}
-						else { // !emig.stgDep
-							pbEmig[stg][sex] = pSpecies->getSpEmigD0(0, 0);
-						}
-					}
+				else {
+					pbEmig[stg][sex] = pSpecies->getSpEmigD0(stgId, sexId);
 				}
-			} // end of !emig.indVar
+			}
 		}
 	}
 
 	for (int i = 0; i < ninds; i++) {
 		ind = inds[i]->getStats();
+		int stgId = emig.stgDep ? ind.stage : 0;
+		int sexId = emig.sexDep ? ind.sex : 0;
 		if (ind.status < 1) {
 			if (emig.indVar) { // individual variability in emigration
 				if (dem.stageStruct && ind.stage != emig.emigStage) {
@@ -918,54 +894,13 @@ void Population::emigration(float localK)
 						pbDisp = eparams.d0 / (1.0 + exp(-(NK - eparams.beta) * eparams.alpha));
 					}
 					else { // density-independent
-						if (emig.sexDep) {
-							pbDisp = pbEmig[0][ind.sex] + eparams.d0;
-						}
-						else {
-							pbDisp = pbEmig[0][0] + eparams.d0;
-						}
+						pbDisp = pbEmig[0][sexId] + eparams.d0;
 					}
 				}
 			} // end of individual variability
 			else { // no individual variability
-
-				if (emig.densDep) {
-					if (emig.sexDep) {
-						if (emig.stgDep) {
-							pbDisp = pbEmig[ind.stage][ind.sex];
-						}
-						else {
-							pbDisp = pbEmig[0][ind.sex];
-						}
-					}
-					else { // !emig.sexDep
-						if (emig.stgDep) {
-							pbDisp = pbEmig[ind.stage][0];
-						}
-						else {
-							pbDisp = pbEmig[0][0];
-						}
-					}
-				}
-				else { // density-independent
-					if (emig.sexDep) {
-						if (emig.stgDep) {
-							pbDisp = pbEmig[ind.stage][ind.sex];
-						}
-						else { // !emig.stgDep
-							pbDisp = pbEmig[0][ind.sex];
-						}
-					}
-					else { // !emig.sexDep
-						if (emig.stgDep) {
-							pbDisp = pbEmig[ind.stage][0];
-						}
-						else { // !emig.stgDep
-							pbDisp = pbEmig[0][0];
-						}
-					}
-				}
-			} // end of no individual variability
+				pbDisp = pbEmig[stgId][sexId];
+			}
 
 			disp = pRandom->Bernoulli(pbDisp);
 
