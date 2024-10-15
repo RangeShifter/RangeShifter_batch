@@ -258,8 +258,6 @@ Landscape::Landscape(void) {
 	maxX = maxY = 99;
 	minPct = maxPct = propSuit = hurst = 0.0;
 	maxCells = 100;
-	gpix = 1.0;
-	pix = (int)gpix;
 	minEast = minNorth = 0.0;
 	cells = 0;
 	connectMatrix = 0;
@@ -423,21 +421,6 @@ void Landscape::resetLandLimits(void) {
 }
 
 //---------------------------------------------------------------------------
-
-void Landscape::setLandPix(landPix p) {
-	if (p.pix > 0) pix = p.pix;
-	if (p.gpix > 0.0) gpix = p.gpix;
-}
-
-landPix Landscape::getLandPix(void) {
-	landPix p;
-	p.pix = pix; p.gpix = gpix;
-	return p;
-}
-
-void Landscape::setOrigin(landOrigin origin) {
-	minEast = origin.minEast; minNorth = origin.minNorth;
-}
 
 landOrigin Landscape::getOrigin(void) {
 	landOrigin origin;

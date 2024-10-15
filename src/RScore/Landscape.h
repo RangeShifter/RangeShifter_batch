@@ -156,16 +156,8 @@ struct genLandParams {
 	bool fractal; bool continuous;
 	float minPct, maxPct; float propSuit; float hurst; int maxCells;
 };
-struct landPix {
-	int pix; float gpix;
-};
 struct landOrigin {
 	double minEast; double minNorth;
-};
-struct rasterHdr {
-	bool ok;
-	int errors, ncols, nrows, cellsize;
-	double xllcorner, yllcorner;
 };
 struct rasterdata {
 	bool ok;
@@ -211,10 +203,7 @@ public:
 		int		// maximum available Y
 	);
 	void resetLandLimits(void);
-	void setLandPix(landPix);
 
-	landPix getLandPix(void);
-	void setOrigin(landOrigin);
 	landOrigin getOrigin(void);
 
 	// functions to handle habitat codes
@@ -476,8 +465,6 @@ private:
 	float propSuit;				// proportion of suitable cells
 	float hurst;					// Hurst exponent
 	int maxCells;					// max. cells per patch (artificial landscapes)
-	int pix;							// image display ratio
-	float gpix;						// image display ratio for gradient map
 	double minEast;				// ) real world min co-ordinates
 	double minNorth;			// ) read from habitat raster
 
