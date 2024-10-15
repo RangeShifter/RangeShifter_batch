@@ -115,10 +115,6 @@ public:
 	);
 	void ageIncrement();
 
-	int stagePop( // Population size of a specified stage
-		int	// stage
-	);
-
 private:
 	int subCommNum;	// SubCommunity number
 		// 0 is reserved for the SubCommunity in the inter-patch matrix
