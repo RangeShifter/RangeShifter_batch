@@ -358,11 +358,11 @@ void Community::addManuallySelected(void) {
 	}
 }
 
-void Community::resetPopns(void) {
-	int nsubcomms = (int)subComms.size();
-	for (int i = 0; i < nsubcomms; i++) { // all sub-communities
-		subComms[i]->resetPopns();
+void Community::resetPopns() {
+	for (auto pop : popns) { // all sub-communities, incl. matrix
+		pop->getPatch()->resetPopn();
 	}
+	popns.clear();
 	// reset the individual ids to start from zero
 	Individual::indCounter = 0;
 }

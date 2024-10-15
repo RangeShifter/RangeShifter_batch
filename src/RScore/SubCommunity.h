@@ -75,7 +75,6 @@ public:
 		Patch*,			// pointer to Patch
 		int					// no. of Individuals
 	);
-	void resetPopns();
 	void resetPossSettlers();
 	void localExtinction( // Extirpate all populations
 		int		// option: 	0 - random local extinction probability

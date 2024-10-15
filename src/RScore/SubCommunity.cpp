@@ -154,16 +154,6 @@ Population* SubCommunity::newPopn(Landscape* pLandscape, Species* pSpecies,
 	return popns[npopns];
 }
 
-void SubCommunity::resetPopns(void) {
-	int npops = (int)popns.size();
-	for (int i = 0; i < npops; i++) { // all populations
-		delete popns[i];
-	}
-	popns.clear();
-	// clear the list of populations in the corresponding patch
-	pPatch->resetPopn();
-}
-
 void SubCommunity::resetPossSettlers(void) {
 	if (subCommNum == 0) return; // not applicable in the matrix
 	pPatch->resetPossSettlers();
