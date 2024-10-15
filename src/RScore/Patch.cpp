@@ -23,6 +23,7 @@
  //---------------------------------------------------------------------------
 
 #include "Patch.h"
+#include "Population.h"
 
 //---------------------------------------------------------------------------
 
@@ -310,6 +311,19 @@ int Patch::getPossSettlers(Species* pSpecies, int sex) {
 bool Patch::speciesIsPresent(Species* pSpecies) {
 	const auto pPop = this->getPopn(pSpecies);
 	return pPop != 0;
+}
+
+void Patch::createOccupancy(int nbOutputRows) {
+	occupancy = vector<int>(nbOutputRows, 0);
+}
+
+void Patch::updateOccupancy(int whichRow) {
+	popStats ps = pPop->getStats();
+	occupancy[whichRow] = ps.nInds > 0 && ps.breeding;
+}
+
+int Patch::getOccupancy(int whichRow) {
+	return occupancy[whichRow];
 }
 
 //---------------------------------------------------------------------------

@@ -476,40 +476,24 @@ int Community::totalInds(void) {
 }
 
 //---------------------------------------------------------------------------
-void Community::createOccupancy(int nrows, int reps) {
-	int nsubcomms = (int)subComms.size();
-	for (int i = 0; i < nsubcomms; i++) {
-		subComms[i]->createOccupancy(nrows);
+void Community::createOccupancy(int nbOutputRows, int nbReps) {
+	for (auto pop : popns) {
+		pop->getPatch()->createOccupancy(nbOutputRows);
 	}
 	// Initialise array for occupancy of suitable cells/patches
-	occSuit = new float* [nrows];
-	for (int i = 0; i < nrows; i++)
-	{
-		occSuit[i] = new float[reps];
-		for (int ii = 0; ii < reps; ii++) occSuit[i][ii] = 0.0;
+	occSuit.resize(nbOutputRows);
+	for (int i = 0; i < nbOutputRows; i++) {
+		occSuit[i] = vector<int>(nbReps, 0);
 	}
 }
 
-void Community::updateOccupancy(int row, int rep)
+void Community::updateOccupancy(int whichRow, int rep)
 {
-	int nsubcomms = (int)subComms.size();
-	for (int i = 0; i < nsubcomms; i++) {
-		subComms[i]->updateOccupancy(row);
+	for (auto pop : popns) {
+		pop->getPatch()->updateOccupancy(whichRow);
 	}
 	commStats s = getStats();
-	occSuit[row][rep] = (float)s.occupied / (float)s.suitable;
-}
-
-void Community::deleteOccupancy(int nrows) {
-	int nsubcomms = (int)subComms.size();
-	for (int i = 0; i < nsubcomms; i++) {
-		subComms[i]->deleteOccupancy();
-	}
-
-	for (int i = 0; i < nrows; i++)
-		delete[] occSuit[i];
-	delete[] occSuit;
-
+	occSuit[whichRow][rep] = (float)s.occupied / (float)s.suitable;
 }
 
 //---------------------------------------------------------------------------
@@ -1039,7 +1023,7 @@ bool Community::outOccupancyHeaders(int option)
 	string name, nameI;
 	simParams sim = paramsSim->getSim();
 	landParams ppLand = pLandscape->getLandParams();
-	int outrows = (sim.years / sim.outIntOcc) + 1;
+	int nbOutputRows = (sim.years / sim.outIntOcc) + 1;
 
 	name = paramsSim->getDir(2);
 	if (sim.batchMode) {
@@ -1067,12 +1051,12 @@ bool Community::outOccupancyHeaders(int option)
 	else {
 		outoccup << "X\tY";
 	}
-	for (int i = 0; i < outrows; i++)
+	for (int i = 0; i < nbOutputRows; i++)
 		outoccup << "\t" << "Year_" << i * sim.outIntOcc;
 	outoccup << endl;
 
 	// Initialise cells/patches occupancy array
-	createOccupancy(outrows, sim.reps);
+	createOccupancy(nbOutputRows, sim.reps);
 
 	return outsuit.is_open() && outoccup.is_open();
 }
@@ -1083,12 +1067,12 @@ void Community::outOccupancy(void) {
 	locn loc;
 
 	int nsubcomms = (int)subComms.size();
-	for (int i = 1; i < nsubcomms; i++) { // all except matrix sub-community
+	for (auto pop : popns) { // all except matrix sub-community
 		if (ppLand.patchModel) {
-			outoccup << subComms[i]->getPatch()->getPatchNum();
+			outoccup << pop->getPatch()->getPatchNum();
 		}
 		else {
-			loc = subComms[i]->getLocn();
+			loc = pop->getLocn();
 			outoccup << loc.x << "\t" << loc.y;
 		}
 		for (int row = 0; row <= (sim.years / sim.outIntOcc); row++)

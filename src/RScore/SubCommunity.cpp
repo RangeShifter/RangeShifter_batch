@@ -392,36 +392,6 @@ void SubCommunity::ageIncrement(void) {
 
 //---------------------------------------------------------------------------
 
-void SubCommunity::createOccupancy(int nrows) {
-	if (occupancy != 0) deleteOccupancy();
-	if (nrows > 0) {
-		occupancy = new int[nrows];
-		for (int i = 0; i < nrows; i++) occupancy[i] = 0;
-	}
-}
-
-void SubCommunity::updateOccupancy(int row) {
-	popStats pop;
-	int npops = (int)popns.size();
-	for (int i = 0; i < npops; i++) {
-		pop = popns[i]->getStats();
-		if (pop.nInds > 0 && pop.breeding) {
-			occupancy[row]++;
-			i = npops;
-		}
-	}
-}
-
-int SubCommunity::getOccupancy(int row) {
-	if (row >= 0) return occupancy[row];
-	else return 0;
-}
-
-void SubCommunity::deleteOccupancy(void) {
-	delete[] occupancy;
-	occupancy = 0;
-}
-
 // Population size of a specified stage
 int SubCommunity::stagePop(int stage) {
 	int popsize = 0;

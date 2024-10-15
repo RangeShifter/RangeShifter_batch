@@ -104,17 +104,14 @@ public:
 	void ageIncrement(void);
 	int totalInds(void);
 	commStats getStats(void);
-	void createOccupancy(
-		int,	// no. of rows = (no. of years / interval) + 1
-		int		// no. of replicates
+
+	void createOccupancy(int nbOutputRows, int nbReps);
+	void updateOccupancy(int whichRow, int replicate);
+	// Open occupancy file, write header record and set up occupancy array
+	bool outOccupancyHeaders(
+		int		// option: -999 to close the file
 	);
-	void updateOccupancy(
-		int,	// row = (no. of years / interval)
-		int		// replicate
-	);
-	void deleteOccupancy(
-		int		// no. of rows (as above)
-	);
+	void outOccupancy();
 
 	bool outRangeHeaders( // Open range file and write header record
 		Species*,	// pointer to Species
@@ -143,11 +140,7 @@ public:
 		int		// Landscape number (>= 0 to open the file, -999 to close the file
 					//									 -1 to write data records)
 	);
-	// Open occupancy file, write header record and set up occupancy array
-	bool outOccupancyHeaders(
-		int		// option: -999 to close the file
-	);
-	void outOccupancy(void);
+	
 	void outOccSuit(
 		bool	// TRUE if occupancy graph is to be viewed on screen
 	);
@@ -200,7 +193,7 @@ public:
 private:
 	Landscape* pLandscape;
 	int indIx;				// index used to apply initial individuals
-	float** occSuit;	// occupancy of suitable cells / patches
+	vector<vector <int>> occSuit;	// occupancy of suitable cells / patches
 
 	Population* pMatrix;
 	std::vector <Population*> popns;

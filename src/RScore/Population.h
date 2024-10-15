@@ -123,12 +123,12 @@ public:
 		int,			// no. of Individuals
 		int				// Landscape resolution
 	);
-	~Population(void);
+	~Population();
 	traitsums getIndTraitsSums(Species*);
-	popStats getStats(void);
-	Species* getSpecies(void);
-	int getNInds(void);
-	int totalPop(void);
+	popStats getStats();
+	Species* getSpecies();
+	int getNInds();
+	int totalPop();
 	int stagePop( // return no. of Individuals in a specified stage
 		int	// stage
 	);

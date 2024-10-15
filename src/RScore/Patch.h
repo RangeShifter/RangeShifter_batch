@@ -74,7 +74,7 @@ using namespace std;
 #include "Patch.h"
 
 class Population;
-class SubCommunity;
+struct popStats;
 
  //---------------------------------------------------------------------------
 
@@ -111,9 +111,9 @@ public:
 	void removeCell(Cell* pCell);
 	Cell* getRandomCell();
 
-	void setSubComm(SubCommunity* sc);
+	void setPop(Population* p);
+	Population* getPop();
 
-	SubCommunity* getSubComm();
 	void addPopn(patchPopn pop);
 	Population* getPopn(Species* sp);
 
@@ -132,6 +132,10 @@ public:
 	float getK();
 	bool speciesIsPresent(Species* sp);
 
+	void createOccupancy(int nbOutputRows);
+	void updateOccupancy(int whichRow);
+	int getOccupancy(int whichRow);
+
 private:
 	int patchSeqNum;// sequential patch number - patch 0 is reserved for the inter-patch matrix
 	int patchNum; 	// patch number as supplied by the user (not forced to be sequential)
@@ -142,6 +146,7 @@ private:
 	float localK;		// patch carrying capacity (individuals)
 	bool changed;
 	short nTemp[gMaxNbSexes];	// no. of potential settlers in each sex
+	vector<int> occupancy;	// pointer to occupancy array
 
 	std::vector <Cell*> cells;
 	std::vector <patchPopn> popns;

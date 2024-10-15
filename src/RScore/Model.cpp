@@ -619,7 +619,6 @@ int RunModel(Landscape* pLandscape, int seqsim)
 	if (sim.outOccup && sim.reps > 1) {
 		pComm->outOccupancy();
 		pComm->outOccSuit(v.viewGraph);
-		pComm->deleteOccupancy((sim.years / sim.outIntOcc) + 1);
 		pComm->outOccupancyHeaders(-999);
 	}
 

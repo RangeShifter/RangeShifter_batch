@@ -115,17 +115,6 @@ public:
 	);
 	void ageIncrement();
 
-	void createOccupancy(
-		int	// no. of rows = (no. of years / interval) + 1
-	);
-	void updateOccupancy(
-		int	// row = (no. of years / interval)
-	);
-	int getOccupancy(
-		int	// row = (no. of years / interval)
-	);
-	void deleteOccupancy();
-
 	int stagePop( // Population size of a specified stage
 		int	// stage
 	);
@@ -134,7 +123,6 @@ private:
 	int subCommNum;	// SubCommunity number
 		// 0 is reserved for the SubCommunity in the inter-patch matrix
 	Patch *pPatch;
-	int *occupancy;	// pointer to occupancy array
 	std::vector <Population*> popns;
 	bool initialSubComm;
 };
