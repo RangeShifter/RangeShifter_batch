@@ -368,20 +368,14 @@ void Community::resetPopns() {
 }
 
 void Community::localExtinction(int option) {
-	int nsubcomms = (int)subComms.size();
-	for (int i = 0; i < nsubcomms; i++) { // all sub-communities
-		if (subComms[i]->getNum() > 0) { // except in matrix
-			subComms[i]->localExtinction(option);
-		}
+	for (auto pop : popns) { // except in matrix
+		pop->localExtinction(option);
 	}
 }
 
 void Community::patchChanges(void) {
-	int nsubcomms = (int)subComms.size();
-	for (int i = 0; i < nsubcomms; i++) { // all sub-communities
-		if (subComms[i]->getNum() > 0) { // except in matrix
-			subComms[i]->patchChange();
-		}
+	for (auto pop : popns) { // except in matrix
+		pop->patchChange();
 	}
 }
 

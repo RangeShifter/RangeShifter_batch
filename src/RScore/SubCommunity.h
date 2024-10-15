@@ -61,7 +61,6 @@ class SubCommunity {
 public:
 	SubCommunity(Patch* pPch, int subCommId);
 	~SubCommunity();
-	int getNum();
 	Patch* getPatch();
 	locn getLocn();
 
