@@ -462,10 +462,9 @@ void Community::survival(short part, short option0, short option1)
 	}
 }
 
-void Community::ageIncrement(void) {
-	int nsubcomms = subComms.size();
-	for (int i = 0; i < nsubcomms; i++) { // all communities (including in matrix)
-		subComms[i]->ageIncrement();
+void Community::ageIncrement() {
+	for (auto pop : popns) { // all communities (including in matrix)
+		pop->ageIncrement();
 	}
 }
 

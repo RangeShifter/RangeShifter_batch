@@ -136,6 +136,11 @@ public:
 	void updateOccupancy(int whichRow);
 	int getOccupancy(int whichRow);
 
+#ifndef NDEBUG
+	// Testing only
+	void overrideK(const float& k) { localK = k; }
+#endif
+
 private:
 	int patchSeqNum;// sequential patch number - patch 0 is reserved for the inter-patch matrix
 	int patchNum; 	// patch number as supplied by the user (not forced to be sequential)

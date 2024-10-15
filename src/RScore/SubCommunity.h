@@ -104,7 +104,6 @@ public:
 		Landscape*,	// pointer to Landscape
 		bool				// TRUE to increment connectivity totals
 	);
-	void ageIncrement();
 
 private:
 	int subCommNum;	// SubCommunity number

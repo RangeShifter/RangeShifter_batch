@@ -101,9 +101,9 @@ public:
 		short 	// option1:	0 - development only (when survival is annual)
 		//		  	 		1 - development and survival
 	);
-	void ageIncrement(void);
-	int totalInds(void);
-	commStats getStats(void);
+	void ageIncrement();
+	int totalInds();
+	commStats getStats();
 
 	void createOccupancy(int nbOutputRows, int nbReps);
 	void updateOccupancy(int whichRow, int replicate);

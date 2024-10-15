@@ -365,15 +365,6 @@ void SubCommunity::completeDispersal(Landscape* pLandscape, bool connect)
 }
 
 //---------------------------------------------------------------------------
-
-void SubCommunity::ageIncrement(void) {
-	int npops = (int)popns.size();
-	for (int i = 0; i < npops; i++) { // all populations
-		popns[i]->ageIncrement();
-	}
-}
-
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 
