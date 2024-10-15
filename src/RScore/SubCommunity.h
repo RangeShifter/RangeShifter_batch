@@ -93,11 +93,7 @@ public:
 	void initiateDispersal(
 		SubCommunity*	// pointer to matrix SubCommunity
 	);
-	// Add an individual into the local population of its species in the patch
-	void recruit(
-		Individual*,	// pointer to Individual
-		Species*			// pointer to Species
-	);
+
 	// Remove emigrants from patch 0 (matrix) and transfer to SubCommunity in which
 	// their destination co-ordinates fall (executed for the matrix patch only)
 	void completeDispersal(

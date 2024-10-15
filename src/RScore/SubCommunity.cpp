@@ -297,16 +297,6 @@ void SubCommunity::initiateDispersal(SubCommunity* matrix) {
 	}
 }
 
-// Add an individual into the local population of its species in the patch
-void SubCommunity::recruit(Individual* pInd, Species* pSpecies) {
-	int npops = (int)popns.size();
-	for (int i = 0; i < npops; i++) { // all populations
-		if (pSpecies == popns[i]->getSpecies()) {
-			popns[i]->recruit(pInd);
-		}
-	}
-}
-
 //---------------------------------------------------------------------------
 
 // Remove emigrants from patch 0 (matrix) and transfer to sub-community
@@ -324,20 +314,23 @@ void SubCommunity::completeDispersal(Landscape* pLandscape, bool connect)
 	Cell* pPrevCell;
 	SubCommunity* pSubComm;
 
-	int npops = (int)popns.size();
+	int npops = popns.size();
 	for (int i = 0; i < npops; i++) { // all populations
+
 		pSpecies = popns[i]->getSpecies();
 		popsize = popns[i]->getNInds();
+
 		for (int j = 0; j < popsize; j++) {
+
 			bool settled;
 			settler = popns[i]->extractSettler(j);
 			settled = settler.yes;
 			if (settled) {
 			// settler - has already been removed from matrix population
 			// find new patch
-				pNewPatch = (Patch*)settler.pCell->getPatch();
+				pNewPatch = settler.pCell->getPatch();
 				// find population within the patch (if there is one)
-				pPop = (Population*)pNewPatch->getPopn(pSpecies);
+				pPop = pNewPatch->getPopn(pSpecies);
 				if (pPop == 0) { // settler is the first in a previously uninhabited patch
 					// create a new population in the corresponding sub-community
 					pSubComm = (SubCommunity*)pNewPatch->getSubComm();
@@ -354,8 +347,6 @@ void SubCommunity::completeDispersal(Landscape* pLandscape, bool connect)
 						pLandscape->incrConnectMatrix(prevpatch, newpatch);
 					}
 				}
-			}
-			else { // for group dispersal only
 			}
 		}
 		// remove pointers in the matrix popn to settlers

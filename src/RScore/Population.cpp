@@ -1414,9 +1414,9 @@ void Population::ageIncrement(void) {
 
 //---------------------------------------------------------------------------
 // Remove zero pointers to dead or dispersed individuals
-void Population::clean(void)
+void Population::clean()
 {
-	int ninds = (int)inds.size();
+	int ninds = inds.size();
 	if (ninds > 0) {
 			// ALTERNATIVE METHOD: AVOIDS SLOW SORTING OF POPULATION
 		std::vector <Individual*> survivors; // all surviving individuals

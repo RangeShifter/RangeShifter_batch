@@ -427,7 +427,7 @@ void Community::dispersal(short landIx, short nextseason)
 			disp = popns[i]->extractDisperser(j);
 			if (disp.yes) { // disperser - has already been removed from natal population
 				// add to matrix population
-				matrix->recruit(disp.pInd, pop.pSpecies);
+				matrixPop->recruit(disp.pInd);
 			}
 		}
 		// remove pointers to emigrants

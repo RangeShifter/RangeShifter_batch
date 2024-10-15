@@ -195,7 +195,7 @@ private:
 	int indIx;				// index used to apply initial individuals
 	vector<vector <int>> occSuit;	// occupancy of suitable cells / patches
 
-	Population* pMatrix;
+	Population* matrixPop;
 	std::vector <Population*> popns;
 
 	unique_ptr<NeutralStatsManager> pNeutralStatistics;
