@@ -182,10 +182,10 @@ public:
 		short		// sex of the required mate (0 = female, 1 = male)
 	);
 #endif // RS_RCPP
+
 	// Determine survival and development and record in individual's status code
 	// Changes are NOT applied to the Population at this stage
 	void survival0(
-		float,	// local carrying capacity
 		short,	// option0:	0 - stage 0 (juveniles) only
 		//	  			1 - all stages
 		//					2 - stage 1 and above (all non-juveniles)

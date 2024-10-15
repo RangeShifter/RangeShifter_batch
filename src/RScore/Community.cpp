@@ -452,9 +452,13 @@ void Community::dispersal(short landIx, short nextseason)
 
 void Community::survival(short part, short option0, short option1)
 {
-	int nsubcomms = subComms.size();
-	for (int i = 0; i < nsubcomms; i++) { // all communities (including in matrix)
-		subComms[i]->survival(part, option0, option1);
+	for (auto pop : popns) { // all communities (including in matrix)
+		if (part == 0) {
+			pop->survival0(option0, option1);
+		}
+		else {
+			pop->survival1();
+		}
 	}
 }
 

@@ -171,6 +171,7 @@ void testPopulation()
 
 		Landscape* pLandscape = new Landscape;
 		Patch* pPatch = pLandscape->newPatch(1);
+		pPatch->overrideK(localK);
 		Cell* pCell = new Cell(0, 0, pPatch, 0);
 		pPatch->addCell(pCell, 0, 0);
 
@@ -201,7 +202,7 @@ void testPopulation()
 		for (int yr = 0; yr < nbGens; yr++) {
 			pop.reproduction(localK, 1, 1);
 			pop.fledge(); // replace initial pop with juveniles
-			pop.survival0(localK, 0, 0); // flag juveniles for development
+			pop.survival0(0, 0); // flag juveniles for development
 			pop.survival1(); // develop to stage 1 (breeders)
 
 			// Count allele and heterozygote frequencies

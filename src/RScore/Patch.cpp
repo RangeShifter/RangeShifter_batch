@@ -127,6 +127,7 @@ void Patch::addCell(Cell* pCell, int x, int y) {
 // centroid co-ordinates of the patch
 void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits,
 	float epsGlobal, short nHab, short rasterType, short landIx, bool gradK) {
+	
 	envStochParams env = paramsStoch->getStoch();
 	locn loc;
 	int xsum, ysum;

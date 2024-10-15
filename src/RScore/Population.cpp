@@ -1237,7 +1237,7 @@ bool Population::matePresent(Cell* pCell, short othersex)
 // FOR MULTIPLE SPECIES, MAY NEED TO SEPARATE OUT THIS IDENTIFICATION STAGE,
 // SO THAT IT CAN BE PERFORMED FOR ALL SPECIES BEFORE ANY UPDATING OF POPULATIONS
 
-void Population::survival0(float localK, short option0, short option1)
+void Population::survival0(short option0, short option1)
 {
 	// option0:	0 - stage 0 (juveniles) only
 	//			1 - all stages
@@ -1249,6 +1249,8 @@ void Population::survival0(float localK, short option0, short option1)
 	densDepParams ddparams = pSpecies->getDensDep();
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
+	
+	double localK = pPatch->getK();
 
 	// get current population size
 	int ninds = (int)inds.size();
