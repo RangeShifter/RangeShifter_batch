@@ -65,8 +65,7 @@ public:
 	locn getLocn();
 
 	// functions to manage populations occurring in the SubCommunity
-	void setInitial(bool);
-	void initialise(Landscape*, Species*);
+	void initialise(Landscape*, Species*, const bool& isInitial);
 	void initialInd(Landscape*, Species*, Patch*, Cell*, int);
 	Population* newPopn( // Create a new population, and return its address
 		Landscape*,	// pointer to Landscape
@@ -104,7 +103,6 @@ private:
 		// 0 is reserved for the SubCommunity in the inter-patch matrix
 	Patch *pPatch;
 	std::vector <Population*> popns;
-	bool initialSubComm;
 };
 
 extern paramGrad* paramsGrad;

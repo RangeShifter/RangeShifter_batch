@@ -32,7 +32,6 @@ SubCommunity::SubCommunity(Patch* pPch, int subCommId) {
 	pPatch = pPch;
 	// record the new sub-community no. in the patch
 	pPatch->setSubComm(this);
-	initialSubComm = false;
 }
 
 SubCommunity::~SubCommunity() {
@@ -42,7 +41,6 @@ SubCommunity::~SubCommunity() {
 		delete popns[i];
 	}
 	popns.clear();
-	if (occupancy != 0) delete[] occupancy;
 }
 
 Patch* SubCommunity::getPatch(void) { return pPatch; }
@@ -52,9 +50,7 @@ locn SubCommunity::getLocn(void) {
 	return loc;
 }
 
-void SubCommunity::setInitial(bool b) { initialSubComm = b; }
-
-void SubCommunity::initialise(Landscape* pLandscape, Species* pSpecies)
+void SubCommunity::initialise(Landscape* pLandscape, Species* pSpecies, const bool& isInitial)
 {
 	int ncells;
 	landParams ppLand = pLandscape->getLandParams();
@@ -63,7 +59,7 @@ void SubCommunity::initialise(Landscape* pLandscape, Species* pSpecies)
 	// determine size of initial population
 	int nInds = 0;
 	if (subCommNum == 0 // matrix patch
-		|| !initialSubComm) // not in initial region or distribution
+		|| !isInitial) // not in initial region or distribution
 		nInds = 0;
 	else {
 		float k = pPatch->getK();
