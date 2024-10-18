@@ -1937,28 +1937,27 @@ int CheckStageFile(string indir)
 // Check transition matrix file
 int CheckTransitionFile(short nstages, short nsexesDem)
 {
-	string header, hhh;
-	int i, j, stage, sex, line, minage;
+	string header, expectedHeader;
+	int iStage, iSex, stage, sex, line, minage;
 	//int prevminage;
 	float infloat;
 	int errors = 0;
 	string filetype = "TransMatrixFile";
 
 	// check header records
-	bTransMatrix >> header; if (header != "Transition") errors++;
-	for (i = 0; i < nstages; i++) {
-		for (j = 0; j < nsexesDem; j++) {
+	bTransMatrix >> header; 
+	if (header != "Transition") errors++;
+
+	for (iStage = 0; iStage < nstages; iStage++) {
+		for (iSex = 0; iSex < nsexesDem; iSex++) {
 			bTransMatrix >> header;
-			if (nsexesDem == 1) hhh = to_string(i);
-			else {
-				if (j == 0) hhh = to_string(i) + "m"; else hhh = to_string(i) + "f";
-			}
-			if (header != hhh) errors++;
-			//		batchlog << "i = " << i << " j = " << j << " hhh = " << hhh << " header = " << header
-			//			<< " errors = " << errors << endl;
+			expectedHeader = to_string(iStage);
+			if (nsexesDem != 1) expectedHeader += iSex == 0 ? "m" : "f";
+			if (header != expectedHeader) errors++;
 		}
 	}
-	bTransMatrix >> header; if (header != "MinAge") errors++;
+	bTransMatrix >> header; 
+	if (header != "MinAge") errors++;
 
 	if (errors > 0) {
 		FormatError(filetype, errors);
@@ -1975,10 +1974,10 @@ int CheckTransitionFile(short nstages, short nsexesDem)
 		batchLog << "Invalid row header" << endl; errors++;
 	}
 	float totfecundity = 0.0;
-	for (i = 0; i < nstages; i++) {
-		for (j = 0; j < nsexesDem; j++) {
+	for (iStage = 0; iStage < nstages; iStage++) {
+		for (iSex = 0; iSex < nsexesDem; iSex++) {
 			bTransMatrix >> infloat;
-			if (i > 0) {
+			if (iStage > 0) {
 				if (infloat < 0.0) {
 					BatchError(filetype, line, 19, "Fecundity"); errors++;
 				}
@@ -2004,16 +2003,16 @@ int CheckTransitionFile(short nstages, short nsexesDem)
 			line++;
 			// row header
 			bTransMatrix >> header;
-			if (nsexesDem == 1) hhh = to_string(stage);
+			if (nsexesDem == 1) expectedHeader = to_string(stage);
 			else {
-				if (sex == 0) hhh = to_string(stage) + "m"; else hhh = to_string(stage) + "f";
+				if (sex == 0) expectedHeader = to_string(stage) + "m"; else expectedHeader = to_string(stage) + "f";
 			}
-			if (header != hhh) {
+			if (header != expectedHeader) {
 				BatchError(filetype, line, 0, " ");
 				batchLog << "Invalid row header" << endl; errors++;
 			}
-			for (i = 0; i < nstages; i++) {
-				for (j = 0; j < nsexesDem; j++) {
+			for (iStage = 0; iStage < nstages; iStage++) {
+				for (iSex = 0; iSex < nsexesDem; iSex++) {
 					bTransMatrix >> infloat;
 					//				batchlog << "TRANS PROB = " << infloat << endl;
 					if (infloat < 0.0 || infloat > 1) {
