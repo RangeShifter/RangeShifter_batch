@@ -902,7 +902,8 @@ int CheckParameterFile()
 		}
 		bParamFile >> inPropMales;
 		if (reproductn && (inPropMales <= 0.0 || inPropMales >= 1.0)) {
-			BatchError(whichFile, whichLine, 20, "PropMales");
+			BatchError(whichFile, whichLine, 0, "");
+			batchLog << "PropMales should be above 0 and below 1 for sexual models" << endl;
 			nbErrors++;
 		}
 		bParamFile >> inHarem;
