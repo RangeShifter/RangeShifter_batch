@@ -153,7 +153,6 @@ void Community::initialise(Species* pSpecies, int year)
 
 		case 2:	// manually selected patches/cells
 			break;
-
 		} // end of switch (init.freeType)
 
 		nsubcomms = subComms.size();
@@ -283,11 +282,6 @@ void Community::initialise(Species* pSpecies, int year)
 				}
 			}
 		}
-		break;
-
-	case 3:	// from file
-		// this condition cannot occur here, as init.seedType will have been changed to 0 or 1
-		// when the initialisation file was read
 		break;
 
 	} // end of switch (init.seedType)

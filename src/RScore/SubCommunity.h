@@ -67,12 +67,7 @@ public:
 	// functions to manage populations occurring in the SubCommunity
 	void initialise(Landscape*, Species*, const bool& isInitial);
 	void initialInd(Landscape*, Species*, Patch*, Cell*, int);
-	Population* newPopn( // Create a new population, and return its address
-		Landscape*,	// pointer to Landscape
-		Species*,		// pointer to Species
-		Patch*,			// pointer to Patch
-		int					// no. of Individuals
-	);
+	
 	void resetPossSettlers();
 	void localExtinction( // Extirpate all populations
 		int		// option: 	0 - random local extinction probability

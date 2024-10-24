@@ -87,7 +87,7 @@ void SubCommunity::initialise(Landscape* pLandscape, Species* pSpecies, const bo
 
 	// create new population only if it is non-zero or the matrix popn
 	if (subCommNum == 0 || nInds > 0) {
-		newPopn(pLandscape, pSpecies, pPatch, nInds);
+		popns.push_back(new Population(pSpecies, pPatch, nInds, pLandscape->getLandParams().resol));
 	}
 
 }
@@ -106,9 +106,8 @@ void SubCommunity::initialInd(Landscape* pLandscape, Species* pSpecies,
 	float probmale;
 
 	// create new population if not already in existence
-	int npopns = (int)popns.size();
-	if (npopns < 1) {
-		newPopn(pLandscape, pSpecies, pPatch, 0);
+	if (popns.size() < 1) {
+		popns.push_back(new Population(pSpecies, pPatch, 0, pLandscape->getLandParams().resol));
 	}
 
 	// create new individual
@@ -134,17 +133,6 @@ void SubCommunity::initialInd(Landscape* pLandscape, Species* pSpecies,
 		// individual variation - set up genetics
 		pInd->setUpGenes(pSpecies, pLandscape->getLandData().resol);
 	}
-
-}
-
-// Create a new population, and return its address
-Population* SubCommunity::newPopn(Landscape* pLandscape, Species* pSpecies,
-	Patch* pPatch, int nInds)
-{
-	landParams land = pLandscape->getLandParams();
-	int npopns = (int)popns.size();
-	popns.push_back(new Population(pSpecies, pPatch, nInds, land.resol));
-	return popns[npopns];
 }
 
 void SubCommunity::resetPossSettlers(void) {
@@ -314,10 +302,13 @@ void SubCommunity::completeDispersal(Landscape* pLandscape, bool connect)
 				pNewPatch = settler.pCell->getPatch();
 				// find population within the patch (if there is one)
 				pPop = pNewPatch->getPopn(pSpecies);
+
 				if (pPop == 0) { // settler is the first in a previously uninhabited patch
 					// create a new population in the corresponding sub-community
-					pSubComm = (SubCommunity*)pNewPatch->getSubComm();
-					pPop = pSubComm->newPopn(pLandscape, pSpecies, pNewPatch, 0);
+					pPop = new Population(pSpecies, pNewPatch, 0, pLandscape->getLandParams().resol);
+					
+					// TMP = below should be for new subcomm, not this one
+					popns.push_back(pPop);
 				}
 				pPop->recruit(settler.pInd);
 				if (connect) { // increment connectivity totals
