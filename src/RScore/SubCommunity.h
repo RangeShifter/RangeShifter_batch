@@ -61,19 +61,9 @@ class SubCommunity {
 public:
 	SubCommunity(Patch* pPch, int subCommId);
 	~SubCommunity();
-	Patch* getPatch();
-	locn getLocn();
 
 	// functions to manage populations occurring in the SubCommunity
-	void initialise(Landscape*, Species*, const bool& isInitial);
-	void initialInd(Landscape*, Species*, Patch*, Cell*, int);
 	
-	void resetPossSettlers();
-	void localExtinction( // Extirpate all populations
-		int		// option: 	0 - random local extinction probability
-				//			1 - local extinction probability gradient
-	);
-	void patchChange();
 	void reproduction(
 		int,		// Landscape resolution
 		float,	// epsilon - global stochasticity value 

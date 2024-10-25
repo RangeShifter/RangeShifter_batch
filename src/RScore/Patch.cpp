@@ -212,6 +212,32 @@ void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits,
 
 float Patch::getK() { return localK; }
 
+int Patch::getInitNbInds(const bool& isPatchModel, const int& landResol) const {
+
+	initParams init = paramsInit->getInit();
+
+	int nInds = 0;
+	if (localK > 0.0) { // patch is currently suitable for this species
+		switch (init.initDens) {
+		case 0: // at carrying capacity
+			nInds = trunc(localK);
+			break;
+		case 1: // at half carrying capacity
+			nInds = trunc(localK / 2.0);
+			break;
+		case 2: // specified no. per cell or density
+			if (isPatchModel) {
+				nInds = trunc(init.indsHa * (float)(nCells * landResol * landResol) / 10000.0);
+			}
+			else {
+				nInds = init.indsCell * nCells;
+			}
+			break;
+		}
+	}
+	return nInds;
+}
+
 // Return co-ordinates of a specified cell
 locn Patch::getCellLocn(int ix) {
 	locn loc; loc.x = -666; loc.y = -666;

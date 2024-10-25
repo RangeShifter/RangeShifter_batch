@@ -60,15 +60,12 @@ SubCommunity* Community::addSubComm(Patch* pPch, int num) {
 
 void Community::initialise(Species* pSpecies, int year)
 {
-	int nsubcomms, npatches, ndistcells, spratio, patchnum, selectedSubComm = 0;
+	int nsubcomms, npatches, ndistcells, spratio, patchnum, candidatePatch = 0;
 	locn distloc;
 	patchData pch;
 	patchLimits limits = patchLimits();
 	Patch* ppatch;
-	SubCommunity* subcomm;
-	std::vector <SubCommunity*> subcomms;
-	std::vector <bool> isSelected;
-	SubCommunity* pSubComm;
+	std::set<int> selectedPatches;
 	Patch* pPatch;
 	Cell* pCell;
 	landParams ppLand = pLandscape->getLandParams();
@@ -92,18 +89,20 @@ void Community::initialise(Species* pSpecies, int year)
 			limits.yMin = init.minSeedY; 
 			limits.yMax = init.maxSeedY;
 
+			set<int> suitablePatches;
+
 			for (int i = 0; i < npatches; i++) {
 				pch = pLandscape->getPatchData(i);
+				patchnum = pch.pPatch->getPatchNum();
 				if (pch.pPatch->withinLimits(limits)) {
 					if (ppLand.patchModel) {
-						if (pch.pPatch->getPatchNum() != 0) {
-							subcomms.push_back(pch.pPatch->getSubComm());
+						if (patchnum != 0) {
+							suitablePatches.insert(patchnum);
 						}
 					}
 					else { // cell-based model - is cell(patch) suitable
-						if (pch.pPatch->getK() > 0.0)
-						{
-							subcomms.push_back(pch.pPatch->getSubComm());
+						if (pch.pPatch->getK() > 0.0) {
+							suitablePatches.insert(patchnum);
 						}
 					}
 				}
@@ -111,16 +110,13 @@ void Community::initialise(Species* pSpecies, int year)
 
 
 			// select specified no. of patches/cells at random
-			isSelected = vector<bool>(subcomms.size(), false);
-			npatches = subcomms.size();
-
-			// use forwards selection method
-			for (int i = 0; i < init.nSeedPatches; i++) {
-				do {
-					selectedSubComm = pRandom->IRandom(0, npatches - 1);
-				} while (isSelected[selectedSubComm]);
-				isSelected[selectedSubComm] = true;
-			}
+			sample(
+				suitablePatches.begin(), 
+				suitablePatches.end(),
+				back_inserter(selectedPatches),
+				init.nSeedPatches,
+				pRandom->getRNG()
+				);
 			break;
 
 		case 1:	// all suitable patches/cells
@@ -136,15 +132,7 @@ void Community::initialise(Species* pSpecies, int year)
 					patchnum = pch.pPatch->getPatchNum();
 					if (patchnum != 0 && pch.pPatch->getK() > 0.0) {
 						// patch is suitable
-							subcomm = pch.pPatch->getSubComm();
-							if (subcomm == 0) {
-								addSubComm(pch.pPatch, patchnum);
-								isSelected.push_back(true);
-							}
-							else {
-								pSubComm = subcomm;
-							}
-							pSubComm->setInitial(true);
+						selectedPatches.insert(patchnum);
 					}
 				}
 			}
@@ -155,19 +143,20 @@ void Community::initialise(Species* pSpecies, int year)
 			break;
 		} // end of switch (init.freeType)
 
-		nsubcomms = subComms.size();
-		for (int i = 0; i < nsubcomms; i++) { // all sub-communities
-			subComms[i]->initialise(pLandscape, pSpecies, isInitial[i]);
+		for (auto pchNum : selectedPatches) {
+			Patch* pPatch = pLandscape->findPatch(pchNum);
+			// Determine size of initial population
+			int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
+			if (nInds > 0) {
+				Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
+				popns.push_back(pPop); // add new population to community list
+			}
 		}
 		break;
 
 	case 1:	// from species distribution
 		if (ppLand.spDist)
 		{
-			// deselect all existing sub-communities
-			for (int i = 0; i < nsubcomms; i++) {
-				subComms[i]->setInitial(false);
-			}
 			// initialise from loaded species distribution
 			switch (init.spDistType) {
 			case 0: // all presence cells
@@ -181,7 +170,6 @@ void Community::initialise(Species* pSpecies, int year)
 				break;
 			}
 
-			// THE FOLLOWING WILL HAVE TO BE CHANGED FOR MULTIPLE SPECIES...
 			ndistcells = pLandscape->distCellCount(0);
 			for (int i = 0; i < ndistcells; i++) {
 				distloc = pLandscape->getSelectedDistnCell(0, i);
@@ -190,29 +178,29 @@ void Community::initialise(Species* pSpecies, int year)
 					
 					for (int x = 0; x < spratio; x++) {
 						for (int y = 0; y < spratio; y++) {
-
 							pCell = pLandscape->findCell(distloc.x * spratio + x, distloc.y * spratio + y);
-							if (pCell != 0) { // not a no-data cell
-								ppatch = pCell->getPatch();
-								if (ppatch != 0) {
-									pPatch = ppatch;
+							if (pCell != nullptr) { // not a no-data cell
+								pPatch = pCell->getPatch();
+								if (pPatch != nullptr) {
 									if (pPatch->getSeqNum() != 0) { // not the matrix patch
-										subcomm = pPatch->getSubComm();
-										if (subcomm != 0) {
-											pSubComm = subcomm;
-											pSubComm->setInitial(true);
-										}
+										selectedPatches.insert(pPatch->getPatchNum());
 									}
 								}
 							}
 						}
 					}
+
 				}
 			}
 
-			nsubcomms = (int)subComms.size();
-			for (int i = 0; i < nsubcomms; i++) { // all sub-communities
-				subComms[i]->initialise(pLandscape, pSpecies, isInitial);
+			for (auto pchNum : selectedPatches) {
+				Patch* pPatch = pLandscape->findPatch(pchNum);
+				// Determine size of initial population
+				int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
+				if (nInds > 0) {
+					Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
+					popns.push_back(pPop); // add new population to community list
+				}
 			}
 		}
 		else {
@@ -237,17 +225,8 @@ void Community::initialise(Species* pSpecies, int year)
 					if (ppLand.patchModel) {
 						if (pLandscape->existsPatch(iind.patchID)) {
 							pPatch = pLandscape->findPatch(iind.patchID);
-							if (pPatch->getK() > 0.0)
-							{ // patch is suitable
-								subcomm = pPatch->getSubComm();
-								if (subcomm == 0) {
-									// create a sub-community in the patch
-									pSubComm = addSubComm(pPatch, iind.patchID);
-								}
-								else {
-									pSubComm = subcomm;
-								}
-								pSubComm->initialInd(pLandscape, pSpecies, pPatch, pPatch->getRandomCell(), indIx);
+							if (pPatch->getK() > 0.0) { // patch is suitable
+								initialInd(pLandscape, pSpecies, pPatch, pPatch->getRandomCell(), indIx);
 							}
 						}
 					}
@@ -257,17 +236,8 @@ void Community::initialise(Species* pSpecies, int year)
 							Patch* ppatch = pCell->getPatch();
 							if (ppatch != 0) {
 								pPatch = ppatch;
-								if (pPatch->getK() > 0.0)
-								{ // patch is suitable
-									subcomm = pPatch->getSubComm();
-									if (subcomm == 0) {
-										// create a sub-community in the patch
-										pSubComm = addSubComm(pPatch, iind.patchID);
-									}
-									else {
-										pSubComm = subcomm;
-									}
-									pSubComm->initialInd(pLandscape, pSpecies, pPatch, pCell, indIx);
+								if (pPatch->getK() > 0.0) { // patch is suitable
+									initialInd(pLandscape, pSpecies, pPatch, pCell, indIx);
 								}
 							}
 						}
@@ -285,7 +255,6 @@ void Community::initialise(Species* pSpecies, int year)
 		break;
 
 	} // end of switch (init.seedType)
-
 }
 
 // Add manually selected patches/cells to the selected set for initialisation
@@ -352,9 +321,20 @@ void Community::localExtinction(int option) {
 	}
 }
 
-void Community::patchChanges(void) {
+void Community::patchChanges() {
 	for (auto pop : popns) { // except in matrix
-		pop->patchChange();
+		float localK = pop->getPatch()->getK();
+		if (localK <= 0.0) { // patch in dynamic landscape has become unsuitable
+			Species* pSpecies = pop->getSpecies();
+			if (pSpecies->getDemogrParams().stageStruct) {
+				if (pSpecies->getStageParams().disperseOnLoss) 
+					pop->allEmigrate();
+				else pop->extirpate();
+			}
+			else { // non-stage-structured species is destroyed
+				pop->extirpate();
+			}
+		}
 	}
 }
 
@@ -411,8 +391,8 @@ void Community::dispersal(short landIx, short nextseason)
 	// (even if not physically in the matrix)
 	int ndispersers = 0;
 	do {
-		for (int i = 0; i < nsubcomms; i++) { // all populations
-			subComms[i]->resetPossSettlers();
+		for (auto pop : popns) { // all populations, incl. matrix
+			pop->getPatch()->resetPossSettlers();
 		}
 
 		for (auto pop : popns) { // all populations
@@ -421,6 +401,47 @@ void Community::dispersal(short landIx, short nextseason)
 
 		matrix->completeDispersal(pLandscape, sim.outConnect);
 	} while (ndispersers > 0);
+}
+
+// initialise a specified individual
+void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
+	Patch* pPatch, Cell* pCell, int ix)
+{
+	demogrParams dem = pSpecies->getDemogrParams();
+	transferRules trfr = pSpecies->getTransferRules();
+	settleType sett = pSpecies->getSettle();
+	short stg, age, repInt;
+
+	Population* pPop = pPatch->getPop();
+	// create new population if not already in existence
+	if (pPop == nullptr) {
+		pPop = new Population(pSpecies, pPatch, 0, pLandscape->getLandParams().resol);
+		pPatch->setPop(pPop);
+	}
+
+	// create new individual
+	initInd iind = paramsInit->getInitInd(ix);
+	if (dem.stageStruct) {
+		stg = iind.stage;
+		age = iind.age;
+		repInt = pSpecies->getStageParams().repInterval;
+	}
+	else {
+		age = stg = 1;
+		repInt = 0;
+	}
+	float probmale = (dem.repType != 0 && iind.sex == 1) ? 1.0 : 0.0;
+
+	Individual* pInd = new Individual(pCell, pPatch, stg, age, repInt, probmale, trfr.usesMovtProc, trfr.moveType);
+
+	// add new individual to the population
+	pPop->recruit(pInd);
+
+	if (pSpecies->getNTraits() > 0)
+	{
+		// individual variation - set up genetics
+		pInd->setUpGenes(pSpecies, pLandscape->getLandData().resol);
+	}
 }
 
 void Community::survival(short part, short option0, short option1)
@@ -1042,18 +1063,17 @@ void Community::outOccupancy(void) {
 	simParams sim = paramsSim->getSim();
 	locn loc;
 
-	int nsubcomms = (int)subComms.size();
 	for (auto pop : popns) { // all except matrix sub-community
 		if (ppLand.patchModel) {
 			outoccup << pop->getPatch()->getPatchNum();
 		}
 		else {
-			loc = pop->getLocn();
+			loc = pop->getPatch->getCellLocn(0);
 			outoccup << loc.x << "\t" << loc.y;
 		}
 		for (int row = 0; row <= (sim.years / sim.outIntOcc); row++)
 		{
-			outoccup << "\t" << (double)subComms[i]->getOccupancy(row) / (double)sim.reps;
+			outoccup << "\t" << pop->getPatch()->getOccupancy(row) / (double)sim.reps;
 		}
 		outoccup << endl;
 	}
@@ -1225,7 +1245,7 @@ void Community::outTraits(Species* pSpecies, int rep, int yr, int gen)
 				pop->outputTraitPatchInfo(outtraits, rep, yr, gen, land.patchModel);
 			}
 			sctraits = pop->outTraits(outtraits);
-			locn loc = subComms[i]->getLocn();
+			locn loc = pop->getPatch()->getCellLocn();
 			int y = loc.y;
 			if (sim.outTraitsRows && yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0)
 			{

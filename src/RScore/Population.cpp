@@ -492,6 +492,29 @@ int Population::stagePop(int stg) {
 }
 
 //---------------------------------------------------------------------------
+// Extirpate all populations according to
+// option 0 - random local extinction probability
+// option 1 - local extinction probability gradient
+// NB only applied for cell-based model
+void Population::localExtinction(int option) {
+	double pExtinct = 0.0;
+
+	if (option == 0) {
+		envStochParams env = paramsStoch->getStoch();
+		if (env.localExt) pExtinct = env.locExtProb;
+	}
+	else {
+		Cell* pCell = pPatch->getRandomCell(); // get only cell in the patch
+		// extinction prob is complement of cell gradient value plus any non-zero prob at the optimum
+		pExtinct = 1.0 - pCell->getEnvVal() + paramsGrad->getGradient().extProbOpt;
+		if (pExtinct > 1.0) pExtinct = 1.0;
+	}
+
+	if (pRandom->Bernoulli(pExtinct)) {
+		extirpate();
+	}
+}
+
 // Remove all Individuals
 void Population::extirpate(void) {
 	int ninds = (int)inds.size();

@@ -130,6 +130,7 @@ public:
 		float epsGlobal, short nHab, short rasterType, short landIx, bool gradK);
 
 	float getK();
+	int getInitNbInds(const bool& isPatchModel, const int& landResol) const;
 	bool speciesIsPresent(Species* sp);
 
 	void createOccupancy(int nbOutputRows);

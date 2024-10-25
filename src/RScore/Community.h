@@ -79,10 +79,17 @@ public:
 		Species*,	// pointer to Species
 		int				// year (relevent only for seedType == 2)
 	);
-	void addManuallySelected(void);
-	void resetPopns(void);
-	void localExtinction(int);
-	void patchChanges(void);
+	void addManuallySelected();
+	void resetPopns();
+	void initialInd(
+		Landscape* pLandscape, 
+		Species* pSpecies, 
+		Patch* pPatch, 
+		Cell* pCell, 
+		int ix
+	);
+	void localExtinction(int option);
+	void patchChanges();
 	void reproduction(
 		int				// year
 	);
@@ -123,10 +130,12 @@ public:
 		int,			// year
 		int				// generation
 	);
+
 	bool outPopHeaders( // Open population file and write header record
 		Species*, // pointer to Species
 		int       // option: -999 to close the file
 	);
+
 	void outPop( // Write records to population file
 		int,	// replicate
 		int,	// year

@@ -132,7 +132,11 @@ public:
 	int stagePop( // return no. of Individuals in a specified stage
 		int	// stage
 	);
-	void extirpate(void); // Remove all individuals
+	void localExtinction(int option);
+		// option: 	0 - random local extinction probability
+		//			1 - local extinction probability gradient
+
+	void extirpate(); // Remove all individuals
 	void reproduction(
 		const float,	// local carrying capacity
 		const float,	// effect of environmental gradient and/or stochasticty
