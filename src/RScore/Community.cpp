@@ -361,11 +361,10 @@ void Community::reproduction(int yr)
 	}
 }
 
-void Community::emigration(void)
+void Community::emigration()
 {
-	int nsubcomms = static_cast<int>(subComms.size());
-	for (int i = 0; i < nsubcomms; i++) { // all sub-communities
-		subComms[i]->emigration();
+	for (auto pop : popns) {
+		pop->emigration(pop->getPatch()->getK());
 	}
 }
 

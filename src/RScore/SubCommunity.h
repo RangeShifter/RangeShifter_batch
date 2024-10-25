@@ -63,7 +63,7 @@ public:
 	~SubCommunity();
 
 	// functions to manage populations occurring in the SubCommunity
-	void emigration();
+
 	// Remove emigrants from their natal patch and add to patch 0 (matrix)
 	void initiateDispersal(
 		SubCommunity*	// pointer to matrix SubCommunity

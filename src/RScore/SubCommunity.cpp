@@ -43,19 +43,6 @@ SubCommunity::~SubCommunity() {
 	popns.clear();
 }
 
-void SubCommunity::emigration(void)
-{
-	if (subCommNum == 0) return; // no emigration from the matrix
-	int npops = static_cast<int>(popns.size());
-	if (npops < 1) return;
-	float localK = pPatch->getK();
-	// NOTE that even if K is zero, it could have been >0 in previous time-step, and there
-	// might be emigrants if there is non-juvenile emigration
-	for (int i = 0; i < npops; i++) { // all populations
-		popns[i]->emigration(localK);
-	}
-}
-
 // Remove emigrants from their natal patch and add to patch 0 (matrix)
 void SubCommunity::initiateDispersal(SubCommunity* matrix) {
 
