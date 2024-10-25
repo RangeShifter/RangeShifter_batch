@@ -119,6 +119,7 @@ public:
 
 	void resetPopn();
 	void resetPossSettlers();
+
 	// Record the presence of a potential settler within the Patch
 	void incrPossSettler(Species* pSpecies, int sex);
 
@@ -131,6 +132,9 @@ public:
 
 	float getK();
 	int getInitNbInds(const bool& isPatchModel, const int& landResol) const;
+	
+	float getEnvVal(const bool& isPatchModel, const float& epsGlobal);
+
 	bool speciesIsPresent(Species* sp);
 
 	void createOccupancy(int nbOutputRows);

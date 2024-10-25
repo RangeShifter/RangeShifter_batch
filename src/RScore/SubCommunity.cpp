@@ -43,48 +43,6 @@ SubCommunity::~SubCommunity() {
 	popns.clear();
 }
 
-void SubCommunity::reproduction(int resol, float epsGlobal, short rasterType, bool patchModel)
-{
-	if (subCommNum == 0) return; // no reproduction in the matrix
-	float localK, envval;
-	Cell* pCell;
-	envGradParams grad = paramsGrad->getGradient();
-	envStochParams env = paramsStoch->getStoch();
-
-	int npops = popns.size();
-	if (npops < 1) return;
-
-	localK = pPatch->getK();
-	if (localK > 0.0) {
-		if (patchModel) {
-			envval = 1.0; // environmental gradient is currently not applied for patch-based model
-		}
-		else { // cell-based model
-			if (grad.gradient && grad.gradType == 2)
-			{ // gradient in fecundity
-				Cell* pCell = pPatch->getRandomCell(); // locate the only cell in the patch
-				envval = pCell->getEnvVal();
-			}
-			else envval = 1.0;
-		}
-		if (env.stoch && !env.inK) { // stochasticity in fecundity
-			if (env.local) {
-				if (!patchModel) { // only permitted for cell-based model
-					pCell = pPatch->getRandomCell();
-					if (pCell != 0) envval += pCell->getEps();
-				}
-			}
-			else { // global stochasticity
-				envval += epsGlobal;
-			}
-		}
-		for (int i = 0; i < npops; i++) { // all populations
-			popns[i]->reproduction(localK, envval, resol);
-			popns[i]->fledge();
-		}
-	}
-}
-
 void SubCommunity::emigration(void)
 {
 	if (subCommNum == 0) return; // no emigration from the matrix

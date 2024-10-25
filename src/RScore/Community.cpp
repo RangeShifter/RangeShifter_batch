@@ -343,15 +343,21 @@ void Community::reproduction(int yr)
 	float eps = 0.0; // epsilon for environmental stochasticity
 	landParams land = pLandscape->getLandParams();
 	envStochParams env = paramsStoch->getStoch();
-	int nsubcomms = (int)subComms.size();
 
-	for (int i = 0; i < nsubcomms; i++) { // all sub-communities
-		if (env.stoch) {
-			if (!env.local) { // global stochasticty
-				eps = pLandscape->getGlobalStoch(yr);
-			}
+	if (env.stoch) {
+		if (!env.local) { // global stochasticty
+			eps = pLandscape->getGlobalStoch(yr);
 		}
-		subComms[i]->reproduction(land.resol, eps, land.rasterType, land.patchModel);
+	}
+
+	for (auto pop : popns) { // all populations (not matrix)
+		Patch* pPatch = pop->getPatch();
+		float localK = pPatch->getK();
+		if (localK > 0.0) {
+			float envval = pPatch->getEnvVal(land.patchModel, eps);
+			pop->reproduction(localK, envval, land.resol);
+			pop->fledge();
+		}
 	}
 }
 

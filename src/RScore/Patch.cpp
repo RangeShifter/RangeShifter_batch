@@ -238,6 +238,39 @@ int Patch::getInitNbInds(const bool& isPatchModel, const int& landResol) const {
 	return nInds;
 }
 
+float Patch::getEnvVal(const bool& isPatchModel, const float& epsGlobal) {
+
+	float envval = 0.0;
+	envGradParams grad = paramsGrad->getGradient();
+	envStochParams env = paramsStoch->getStoch();
+
+	if (localK > 0.0) {
+		if (isPatchModel) {
+			envval = 1.0; // environmental gradient is currently not applied for patch-based model
+		}
+		else { // cell-based model
+			if (grad.gradient && grad.gradType == 2)
+			{ // gradient in fecundity
+				envval = getRandomCell()->getEnvVal();  // locate the only cell in the patch
+			}
+			else envval = 1.0;
+		}
+		if (env.stoch && !env.inK) { // stochasticity in fecundity
+			if (env.local) {
+				if (!isPatchModel) { // only permitted for cell-based model
+					Cell* pCell = getRandomCell();
+					if (pCell != nullptr) envval += pCell->getEps();
+				}
+			}
+			else { // global stochasticity
+				envval += epsGlobal;
+			}
+		}
+	}
+	return envval;
+}
+
+
 // Return co-ordinates of a specified cell
 locn Patch::getCellLocn(int ix) {
 	locn loc; loc.x = -666; loc.y = -666;

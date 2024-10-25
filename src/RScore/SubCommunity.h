@@ -63,13 +63,6 @@ public:
 	~SubCommunity();
 
 	// functions to manage populations occurring in the SubCommunity
-	
-	void reproduction(
-		int,		// Landscape resolution
-		float,	// epsilon - global stochasticity value 
-		short,	// raster type (see Landscape)
-		bool		// TRUE for a patch-based model, FALSE for a cell-based model
-	);
 	void emigration();
 	// Remove emigrants from their natal patch and add to patch 0 (matrix)
 	void initiateDispersal(
