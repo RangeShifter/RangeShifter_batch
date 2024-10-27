@@ -52,10 +52,11 @@ Community::~Community(void) {
 	subComms.clear();
 }
 
-SubCommunity* Community::addSubComm(Patch* pPch, int num) {
-	int nsubcomms = (int)subComms.size();
-	subComms.push_back(new SubCommunity(pPch, num));
-	return subComms[nsubcomms];
+void Community::addPop(Patch* pPch, int num) {
+	popns.push_back(new Population);
+	// add Population to list
+	// add Patch pointer to Population
+	// add Population pointer to Patch
 }
 
 void Community::initialise(Species* pSpecies, int year)
@@ -66,6 +67,7 @@ void Community::initialise(Species* pSpecies, int year)
 	patchLimits limits = patchLimits();
 	Patch* ppatch;
 	std::set<int> selectedPatches;
+	set<int> suitablePatches;
 	Patch* pPatch;
 	Cell* pCell;
 	landParams ppLand = pLandscape->getLandParams();
@@ -89,8 +91,6 @@ void Community::initialise(Species* pSpecies, int year)
 			limits.yMin = init.minSeedY; 
 			limits.yMax = init.maxSeedY;
 
-			set<int> suitablePatches;
-
 			for (int i = 0; i < npatches; i++) {
 				pch = pLandscape->getPatchData(i);
 				patchnum = pch.pPatch->getPatchNum();
@@ -107,7 +107,6 @@ void Community::initialise(Species* pSpecies, int year)
 					}
 				}
 			}
-
 
 			// select specified no. of patches/cells at random
 			sample(

@@ -116,7 +116,7 @@ struct traitsums {
 class Population {
 
 public:
-	Population(void); // default constructor
+	Population(); // default constructor
 	Population( // constructor for a Population of a specified size
 		Species*,	// pointer to Species
 		Patch*,		// pointer to Patch

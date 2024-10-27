@@ -56,15 +56,19 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			// if using neutral markers, set up patches to sample from 
 			pLandscape->allocatePatches(pSpecies);
 		}
+
 		pComm = new Community(pLandscape); // set up community
+		
 		// set up a sub-community associated with each patch (incl. the matrix)
 		pLandscape->updateCarryingCapacity(pSpecies, 0, 0);
-		patchData ppp;
 		int npatches = pLandscape->patchCount();
-		for (int i = 0; i < npatches; i++) { // includes matrix (index 0) ?
-			ppp = pLandscape->getPatchData(i);
-			pComm->addSubComm(ppp.pPatch, ppp.patchNum); // SET UP ALL SUB-COMMUNITIES
+		for (int i = 1; i < npatches; i++) { // includes matrix (index 0) ?
+			patchData ppp = pLandscape->getPatchData(i);
+			pComm->addPop(ppp.pPatch, ppp.patchNum); // SET UP ALL SUB-COMMUNITIES
 		}
+		patchData ppp = pLandscape->getPatchData(0);
+		pComm->addMatrixPop(ppp.pPatch, ppp.patchNum);
+
 		if (init.seedType == 0 && init.freeType < 2 && init.initFrzYr > 0) {
 			// restrict available landscape to initialised region
 			pLandscape->setLandLimits(init.minSeedX, init.minSeedY,
@@ -98,10 +102,10 @@ int RunModel(Landscape* pLandscape, int seqsim)
 		if (sim.saveVisits && !ppLand.generated) {
 			pLandscape->resetVisits();
 		}
-
 		if (sim.fixReplicateSeed) {
 			pRandom->fixNewSeed(rep);
 		}
+
 		patchChange patchchange;
 		costChange costchange;
 		int npatchchanges = pLandscape->numPatchChanges();
@@ -113,20 +117,23 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			// delete previous community (if any)
 			// Note: this must be BEFORE the landscape is reset (as a sub-community accesses
 			// its corresponding patch upon deletion)
-			if (pComm != 0) delete pComm;
+			if (pComm != nullptr) delete pComm;
+			
 			// generate new cell-based landscape
 			pLandscape->resetLand();
 			pLandscape->generatePatches();
 			pComm = new Community(pLandscape); // set up community
-			// set up a sub-community associated with each patch (incl. the matrix)
+			
+			// Set up a sub-community associated with each patch (incl. the matrix)
 			pLandscape->updateCarryingCapacity(pSpecies, 0, 0);
-			patchData ppp;
 			int npatches = pLandscape->patchCount();
-			for (int i = 0; i < npatches; i++) {
-				ppp = pLandscape->getPatchData(i);
-				pComm->addSubComm(ppp.pPatch, ppp.patchNum); // SET UP ALL SUB-COMMUNITIES
-				pComm->addSubComm(ppp.pPatch, ppp.patchNum); // SET UP ALL SUB-COMMUNITIES
+			for (int i = 1; i < npatches; i++) {
+				patchData ppp = pLandscape->getPatchData(i);
+				pComm->addPop(ppp.pPatch, ppp.patchNum); // SET UP ALL SUB-COMMUNITIES
 			}
+			patchData ppp = pLandscape->getPatchData(0);
+			pComm->addMatrix(ppp.pPatch, ppp.patchNum); // SET UP ALL SUB-COMMUNITIES
+
 			if (sim.patchSamplingOption == "random") {
 				// Then patches must be resampled for new landscape
 				int nbToSample = pSpecies->getNbPatchesToSample();
@@ -198,6 +205,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			if (sim.outputWeirCockerham || sim.outputWeirHill) {
 				pComm->openNeutralOutputFile(pSpecies, -999);
 			}
+
 #if RS_RCPP && !R_CMD
 			return Rcpp::List::create(Rcpp::Named("Errors") = 666);
 #else
@@ -214,8 +222,9 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			pLandscape->setEnvGradient(pSpecies, true);
 		}
 
-		if (sim.outConnect && ppLand.patchModel)
+		if (sim.outConnect && ppLand.patchModel) {
 			pLandscape->createConnectMatrix();
+		}
 
 		// variables to control dynamic landscape
 		landChange landChg; 

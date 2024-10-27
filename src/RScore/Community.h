@@ -73,7 +73,7 @@ class Community {
 public:
 	Community(Landscape*);
 	~Community(void);
-	SubCommunity* addSubComm(Patch*, int);
+	SubCommunity* addPop(Patch*, int);
 	// functions to manage populations occurring in the community
 	void initialise(
 		Species*,	// pointer to Species
