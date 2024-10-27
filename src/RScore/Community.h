@@ -99,6 +99,10 @@ public:
 		short nextseason
 	);
 
+	// Remove emigrants from patch 0 (matrix) and transfer to SubCommunity in which
+	// their destination co-ordinates fall (executed for the matrix patch only)
+	void completeDispersal(Landscape* pLandscape, bool connect);
+
 	void survival(
 		short,	// part:		0 = determine survival & development,
 		//		 			1 = apply survival changes to the population

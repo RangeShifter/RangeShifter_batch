@@ -61,21 +61,6 @@ class SubCommunity {
 public:
 	SubCommunity(Patch* pPch, int subCommId);
 	~SubCommunity();
-
-	// functions to manage populations occurring in the SubCommunity
-
-	// Remove emigrants from their natal patch and add to patch 0 (matrix)
-	void initiateDispersal(
-		SubCommunity*	// pointer to matrix SubCommunity
-	);
-
-	// Remove emigrants from patch 0 (matrix) and transfer to SubCommunity in which
-	// their destination co-ordinates fall (executed for the matrix patch only)
-	void completeDispersal(
-		Landscape*,	// pointer to Landscape
-		bool				// TRUE to increment connectivity totals
-	);
-
 private:
 	int subCommNum;	// SubCommunity number
 		// 0 is reserved for the SubCommunity in the inter-patch matrix
