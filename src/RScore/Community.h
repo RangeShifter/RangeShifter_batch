@@ -71,14 +71,11 @@ struct commStats {
 class Community {
 
 public:
-	Community(Landscape*);
-	~Community(void);
+	Community(Landscape* pLand);
+	~Community();
 	SubCommunity* addPop(Patch*, int);
 	// functions to manage populations occurring in the community
-	void initialise(
-		Species*,	// pointer to Species
-		int				// year (relevent only for seedType == 2)
-	);
+	void initialise(Species* pSpecies, int year);
 	void addManuallySelected();
 	void resetPopns();
 	void initialInd(
@@ -90,27 +87,22 @@ public:
 	);
 	void localExtinction(int option);
 	void patchChanges();
-	void reproduction(
-		int				// year
-	);
-	void emigration(void);
-	void dispersal(
-		short landIx,
-		short nextseason
-	);
+	void reproduction(int year);
+	void emigration();
+	void dispersal(short landIx, short nextseason);
 
 	// Remove emigrants from patch 0 (matrix) and transfer to SubCommunity in which
 	// their destination co-ordinates fall (executed for the matrix patch only)
 	void completeDispersal(Landscape* pLandscape, bool connect);
 
 	void survival(
-		short,	// part:		0 = determine survival & development,
-		//		 			1 = apply survival changes to the population
-		short,	// option0:	0 = stage 0 (juveniles) only         )
-		//					1 = all stages                       ) used by part 0 only
-		//					2 = stage 1 and above (all non-juvs) )
-		short 	// option1:	0 - development only (when survival is annual)
-		//		  	 		1 - development and survival
+		short part,		//	0 = determine survival & development,
+						//	1 = apply survival changes to the population
+		short option0,	//	0 = stage 0 (juveniles) only
+						//	1 = all stages
+						//	2 = stage 1 and above (all non-juvs)
+		short option1	//	0 - development only (when survival is annual)
+						//	1 - development and survival
 	);
 	void ageIncrement();
 	int totalInds();
@@ -118,70 +110,51 @@ public:
 
 	void createOccupancy(int nbOutputRows, int nbReps);
 	void updateOccupancy(int whichRow, int replicate);
+
 	// Open occupancy file, write header record and set up occupancy array
-	bool outOccupancyHeaders(
-		int		// option: -999 to close the file
-	);
+	bool outOccupancyHeaders();
 	void outOccupancy();
+	bool closeOccupancyOfs();
 
 	bool outRangeHeaders( // Open range file and write header record
-		Species*,	// pointer to Species
-		int				// Landscape number (-999 to close the file)
-	);
-	void outRange( // Write record to range file
-		Species*, // pointer to Species
-		int,			// replicate
-		int,			// year
-		int				// generation
-	);
-
-	bool outPopHeaders( // Open population file and write header record
-		Species*, // pointer to Species
-		int       // option: -999 to close the file
-	);
-
-	void outPop( // Write records to population file
-		int,	// replicate
-		int,	// year
-		int		// generation
-	);
-
-	void outInds( // Write records to individuals file
-		int,	// replicate
-		int,	// year
-		int,	// generation
-		int		// Landscape number (>= 0 to open the file, -999 to close the file
-					//									 -1 to write data records)
-	);
-	
-	void outOccSuit(
-		bool	// TRUE if occupancy graph is to be viewed on screen
-	);
-	bool outTraitsHeaders(
-		Landscape* pLandscape,
 		Species* pSpecies,
-		int	landnb
+		int	landnr // (-999 to close the file)
 	);
-	bool outTraitsRowsHeaders( // Open trait rows file and write header record
-		Species*, // pointer to Species
-		int       // Landscape number (-999 to close the file)
+
+	// Write record to range file
+	void outRange(Species* pSpecies, int rep, int yr, int gen);
+
+	// Open population file and write header record
+	bool outPopHeaders(Species* pSpecies, int option);
+
+	// Write records to population file
+	void outPop(int rep, int year, int gen);
+
+	// Write records to individuals file
+	void outInds(int rep, int year,	int gen, int landnr);
+	
+	void outOccSuit(bool view);
+
+	bool outTraitsHeaders(Landscape* pLandscape, Species* pSpecies, int landnb);
+
+	// Open trait rows file and write header record
+	bool outTraitsRowsHeaders(Species* pSpecies, int landnr);
+
+	// Write records to traits file
+	void outTraits(Species* pSpecies, int rep, int year, int gen);
+
+	// Write records to trait rows file
+	void writeTraitsRows(
+		Species* pSpecies, 
+		int rep, 
+		int year,
+		int gen, 
+		int row, 
+		traitsums ts
 	);
-	void outTraits( // Write records to traits file
-		Species*,		// pointer to Species
-		int,				// replicate
-		int,				// year
-		int					// generation
-	);
-	void writeTraitsRows( // Write records to trait rows file
-		Species*,	// pointer to Species
-		int,			// replicate
-		int,			// year
-		int,			// generation
-		int,			// row number (Y cell co-ordinate)
-		traitsums	// structure holding sums of trait genes for dispersal (see Population.h)
-	);
+
 #if RS_RCPP && !R_CMD
-	Rcpp::IntegerMatrix addYearToPopList(int, int);
+	Rcpp::IntegerMatrix addYearToPopList(int rep, int yr);
 #endif
 
 	//sample individuals for genetics (or could be used for anything)

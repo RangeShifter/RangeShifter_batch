@@ -192,7 +192,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				pComm->outRangeHeaders(pSpecies, -999);
 			}
 			if (sim.outOccup && sim.reps > 1)
-				pComm->outOccupancyHeaders(-999);
+				pComm->closeOccupancyOfs();
 			if (sim.outPop) {
 				pComm->outPopHeaders(pSpecies, -999);
 			}
@@ -628,7 +628,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 	if (sim.outOccup && sim.reps > 1) {
 		pComm->outOccupancy();
 		pComm->outOccSuit(v.viewGraph);
-		pComm->outOccupancyHeaders(-999);
+		pComm->closeOccupancyOfs();
 	}
 
 	if (sim.outRange) {
