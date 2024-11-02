@@ -73,7 +73,6 @@ class Community {
 public:
 	Community(Landscape* pLand);
 	~Community();
-	SubCommunity* addPop(Patch*, int);
 	// functions to manage populations occurring in the community
 	void initialise(Species* pSpecies, int year);
 	void resetPopns();

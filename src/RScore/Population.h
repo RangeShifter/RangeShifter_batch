@@ -165,10 +165,11 @@ public:
 	void sampleIndsWithoutReplacement(string n, const set<int>& sampleStages);
 	int sampleSize() const;
 	vector<Individual*> getIndividualsInStage(int stage);
+
 	int transfer( // Executed for the Population(s) in the matrix only
 		Landscape* pLandscape,
 		short landIx,
-		short yr
+		short nextseason
 	);
 
 #if RS_RCPP

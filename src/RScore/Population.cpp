@@ -472,7 +472,7 @@ popStats Population::getStats(void)
 
 Species* Population::getSpecies(void) { return pSpecies; }
 
-int Population::totalPop(void) {
+int Population::totalPop() {
 	int t = 0;
 	for (int stg = 0; stg < nStages; stg++) {
 		for (int sex = 0; sex < nSexes; sex++) {
@@ -540,7 +540,7 @@ void Population::reproduction(const float localK, const float envval, const int 
 {
 
 	// get population size at start of reproduction
-	int ninds = (int)inds.size();
+	int ninds = inds.size();
 	if (ninds == 0) return;
 
 	int nsexes, stage, sex, njuvs, nj, nmales, nfemales;
@@ -785,7 +785,7 @@ void Population::reproduction(const float localK, const float envval, const int 
 }
 
 // Following reproduction of ALL species, add juveniles to the population prior to dispersal
-void Population::fledge(void)
+void Population::fledge()
 {
 	demogrParams dem = pSpecies->getDemogrParams();
 
@@ -793,7 +793,7 @@ void Population::fledge(void)
 		inds.insert(inds.end(), juvs.begin(), juvs.end());
 	}
 	else { // all adults die and juveniles replace adults
-		int ninds = (int)inds.size();
+		int ninds = inds.size();
 		for (int i = 0; i < ninds; i++) {
 			delete inds[i];
 		}
@@ -804,7 +804,6 @@ void Population::fledge(void)
 		inds = juvs;
 	}
 	juvs.clear();
-
 }
 
 Individual* Population::sampleInd() const {
@@ -872,8 +871,6 @@ void Population::emigration(float localK)
 	if (localK < 1.0) localK = 1.0;
 	NK = static_cast<float>(totalPop()) / localK;
 
-	int ninds = inds.size();
-
 	// set up local copy of emigration probability table
 	// used when there is no individual variability
 	// NB - IT IS DOUBTFUL THIS CONTRIBUTES ANY SUBSTANTIAL TIME SAVING
@@ -900,6 +897,7 @@ void Population::emigration(float localK)
 		}
 	}
 
+	int ninds = inds.size();
 	for (int i = 0; i < ninds; i++) {
 		ind = inds[i]->getStats();
 		int stgId = emig.stgDep ? ind.stage : 0;
@@ -935,10 +933,9 @@ void Population::emigration(float localK)
 }
 
 // All individuals emigrate after patch destruction
-void Population::allEmigrate(void) {
-	int ninds = (int)inds.size();
-	for (int i = 0; i < ninds; i++) {
-		inds[i]->setStatus(1);
+void Population::allEmigrate() {
+	for (auto ind : inds) {
+		ind->setStatus(1);
 	}
 }
 
@@ -953,7 +950,8 @@ disperser Population::extractDisperser(int ix) {
 		nInds[ind.stage][ind.sex]--;
 	}
 	else {
-		d.pInd = NULL; d.yes = false;
+		d.pInd = NULL; 
+		d.yes = false;
 	}
 	return d;
 }
@@ -1403,9 +1401,9 @@ void Population::survival0(short option0, short option1)
 }
 
 // Apply survival changes to the population
-void Population::survival1(void)
+void Population::survival1()
 {
-	int ninds = (int)inds.size();
+	int ninds = inds.size();
 
 	for (int i = 0; i < ninds; i++) {
 		indStats ind = inds[i]->getStats();
@@ -1450,17 +1448,12 @@ void Population::clean()
 		}
 		inds.clear();
 		inds = survivors;
-#if RS_RCPP
-		shuffle(inds.begin(), inds.end(), pRandom->getRNG());
-#else
 
-#ifdef NDEBUG
+#if RS_RCPP || NDEBUG
 		// do not randomise individuals in DEBUG mode, as the function uses rand()
 		// and therefore the randomisation will differ between identical runs of RS
 		shuffle(inds.begin(), inds.end(), pRandom->getRNG());
-#endif // NDEBUG
-
-#endif // RS_RCPP
+#endif
 	}
 }
 
