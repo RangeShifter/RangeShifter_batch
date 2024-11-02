@@ -125,8 +125,13 @@ GeneticFitnessTrait::GeneticFitnessTrait(SpeciesTrait* P)
 // Copies immutable features from a parent trait
 // Only called via clone()
 // ----------------------------------------------------------------------------------------
-GeneticFitnessTrait::GeneticFitnessTrait(const GeneticFitnessTrait& T) : pSpeciesTrait(T.pSpeciesTrait), _inherit_func_ptr(T._inherit_func_ptr)
-{}
+GeneticFitnessTrait::GeneticFitnessTrait(const GeneticFitnessTrait& T) : 
+	pSpeciesTrait(T.pSpeciesTrait), 
+	_inherit_func_ptr(T._inherit_func_ptr),
+	scaledDomMeanSelCoeff(T.scaledDomMeanSelCoeff)
+{
+	// nothing
+}
 
 void GeneticFitnessTrait::initialise() {
 	// All positions start at wild type, mutations accumulate through simulation
@@ -215,11 +220,10 @@ float GeneticFitnessTrait::drawDominance(float selCoef) {
 	}
 	case SCALED:
 	{
-		const float min = 0;
 		const float h_d = dominanceParameters.find(MEAN)->second;
 		const float k = -log(2 * h_d) / scaledDomMeanSelCoeff;
-		const float max = static_cast<float>(exp(-k * selCoef));
-		h = static_cast<float>(pRandom->FRandom(min, max));
+		const float max = exp(-k * selCoef);
+		h = pRandom->FRandom(0, max);
 		break;
 	}
 
@@ -375,45 +379,16 @@ float GeneticFitnessTrait::express() {
 			shared_ptr<Allele> pAlleleB = pAllelePair[1] == 0 ? wildType : pAllelePair[1];
 			sB = pAlleleB->getAlleleValue();
 			hB = pAlleleB->getDominanceCoef();
+
+			sumDomCoeffs = hA + hB;
+			hLocus = sumDomCoeffs == 0.0 ? 0.5 : hA / sumDomCoeffs;
+			phenotype *= 1 - hLocus * sA - (1 - hLocus) * sB;
 		}
 		else {
-			sB = 0.0;
-			hB = 0.0;
+			phenotype *= 1 - sA;
 		}
-		sumDomCoeffs = hA + hB;
-		hLocus = sumDomCoeffs == 0.0 ? 0.0 : hA / sumDomCoeffs;
-		phenotype *= 1 - hLocus * sA - (1 - hLocus) * sB;
 	}
 	return phenotype;
-}
-
-// ----------------------------------------------------------------------------------------
-// Check if specific locus is heterozygote
-// ----------------------------------------------------------------------------------------
-bool GeneticFitnessTrait::isHeterozygoteAtLocus(int locus) const {
-	// assumes diploidy
-	auto it = genes.find(locus);
-	if (it == genes.end())
-		throw runtime_error("Genetic load gene queried for heterozygosity does not exist.");
-	else {
-		shared_ptr<Allele> alleleRight = it->second[0] == 0 ? wildType : it->second[0];
-		shared_ptr<Allele> alleleLeft = it->second[1] == 0 ? wildType : it->second[1];
-		return alleleRight != alleleLeft;
-	}
-}
-
-// ----------------------------------------------------------------------------------------
-// Count heterozygote loci in genome 
-// ----------------------------------------------------------------------------------------
-int GeneticFitnessTrait::countHeterozygoteLoci() const {
-	// assumes diploidy
-	int count = 0;
-	for (auto const& [locus, allelePair] : genes) {
-		shared_ptr<Allele> alleleLeft = allelePair[0] == 0 ? wildType : allelePair[0];
-		shared_ptr<Allele> alleleRight = allelePair[1] == 0 ? wildType : allelePair[1];
-		count += alleleLeft != alleleRight;
-	}
-	return count;
 }
 
 // ----------------------------------------------------------------------------------------
@@ -433,14 +408,3 @@ float GeneticFitnessTrait::getDomCoefAtLocus(short whichChromosome, int position
 		throw runtime_error("The genetic load locus queried for its dominance coefficient does not exist.");
 	return it->second[whichChromosome] == 0 ? wildType->getDominanceCoef() : it->second[whichChromosome]->getDominanceCoef();
 }
-
-#ifndef NDEBUG // Testing only
-// Get allele ID at locus
-int GeneticFitnessTrait::getAlleleIDAtLocus(short whichChromosome, int position) const {
-	auto it = genes.find(position);
-	if (it == genes.end())
-		throw runtime_error("The Dispersal locus queried for its allele ID does not exist.");
-	return it->second[whichChromosome].get()->getId();
-}
-
-#endif // NDEBUG

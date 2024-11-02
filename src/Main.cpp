@@ -120,7 +120,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	paramsSim = new paramSim(pathToProjectDir);
 
 	string pathToControlFile = paramsSim->getDir(0) +
-		"Inputs/CONTROL" + (argc > 2 ? argv[2] : "") + ".txt";
+		"Inputs/" + (argc > 2 ? argv[2] : "CONTROL.txt");
 
 #ifndef NDEBUG
 	cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
