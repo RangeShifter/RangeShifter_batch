@@ -19,7 +19,6 @@
  *
  --------------------------------------------------------------------------*/
 
-
  //---------------------------------------------------------------------------
 
 #include "Landscape.h"
@@ -48,9 +47,9 @@ InitDist::InitDist(Species* pSp)
 }
 
 InitDist::~InitDist() {
-	int ncells = (int)cells.size();
+	int ncells = cells.size();
 	for (int i = 0; i < ncells; i++)
-		if (cells[i] != NULL) delete cells[i];
+		if (cells[i] != nullptr) delete cells[i];
 	cells.clear();
 }
 
@@ -103,8 +102,8 @@ void InitDist::setDistCell(locn loc, bool init) {
 }
 
 // Specified location is within the initial distribution?
-bool InitDist::inInitialDist(locn loc) {
-	int ncells = (int)cells.size();
+bool InitDist::isInInitialDist(locn loc) {
+	int ncells = cells.size();
 	for (int i = 0; i < ncells; i++) {
 		if (cells[i]->toInitialise(loc)) { // cell is to be initialised
 			return true;
@@ -113,14 +112,14 @@ bool InitDist::inInitialDist(locn loc) {
 	return false;
 }
 
-int InitDist::cellCount(void) {
-	return (int)cells.size();
+int InitDist::cellCount() {
+	return cells.size();
 }
 
 // Return the co-ordinates of a specified initial distribution cell
 locn InitDist::getCell(int ix) {
 	locn loc;
-	if (ix >= 0 && ix < (int)cells.size()) {
+	if (ix >= 0 && ix < cells.size()) {
 		loc = cells[ix]->getLocn();
 	}
 	else {
@@ -141,12 +140,15 @@ locn InitDist::getSelectedCell(int ix) {
 	return loc;
 }
 
-locn InitDist::getDimensions(void) {
-	locn d; d.x = maxX; d.y = maxY; return d;
+locn InitDist::getDimensions() {
+	locn d; 
+	d.x = maxX; 
+	d.y = maxY; 
+	return d;
 }
 
-void InitDist::resetDistribution(void) {
-	int ncells = (int)cells.size();
+void InitDist::resetDistribution() {
+	int ncells = cells.size();
 	for (int i = 0; i < ncells; i++) {
 		cells[i]->setCell(false);
 	}
@@ -156,37 +158,30 @@ void InitDist::resetDistribution(void) {
 
 // Read species initial distribution file
 
-int InitDist::readDistribution(string distfile) {
 #if RS_RCPP
+int InitDist::readDistribution(string distfile) {
 	wstring header;
-#else
-	string header;
-#endif
 	int p, nodata;
 	int ncols, nrows;
-#if RS_RCPP
 	wifstream dfile; // species distribution file input stream
-#else
-	ifstream dfile; // species distribution file input stream
-#endif
 
 	// open distribution file
-#if RS_RCPP
 	dfile.open(distfile, std::ios::binary);
 	if (spdistraster.utf) {
 		// apply BOM-sensitive UTF-16 facet
 		dfile.imbue(std::locale(dfile.getloc(), new std::codecvt_utf16<wchar_t, 0x10ffff, std::consume_header>));
 	}
-#else
-	dfile.open(distfile.c_str());
-#endif
 	if (!dfile.is_open()) return 21;
 
 	// read landscape data from header records of distribution file
 	// NB headers of all files have already been compared
-	dfile >> header >> ncols >> header >> nrows >> header >> minEast >> header >> minNorth
-		>> header >> resol >> header >> nodata;
-#if RS_RCPP
+	dfile >> header >> ncols
+		>> header >> nrows
+		>> header >> minEast
+		>> header >> minNorth
+		>> header >> resol
+		>> header >> nodata;
+
 	if (!dfile.good()) {
 		// corrupt file stream
 		StreamErrorR(distfile);
@@ -194,54 +189,96 @@ int InitDist::readDistribution(string distfile) {
 		dfile.clear();
 		return 144;
 	}
-#endif
 
-	maxX = ncols - 1; maxY = nrows - 1;
+	maxX = ncols - 1;
+	maxY = nrows - 1;
 
 	// set up bad integer value to ensure that valid values are read
-	int badvalue = -9; if (nodata == -9) badvalue = -99;
+	int badvalue = -9;
+	if (nodata == -9) badvalue = -99;
 
 	for (int y = nrows - 1; y >= 0; y--) {
 		for (int x = 0; x < ncols; x++) {
 			p = badvalue;
-#if RS_RCPP
 			if (dfile >> p) {
-#else
-			dfile >> p;
-#endif
-			if (p == nodata || p == 0 || p == 1) { // only valid values
 				if (p == 1) { // species present
 					cells.push_back(new DistCell(x, y));
 				}
+				else if (p != nodata && p != 0) { // error in file
+					dfile.close();
+					dfile.clear();
+					return 22;
+				}
 			}
-			else { // error in file
-				dfile.close(); dfile.clear();
-				return 22;
+			else {
+				// corrupt file stream
+#if !R_CMD
+				Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
+#endif
+				StreamErrorR(distfile);
+				dfile.close();
+				dfile.clear();
+				return 144;
 			}
-#if RS_RCPP
 		}
-	else {
-		// corrupt file stream
-#if RS_RCPP && !R_CMD
-		Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
-#endif
-		StreamErrorR(distfile);
-		dfile.close();
-		dfile.clear();
-		return 144;
-		}
-#endif
 	}
-	}
-#if RS_RCPP
-dfile >> p;
-if (!dfile.eof()) EOFerrorR(distfile);
-#endif
+	dfile >> p;
+	if (!dfile.eof()) EOFerrorR(distfile);
 
-	dfile.close(); dfile.clear();
+	dfile.close();
+	dfile.clear();
 	return 0;
 }
 
+#else
+
+int InitDist::readDistribution(string distfile) {
+	string header;
+	int p, nodata;
+	int ncols, nrows;
+	ifstream dfile; // species distribution file input stream
+
+	// open distribution file
+	dfile.open(distfile.c_str());
+	if (!dfile.is_open()) return 21;
+
+	// read landscape data from header records of distribution file
+	// NB headers of all files have already been compared
+	dfile >> header >> ncols
+		>> header >> nrows
+		>> header >> minEast
+		>> header >> minNorth
+		>> header >> resol
+		>> header >> nodata;
+
+	maxX = ncols - 1;
+	maxY = nrows - 1;
+
+	// set up bad integer value to ensure that valid values are read
+	int badvalue = -9;
+	if (nodata == -9) badvalue = -99;
+
+	for (int y = nrows - 1; y >= 0; y--) {
+		for (int x = 0; x < ncols; x++) {
+			p = badvalue;
+			dfile >> p;
+
+			if (p == 1) { // species present
+				cells.push_back(new DistCell(x, y));
+			}
+			else if (p != nodata && p != 0) { // error in file
+				dfile.close();
+				dfile.clear();
+				return 22;
+			}
+		}
+	}
+	dfile.close();
+	dfile.clear();
+	return 0;
+}
+
+#endif // not RS_RCPP
 
 //---------------------------------------------------------------------------
 
@@ -1633,10 +1670,9 @@ void Landscape::deleteCostsChgMatrix(void) {
 // Species distribution functions
 
 int Landscape::newDistribution(Species* pSpecies, string distname) {
-	int readcode;
-	int ndistns = (int)distns.size();
+	int ndistns = distns.size();
 	distns.push_back(new InitDist(pSpecies));
-	readcode = distns[ndistns]->readDistribution(distname);
+	int readcode = distns[ndistns]->readDistribution(distname);
 	if (readcode != 0) { // error encountered
 		// delete the distribution created above
 		delete distns[ndistns];
@@ -1652,13 +1688,13 @@ void Landscape::setDistribution(Species* pSpecies, int nInit) {
 }
 
 // Specified cell match one of the distribution cells to be initialised?
-bool Landscape::inInitialDist(Species* pSpecies, locn loc) {
+bool Landscape::isInInitialDist(Species* pSpecies, locn loc) {
 	// convert landscape co-ordinates to distribution co-ordinates
 	locn initloc;
 	initloc.x = loc.x * resol / spResol;
 	initloc.y = loc.y * resol / spResol;
 	// WILL HAVE TO GET CORRECT SPECIES WHEN THERE ARE MULTIPLE SPECIES ...
-	bool initialise = distns[0]->inInitialDist(initloc);
+	bool initialise = distns[0]->isInInitialDist(initloc);
 	return initialise;
 }
 

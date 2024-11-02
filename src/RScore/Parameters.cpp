@@ -117,7 +117,7 @@ envStochParams paramStoch::getStoch(void)
 
 // Initialisation (seeding) parameters
 
-paramInit::paramInit(void) {
+paramInit::paramInit() {
 	seedType = freeType = spDistType = initDens = 0;
 	initAge = initFrzYr = 0;
 	restrictRange = false;

@@ -98,6 +98,7 @@ class InitDist {
 public:
 	InitDist(Species*);
 	~InitDist();
+
 	int readDistribution(
 		string // name of species distribution file
 	);
@@ -112,20 +113,22 @@ public:
 		locn,	// structure holding x (column) and y (row) co-ordinates
 		bool
 	);
-	bool inInitialDist( // Specified location is within the initial distribution?
-		locn  // structure holding x (column) and y (row) co-ordinates
-	);
-	int cellCount(void);
-	locn getCell( // Return the co-ordinates of a specified initial distribution cell
-		int  // index no. of DistCell in cells vector
-	);
-	locn getSelectedCell( // Return the co-ordinates of a specified initial distribution
-		// cell if it has been selected
-		// otherwise return negative co-ordinates
-		int  // index no. of DistCell in cells vector
-	);
-	locn getDimensions(void);
-	void resetDistribution(void);
+
+	// Specified location is within the initial distribution?
+	bool isInInitialDist(locn loc);
+
+	int cellCount();
+
+	// Return the co-ordinates of a specified initial distribution cell
+	locn getCell(int cellIndex);
+
+	// Return the co-ordinates of a specified initial distribution
+	// cell if it has been selected
+	// otherwise return negative co-ordinates
+	locn getSelectedCell(int cellIndex);
+
+	locn getDimensions();
+	void resetDistribution();
 
 private:
 	Species* pSpecies;		// pointer to species
@@ -137,7 +140,6 @@ private:
 	// list of cells in the initial distribution
 	// cells MUST be loaded in the sequence ascending x within descending y
 	std::vector <DistCell*> cells;
-
 };
 
 //---------------------------------------------------------------------------
@@ -359,7 +361,7 @@ public:
 		Species*, // pointer to Species
 		int				// no. of distribution squares to initialise
 	);
-	bool inInitialDist( // Specified cell matches one of the distn cells to be initialised?
+	bool isInInitialDist( // Specified cell matches one of the distn cells to be initialised?
 		Species*, // pointer to Species
 		locn			// structure holding co-ordinates of Cell
 	);

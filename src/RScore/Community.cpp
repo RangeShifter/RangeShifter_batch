@@ -40,10 +40,10 @@ ofstream outtraits;
 Community::Community(Landscape* pLand) {
 	pLandscape = pLand;
 	indIx = 0;
-	pNeutralStatistics = 0;
+	pNeutralStatistics = nullptr;
 }
 
-Community::~Community(void) {
+Community::~Community() {
 	int nsubcomms = (int)subComms.size();
 	for (int i = 0; i < nsubcomms; i++) { // all sub-communities
 		delete subComms[i];

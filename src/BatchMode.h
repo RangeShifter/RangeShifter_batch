@@ -74,7 +74,7 @@ struct batchfiles {
 	string settleFile;
 	string geneticsFile;
 	string traitsFile;
-	string initFile;
+	string initFileIfs;
 };
 
 struct TraitInputOptions {

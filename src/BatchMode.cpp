@@ -40,7 +40,7 @@ ofstream batchLog;
 // USED DURING PARSING (ABOVE)
 ifstream parameters;
 ifstream ssfile, tmfile, fdfile, ddfile, sdfile;
-ifstream emigFile, transFile, settFile, initFile, initIndsFile;
+ifstream emigFile, transFile, settFile, initFileIfs, initIndsFile;
 ifstream landfile, dynlandfile;
 ifstream ifsGenetics, ifsTraits;
 
@@ -6177,19 +6177,19 @@ int ReadInitialisation(Landscape* pLandscape)
 
 	int simNb, maxcells;
 	float totalProps;
-	int error = 0;
+	int errorCode = 0;
 
-	initFile >> simNb >> init.seedType >> init.freeType >> init.spDistType;
+	initFileIfs >> simNb >> init.seedType >> init.freeType >> init.spDistType;
 
 	if (init.seedType == 1 && !paramsLand.spDist) 
-		error = 601;
+		errorCode = 601;
 
 	if (paramsLand.patchModel) 
-		initFile >> init.initDens >> init.indsHa;
+		initFileIfs >> init.initDens >> init.indsHa;
 	else 
-		initFile >> init.initDens >> init.indsCell;
+		initFileIfs >> init.initDens >> init.indsCell;
 
-	initFile >> init.minSeedX >> init.maxSeedX 
+	initFileIfs >> init.minSeedX >> init.maxSeedX 
 		>> init.minSeedY >> init.maxSeedY
 		>> init.nSeedPatches >> init.nSpDistPatches
 		>> init.initFrzYr >> init.restrictRows
@@ -6200,17 +6200,16 @@ int ReadInitialisation(Landscape* pLandscape)
 
 	if (dem.stageStruct) {
 		float propStage;
-		initFile >> init.initAge;
+		initFileIfs >> init.initAge;
 		totalProps = 0.0;
 		for (int stg = 1; stg < sstruct.nStages; stg++) {
-			initFile >> propStage;
+			initFileIfs >> propStage;
 			if(init.seedType!=2){
 				totalProps += propStage;
 				paramsInit->setProp(stg, propStage);
 			}
 		}
-		if (init.seedType!=2 && totalProps != 1.0)
-		{ 
+		if (init.seedType!=2 && totalProps != 1.0) { 
 			throw logic_error("The proportion of initial individuals in each stage doesn not sum to 1.");
 		}
 	}
@@ -6219,6 +6218,8 @@ int ReadInitialisation(Landscape* pLandscape)
 
 	switch (init.seedType) {
 	case 0: // free initialisation
+
+		// Set initial distribution parameters
 		if (init.minSeedX == gEmptyVal)
 			init.minSeedX = 0;
 		if (init.minSeedY == gEmptyVal)
@@ -6228,14 +6229,17 @@ int ReadInitialisation(Landscape* pLandscape)
 		if (init.maxSeedY == gEmptyVal) 
 			init.maxSeedY = paramsLand.maxY;
 		if (init.minSeedY > init.maxSeedY || init.minSeedX > init.maxSeedX) {
-			error = 603;
+			errorCode = 603;
 		}
 		maxcells = (init.maxSeedY - init.minSeedY) * (init.maxSeedX - init.minSeedX);
 		if (init.freeType == 0 && init.nSeedPatches > maxcells) 
-			error = 602;
+			errorCode = 602;
+
+		// Done, initialisation takes place in Community::initialise()
 		break;
+
 	case 1: // from species distribution
-		// nothing to do here
+		// Nothing, initialisation takes place in Community::initialise()
 		break;
 	case 2: // from initial individuals file
 		if (init.indsFile != prevInitialIndsFile) {
@@ -6248,7 +6252,7 @@ int ReadInitialisation(Landscape* pLandscape)
 		throw logic_error("SeedType must be 0, 1, or 2.");
 		break;
 	}
-	return error;
+	return errorCode;
 }
 
 //---------------------------------------------------------------------------
@@ -6385,35 +6389,23 @@ void RunBatch(int nSimuls, int nLandscapes)
 			string cname;
 			if (gNameCostFile == "NULL" || gNameCostFile == "none") cname = "NULL";
 			else cname = paramsSim->getDir(1) + gNameCostFile;
-			if (paramsLand.patchModel) {
-				string pname = paramsSim->getDir(1) + name_patch;
 
-				landcode = pLandscape->readLandscape(0, hname, pname, cname);
-			}
-			else {
-				landcode = pLandscape->readLandscape(0, hname, " ", cname);
-			}
-			if (landcode != 0) {
-				landOK = false;
-			}
+			string pname = paramsLand.patchModel ? 
+				paramsSim->getDir(1) + name_patch : " ";
+			landcode = pLandscape->readLandscape(0, hname, pname, cname);
+			if (landcode != 0) landOK = false;
+
 			if (paramsLand.dynamic) {
 				landcode = ReadDynLandFile(pLandscape);
-				if (landcode != 0) {
-					landOK = false;
-				}
+				if (landcode != 0) landOK = false;
 			}
-			if (landtype == 0) {
-				pLandscape->updateHabitatIndices();
-			}
+			if (landtype == 0) pLandscape->updateHabitatIndices();
 
-			// species distribution
-
+			// Species Distribution
 			if (paramsLand.spDist) { // read initial species distribution
 				string distname = paramsSim->getDir(1) + name_sp_dist;
 				landcode = pLandscape->newDistribution(pSpecies, distname);
-				if (landcode == 0) {
-				}
-				else {
+				if (landcode != 0) {
 					cout << endl << "Error reading initial distribution for landscape "
 						<< land_nr << " - aborting" << endl;
 					landOK = false;
@@ -6449,8 +6441,8 @@ void RunBatch(int nSimuls, int nLandscapes)
 			settFile.open(settleFile);
 			flushHeaders(settFile);
 
-			initFile.open(initialFile);
-			flushHeaders(initFile);
+			initFileIfs.open(initialFile);
+			flushHeaders(initFileIfs);
 
 			if (gHasGenetics) {
 				ifsGenetics.open(geneticsFile.c_str());
@@ -6531,8 +6523,8 @@ void RunBatch(int nSimuls, int nLandscapes)
 			transFile.clear();
 			settFile.close();
 			settFile.clear();
-			initFile.close(); 
-			initFile.clear();
+			initFileIfs.close(); 
+			initFileIfs.clear();
 
 			if (gHasGenetics) {
 				ifsGenetics.close();
