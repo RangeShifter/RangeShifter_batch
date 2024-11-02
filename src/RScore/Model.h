@@ -53,7 +53,6 @@
 #include "Parameters.h"
 #include "Landscape.h"
 #include "Community.h"
-#include "SubCommunity.h"
 #include "Species.h"
 
 #if !LINUX_CLUSTER && !RS_RCPP

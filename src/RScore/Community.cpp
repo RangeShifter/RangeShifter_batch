@@ -354,7 +354,6 @@ void Community::completeDispersal(Landscape* pLandscape, bool connect)
 	Patch* pPrevPatch;
 	Patch* pNewPatch;
 	Cell* pPrevCell;
-	SubCommunity* pSubComm;
 
 	Species* pSpecies = matrixPop->getSpecies();
 	int popsize = matrixPop->getNInds();

@@ -26,7 +26,7 @@
 
  Implements the Population class
 
- There is ONE instance of a Population for each Species within each SubCommunity
+ There is ONE instance of a Population for each Species within each Patch
  (including the matrix). The Population holds a list of all the Individuals in
  the Population.
 

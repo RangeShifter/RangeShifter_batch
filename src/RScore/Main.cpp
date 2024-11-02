@@ -37,7 +37,6 @@
 #include "Population.h"
 #include "Landscape.h"
 #include "Species.h"
-#include "SubCommunity.h"
 
 using namespace std;
 

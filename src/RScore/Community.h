@@ -27,7 +27,7 @@
  Implements the Community class
 
  There is ONLY ONE instance of a Community in an individual replicate simulation.
- It holds a SubCommunity for each Patch in the Landscape (including the matrix),
+ It holds a Population for each Patch in the Landscape (including the matrix),
  and is thus the highest-level entity accessed for most processing concerned with
  simulated populations.
 
@@ -55,7 +55,6 @@
 #include <ranges>
 using namespace std;
 
-#include "SubCommunity.h"
 #include "Landscape.h"
 #include "Patch.h"
 #include "Cell.h"
@@ -89,7 +88,7 @@ public:
 	void emigration();
 	void dispersal(short landIx, short nextseason);
 
-	// Remove emigrants from patch 0 (matrix) and transfer to SubCommunity in which
+	// Remove emigrants from patch 0 (matrix) and transfer to the Population in which
 	// their destination co-ordinates fall (executed for the matrix patch only)
 	void completeDispersal(Landscape* pLandscape, bool connect);
 

@@ -48,7 +48,6 @@ using namespace std;
 #include "./RScore/Parameters.h"
 #include "./RScore/Landscape.h"
 #include "./RScore/Species.h"
-#include "./RScore/SubCommunity.h"
 #include "./BatchMode.h"
 
 #if LINUX_CLUSTER || R_CMD
