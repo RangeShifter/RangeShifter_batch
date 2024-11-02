@@ -59,16 +59,6 @@ int RunModel(Landscape* pLandscape, int seqsim)
 
 		pComm = new Community(pLandscape); // set up community
 		
-		// set up a sub-community associated with each patch (incl. the matrix)
-		pLandscape->updateCarryingCapacity(pSpecies, 0, 0);
-		int npatches = pLandscape->patchCount();
-		for (int i = 1; i < npatches; i++) { // includes matrix (index 0) ?
-			patchData ppp = pLandscape->getPatchData(i);
-			pComm->addPop(ppp.pPatch, ppp.patchNum); // SET UP ALL SUB-COMMUNITIES
-		}
-		patchData ppp = pLandscape->getPatchData(0);
-		pComm->addMatrixPop(ppp.pPatch, ppp.patchNum);
-
 		if (init.seedType == 0 && init.freeType < 2 && init.initFrzYr > 0) {
 			// restrict available landscape to initialised region
 			pLandscape->setLandLimits(init.minSeedX, init.minSeedY,
@@ -78,7 +68,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			pLandscape->resetLandLimits();
 		}
 
-		// Random patches are sampled once per landscape
+		// Random patches are sampled only once per landscape
 		if (sim.patchSamplingOption == "random") {
 			int nbToSample = pSpecies->getNbPatchesToSample();
 			auto patchesToSample = pLandscape->samplePatches(sim.patchSamplingOption, nbToSample, pSpecies);
@@ -124,16 +114,6 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			pLandscape->generatePatches();
 			pComm = new Community(pLandscape); // set up community
 			
-			// Set up a sub-community associated with each patch (incl. the matrix)
-			pLandscape->updateCarryingCapacity(pSpecies, 0, 0);
-			int npatches = pLandscape->patchCount();
-			for (int i = 1; i < npatches; i++) {
-				patchData ppp = pLandscape->getPatchData(i);
-				pComm->addPop(ppp.pPatch, ppp.patchNum); // SET UP ALL SUB-COMMUNITIES
-			}
-			patchData ppp = pLandscape->getPatchData(0);
-			pComm->addMatrix(ppp.pPatch, ppp.patchNum); // SET UP ALL SUB-COMMUNITIES
-
 			if (sim.patchSamplingOption == "random") {
 				// Then patches must be resampled for new landscape
 				int nbToSample = pSpecies->getNbPatchesToSample();
@@ -159,7 +139,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				}
 			}
 			if (sim.outOccup && sim.reps > 1)
-				if (!pComm->outOccupancyHeaders(0)) {
+				if (!pComm->outOccupancyHeaders()) {
 					filesOK = false;
 				}
 			if (sim.outPop) {

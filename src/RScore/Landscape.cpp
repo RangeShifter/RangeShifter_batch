@@ -884,10 +884,14 @@ set<int> Landscape::samplePatches(const string& samplingOption, int nbToSample, 
 
 	// Get list of viable patches where the species is present
 	for (auto p : patches) {
-		if (p->getPatchNum() == 0) continue; // skip patch 0, the matrix
-		if (samplingOption == "random" // then all patches are eligible
-			|| p->speciesIsPresent(pSpecies)) // otherwise only patches with at least 1 ind
+		if (p->getPatchNum() == 0) continue; // skip the matrix
+		if (samplingOption == "random") { // then all patches are eligible
 			eligiblePatches.push_back(p->getPatchNum());
+		}
+		else if (p->speciesIsPresent(pSpecies)) {
+			// only patches with at least 1 ind can be sampled
+			eligiblePatches.push_back(p->getPatchNum());
+		}
 	}
 	
 	if (samplingOption == "all") {

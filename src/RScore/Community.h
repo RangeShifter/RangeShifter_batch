@@ -76,7 +76,6 @@ public:
 	SubCommunity* addPop(Patch*, int);
 	// functions to manage populations occurring in the community
 	void initialise(Species* pSpecies, int year);
-	void addManuallySelected();
 	void resetPopns();
 	void initialInd(
 		Landscape* pLandscape, 

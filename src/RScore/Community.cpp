@@ -74,6 +74,9 @@ void Community::initialise(Species* pSpecies, int year)
 
 	spratio = ppLand.spResol / ppLand.resol;
 
+	// Initialise (empty) matrix population
+	matrixPop = new Population(pSpecies, pLandscape->findPatch(0), 0, ppLand.resol);
+
 	switch (init.seedType) {
 
 	case 0:	// free initialisation
@@ -209,8 +212,6 @@ void Community::initialise(Species* pSpecies, int year)
 
 	case 2:	// initial individuals in specified patches/cells
 		if (year < 0) {
-			// initialise matrix sub-community only
-			subComms[0]->initialise(pLandscape, pSpecies, isInitial);
 			indIx = 0; // reset index for initial individuals
 		}
 		else { // add any initial individuals for the current year
@@ -249,59 +250,9 @@ void Community::initialise(Species* pSpecies, int year)
 					}
 				}
 			}
-		}
+		} // if year == 0
 		break;
-
 	} // end of switch (init.seedType)
-}
-
-// Add manually selected patches/cells to the selected set for initialisation
-void Community::addManuallySelected(void) {
-	int npatches;
-	Patch* patch;
-	SubCommunity* subcomm;
-	locn initloc;
-	Cell* pCell;
-	Patch* pPatch;
-	SubCommunity* pSubComm;
-
-	landParams ppLand = pLandscape->getLandParams();
-
-	npatches = pLandscape->initCellCount(); // no. of patches/cells specified
-	// identify sub-communities to be initialised
-	if (ppLand.patchModel) {
-		for (int i = 0; i < npatches; i++) {
-			initloc = pLandscape->getInitCell(i); // patch number held in x-coord of list
-			pPatch = pLandscape->findPatch(initloc.x);
-			if (pPatch != 0) {
-				subcomm = pPatch->getSubComm();
-				if (subcomm != 0) {
-					pSubComm = subcomm;
-					pSubComm->setInitial(true);
-				}
-			}
-		}
-	}
-	else { // cell-based model
-		for (int i = 0; i < npatches; i++) {
-			initloc = pLandscape->getInitCell(i);
-			if (initloc.x >= 0 && initloc.x < ppLand.dimX
-				&& initloc.y >= 0 && initloc.y < ppLand.dimY) {
-				pCell = pLandscape->findCell(initloc.x, initloc.y);
-				if (pCell != 0) { // not no-data cell
-					patch = pCell->getPatch();
-					if (patch != 0) {
-						pPatch = patch;
-						subcomm = pPatch->getSubComm();
-						if (subcomm != 0) {
-							pSubComm = subcomm;
-							pSubComm->setInitial(true);
-						}
-					}
-				}
-			}
-		}
-	}
 }
 
 void Community::resetPopns() {
