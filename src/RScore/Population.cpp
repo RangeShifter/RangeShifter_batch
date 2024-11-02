@@ -383,7 +383,7 @@ int Population::countHeterozygoteLoci() {
 	int nbHetero = 0;
 	if (pSpecies->isDiploid()) {
 		for (Individual* ind : sampledInds) {
-			const auto trait = ind->getTrait(NEUTRAL);
+			const NeutralTrait* trait = (NeutralTrait*)(ind->getTrait(NEUTRAL));
 			nbHetero += trait->countHeterozygoteLoci();
 		}
 	}
@@ -399,7 +399,7 @@ vector<int> Population::countNbHeterozygotesEachLocus() {
 
 	if (pSpecies->isDiploid()) {
 		for (Individual* ind : sampledInds) {
-			const auto trait = ind->getTrait(NEUTRAL);
+			const NeutralTrait* trait = (NeutralTrait*)ind->getTrait(NEUTRAL);
 			int counter = 0;
 			for (auto position : positions) {
 				hetero[counter] += trait->isHeterozygoteAtLocus(position);
@@ -1376,9 +1376,6 @@ void Population::survival0(short option0, short option1)
 		if ((ind.stage == 0 && option0 < 2) || (ind.stage > 0 && option0 > 0)) {
 			// condition for processing the stage is met...
 			if (ind.status < 6) { // not already doomed
-				if (ind.sex < sex_t::FEM || ind.sex > sex_t::MAL)
-					// ?? MSVC believes it's important to bound check ind.sex
-					throw runtime_error("Individual sex is out of bounds");
 				double probsurv = surv[ind.stage][ind.sex];
 				// does the individual survive?
 				if (pRandom->Bernoulli(probsurv)) { // survives

@@ -47,11 +47,6 @@ public:
 
     virtual float getAlleleValueAtLocus(short chromosome, int position) const override;
     virtual float getDomCoefAtLocus(short chromosome, int position) const override;
-    virtual int countHeterozygoteLoci() const;
-    virtual bool isHeterozygoteAtLocus(int locus) const override;
-#ifndef NDEBUG // for testing only
-    int getAlleleIDAtLocus(short whichChromosome, int position) const;
-#endif
 
 private:
 
@@ -65,7 +60,7 @@ private:
     void initialise();
 
     // Mutation
-    float scaledDomMeanSelCoeff; // s_d, only for scaled dominance distribution
+    float scaledDomMeanSelCoeff = 0; // s_d, only for scaled dominance distribution
     float drawDominance(float);
     float drawSelectionCoef();
 

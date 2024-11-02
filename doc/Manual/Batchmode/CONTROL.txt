@@ -24,8 +24,68 @@ ANY ADDITIONAL LINES ARE NOT READ, AND CAN THEREFORE BE USED FOR COMMENTS
 
 Example RangeShifter v2.0 Control File for a patch-based model of a stage-structured population dispersing by the kernel transfer option
 
-Alternatives for non-structutred population / no variable traits:
+DOCUMENTATION
 
-StageStructFile	NULL
-GeneticsFile	NULL
+More detail can be found in Section 3.3 (Batch Mode) of the user manual
+
+Parameter		Values		Description
+
+BatchNum		≥ 0			Batch number, appears in all output file names
+
+PatchModel		0 / 1		0 = cell-based model, 1 = patch-based model
+
+Resolution		> 0			Landscape resolution (m)
+
+LandType		0 / 2 / 9	0 = imported raster map with unique habitat codes
+							2 = imported raster map with habitat quality
+							9 = create an artificial landscape for each replicate
+						
+MaxHabitats		> 0			Maximum number of habitats in the landscapes to be used;
+							must be >1 for LandType = 0
+							must be 1 for LandType = 2 or 9
+						
+SpeciesDist		0 / 1		Load initial species distribution? 0 = no, 1 = yes
+
+DistResolution	> 0			Resolution of the species distribution map (m)
+							must not be less than the Resolution parameter
+
+Reproduction	0 / 1 / 2	0 = asexual / only female model, 1 = sexual model (simple);
+							2 = sexual model (explicit mating system)
+
+RepSeasons		≥ 1			No. of reproductive seasons per year
+
+StageStruct		0 / 1		0 = no stage structure, 1 = stage-structured model
+
+Stages			> 1			No. of stages (incl. juveniles) if stage-structured
+
+Transfer		0 / 1 / 2	Transfer method: 0 = dispersal kernels,
+							1 = SMS (stochastic movement simulator),
+							2 = CRW (correlated random walk)
+
+ParameterFile		filename			Principal file for model parameters,
+										1 line per simulation, simulations must be numbered sequentially
+										includes habitat-dependent values for K (or 1/b)
+							
+LandFile			filename			Identifies the landscape(s) to be used for each simulation in the ParametersFile; format depends on LandType setting
+
+StageStructFile		filename/NULL		NULL if not stage-structured model (StageStruct= 0),
+										must have matching simulation nos. to those in ParametersFile 
+										1 line per simulation
+
+EmigrationFile		filename			Must have matching simulation nos. to those in ParametersFile
+										no. lines per simulation depends on model stage and sex structure
+
+TransferFile		filename			Must have matching simulation nos. to those in ParametersFile
+										no. lines per simulation depends on model stage and sex structure
+
+SettlementFile		filename			Must have matching simulation nos. to those in ParametersFile
+										no. lines per simulation depends on model stage and sex structure
+
+GeneticsFile 		filename/NULL		Required if any dispersal trait is made evolvable (IndVar fields in Emigration/Transfer/Settlement files).
+
+(v3.0) TraitsFile	filename/NULL		Required if any dispersal trait is made evolvable. 1 line per simulation; 
+										1 line per trait type per simulation.
+
+InitialisationFile	filename			Must have matching simulation nos. to those in ParametersFile.
+										1 line per simulation
 
