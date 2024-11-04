@@ -434,20 +434,16 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 	}
 }
 
-void Community::survival(short part, short option0, short option1)
+void Community::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv)
 {
-	if (part == 0) {
-		matrixPop->survival0(option0, option1);
-		for (auto pop : popns) {
-			pop->survival0(option0, option1);
-		}
+	matrixPop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
+	for (auto pop : popns) {
+		pop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
 	}
-	else {
-		matrixPop->survival1();
-		for (auto pop : popns) {
-			pop->survival1();
-		}
-	}
+}
+
+void Community::applySurvivalDevlpt() {
+	for (auto pop : popns) pop->applySurvivalDevlpt();
 }
 
 void Community::ageIncrement() {

@@ -92,18 +92,31 @@ public:
 	// their destination co-ordinates fall (executed for the matrix patch only)
 	void completeDispersal(Landscape* pLandscape, bool connect);
 
-	void survival(
-		short part,		//	0 = determine survival & development,
-						//	1 = apply survival changes to the population
-		short option0,	//	0 = stage 0 (juveniles) only
-						//	1 = all stages
-						//	2 = stage 1 and above (all non-juvs)
-		short option1	//	0 - development only (when survival is annual)
-						//	1 - development and survival
+	void drawSurvivalDevlpt(
+		bool resolveJuvs,
+		bool resolveAdults,
+		bool resolveDev,
+		bool resolveSurv
 	);
+	void applySurvivalDevlpt();
 	void ageIncrement();
 	int totalInds();
-	commStats getStats();
+	Population* findPop( // Find the population of a given species in a given patch
+		Species*, // pointer to Species
+		Patch*		// pointer to Patch
+	);
+	commStats getStats(void);
+	void createOccupancy(
+		int,	// no. of rows = (no. of years / interval) + 1
+		int		// no. of replicates
+	);
+	void updateOccupancy(
+		int,	// row = (no. of years / interval)
+		int		// replicate
+	);
+	void deleteOccupancy(
+		int		// no. of rows (as above)
+	);
 
 	void createOccupancy(int nbOutputRows, int nbReps);
 	void updateOccupancy(int whichRow, int replicate);
