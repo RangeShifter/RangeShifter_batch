@@ -184,16 +184,14 @@ public:
 #endif // RS_RCPP
 	// Determine survival and development and record in individual's status code
 	// Changes are NOT applied to the Population at this stage
-	void survival0(
-		float,	// local carrying capacity
-		short,	// option0:	0 - stage 0 (juveniles) only
-		//	  			1 - all stages
-		//					2 - stage 1 and above (all non-juveniles)
-		short 	// option1:	0 - development only (when survival is annual)
-						//	  	 		1 - development and survival
-						//	  	 		2 - survival only (when survival is annual)
+	void drawSurvivalDevlpt(
+		float localK,
+		bool resolveJuvs, 
+		bool resolveAdults,
+		bool resolveDev, 
+		bool resolveSurv
 	);
-	void survival1(void); // Apply survival changes to the population
+	void applySurvivalDevlpt(); // Apply survival changes to the population
 	void ageIncrement(void);
 	bool outPopHeaders( // Open population file and write header record
 		int,	// Landscape number (-999 to close the file)

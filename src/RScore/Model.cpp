@@ -424,10 +424,9 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				// reproduction
 				pComm->reproduction(yr);
 
-				if (dem.stageStruct) {
-					if (sstruct.survival == 0) { // at reproduction
-						pComm->survival(0, 2, 1); // survival of all non-juvenile stages
-					}
+				if (dem.stageStruct && sstruct.survival == 0) { // at reproduction
+					// Draw survival + devlpt for adults only
+					pComm->drawSurvivalDevlpt(false, true, true, true);
 				}
 
 				// Output and pop. visualisation AFTER reproduction
@@ -442,21 +441,14 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				pComm->dispersal(landIx);
 #endif // RS_RCPP
 
-				// survival part 0
-				if (dem.stageStruct) {
-					if (sstruct.survival == 0) { // at reproduction
-						pComm->survival(0, 0, 1); // survival of juveniles only
-					}
-					if (sstruct.survival == 1) { // between reproduction events
-						pComm->survival(0, 1, 1); // survival of all stages
-					}
-					if (sstruct.survival == 2) { // annually
-						pComm->survival(0, 1, 0); // development only of all stages
-					}
-				}
-				else { // non-structured population
-					pComm->survival(0, 1, 1);
-				}
+				// Draw survival and development
+				bool drawJuvs = true;
+				bool drawAdults = !dem.stageStruct 
+					|| sstruct.survival != 0; // else already resolved for adults
+				bool drawDevlpt = true;
+				bool drawSurvival = !dem.stageStruct 
+					|| sstruct.survival != 2; // else resolved at end of year
+				pComm->drawSurvivalDevlpt(drawJuvs, drawAdults, drawDevlpt, drawSurvival);
 
 				// output Individuals
 				if (sim.outInds && yr >= sim.outStartInd && yr % sim.outIntInd == 0)
@@ -485,7 +477,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				}
 
 				// Resolve survival and devlpt
-				pComm->survival(1, 0, 1);
+				pComm->applySurvivalDevlpt();
 
 			} // end of the generation loop
 
@@ -501,16 +493,17 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				&& yr >= sim.outStartConn && yr % sim.outIntConn == 0)
 				pLandscape->outConnect(rep, yr);
 
-			if (dem.stageStruct && sstruct.survival == 2) {  // annual survival - all stages
-				pComm->survival(0, 1, 2);
-				pComm->survival(1, 0, 1);
+			if (dem.stageStruct && sstruct.survival == 2) { 
+				// Draw survival for all stages
+				pComm->drawSurvivalDevlpt(true, true, false, true);
+				pComm->applySurvivalDevlpt();
 			}
 
 			if (dem.stageStruct) {
 				pComm->ageIncrement(); // increment age of all individuals
 				if (sim.outInds && yr >= sim.outStartInd && yr % sim.outIntInd == 0)
 					pComm->outInds(rep, yr, -1, -1); // list any individuals dying having reached maximum age
-				pComm->survival(1, 0, 1);					// delete any such individuals
+				pComm->applySurvivalDevlpt(); // delete any such individuals
 				totalInds = pComm->totalInds();
 				if (totalInds <= 0) { 
 					cout << "All populations went extinct." << endl;

@@ -117,15 +117,11 @@ public:
 		Landscape*,	// pointer to Landscape
 		bool				// TRUE to increment connectivity totals
 	);
-	void survival(
-		short,	// part:		0 = determine survival & development,
-		//		 			1 = apply survival changes to the population
-		short,	// option0:	0 = stage 0 (juveniles) only         )
-		//					1 = all stages                       ) used by part 0 only
-		//					2 = stage 1 and above (all non-juvs) )
-		short 	// option1:	0 - development only (when survival is annual)
-						//	  	 		1 - development and survival
+	void drawSurvivalDevlpt(
+		bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv
 	);
+
+	void applySurvivalDevlpt(); // apply survival changes to the population
 	void ageIncrement();
 
 	// Find the population of a given species in a given patch

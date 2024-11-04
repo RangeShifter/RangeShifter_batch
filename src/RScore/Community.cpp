@@ -440,12 +440,16 @@ void Community::dispersal(short landIx)
 	} while (ndispersers > 0);
 }
 
-void Community::survival(short part, short option0, short option1)
+void Community::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv)
 {
 	int nsubcomms = subComms.size();
 	for (int i = 0; i < nsubcomms; i++) { // all communities (including in matrix)
-		subComms[i]->survival(part, option0, option1);
+		subComms[i]->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
 	}
+}
+
+void Community::applySurvivalDevlpt() {
+	for (auto subcomm : subComms) subcomm->applySurvivalDevlpt();
 }
 
 void Community::ageIncrement(void) {

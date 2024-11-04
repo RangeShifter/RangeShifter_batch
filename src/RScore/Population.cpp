@@ -1325,15 +1325,11 @@ bool Population::matePresent(Cell* pCell, short othersex)
 // FOR MULTIPLE SPECIES, MAY NEED TO SEPARATE OUT THIS IDENTIFICATION STAGE,
 // SO THAT IT CAN BE PERFORMED FOR ALL SPECIES BEFORE ANY UPDATING OF POPULATIONS
 
-void Population::survival0(float localK, short option0, short option1)
+void Population::drawSurvivalDevlpt(float localK, bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv)
 {
 	// option0:	0 - stage 0 (juveniles) only
 	//			1 - all stages
 	//			2 - stage 1 and above (all non-juveniles)
-	// 
-	// option1:	0 - development only (when survival is annual)
-	//	  	 	1 - development and survival
-	//	  	 	2 - survival only (when survival is annual)
 	densDepParams ddparams = pSpecies->getDensDep();
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
@@ -1350,113 +1346,115 @@ void Population::survival0(float localK, short option0, short option1)
 
 	for (int stg = 0; stg < sstruct.nStages; stg++) {
 		for (int sex = 0; sex < nsexes; sex++) {
+
 			if (dem.stageStruct) {
-				if (dem.repType == 1) { // simple sexual model
-					// both sexes use development and survival recorded for females
-					dev[stg][sex] = pSpecies->getDev(stg, 0);
-					surv[stg][sex] = pSpecies->getSurv(stg, 0);
-					minAge[stg][sex] = pSpecies->getMinAge(stg, 0);
-				}
-				else {
-					dev[stg][sex] = pSpecies->getDev(stg, sex);
-					surv[stg][sex] = pSpecies->getSurv(stg, sex);
-					minAge[stg][sex] = pSpecies->getMinAge(stg, sex);
-				}
-				if (option1 == 0) surv[stg][sex] = 1.0; // development only - all survive
-				if (option1 == 2) dev[stg][sex] = 0.0;  // survival only - none develops
+				int sexId = dem.repType == 1 ? 0 : sex; // if simple sexual, both sexes use female parameters
+				dev[stg][sex] = resolveDev ? pSpecies->getDev(stg, sexId) : 0.0;
+				surv[stg][sex] = resolveSurv ? pSpecies->getSurv(stg, sexId) : 1.0;
+				minAge[stg][sex] = pSpecies->getMinAge(stg, sexId);
 			}
 			else { // non-structured population
-				if (stg == 1) { // adults
-					dev[stg][sex] = 0.0; surv[stg][sex] = 0.0; minAge[stg][sex] = 0;
-				}
-				else { // juveniles
-					dev[stg][sex] = 1.0; surv[stg][sex] = 1.0; minAge[stg][sex] = 0;
-				}
+				// all juveniles survive and develop, all adults die
+				dev[stg][sex] = stg == 0 ? 1.0 : 0.0;
+				surv[stg][sex] = stg == 0 ? 1.0 : 0.0;
+				minAge[stg][sex] = 0;
 			}
 		}
 	}
-	if (dem.stageStruct) {
+
+	if (dem.stageStruct && localK > 0.0) {
+
 		for (int stg = 0; stg < nStages; stg++) {
 			for (int sex = 0; sex < nsexes; sex++) {
-				if (option1 != 2 && sstruct.devDens && stg > 0) {
+
+				// Calculate development density-dependence
+				if (resolveDev && sstruct.devDens && stg > 0) {
 				// NB DD in development does NOT apply to juveniles,
-					float effect = 0.0;
+					float density = 0.0;
+
 					if (sstruct.devStageDens) { // stage-specific density dependence
 						// NOTE: matrix entries represent effect of ROW on COLUMN 
 						// AND males precede females
 						float weight = 0.0;
-						for (int effstg = 0; effstg < nStages; effstg++) {
-							for (int effsex = 0; effsex < nSexes; effsex++) {
+
+						for (int effStg = 0; effStg < nStages; effStg++) {
+							for (int effSex = 0; effSex < nSexes; effSex++) {
+
 								if (dem.repType == 2) {
-									int rowincr, colincr;
-									if (effsex == 0) rowincr = 1; else rowincr = 0;
-									if (sex == 0) colincr = 1; else colincr = 0;
-									weight = pSpecies->getDDwtDev(2 * stg + colincr, 2 * effstg + rowincr);
+									int rowIncr = effSex == 0 ? 1 : 0;
+									int colIncr = sex == 0 ? 1 : 0;
+									weight = pSpecies->getDDwtDev(2 * stg + colIncr, 2 * effStg + rowIncr);
 								}
 								else {
-									weight = pSpecies->getDDwtDev(stg, effstg);
+									weight = pSpecies->getDDwtDev(stg, effStg);
 								}
-								effect += (float)nInds[effstg][effsex] * weight;
+								density += nInds[effStg][effSex] * weight;
+
 							}
 						}
 					}
-					else // not stage-specific
-						effect = (float)totalPop();
-					if (localK > 0.0)
-						dev[stg][sex] *= exp(-(ddparams.devCoeff * effect) / localK);
-				} // end of if (sstruct.devDens && stg > 0)
-				if (option1 != 0 && sstruct.survDens) {
+					else density = totalPop(); // no stage-dependence
 
-					float effect = 0.0;
+					dev[stg][sex] *= exp(-(ddparams.devCoeff * density) / localK);
+
+				}
+
+				// Calculate survival density-dependence
+				if (resolveSurv && sstruct.survDens) {
+					float density = 0.0;
+
 					if (sstruct.survStageDens) { // stage-specific density dependence
 						// NOTE: matrix entries represent effect of ROW on COLUMN 
 						// AND males precede females
 						float weight = 0.0;
-						for (int effstg = 0; effstg < nStages; effstg++) {
-							for (int effsex = 0; effsex < nSexes; effsex++) {
+						for (int effStg = 0; effStg < nStages; effStg++) {
+							for (int effSex = 0; effSex < nSexes; effSex++) {
 								if (dem.repType == 2) {
-									int rowincr, colincr;
-									if (effsex == 0) rowincr = 1; else rowincr = 0;
-									if (sex == 0) colincr = 1; else colincr = 0;
-									weight = pSpecies->getDDwtSurv(2 * stg + colincr, 2 * effstg + rowincr);
+									int rowIncr = effSex == 0 ? 1 : 0;
+									int colIncr = sex == 0 ? 1 : 0;
+									weight = pSpecies->getDDwtSurv(2 * stg + colIncr, 2 * effStg + rowIncr);
 								}
 								else {
-									weight = pSpecies->getDDwtSurv(stg, effstg);
+									weight = pSpecies->getDDwtSurv(stg, effStg);
 								}
-								effect += (float)nInds[effstg][effsex] * weight;
+								density += nInds[effStg][effSex] * weight;
 							}
 						}
 					}
 					else // not stage-specific
-						effect = (float)totalPop();
-					if (localK > 0.0)
-						surv[stg][sex] *= exp(-(ddparams.survCoeff * effect) / localK);
-				} // end of if (sstruct.survDens)
-			}
-		}
-	}
-	// identify which individuals die or develop
+						density = totalPop();
+					
+					surv[stg][sex] *= exp(-(ddparams.survCoeff * density) / localK);
+				}
+
+			} // sex loop
+		} // stage loop
+
+	} // if stage structure
+
+	// Draw survival and development
 	for (int i = 0; i < ninds; i++) {
 		indStats ind = inds[i]->getStats();
 
-		if ((ind.stage == 0 && option0 < 2) || (ind.stage > 0 && option0 > 0)) {
-			// condition for processing the stage is met...
-			if (ind.status < 6) { // not already doomed
-				double probsurv = surv[ind.stage][ind.sex];
-				// does the individual survive?
-				if (pRandom->Bernoulli(probsurv)) { // survives
-					// does the individual develop?
-					double probdev = dev[ind.stage][ind.sex];
-					if (ind.stage < nStages - 1) { // not final stage
-						if (ind.age >= minAge[ind.stage + 1][ind.sex]) { // old enough to enter next stage
-							if (pRandom->Bernoulli(probdev)) {
-								inds[i]->setToDevelop();
-							}
-						}
+		if ((ind.stage == 0 && resolveJuvs) 
+			|| (ind.stage > 0 && resolveAdults)
+			&& ind.status < 6 // not already dying
+			){ 
+
+			// Does the individual survive?
+			double probSurvives = surv[ind.stage][ind.sex];
+			if (!pRandom->Bernoulli(probSurvives)) {
+				inds[i]->setStatus(8); // doomed to die
+			}
+			else { 
+				// Does the individual develop?
+				double probDevelops = dev[ind.stage][ind.sex];
+				if (ind.stage < nStages - 1 // not final stage
+					&& ind.age >= minAge[ind.stage + 1][ind.sex] // old enough
+					) {
+					if (pRandom->Bernoulli(probDevelops)) {
+						inds[i]->setToDevelop();
 					}
-				}
-				else { // doomed to die
-					inds[i]->setStatus(8);
 				}
 			}
 		}
@@ -1464,16 +1462,14 @@ void Population::survival0(float localK, short option0, short option1)
 }
 
 // Apply survival changes to the population
-void Population::survival1(void)
+void Population::applySurvivalDevlpt()
 {
-	int ninds = (int)inds.size();
-
+	int ninds = inds.size();
 	for (int i = 0; i < ninds; i++) {
 		indStats ind = inds[i]->getStats();
 
 		if (ind.status > 5) { // doomed to die
-			if (ind.status != 10) //not going into cold storage
-				delete inds[i];
+			delete inds[i];
 			inds[i] = NULL;
 			nInds[ind.stage][ind.sex]--;
 		}

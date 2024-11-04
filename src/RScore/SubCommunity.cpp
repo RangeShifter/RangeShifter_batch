@@ -415,21 +415,18 @@ void SubCommunity::completeDispersal(Landscape* pLandscape, bool connect)
 
 //---------------------------------------------------------------------------
 
-void SubCommunity::survival(short part, short option0, short option1)
+void SubCommunity::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv)
 {
 	int npops = (int)popns.size();
 	if (npops < 1) return;
-	if (part == 0) {
-		float localK = pPatch->getK();
-		for (int i = 0; i < npops; i++) { // all populations
-			popns[i]->survival0(localK, option0, option1);
-		}
+	float localK = pPatch->getK();
+	for (int i = 0; i < npops; i++) { // all populations
+		popns[i]->drawSurvivalDevlpt(localK, resolveJuvs, resolveAdults, resolveDev, resolveSurv);
 	}
-	else {
-		for (int i = 0; i < npops; i++) { // all populations
-			popns[i]->survival1();
-		}
-	}
+}
+
+void SubCommunity::applySurvivalDevlpt() {
+	for (auto pop : popns) pop->applySurvivalDevlpt();
 }
 
 void SubCommunity::ageIncrement(void) {
