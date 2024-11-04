@@ -40,7 +40,7 @@ Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short rep
 	if (probmale <= 0.0) sex = FEM;
 	else sex = pRandom->Bernoulli(probmale) ? MAL : FEM;
 	age = a;
-	status = 0;
+	status = indStatus::initial;
 
 	if (sex == 0 && repInt > 0) { // set no. of fallow seasons for female
 		fallow = pRandom->IRandom(0, repInt);
@@ -297,19 +297,22 @@ void Individual::inheritTraits(Species* pSpecies, Individual* mother, int resol)
 
 // Identify whether an individual is a potentially breeding female -
 // if so, return her stage, otherwise return 0
-int Individual::breedingFem(void) {
+int Individual::breedingFem() {
 	if (sex == FEM) {
-		if (status == 0 || status == 4 || status == 5) return stage;
+		if (status == initial 
+			|| status == settled 
+			|| status == settledNeighbour) 
+			return stage;
 		else return 0;
 	}
 	else return 0;
 }
 
-int Individual::getId(void) { return indId; }
+int Individual::getId() { return indId; }
 
-sex_t Individual::getSex(void) { return sex; }
+sex_t Individual::getSex() { return sex; }
 
-int Individual::getStatus(void) { return status; }
+indStatus Individual::getStatus(void) { return status; }
 
 float Individual::getGeneticFitness(void) { return geneticFitness; }
 
@@ -318,9 +321,13 @@ bool Individual::isViable() const {
 	return probViability >= pRandom->Random();
 }
 
-indStats Individual::getStats(void) {
+indStats Individual::getStats() {
 	indStats s;
-	s.stage = stage; s.sex = sex; s.age = age; s.status = status; s.fallow = fallow;
+	s.stage = stage; 
+	s.sex = sex; 
+	s.age = age; 
+	s.status = status; 
+	s.fallow = fallow;
 	s.isDeveloping = isDeveloping;
 	return s;
 }
@@ -595,8 +602,7 @@ settleTraits Individual::getIndSettTraits(void) {
 }
 
 
-void Individual::setStatus(short s) {
-	if (s >= 0 && s <= 9) status = s;
+void Individual::setStatus(indStatus s) {
 	status = s;
 }
 
@@ -609,31 +615,33 @@ void Individual::develop(void) {
 }
 
 void Individual::ageIncrement(short maxage) {
-	if (status < 6) { // alive
+	if (isAlive(status)) {
 		age++;
-		if (age > maxage) status = 9;			// exceeds max. age - dies
+		if (age > maxage) status = diedOldAge; // exceeds max. age - dies
 		else {
-			if (path != 0) path->year = 0;	// reset annual step count for movement models
-			if (status == 3) // waiting to continue dispersal
-				status = 1;
+			if (path != nullptr) path->year = 0;	// reset annual step count for movement models
+			if (status == waitNextDispersal)
+				status = dispersing;
 		}
 	}
 }
 
-void Individual::incFallow(void) { fallow++; }
+void Individual::incFallow() { fallow++; }
 
-void Individual::resetFallow(void) { fallow = 0; }
+void Individual::resetFallow() { fallow = 0; }
 
 //---------------------------------------------------------------------------
 // Move to a specified neighbouring cell
-void Individual::moveto(Cell* newCell) {
-	// check that location is indeed a neighbour of the current cell
+void Individual::moveTo(Cell* newCell) {
+
+	// Check that location is indeed a neighbour of the current cell
 	locn currloc = pCurrCell->getLocn();
 	locn newloc = newCell->getLocn();
-	double d = sqrt(((double)currloc.x - (double)newloc.x) * ((double)currloc.x - (double)newloc.x)
-		+ ((double)currloc.y - (double)newloc.y) * ((double)currloc.y - (double)newloc.y));
-	if (d >= 1.0 && d < 1.5) { // ok
-		pCurrCell = newCell; status = 5;
+	double distance = sqrt((currloc.x - newloc.x) * (currloc.x - newloc.x)
+		+ (currloc.y - newloc.y) * (currloc.y - newloc.y));
+	if (distance >= 1.0 && distance < 1.5) { // ok
+		pCurrCell = newCell; 
+		status = settledNeighbour;
 	}
 }
 
@@ -718,7 +726,7 @@ bool Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool
 				// and the (single) kernel mean is (not much more than) the cell size, an infinite
 				// loop could otherwise result, as the individual never reaches the patch edge
 				// (in a cell-based model, this has no effect, other than as a processing overhead)
-				if (status == 1) {
+				if (status == dispersing) {
 					pCell = pNatalPatch->getRandomCell();
 					if (pCell != 0) {
 						loc = pCell->getLocn();
@@ -786,7 +794,7 @@ bool Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool
 		if (pCell == 0) { // beyond absorbing boundary or in no-data cell
 			// only if absorbing=true and out of bounddaries
 			pCurrCell = 0;
-			status = 6;
+			status = diedInTransfer;
 			isDispersing = false;
 		}
 		else {
@@ -794,7 +802,7 @@ bool Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool
 			if (pPatch == 0) localK = 0.0; // matrix
 			else localK = pPatch->getK();
 			if (patchNum > 0 && localK > 0.0) { // found a new patch
-				status = 2; // record as potential settler
+				status = waitSettlement; // record as potential settler
 			}
 			else {
 				// unsuitable patch
@@ -803,23 +811,23 @@ bool Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool
 				if (pSpecies->stageStructured()) {
 					// ... and wait option is applied ...
 					if (sett.wait) { // ... it is
-						status = 3; // waiting
+						status = waitNextDispersal; // waiting
 					}
 					else // ... it is not
-						status = 6; // dies (unless there is a suitable neighbouring cell)
+						status = diedInTransfer; // dies (unless there is a suitable neighbouring cell)
 				}
-				else status = 6; // dies (unless there is a suitable neighbouring cell)
+				else status = diedInTransfer; // dies (unless there is a suitable neighbouring cell)
 			}
 		}
 	}
 	else { // exceeded 1000 attempts
-		status = 6;
+		status = diedInTransfer;
 		isDispersing = false;
 	}
 
 	// apply dispersal-related mortality, which may be distance-dependent
 	dist *= (float)land.resol; // re-scale distance moved to landscape scale
-	if (status < 7) {
+	if (isAlive(status) || status == diedInTransfer) {
 		double dispmort;
 		trfrMortParams mort = pSpecies->getMortParams();
 		if (trfr.distMort) {
@@ -829,7 +837,7 @@ bool Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool
 			dispmort = mort.fixedMort;
 		}
 		if (pRandom->Bernoulli(dispmort)) {
-			status = 7; // dies
+			status = diedInTrfrMort;
 			isDispersing = false;
 		}
 	}
@@ -840,16 +848,16 @@ bool Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool
 //---------------------------------------------------------------------------
 // Make a single movement step according to a mechanistic movement model
 // Returns 1 if still dispersing (including having found a potential patch), otherwise 0
-int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
+bool Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 	const short landIx, const bool absorbing)
 {
-	if (status != 1) return 0; // not currently dispersing
+	if (status != dispersing) return false; // not currently dispersing
 
 	Patch* patch;
 	int patchNum;
 	int newX, newY;
 	locn loc;
-	int dispersing = 1;
+	bool isDispersing = true;
 	double xcnew, ycnew;
 	double angle;
 	double mortprob, rho, steplen;
@@ -890,8 +898,8 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 		mortprob = 0.0;
 	}
 	if (pRandom->Bernoulli(mortprob)) { // individual dies
-		status = 7;
-		dispersing = 0;
+		status = diedInTrfrMort;
+		isDispersing = false;
 	}
 	else { // take a step
 		(path->year)++;
@@ -912,8 +920,8 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 				// either INTERNAL ERROR CONDITION - INDIVIDUAL IS IN NO-DATA SQUARE
 				// or individual has crossed absorbing boundary ...
 				// ... individual dies
-				status = 6;
-				dispersing = 0;
+				status = diedInTransfer;
+				isDispersing = false;
 			}
 			else {
 
@@ -989,17 +997,17 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 			pCRW.prevdrn = (float)angle;
 			pCRW.xc = (float)xcnew; pCRW.yc = (float)ycnew;
 			if (absorbed) { // beyond absorbing boundary or in no-data square
-				status = 6;
-				dispersing = 0;
-				pCurrCell = 0;
+				status = diedInTransfer;
+				isDispersing = false;
+				pCurrCell = nullptr;
 			}
 			else {
 				if (loopsteps >= 1000) { // unable to make a move
 					// INTERNAL ERROR CONDITION - INDIVIDUAL IS IN NO-DATA SQUARE
 					// NEED TO TAKE SOME FORM OF INFORMATIVE ACTION ...
 					// ... individual dies as it cannot move
-					status = 6;
-					dispersing = 0;
+					status = diedInTransfer;
+					isDispersing = false;
 					// current cell will be invalid (zero), so set back to previous cell
 					pCurrCell = pPrevCell;
 				}
@@ -1016,22 +1024,22 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 				// determine whether the new patch is potentially suitable
 				if (pPatch->getK() > 0.0)
 				{ // patch is suitable
-					status = 2;
+					status = waitSettlement;
 				}
 			}
 		}
-		if (status != 2 && status != 6) { // suitable patch not found, not already dead
+		if (status != waitSettlement && status != diedInTransfer) { // suitable patch not found, not already dead
 			if (path->year >= settsteps.maxStepsYr) {
-				status = 3; // waits until next year
+				status = waitNextDispersal; // waits until next year
 			}
 			if (path->total >= settsteps.maxSteps) {
-				status = 6; // dies
-				dispersing = 0;
+				status = diedInTransfer; // dies
+				isDispersing = false;
 			}
 		}
 	} // end of single movement step
 
-	return dispersing;
+	return isDispersing;
 }
 
 //---------------------------------------------------------------------------
@@ -1527,7 +1535,7 @@ void Individual::outMovePath(const int year)
 	//if (pPatch != pNatalPatch) {
 	loc = pCurrCell->getLocn();
 	// if still dispersing...
-	if (status == 1) {
+	if (status == dispersing) {
 		// at first step, record start cell first
 		if (path->total == 1) {
 			prev_loc = pPrevCell->getLocn();
@@ -1539,11 +1547,11 @@ void Individual::outMovePath(const int year)
 		// then record current step
 		outMovePaths << year << "\t" << indId << "\t"
 			<< path->total << "\t" << loc.x << "\t" << loc.y << "\t"
-			<< status << "\t"
+			<< to_string(status) << "\t"
 			<< endl;
 	}
 	// if not anymore dispersing...
-	if (status > 1 && status < 10) {
+	if (status != initial && status != dispersing) {
 		prev_loc = pPrevCell->getLocn();
 		// record only if this is the first step as non-disperser
 		if (path->pathoutput) {
@@ -1556,7 +1564,7 @@ void Individual::outMovePath(const int year)
 			}
 			outMovePaths << year << "\t" << indId << "\t"
 				<< path->total << "\t" << loc.x << "\t" << loc.y << "\t"
-				<< status << "\t"
+				<< to_string(status) << "\t"
 				<< endl;
 			// current cell will be invalid (zero), so set back to previous cell
 			//pPrevCell = pCurrCell;

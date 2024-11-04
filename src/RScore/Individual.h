@@ -60,8 +60,51 @@ using namespace std;
 
 //---------------------------------------------------------------------------
 
+enum indStatus {
+	initial,			// 0 = initial status in natal patch / philopatric recruit
+	dispersing,			// 1 = disperser
+	waitSettlement,		// 2 = disperser awaiting settlement in possible suitable patch
+	waitNextDispersal,	// 3 = waiting between dispersal events
+	settled,			// 4 = completed settlement
+	settledNeighbour,	// 5 = completed settlement in a suitable neighbouring cell
+	diedInTransfer,		// 6 = died during transfer by failing to find a suitable patch
+						//		(includes exceeding maximum number of steps or crossing
+						//		absorbing boundary)
+	diedInTrfrMort,		// 7 = died during transfer by constant, step-dependent,
+						//		habitat-dependent or distance-dependent mortality
+	diedDemogrMort,		// 8 = failed to survive annual (demographic) mortality
+	diedOldAge			// 9 = exceeded maximum age
+};
+
+bool isAlive(indStatus s) {
+	return (s != diedInTransfer 
+		&& s != diedInTrfrMort 
+		&& s != diedDemogrMort 
+		&& s!= diedOldAge);
+}
+
+string to_string(indStatus s) {
+	switch (s) {
+	case initial: return "initial";
+	case dispersing: return "dispersing";
+	case waitSettlement: return "waitSettlement";
+	case waitNextDispersal: return "waitNextDispersal";
+	case settled: return "settled";
+	case settledNeighbour: return "settledNeighbour";
+	case diedInTransfer: return "diedInTransfer";
+	case diedInTrfrMort: return "diedInTrfrMort";
+	case diedDemogrMort: return "diedDemogrMort";
+	case diedOldAge: return "diedOldAge";
+	default: return "";
+	}
+}
+
 struct indStats {
-	short stage; sex_t sex; short age; short status; short fallow;
+	short stage; 
+	sex_t sex;
+	short age; 
+	indStatus status; 
+	short fallow;
 	bool isDeveloping;
 };
 struct pathData { // to hold path data common to SMS and CRW models
@@ -264,7 +307,7 @@ public:
 	int breedingFem(void);
 	int getId(void);
 	sex_t getSex(void);
-	int getStatus(void);
+	indStatus getStatus();
 	float getGeneticFitness(void);
 	bool isViable() const;
 	indStats getStats(void);
@@ -276,7 +319,7 @@ public:
 	pathSteps getSteps(void);
 	settlePatch getSettPatch(void);
 	void setSettPatch(const settlePatch);
-	void setStatus(short);
+	void setStatus(indStatus s);
 	void setToDevelop(void);
 	void develop(void);
 	void ageIncrement( // Age by one year
@@ -284,7 +327,7 @@ public:
 	);
 	void incFallow(void); // Inrement no. of reproductive seasons since last reproduction
 	void resetFallow(void);
-	void moveto( // Move to a specified neighbouring cell
+	void moveTo( // Move to a specified neighbouring cell
 		Cell*	// pointer to the new cell
 	);
 	// Move to a new cell by sampling a dispersal distance from a single or double
@@ -297,7 +340,7 @@ public:
 	);
 	// Make a single movement step according to a mechanistic movement model
 	// Returns 1 if still dispersing (including having found a potential patch), otherwise 0
-	int moveStep(
+	bool moveStep(
 		Landscape*,		// pointer to Landscape
 		Species*,			// pointer to Species
 		const short,	// landscape change index
@@ -360,20 +403,7 @@ private:
 	short stage;
 	sex_t sex;
 	short age;
-	short status;	
-		// 0 = initial status in natal patch / philopatric recruit
-		// 1 = disperser
-		// 2 = disperser awaiting settlement in possible suitable patch
-		// 3 = waiting between dispersal events
-		// 4 = completed settlement
-		// 5 = completed settlement in a suitable neighbouring cell
-		// 6 = died during transfer by failing to find a suitable patch
-		//	(includes exceeding maximum number of steps or crossing
-		//	absorbing boundary)
-		// 7 = died during transfer by constant, step-dependent,
-		//	habitat-dependent or distance-dependent mortality
-		// 8 = failed to survive annual (demographic) mortality
-		// 9 = exceeded maximum age
+	indStatus status;	
 	short fallow; // reproductive seasons since last reproduction
 	bool isDeveloping;
 	Cell* pPrevCell;	// pointer to previous Cell

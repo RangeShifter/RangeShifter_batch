@@ -924,7 +924,7 @@ void Population::emigration(float localK)
 
 	for (int i = 0; i < ninds; i++) {
 		ind = inds[i]->getStats();
-		if (ind.status < 1) {
+		if (ind.status == initial) {
 			if (emig.indVar) { // individual variability in emigration
 				if (dem.stageStruct && ind.stage != emig.emigStage) {
 					// emigration may not occur
@@ -989,17 +989,17 @@ void Population::emigration(float localK)
 			disp = pRandom->Bernoulli(pbDisp);
 
 			if (disp == 1) { // emigrant
-				inds[i]->setStatus(1);
+				inds[i]->setStatus(dispersing);
 			}
-		} // end of if (ind.status < 1) condition
+		} // end of if (ind.status == initial) condition
 	} // end of for loop
 }
 
 // All individuals emigrate after patch destruction
-void Population::allEmigrate(void) {
-	int ninds = (int)inds.size();
+void Population::allEmigrate() {
+	int ninds = inds.size();
 	for (int i = 0; i < ninds; i++) {
-		inds[i]->setStatus(1);
+		inds[i]->setStatus(dispersing);
 	}
 }
 
@@ -1030,7 +1030,7 @@ disperser Population::extractSettler(int ix) {
 	indStats ind = inds[ix]->getStats();
 	pCell = inds[ix]->getLocn(1);
 	d.pInd = inds[ix];  d.pCell = pCell; d.yes = false;
-	if (ind.status == 4 || ind.status == 5) { // settled
+	if (ind.status == settled || ind.status == settledNeighbour) {
 		d.yes = true;
 		inds[ix] = 0;
 		nInds[ind.stage][ind.sex]--;
@@ -1095,7 +1095,7 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 		// Record potential settlers to each patch
 		if (isDispersing
 			&& reptype > 0 // always settle if asexual 
-			&& inds[i]->getStatus() == 2 // disperser has found a patch
+			&& inds[i]->getStatus() == waitSettlement // disperser has found a patch
 			) {
 			pCell = inds[i]->getLocn(1);
 			pPatch = pCell->getPatch();
@@ -1112,7 +1112,7 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 		short sexId = settletype.sexDep ? ind.sex : 0;
 		sett = pSpecies->getSettRules(stgId, sexId);
 
-		if (ind.status == 2) { // awaiting settlement
+		if (ind.status == waitSettlement) { // awaiting settlement
 			pCell = inds[i]->getLocn(1);
 			if (pCell == nullptr) {
 				// this condition can occur in a patch-based model at the time of a dynamic landscape
@@ -1120,7 +1120,7 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 				// range restriction and an individual forced to disperse upon patch removal could
 				// start its trajectory beyond the boundary of the restrictyed range - such a model is 
 				// not good practice, but the condition must be handled by killing the individual conceerned
-				ind.status = 6;
+				ind.status = diedInTransfer;
 			}
 			else {
 				// Check for reqt of potential mate present, if applicable
@@ -1181,24 +1181,23 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 
 				// Update individual status
 				if (mateOK && densdepOK) { // can recruit to patch
-					ind.status = 4;
+					ind.status = settled;
 					nbDispersers--;
 				} else { // does not recruit
 					if (trfr.usesMovtProc) {
-						ind.status = 1; // continue dispersing, unless ...
+						ind.status = dispersing; // continue dispersing, unless ...
 						// ... maximum steps has been exceeded
 						pathSteps steps = inds[i]->getSteps();
 						settleSteps settsteps = pSpecies->getSteps(ind.stage, ind.sex);
 						if (steps.year >= settsteps.maxStepsYr) {
-							ind.status = 3; // waits until next year
+							ind.status = waitNextDispersal;
 						}
 						if (steps.total >= settsteps.maxSteps) {
-							ind.status = 6; // dies
+							ind.status = diedInTransfer;
 						}
 					}
 					else { // dispersal kernel
-						// Waits until next dispersal event if allowed
-						ind.status = sett.wait ? 3 : 6;
+						ind.status = sett.wait ? waitNextDispersal : diedInTransfer;
 						nbDispersers--;
 					}
 				}
@@ -1218,7 +1217,7 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 		// Determine whether move to neighbouring cell is possible
 		if (!trfr.usesMovtProc // kernel only
 			&& sett.goToNeighbourLocn 
-			&& (ind.status == 3 || ind.status == 6)) {
+			&& (ind.status == waitNextDispersal || ind.status == diedInTransfer)) {
 
 			pCell = inds[i]->getLocn(1);
 			newloc = pCell->getLocn();
@@ -1265,7 +1264,7 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 			if (neighbourCells.size() > 0) {
 				Cell* destCell = nullptr;
 				sample(neighbourCells.begin(), neighbourCells.end(), destCell, 1, pRandom->getRNG());
-				inds[i]->moveto(destCell);
+				inds[i]->moveTo(destCell);
 			}
 		}
 
@@ -1421,13 +1420,13 @@ void Population::drawSurvivalDevlpt(float localK, bool resolveJuvs, bool resolve
 
 		if ((ind.stage == 0 && resolveJuvs) 
 			|| (ind.stage > 0 && resolveAdults)
-			&& ind.status < 6 // not already dying
+			&& isAlive(ind.status)
 			){ 
 
 			// Does the individual survive?
 			double probSurvives = surv[ind.stage][ind.sex];
 			if (!pRandom->Bernoulli(probSurvives)) {
-				inds[i]->setStatus(8); // doomed to die
+				inds[i]->setStatus(diedDemogrMort); // doomed to die
 			}
 			else { 
 				// Does the individual develop?
@@ -1451,7 +1450,7 @@ void Population::applySurvivalDevlpt()
 	for (int i = 0; i < ninds; i++) {
 		indStats ind = inds[i]->getStats();
 
-		if (ind.status > 5) { // doomed to die
+		if (!isAlive(ind.status)) {
 			delete inds[i];
 			inds[i] = NULL;
 			nInds[ind.stage][ind.sex]--;
@@ -1697,8 +1696,8 @@ void Population::outIndividual(Landscape* pLandscape, int rep, int yr, int gen,
 			outInds << rep << "\t" << yr << "\t" << dem.repSeasons - 1;
 		}
 		else {
-			if (dem.stageStruct && gen < 0) { // write status 9 individuals only
-				if (ind.status == 9) {
+			if (dem.stageStruct && gen < 0) { // write dying old age individuals only
+				if (ind.status == diedOldAge) {
 					writeInd = true;
 					outInds << rep << "\t" << yr << "\t" << dem.repSeasons - 1;
 				}
@@ -1711,9 +1710,9 @@ void Population::outIndividual(Landscape* pLandscape, int rep, int yr, int gen,
 		}
 		if (writeInd) {
 			outInds << "\t" << spNum << "\t" << inds[i]->getId();
-			if (dem.stageStruct) outInds << "\t" << ind.status;
+			if (dem.stageStruct) outInds << "\t" << to_string(ind.status);
 			else { // non-structured population
-				outInds << "\t" << ind.status;
+				outInds << "\t" << to_string(ind.status);
 			}
 			pCell = inds[i]->getLocn(1);
 			locn loc = locn();
