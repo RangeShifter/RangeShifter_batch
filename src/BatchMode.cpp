@@ -6116,19 +6116,19 @@ int ReadSettlement()
 			switch (inSettleType) {
 			case 0:
 				srules.wait = false;
-				srules.go2nbrLocn = false;
+				srules.goToNeighbourLocn = false;
 				break;
 			case 1:
 				srules.wait = true;
-				srules.go2nbrLocn = false;
+				srules.goToNeighbourLocn = false;
 				break;
 			case 2:
 				srules.wait = false;
-				srules.go2nbrLocn = true;
+				srules.goToNeighbourLocn = true;
 				break;
 			case 3:
 				srules.wait = true;
-				srules.go2nbrLocn = true;
+				srules.goToNeighbourLocn = true;
 				break;
 			}
 			srules.findMate = mustFindMate;

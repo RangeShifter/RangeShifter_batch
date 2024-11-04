@@ -80,7 +80,8 @@ struct pathSteps { // nos. of steps for movement model
 	int year, total, out;
 };
 struct settlePatch {
-	Patch* pSettPatch; short settleStatus;
+	Patch* pSettPatch; 
+	short settleStatus;
 };
 
 struct trfrData {
@@ -289,7 +290,7 @@ public:
 	// Move to a new cell by sampling a dispersal distance from a single or double
 	// negative exponential kernel
 	// Returns 1 if still dispersing (including having found a potential patch), otherwise 0
-	int moveKernel(
+	bool moveKernel(
 		Landscape*,		// pointer to Landscape
 		Species*,			// pointer to Species
 		const bool    // absorbing boundaries?

@@ -1509,7 +1509,7 @@ void OutParameters(Landscape* pLandscape)
 					if (!sett.stgDep) outPar << notsuit;
 				}
 				srules = pSpecies->getSettRules(i, sx);
-				if (srules.go2nbrLocn) {
+				if (srules.goToNeighbourLocn) {
 					outPar << rchoose;
 					if (srules.wait) outPar << "wait" << endl;
 					else outPar << "die" << endl;

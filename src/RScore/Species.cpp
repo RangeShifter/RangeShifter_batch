@@ -123,7 +123,7 @@ Species::Species(const short& repro, const short& nbRepSeasons, const bool& hasS
 		for (int j = 0; j < gMaxNbSexes; j++) {
 			densDepSett[i][j] = false; 
 			wait[i][j] = false; 
-			go2nbrLocn[i][j] = false; 
+			goToNeighbourLocn[i][j] = false; 
 			findMate[i][j] = false;
 			maxStepsYr[i][j] = 99999999; 	
 			minSteps[i][j] = 0; 
@@ -744,7 +744,7 @@ settleType Species::getSettle(void) {
 void Species::setSettRules(const short stg, const short sex, const settleRules s) {
 	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
 		densDepSett[stg][sex] = s.densDep; wait[stg][sex] = s.wait;
-		go2nbrLocn[stg][sex] = s.go2nbrLocn; findMate[stg][sex] = s.findMate;
+		goToNeighbourLocn[stg][sex] = s.goToNeighbourLocn; findMate[stg][sex] = s.findMate;
 	}
 }
 
@@ -752,11 +752,11 @@ settleRules Species::getSettRules(short stg, short sex) {
 	settleRules s;
 	s.densDep = false;
 	s.findMate = false;
-	s.go2nbrLocn = false;
+	s.goToNeighbourLocn = false;
 	s.wait = false;
 	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
 		s.densDep = densDepSett[stg][sex]; s.wait = wait[stg][sex];
-		s.go2nbrLocn = go2nbrLocn[stg][sex]; s.findMate = findMate[stg][sex];
+		s.goToNeighbourLocn = goToNeighbourLocn[stg][sex]; s.findMate = findMate[stg][sex];
 	}
 	return s;
 }

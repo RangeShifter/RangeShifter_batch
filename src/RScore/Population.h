@@ -166,7 +166,7 @@ public:
 	);
 	// Determine whether there is a potential mate present in a patch which a potential
 	// settler has reached
-	bool matePresent(
+	bool isMatePresent(
 		Cell*,	// pointer to the Cell which the potential settler has reached
 		short		// sex of the required mate (0 = female, 1 = male)
 	);
@@ -177,7 +177,7 @@ public:
 	);
 	// Determine whether there is a potential mate present in a patch which a potential
 	// settler has reached
-	bool matePresent(
+	bool isMatePresent(
 		Cell*,	// pointer to the Cell which the potential settler has reached
 		short		// sex of the required mate (0 = female, 1 = male)
 	);

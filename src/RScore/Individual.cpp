@@ -641,12 +641,12 @@ void Individual::moveto(Cell* newCell) {
 // Move to a new cell by sampling a dispersal distance from a single or double
 // negative exponential kernel
 // Returns 1 if still dispersing (including having found a potential patch), otherwise 0
-int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool absorbing)
+bool Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool absorbing)
 {
 	Patch* patch;
 	int patchNum = 0;
 	int newX = 0, newY = 0;
-	int dispersing = 1;
+	bool isDispersing = true;
 	double xrand, yrand, meandist, dist, r1, rndangle, nx, ny;
 	float localK;
 	trfrKernelParams kern;
@@ -787,7 +787,7 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool 
 			// only if absorbing=true and out of bounddaries
 			pCurrCell = 0;
 			status = 6;
-			dispersing = 0;
+			isDispersing = false;
 		}
 		else {
 			pCurrCell = pCell;
@@ -798,7 +798,7 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool 
 			}
 			else {
 				// unsuitable patch
-				dispersing = 0;
+				isDispersing = false;
 				// can wait in matrix if population is stage structured ...
 				if (pSpecies->stageStructured()) {
 					// ... and wait option is applied ...
@@ -814,7 +814,7 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool 
 	}
 	else { // exceeded 1000 attempts
 		status = 6;
-		dispersing = 0;
+		isDispersing = false;
 	}
 
 	// apply dispersal-related mortality, which may be distance-dependent
@@ -830,11 +830,11 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool 
 		}
 		if (pRandom->Bernoulli(dispmort)) {
 			status = 7; // dies
-			dispersing = 0;
+			isDispersing = false;
 		}
 	}
 
-	return dispersing;
+	return isDispersing;
 }
 
 //---------------------------------------------------------------------------
