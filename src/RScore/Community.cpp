@@ -436,9 +436,11 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 
 void Community::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv)
 {
-	matrixPop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
+	float localK = matrixPop->getPatch()->getK();
+	matrixPop->drawSurvivalDevlpt(localK, resolveJuvs, resolveAdults, resolveDev, resolveSurv);
 	for (auto pop : popns) {
-		pop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
+		localK = pop->getPatch()->getK();
+		pop->drawSurvivalDevlpt(localK, resolveJuvs, resolveAdults, resolveDev, resolveSurv);
 	}
 }
 
@@ -480,7 +482,7 @@ void Community::createOccupancy(int nbOutputRows, int nbReps) {
 
 void Community::updateOccupancy(int whichRow, int rep)
 {
-	matrixPop->updateOccupancy(whichRow);
+	matrixPop->getPatch()->updateOccupancy(whichRow);
 	for (auto pop : popns) {
 		pop->getPatch()->updateOccupancy(whichRow);
 	}
@@ -573,8 +575,7 @@ void Community::outPop(int rep, int yr, int gen)
 	if (matrixPop->totalPop() > 0) {
 		matrixPop->outPopulation(rep, yr, gen, env.local, eps, land.patchModel, writeEnv, gradK);
 	}
-	for (auto pop : popns) { // ignore the matrix?
-		int patchnum = pop->getPatch()->getPatchNum();
+	for (auto pop : popns) {
 		float localK = pop->getPatch()->getK();
 		if (localK > 0.0 || pop->totalPop() > 0) {
 			pop->outPopulation(rep, yr, gen, env.local, eps, land.patchModel, writeEnv, gradK);
@@ -778,7 +779,7 @@ void Community::outRange(Species* pSpecies, int rep, int yr, int gen)
 
 		int npops = popns.size();
 		for (int i = 0; i < npops; i++) { 
-			scts = popns[i]->outTraits(outtraits, false)
+			scts = popns[i]->outTraits(outtraits, false);
 			for (int j = 0; j < gMaxNbSexes; j++) {
 				ts.ninds[j] += scts.ninds[j];
 				ts.sumD0[j] += scts.sumD0[j];     ts.ssqD0[j] += scts.ssqD0[j];
@@ -1066,7 +1067,7 @@ void Community::outOccupancy() {
 			outoccup << pop->getPatch()->getPatchNum();
 		}
 		else {
-			loc = pop->getPatch->getCellLocn(0);
+			loc = pop->getPatch()->getCellLocn(0);
 			outoccup << loc.x << "\t" << loc.y;
 		}
 		for (int row = 0; row <= (sim.years / sim.outIntOcc); row++) {
@@ -1246,7 +1247,7 @@ void Community::outTraits(Species* pSpecies, int rep, int yr, int gen)
 			bool writefile = sim.outTraitsCells
 				&& yr % sim.outIntTraitCell == 0;
 			sctraits = pop->outTraits(outtraits, writefile);
-			locn loc = pop->getPatch()->getCellLocn();
+			locn loc = pop->getPatch()->getCellLocn(0);
 			int y = loc.y;
 			if (sim.outTraitsRows 
 				&& yr >= sim.outStartTraitRow 

@@ -61,36 +61,15 @@ using namespace std::filesystem;
 #endif
 
 #if RS_RCPP && !R_CMD
-Rcpp::List RunModel(
-	Landscape*,	// pointer to Landscape
-	int					// sequential simulation number
-);
+Rcpp::List int RunModel(Landscape* pLandscape, int seqsim);
 #else
-int RunModel(
-	Landscape*,	// pointer to Landscape
-	int					// sequential simulation number
-);
+int RunModel(Landscape* pLandscape, int seqsim);
 #endif // RS_RCPP && !R_CMD
 
 bool CheckDirectory(const string& pathToProjDir);
-
-void PreReproductionOutput(
-	Landscape*,	// pointer to Landscape
-	Community*, // pointer to Community
-	int,				// replicate
-	int,				// year
-	int					// generation
-);
-void RangePopOutput(
-	Community*, // pointer to Community
-	int,				// replicate
-	int,				// year
-	int					// generation
-);
-
-void OutParameters(
-	Landscape*	// pointer to Landscape
-);
+void PreReproductionOutput(Landscape* pLandscape, Community* pComm, int rep, int yr, int gen);
+void RangePopOutput(Community* pComm, int rep, int yr, int gen);
+void OutParameters(Landscape* pLandscape);
 
 extern paramGrad* paramsGrad;
 extern paramStoch* paramsStoch;
