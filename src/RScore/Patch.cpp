@@ -31,6 +31,7 @@
 
 Patch::Patch(int seqnum, int num)
 {
+	pPop = nullptr;
 	patchSeqNum = seqnum; patchNum = num; nCells = 0;
 	xMin = yMin = 999999999; xMax = yMax = 0; x = y = 0;
 	localK = 0.0;

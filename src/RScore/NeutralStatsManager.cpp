@@ -471,12 +471,12 @@ void NeutralStatsManager::calcPairwiseWeightedFst(set<int> const& patchList, con
 				for (int i = 0; i < nPatches - 1; ++i) { // nPatches-1 bc bottom row not filled
 					if (popSizes[i] == 0) continue;
 					const auto patch = pLandscape->findPatch(patchVect[i]);
-					const auto pPopI = (Population*)patch->getPopn(pSpecies);
+					const auto pPopI = patch->getPop();
 
 					for (int j = i + 1; j < nPatches; ++j) { // fill only upper half of matrix
 						if (popSizes[j] == 0) continue;
 						const auto patch = pLandscape->findPatch(patchVect[j]);
-						const auto pPopJ = (Population*)patch->getPopn(pSpecies);
+						const auto pPopJ = patch->getPop();
 
 						pi = pPopI->getAlleleFrequency(l, u);
 						pj = pPopJ->getAlleleFrequency(l, u);

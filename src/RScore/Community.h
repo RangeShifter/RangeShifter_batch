@@ -107,21 +107,12 @@ public:
 		Species*, // pointer to Species
 		Patch*		// pointer to Patch
 	);
-	commStats getStats(void);
-	void createOccupancy(
-		int,	// no. of rows = (no. of years / interval) + 1
-		int		// no. of replicates
-	);
-	void updateOccupancy(
-		int,	// row = (no. of years / interval)
-		int		// replicate
-	);
+	commStats getStats();
+	void createOccupancy(int nbOutputRows, int nbReps);
+	void updateOccupancy(int whichRow, int replicate);
 	void deleteOccupancy(
 		int		// no. of rows (as above)
 	);
-
-	void createOccupancy(int nbOutputRows, int nbReps);
-	void updateOccupancy(int whichRow, int replicate);
 
 	// Open occupancy file, write header record and set up occupancy array
 	bool outOccupancyHeaders();

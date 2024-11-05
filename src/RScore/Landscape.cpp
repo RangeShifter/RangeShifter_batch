@@ -895,7 +895,7 @@ set<int> Landscape::samplePatches(const string& samplingOption, int nbToSample, 
 		if (samplingOption == "random") { // then all patches are eligible
 			eligiblePatches.push_back(p->getPatchNum());
 		}
-		else if (p->speciesIsPresent(pSpecies)) {
+		else if (p->speciesIsPresent()) {
 			// only patches with at least 1 ind can be sampled
 			eligiblePatches.push_back(p->getPatchNum());
 		}

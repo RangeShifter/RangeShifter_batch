@@ -174,7 +174,6 @@ public:
 	// Determine survival and development and record in individual's status code
 	// Changes are NOT applied to the Population at this stage
 	void drawSurvivalDevlpt(
-		float localK,
 		bool resolveJuvs, 
 		bool resolveAdults,
 		bool resolveDev, 

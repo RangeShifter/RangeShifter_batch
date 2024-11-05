@@ -202,7 +202,7 @@ void testPopulation()
 		for (int yr = 0; yr < nbGens; yr++) {
 			pop.reproduction(localK, 1, 1);
 			pop.fledge(); // replace initial pop with juveniles
-			pop.drawSurvivalDevlpt(localK, 0, 0); // flag juveniles for development
+			pop.drawSurvivalDevlpt(0, 0); // flag juveniles for development
 			pop.applySurvivalDevlpt(); // develop to stage 1 (breeders)
 
 			// Count allele and heterozygote frequencies

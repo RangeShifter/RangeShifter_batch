@@ -52,12 +52,11 @@ Community::~Community() {
 
 void Community::initialise(Species* pSpecies, int year)
 {
-	int nsubcomms, npatches, ndistcells, spratio, patchnum, candidatePatch = 0;
+	int npatches, ndistcells, spratio, patchnum, candidatePatch = 0;
 	locn distloc;
 	patchData pch;
 	patchLimits limits = patchLimits();
-	Patch* ppatch;
-	std::set<int> selectedPatches;
+	std::vector<int> selectedPatches;
 	set<int> suitablePatches;
 	Patch* pPatch;
 	Cell* pCell;
@@ -125,7 +124,7 @@ void Community::initialise(Species* pSpecies, int year)
 					patchnum = pch.pPatch->getPatchNum();
 					if (patchnum != 0 && pch.pPatch->getK() > 0.0) {
 						// patch is suitable
-						selectedPatches.insert(patchnum);
+						selectedPatches.push_back(patchnum);
 					}
 				}
 			}
@@ -176,7 +175,7 @@ void Community::initialise(Species* pSpecies, int year)
 								pPatch = pCell->getPatch();
 								if (pPatch != nullptr) {
 									if (pPatch->getSeqNum() != 0) { // not the matrix patch
-										selectedPatches.insert(pPatch->getPatchNum());
+										selectedPatches.push_back(pPatch->getPatchNum());
 									}
 								}
 							}
@@ -436,11 +435,9 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 
 void Community::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv)
 {
-	float localK = matrixPop->getPatch()->getK();
-	matrixPop->drawSurvivalDevlpt(localK, resolveJuvs, resolveAdults, resolveDev, resolveSurv);
+	matrixPop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
 	for (auto pop : popns) {
-		localK = pop->getPatch()->getK();
-		pop->drawSurvivalDevlpt(localK, resolveJuvs, resolveAdults, resolveDev, resolveSurv);
+		pop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
 	}
 }
 
@@ -487,7 +484,7 @@ void Community::updateOccupancy(int whichRow, int rep)
 		pop->getPatch()->updateOccupancy(whichRow);
 	}
 	commStats s = getStats();
-	occSuit[whichRow][rep] = (float)s.occupied / (float)s.suitable;
+	occSuit[whichRow][rep] = trunc(s.occupied / static_cast<double>(s.suitable));
 }
 
 //---------------------------------------------------------------------------
@@ -796,7 +793,7 @@ void Community::outRange(Species* pSpecies, int rep, int yr, int gen)
 			ts.sumAlphaS[j] += scts.sumAlphaS[j]; ts.ssqAlphaS[j] += scts.ssqAlphaS[j];
 			ts.sumBetaS[j] += scts.sumBetaS[j];  ts.ssqBetaS[j] += scts.ssqBetaS[j];
 		}
-		int npops = popns.size();
+		int npops = static_cast<int>(popns.size());
 		for (int i = 0; i < npops; i++) { 
 			scts = popns[i]->outTraits(outtraits, false);
 			for (int j = 0; j < gMaxNbSexes; j++) {

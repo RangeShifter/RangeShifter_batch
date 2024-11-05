@@ -32,7 +32,7 @@ ofstream outInds;
 
 //---------------------------------------------------------------------------
 
-Population::Population(void) {
+Population::Population() {
 	nSexes = nStages = 0;
 	pPatch = NULL;
 	pSpecies = NULL;
@@ -1195,7 +1195,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 			// Draw a suitable adjacent cell, if any
 			if (neighbourCells.size() > 0) {
 				vector<Cell*> destCell;
-				sample(neighbourCells.begin(), neighbourCells.end(), back_inserter(destCell), 1, pRandom->getRNG());
+				sample(neighbourCells.begin(), neighbourCells.end(), std::back_inserter(destCell), 1, pRandom->getRNG());
 				inds[i]->moveTo(destCell[0]);
 			}
 		}
@@ -1239,7 +1239,7 @@ bool Population::isMatePresent(Cell* pCell, short othersex)
 // FOR MULTIPLE SPECIES, MAY NEED TO SEPARATE OUT THIS IDENTIFICATION STAGE,
 // SO THAT IT CAN BE PERFORMED FOR ALL SPECIES BEFORE ANY UPDATING OF POPULATIONS
 
-void Population::drawSurvivalDevlpt(float localK, bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv)
+void Population::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv)
 {
 	// option0:	0 - stage 0 (juveniles) only
 	//			1 - all stages
@@ -1748,15 +1748,12 @@ traitsums Population::outTraits(ofstream& outtraits, const bool& writefile)
 	int popsize, ploidy;
 	simParams sim = paramsSim->getSim();
 	traitsums ts, indTraitsSums;
-	int popsize, ploidy;
 
 	// generate output for each population within the sub-community (patch)
 	// provided that the patch is suitable (i.e. non-zero carrying capacity)
 	
 	Species* pSpecies;
-	float localK;
-
-	localK = pPatch->getK();
+	float localK = pPatch->getK();
 	if (localK > 0.0 && this->getNInds() > 0) {
 
 		pSpecies = this->getSpecies();
