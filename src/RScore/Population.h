@@ -71,9 +71,6 @@ struct popStats {
 struct disperser {
 	Individual* pInd; Cell* pCell; bool yes;
 };
-struct zombie {
-	Individual* pInd;
-};
 struct traitsums { // sums of trait genes for dispersal
 	int ninds[gMaxNbSexes];				// no. of individuals
 	double sumD0[gMaxNbSexes];			// sum of maximum emigration probability
