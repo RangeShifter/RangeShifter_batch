@@ -334,7 +334,7 @@ public:
 		const bool,   // individual variability?
 		const bool    // absorbing boundaries?
 	);
-	array3x3d getSimDir( // Weight neighbouring cells on basis of current movement direction
+	array3x3d getSimDirection( // Weight neighbouring cells on basis of current movement direction
 		const int,	// current x co-ordinate
 		const int,	// current y co-ordinate
 		const float	// directional persistence value
