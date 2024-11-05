@@ -778,7 +778,7 @@ void Community::outRange(Species* pSpecies, int rep, int yr, int gen)
 
 		int npops = popns.size();
 		for (int i = 0; i < npops; i++) { 
-			scts = popns[i]->outTraits(outtraits);
+			scts = popns[i]->outTraits(outtraits, false)
 			for (int j = 0; j < gMaxNbSexes; j++) {
 				ts.ninds[j] += scts.ninds[j];
 				ts.sumD0[j] += scts.sumD0[j];     ts.ssqD0[j] += scts.ssqD0[j];
@@ -1233,17 +1233,24 @@ void Community::outTraits(Species* pSpecies, int rep, int yr, int gen)
 		ts = new traitsums[land.dimY];
 	}
 	if (v.viewTraits
-		|| ((sim.outTraitsCells && yr >= sim.outStartTraitCell && yr % sim.outIntTraitCell == 0) 
-		|| (sim.outTraitsRows && yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0))){
+		|| ((sim.outTraitsCells 
+			&& yr >= sim.outStartTraitCell 
+			&& yr % sim.outIntTraitCell == 0) 
+		|| (sim.outTraitsRows && yr >= sim.outStartTraitRow 
+			&& yr % sim.outIntTraitRow == 0))){
 		// generate output for each sub-community (patch) in the community
 		for (auto pop : popns) {
 			if (sim.outTraitsCells && yr % sim.outIntTraitCell == 0) {
 				pop->outputTraitPatchInfo(outtraits, rep, yr, gen, land.patchModel);
 			}
-			sctraits = pop->outTraits(outtraits);
+			bool writefile = sim.outTraitsCells
+				&& yr % sim.outIntTraitCell == 0;
+			sctraits = pop->outTraits(outtraits, writefile);
 			locn loc = pop->getPatch()->getCellLocn();
 			int y = loc.y;
-			if (sim.outTraitsRows && yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0){
+			if (sim.outTraitsRows 
+				&& yr >= sim.outStartTraitRow 
+				&& yr % sim.outIntTraitRow == 0){
 				for (int s = 0; s < gMaxNbSexes; s++) {
 					ts[y].ninds[s] += sctraits.ninds[s];
 					ts[y].sumD0[s] += sctraits.sumD0[s];    

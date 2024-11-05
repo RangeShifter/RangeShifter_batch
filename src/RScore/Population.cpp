@@ -1745,11 +1745,12 @@ void Population::outputTraitPatchInfo(ofstream& outtraits, int rep, int yr, int 
 }
 
 // Write records to traits file and return aggregated sums
-traitsums Population::outTraits(ofstream& outtraits)
+traitsums Population::outTraits(ofstream& outtraits, const bool& writefile)
 {
 	int popsize, ploidy;
 	simParams sim = paramsSim->getSim();
 	traitsums ts, indTraitsSums;
+	int popsize, ploidy;
 
 	// generate output for each population within the sub-community (patch)
 	// provided that the patch is suitable (i.e. non-zero carrying capacity)

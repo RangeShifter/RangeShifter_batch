@@ -229,7 +229,7 @@ public:
 	);
 
 	void outputTraitPatchInfo(ofstream& outtraits, int rep, int yr, int gen, bool patchModel);
-	traitsums outTraits(ofstream& outtraits);
+	traitsums outTraits(ofstream& outtraits, const bool& writefile);
 
 	void outputGeneValues(ofstream& ofsGenes, const int& yr, const int& gen) const;
 	void clean(void); // Remove zero pointers to dead or dispersed individuals
