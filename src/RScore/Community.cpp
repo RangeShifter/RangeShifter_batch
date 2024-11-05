@@ -317,9 +317,9 @@ void Community::dispersal(short landIx, short nextseason)
 	for (auto pop : popns) {
 
 		for (int j = 0; j < pop->getStats().nInds; j++) {
-			if (pop->extractDisperser(j).yes) { // disperser - has already been removed from natal population
-				// add to matrix population
-				matrixPop->recruit(pop->extractDisperser(j).pInd);
+			disperser disp = pop->extractDisperser(j);
+			if (disp.yes) { // disperser - has already been removed from natal population
+				matrixPop->recruit(disp.pInd); // add to matrix population
 			}
 		}
 		// remove pointers to emigrants
