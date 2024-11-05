@@ -35,6 +35,13 @@ ofstream outMovePaths;
 
 //---------------------------------------------------------------------------
 
+bool isInLandscape(const int& x, const int& y, const landData& land) {
+	return (x >= land.minX
+		&& x <= land.minY
+		&& y >= land.minY
+		&& y <= land.maxY);
+}
+
 // Initial species distribution functions
 
 InitDist::InitDist(Species* pSp)

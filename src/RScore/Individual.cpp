@@ -30,6 +30,29 @@ TraitFactory Individual::traitFactory = TraitFactory();
 
 //---------------------------------------------------------------------------
 
+bool isAlive(indStatus s) {
+	return (s != diedInTransfer
+		&& s != diedInTrfrMort
+		&& s != diedDemogrMort
+		&& s != diedOldAge);
+}
+
+string to_string(indStatus s) {
+	switch (s) {
+	case initial: return "initial";
+	case dispersing: return "dispersing";
+	case waitSettlement: return "waitSettlement";
+	case waitNextDispersal: return "waitNextDispersal";
+	case settled: return "settled";
+	case settledNeighbour: return "settledNeighbour";
+	case diedInTransfer: return "diedInTransfer";
+	case diedInTrfrMort: return "diedInTrfrMort";
+	case diedDemogrMort: return "diedDemogrMort";
+	case diedOldAge: return "diedOldAge";
+	default: return "";
+	}
+}
+
 // Individual constructor
 Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short repInt,
 	float probmale, bool movt, short moveType)
@@ -853,64 +876,60 @@ bool Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 {
 	if (status != dispersing) return false; // not currently dispersing
 
-	Patch* patch;
 	int patchNum;
 	int newX, newY;
 	locn loc;
 	bool isDispersing = true;
 	double xcnew, ycnew;
-	double angle;
-	double mortprob, rho, steplen;
+	double moveDirection;
+	double probMort, rho, stepLength;
 	movedata move;
-	Patch* pPatch = 0;
+	Patch* pPatch = nullptr;
 	bool absorbed = false;
-	//int popsize;
 
 	landData land = pLandscape->getLandData();
 	simParams sim = paramsSim->getSim();
-
 	transferRules trfr = pSpecies->getTransferRules();
 	trfrCRWTraits movt = pSpecies->getSpCRWTraits();
 	settleSteps settsteps = pSpecies->getSteps(stage, sex);
 
-	patch = pCurrCell->getPatch();
-
-	if (patch == 0) { // matrix
-		pPatch = 0;
+	pPatch = pCurrCell->getPatch();
+	if (pPatch == nullptr) { // no data
 		patchNum = 0;
-	}
-	else {
-		pPatch = patch;
+	} else {
 		patchNum = pPatch->getPatchNum();
 	}
-	// apply step-dependent mortality risk ...
-	if (trfr.habMort)
-	{ // habitat-dependent
-		int h = pCurrCell->getHabIndex(landIx);
-		if (h < 0) { // no-data cell - should not occur, but if it does, individual dies
-			mortprob = 1.0;
-		}
-		else mortprob = pSpecies->getHabMort(h);
+
+	// Apply step-dependent mortality risk
+	if (pPatch == pNatalPatch
+		&& path->out == 0
+		&& path->year == path->total) {
+		// no mortality if ind. has not yet left natal patch
+		probMort = 0.0;
 	}
-	else mortprob = movt.stepMort;
-	// ... unless individual has not yet left natal patch in emigration year
-	if (pPatch == pNatalPatch && path->out == 0 && path->year == path->total) {
-		mortprob = 0.0;
+	else if (trfr.habMort) {
+		int habIndex = pCurrCell->getHabIndex(landIx);
+		probMort = habIndex < 0 ? 1.0 : pSpecies->getHabMort(habIndex);
 	}
-	if (pRandom->Bernoulli(mortprob)) { // individual dies
+	else probMort = movt.stepMort;
+
+	if (pRandom->Bernoulli(probMort)) {
 		status = diedInTrfrMort;
-		isDispersing = false;
+		return false;
 	}
-	else { // take a step
+	else { 
+		// Take a step
 		(path->year)++;
 		(path->total)++;
-		//	if (pPatch != pNatalPatch || path->out > 0) (path->out)++;
-		if (patch == 0 || pPatch == 0 || patchNum == 0) { // not in a patch
-			if (path != 0) path->settleStatus = 0; // reset path settlement status
+
+		if (pPatch == nullptr || patchNum == 0) { // not in a patch
+			// Reset path settlement status
+			if (path != nullptr) path->settleStatus = 0; 
 			(path->out)++;
 		}
 		loc = pCurrCell->getLocn();
-		newX = loc.x; newY = loc.y;
+		newX = loc.x; 
+		newY = loc.y;
 
 		switch (trfr.moveType) {
 
@@ -918,122 +937,109 @@ bool Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 			move = smsMove(pLandscape, pSpecies, landIx, pPatch == pNatalPatch, trfr.indVar, absorbing);
 			if (move.dist < 0.0) {
 				// either INTERNAL ERROR CONDITION - INDIVIDUAL IS IN NO-DATA SQUARE
-				// or individual has crossed absorbing boundary ...
-				// ... individual dies
+				// or individual has crossed absorbing boundary: individual dies
 				status = diedInTransfer;
 				isDispersing = false;
 			}
-			else {
-
-				// WOULD IT BE MORE EFFICIENT FOR smsMove TO RETURN A POINTER TO THE NEW CELL? ...
-
-				patch = pCurrCell->getPatch();
-				//int patchnum;
-				if (patch == 0) {
-					pPatch = 0;
-					//patchnum = 0;
-				}
-				else {
-					pPatch = (Patch*)patch;
-					//patchnum = pPatch->getPatchNum();
-				}
-				if (sim.saveVisits && pPatch != pNatalPatch) {
-					pCurrCell->incrVisits();
-				}
+			else if (sim.saveVisits && pPatch != pNatalPatch) {
+				pCurrCell->incrVisits();
 			}
 			break;
 
 		case 2: // CRW
 
-			auto & pCRW = dynamic_cast<crwData&>(*pTrfrData);
+			auto& pCRW = dynamic_cast<crwData&>(*pTrfrData);
 
 			if (trfr.indVar) {
 				movt.stepLength = pCRW.stepLength;
 				movt.rho = pCRW.rho;
 			}
-
-			steplen = movt.stepLength; 
+			stepLength = movt.stepLength; 
 			rho = movt.rho;
-			if (pPatch == pNatalPatch) {
-				rho = 0.99; // to promote leaving natal patch
+
+			// Move in a straight line if...
+			if (pPatch == pNatalPatch 
+				// ... still in natal patch or
+				|| (movt.straightenPath && path->settleStatus > 0) 
+				// ... must straighten path to (previously determined) settlement patch 
+				){
+				rho = 0.99;
 				path->out = 0;
 			}
-			if (movt.straightenPath && path->settleStatus > 0) {
-				// individual is in a patch and has already determined whether to settle
-				rho = 0.99; // to promote leaving the patch
-				path->out = 0;
-			}
-			int loopsteps = 0; // new counter to prevent infinite loop added 14/8/15
+			int loopSteps = 0; // no infinite loop
+			constexpr int maxLoopSteps = 1000;
 			do {
 				do {
-					// new direction
-					if (newX < land.minX || newX > land.maxX || newY < land.minY || newY > land.maxY
-						|| pCurrCell == 0) {
-						// individual has tried to go out-of-bounds or into no-data area
-						// allow random move to prevent repeated similar move
-						angle = wrpcauchy(pCRW.prevdrn, 0.0);
+					// Sample direction
+					if (!isInLandscape(newX, newY, land)
+						|| pCurrCell == nullptr) {
+						// Random direction to avoid invalid area again
+						moveDirection = drawDirection(pCRW.prevdrn, 0.0);
 					}
-					else
-						angle = wrpcauchy(pCRW.prevdrn, rho);
-					// new continuous cell coordinates
-					xcnew = pCRW.xc + sin(angle) * steplen / (float)land.resol;
-					ycnew = pCRW.yc + cos(angle) * steplen / (float)land.resol;
-					if (xcnew < 0.0) newX = -1; else newX = (int)xcnew;
-					if (ycnew < 0.0) newY = -1; else newY = (int)ycnew;
-					loopsteps++;
-				} while (!absorbing && loopsteps < 1000 &&
-					(newX < land.minX || newX > land.maxX || newY < land.minY || newY > land.maxY));
-				if (newX < land.minX || newX > land.maxX || newY < land.minY || newY > land.maxY)
-					pCurrCell = 0;
-				else
-					pCurrCell = pLandscape->findCell(newX, newY);
-				if (pCurrCell == 0) { // no-data cell or beyond absorbing boundary
-					patch = 0;
+					else moveDirection = drawDirection(pCRW.prevdrn, rho);
+
+					// Get new coordinates
+					xcnew = pCRW.xc + sin(moveDirection) * stepLength / land.resol;
+					ycnew = pCRW.yc + cos(moveDirection) * stepLength / land.resol;
+					newX = xcnew < 0.0 ? -1 : trunc(xcnew);
+					newY = ycnew < 0.0 ? -1 : trunc(ycnew);
+
+					loopSteps++;
+				} while (!absorbing && 
+					loopSteps < maxLoopSteps &&
+					!isInLandscape(newX, newY, land));
+				
+				// Get cell and patch for new coordinates
+				if (!isInLandscape(newX, newY, land)) pCurrCell = nullptr;
+				else pCurrCell = pLandscape->findCell(newX, newY);
+				if (pCurrCell == nullptr) { // no-data or beyond absorbing boundary
+					pPatch = nullptr;
 					if (absorbing) absorbed = true;
 				}
-				else
-					patch = pCurrCell->getPatch();
-			} while (!absorbing && pCurrCell == 0 && loopsteps < 1000);
-			pCRW.prevdrn = (float)angle;
-			pCRW.xc = (float)xcnew; pCRW.yc = (float)ycnew;
+				else pPatch = pCurrCell->getPatch();
+
+			} while (!absorbing 
+				&& pCurrCell == nullptr 
+				&& loopSteps < maxLoopSteps);
+
+			// Update individual through ref
+			pCRW.prevdrn = moveDirection;
+			pCRW.xc = xcnew; 
+			pCRW.yc = ycnew;
+
 			if (absorbed) { // beyond absorbing boundary or in no-data square
 				status = diedInTransfer;
 				isDispersing = false;
 				pCurrCell = nullptr;
 			}
-			else {
-				if (loopsteps >= 1000) { // unable to make a move
-					// INTERNAL ERROR CONDITION - INDIVIDUAL IS IN NO-DATA SQUARE
-					// NEED TO TAKE SOME FORM OF INFORMATIVE ACTION ...
-					// ... individual dies as it cannot move
-					status = diedInTransfer;
-					isDispersing = false;
-					// current cell will be invalid (zero), so set back to previous cell
-					pCurrCell = pPrevCell;
-				}
+			else if (loopSteps >= maxLoopSteps) { // unable to make a move
+				// INTERNAL ERROR CONDITION - INDIVIDUAL IS IN NO-DATA SQUARE
+				// NEED TO TAKE SOME FORM OF INFORMATIVE ACTION ...
+				// ... individual dies as it cannot move
+				status = diedInTransfer;
+				isDispersing = false;
+				// current cell is invalid, get back to previous cell
+				pCurrCell = pPrevCell;
 			}
 			break;
 
 		} // end of switch (trfr.moveType)
 
-		if (patch != 0  // not no-data area or matrix
+		// Update individual status
+		if (pPatch != nullptr  // not no-data area or matrix
 			&& path->total >= settsteps.minSteps) {
-			pPatch = patch;
-			if (pPatch != pNatalPatch)
-			{
-				// determine whether the new patch is potentially suitable
-				if (pPatch->getK() > 0.0)
-				{ // patch is suitable
-					status = waitSettlement;
-				}
+			if (pPatch != pNatalPatch
+				&& pPatch->getK() > 0.0) {
+				status = waitSettlement; // new patch is suitable
 			}
 		}
-		if (status != waitSettlement && status != diedInTransfer) { // suitable patch not found, not already dead
+		if (status != waitSettlement 
+			&& status != diedInTransfer) { // no suitable patch but not dead yet
 			if (path->year >= settsteps.maxStepsYr) {
-				status = waitNextDispersal; // waits until next year
+				status = waitNextDispersal; // try again next year
 			}
 			if (path->total >= settsteps.maxSteps) {
-				status = diedInTransfer; // dies
+				status = diedInTransfer;
 				isDispersing = false;
 			}
 		}
@@ -1578,26 +1584,16 @@ void Individual::outMovePath(const int year)
 
 //---------------------------------------------------------------------------
 
-double wrpcauchy(double location, double rho) {
-	double result;
-
-	if (rho < 0.0 || rho > 1.0) {
-		result = location;
-	}
-
-	if (rho == 0)
-		result = pRandom->Random() * M_2PI;
-	else
-		if (rho == 1) result = location;
-		else {
-			result = fmod(cauchy(location, -log(rho)), M_2PI);
-		}
-	return result;
+double drawDirection(double location, double rho) {
+	if (rho < 0.0 || rho > 1.0) return location;
+	else if (rho == 0) return pRandom->Random() * M_2PI;
+	else if (rho == 1) return location;
+	else return fmod(cauchy(location, -log(rho)), M_2PI);
 }
 
 double cauchy(double location, double scale) {
 	if (scale < 0) return location;
-	return location + scale * tan(PI * pRandom->Random());
+	else return location + scale * tan(PI * pRandom->Random());
 }
 
 //---------------------------------------------------------------------------

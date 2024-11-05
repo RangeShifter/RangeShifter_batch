@@ -1089,7 +1089,6 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 			// Resolve the (only) movement step
 			isDispersing = inds[i]->moveKernel(pLandscape, pSpecies, sim.absorbing);
 		}
-
 		nbDispersers += isDispersing;
 
 		// Record potential settlers to each patch
@@ -1112,6 +1111,7 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 		short sexId = settletype.sexDep ? ind.sex : 0;
 		sett = pSpecies->getSettRules(stgId, sexId);
 
+		// Resolve candidate settlers
 		if (ind.status == waitSettlement) { // awaiting settlement
 			pCell = inds[i]->getLocn(1);
 			if (pCell == nullptr) {
@@ -1185,8 +1185,8 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 					nbDispersers--;
 				} else { // does not recruit
 					if (trfr.usesMovtProc) {
-						ind.status = dispersing; // continue dispersing, unless ...
-						// ... maximum steps has been exceeded
+						ind.status = dispersing; // continue dispersing, 
+						// unless maximum steps has been exceeded
 						pathSteps steps = inds[i]->getSteps();
 						settleSteps settsteps = pSpecies->getSteps(ind.stage, ind.sex);
 						if (steps.year >= settsteps.maxStepsYr) {
@@ -1205,6 +1205,7 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 
 			inds[i]->setStatus(ind.status);
 		}
+
 #if RS_RCPP
 		// write each individuals current movement step and status to paths file
 		if (trfr.usesMovtProc && sim.outPaths) {
@@ -1262,9 +1263,9 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 			}
 			// Draw a suitable adjacent cell, if any
 			if (neighbourCells.size() > 0) {
-				Cell* destCell = nullptr;
-				sample(neighbourCells.begin(), neighbourCells.end(), destCell, 1, pRandom->getRNG());
-				inds[i]->moveTo(destCell);
+				vector<Cell*> destCell;
+				sample(neighbourCells.begin(), neighbourCells.end(), back_inserter(destCell), 1, pRandom->getRNG());
+				inds[i]->moveTo(destCell[0]);
 			}
 		}
 

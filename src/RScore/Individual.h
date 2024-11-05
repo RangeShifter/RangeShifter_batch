@@ -76,28 +76,8 @@ enum indStatus {
 	diedOldAge			// 9 = exceeded maximum age
 };
 
-bool isAlive(indStatus s) {
-	return (s != diedInTransfer 
-		&& s != diedInTrfrMort 
-		&& s != diedDemogrMort 
-		&& s!= diedOldAge);
-}
-
-string to_string(indStatus s) {
-	switch (s) {
-	case initial: return "initial";
-	case dispersing: return "dispersing";
-	case waitSettlement: return "waitSettlement";
-	case waitNextDispersal: return "waitNextDispersal";
-	case settled: return "settled";
-	case settledNeighbour: return "settledNeighbour";
-	case diedInTransfer: return "diedInTransfer";
-	case diedInTrfrMort: return "diedInTrfrMort";
-	case diedDemogrMort: return "diedDemogrMort";
-	case diedOldAge: return "diedOldAge";
-	default: return "";
-	}
-}
+bool isAlive(indStatus s);
+string to_string(indStatus s);
 
 struct indStats {
 	short stage; 
@@ -421,7 +401,7 @@ private:
 //---------------------------------------------------------------------------
 
 double cauchy(double location, double scale);
-double wrpcauchy(double location, double rho = exp(double(-1)));
+double drawDirection(double location, double rho = exp(double(-1)));
 
 extern RSrandom* pRandom;
 

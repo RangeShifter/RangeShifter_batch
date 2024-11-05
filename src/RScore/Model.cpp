@@ -476,7 +476,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 					}
 				}
 
-				// Resolve survival and devlpt
+				// Resolve survival and developement
 				pComm->applySurvivalDevlpt();
 
 			} // end of the generation loop
