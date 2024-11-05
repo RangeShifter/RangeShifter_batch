@@ -60,6 +60,8 @@ using namespace std;
 #include "Cell.h"
 #include "Species.h"
 #include "NeutralStatsManager.h"
+#include "Parameters.h"
+#include "Population.h"
 
 //---------------------------------------------------------------------------
 struct commStats {
