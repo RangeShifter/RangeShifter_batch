@@ -183,7 +183,7 @@ struct settleType {
 struct settleRules {
 	bool densDep;
 	bool wait; 
-	bool go2nbrLocn; 
+	bool goToNeighbourLocn; 
 	bool findMate;
 };
 struct settleSteps {
@@ -610,7 +610,7 @@ private:
 	bool indVarSett;   								// individual variation in settlement
 	bool densDepSett[gMaxNbStages][gMaxNbSexes];
 	bool wait[gMaxNbStages][gMaxNbSexes];				// wait to continue moving next season (stage-structured model only)
-	bool go2nbrLocn[gMaxNbStages][gMaxNbSexes];	// settle in neighbouring cell/patch if available (ditto)
+	bool goToNeighbourLocn[gMaxNbStages][gMaxNbSexes];	// settle in neighbouring cell/patch if available (ditto)
 	bool findMate[gMaxNbStages][gMaxNbSexes];
 	int minSteps[gMaxNbStages][gMaxNbSexes];     								// minimum no. of steps
 	int maxSteps[gMaxNbStages][gMaxNbSexes];											// maximum total no. of steps

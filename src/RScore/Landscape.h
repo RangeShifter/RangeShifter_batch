@@ -154,6 +154,9 @@ struct landParams {
 struct landData {
 	int resol; int dimX, dimY, minX, minY, maxX, maxY;
 };
+
+bool isInLandscape(const int& x, const int& y, const landData& land);
+
 struct genLandParams {
 	bool fractal; bool continuous;
 	float minPct, maxPct; float propSuit; float hurst; int maxCells;

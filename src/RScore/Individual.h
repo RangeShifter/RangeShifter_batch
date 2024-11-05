@@ -60,8 +60,31 @@ using namespace std;
 
 //---------------------------------------------------------------------------
 
+enum indStatus {
+	initial,			// 0 = initial status in natal patch / philopatric recruit
+	dispersing,			// 1 = disperser
+	waitSettlement,		// 2 = disperser awaiting settlement in possible suitable patch
+	waitNextDispersal,	// 3 = waiting between dispersal events
+	settled,			// 4 = completed settlement
+	settledNeighbour,	// 5 = completed settlement in a suitable neighbouring cell
+	diedInTransfer,		// 6 = died during transfer by failing to find a suitable patch
+						//		(includes exceeding maximum number of steps or crossing
+						//		absorbing boundary)
+	diedInTrfrMort,		// 7 = died during transfer by constant, step-dependent,
+						//		habitat-dependent or distance-dependent mortality
+	diedDemogrMort,		// 8 = failed to survive annual (demographic) mortality
+	diedOldAge			// 9 = exceeded maximum age
+};
+
+bool isAlive(indStatus s);
+string to_string(indStatus s);
+
 struct indStats {
-	short stage; sex_t sex; short age; short status; short fallow;
+	short stage; 
+	sex_t sex;
+	short age; 
+	indStatus status; 
+	short fallow;
 	bool isDeveloping;
 };
 struct pathData { // to hold path data common to SMS and CRW models
@@ -80,7 +103,8 @@ struct pathSteps { // nos. of steps for movement model
 	int year, total, out;
 };
 struct settlePatch {
-	Patch* pSettPatch; short settleStatus;
+	Patch* pSettPatch; 
+	short settleStatus;
 };
 
 struct trfrData {
@@ -263,7 +287,7 @@ public:
 	int breedingFem(void);
 	int getId(void);
 	sex_t getSex(void);
-	int getStatus(void);
+	indStatus getStatus();
 	float getGeneticFitness(void);
 	bool isViable() const;
 	indStats getStats(void);
@@ -275,7 +299,7 @@ public:
 	pathSteps getSteps(void);
 	settlePatch getSettPatch(void);
 	void setSettPatch(const settlePatch);
-	void setStatus(short);
+	void setStatus(indStatus s);
 	void setToDevelop(void);
 	void develop(void);
 	void ageIncrement( // Age by one year
@@ -283,20 +307,20 @@ public:
 	);
 	void incFallow(void); // Inrement no. of reproductive seasons since last reproduction
 	void resetFallow(void);
-	void moveto( // Move to a specified neighbouring cell
+	void moveTo( // Move to a specified neighbouring cell
 		Cell*	// pointer to the new cell
 	);
 	// Move to a new cell by sampling a dispersal distance from a single or double
 	// negative exponential kernel
 	// Returns 1 if still dispersing (including having found a potential patch), otherwise 0
-	int moveKernel(
+	bool moveKernel(
 		Landscape*,		// pointer to Landscape
 		Species*,			// pointer to Species
 		const bool    // absorbing boundaries?
 	);
 	// Make a single movement step according to a mechanistic movement model
 	// Returns 1 if still dispersing (including having found a potential patch), otherwise 0
-	int moveStep(
+	bool moveStep(
 		Landscape*,		// pointer to Landscape
 		Species*,			// pointer to Species
 		const short,	// landscape change index
@@ -310,7 +334,7 @@ public:
 		const bool,   // individual variability?
 		const bool    // absorbing boundaries?
 	);
-	array3x3d getSimDir( // Weight neighbouring cells on basis of current movement direction
+	array3x3d getSimDirection( // Weight neighbouring cells on basis of current movement direction
 		const int,	// current x co-ordinate
 		const int,	// current y co-ordinate
 		const float	// directional persistence value
@@ -359,20 +383,7 @@ private:
 	short stage;
 	sex_t sex;
 	short age;
-	short status;	
-		// 0 = initial status in natal patch / philopatric recruit
-		// 1 = disperser
-		// 2 = disperser awaiting settlement in possible suitable patch
-		// 3 = waiting between dispersal events
-		// 4 = completed settlement
-		// 5 = completed settlement in a suitable neighbouring cell
-		// 6 = died during transfer by failing to find a suitable patch
-		//	(includes exceeding maximum number of steps or crossing
-		//	absorbing boundary)
-		// 7 = died during transfer by constant, step-dependent,
-		//	habitat-dependent or distance-dependent mortality
-		// 8 = failed to survive annual (demographic) mortality
-		// 9 = exceeded maximum age
+	indStatus status;	
 	short fallow; // reproductive seasons since last reproduction
 	bool isDeveloping;
 	Cell* pPrevCell;	// pointer to previous Cell
@@ -390,7 +401,7 @@ private:
 //---------------------------------------------------------------------------
 
 double cauchy(double location, double scale);
-double wrpcauchy(double location, double rho = exp(double(-1)));
+double drawDirection(double location, double rho = exp(double(-1)));
 
 extern RSrandom* pRandom;
 
