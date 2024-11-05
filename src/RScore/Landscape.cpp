@@ -923,7 +923,7 @@ set<int> Landscape::samplePatches(const string& samplingOption, int nbToSample, 
 void Landscape::resetPatchPopns(void) {
 	int npatches = (int)patches.size();
 	for (int i = 0; i < npatches; i++) {
-		patches[i]->resetPopn();
+		patches[i]->resetPop();
 	}
 }
 

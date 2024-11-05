@@ -43,7 +43,6 @@ Patch::Patch(int seqnum, int num)
 
 Patch::~Patch() {
 	cells.clear();
-	popns.clear();
 }
 
 int Patch::getSeqNum() { return patchSeqNum; }
@@ -318,33 +317,16 @@ void Patch::removeCell(Cell* pCell) {
 	}
 }
 
-void Patch::setPop(Population* p)
-{
+void Patch::setPop(Population* p) {
 	pPop = p;
 }
 
-// Get pointer to corresponding Sub-community (cast as an integer)
-Population* Patch::getPop()
-{
+Population* Patch::getPop() {
 	return pPop;
 }
 
-void Patch::addPopn(patchPopn pop) {
-	popns.push_back(pop);
-}
-
-// Return pointer (cast as integer) to the Population of the specified Species
-Population* Patch::getPopn(Species* sp)
-{
-	int npops = (int)popns.size();
-	for (int i = 0; i < npops; i++) {
-		if (popns[i].pSp == sp) return popns[i].pPop;
-	}
-	return 0;
-}
-
-void Patch::resetPopn() {
-	popns.clear();
+void Patch::resetPop() {
+	pPop = nullptr;
 }
 
 void Patch::resetPossSettlers() {
@@ -368,9 +350,9 @@ int Patch::getPossSettlers(Species* pSpecies, int sex) {
 	else return 0;
 }
 
-bool Patch::speciesIsPresent(Species* pSpecies) {
-	const auto pPop = this->getPopn(pSpecies);
-	return pPop != 0;
+bool Patch::speciesIsPresent() {
+	const auto pPop = this->getPop();
+	return pPop != nullptr;
 }
 
 void Patch::createOccupancy(int nbOutputRows) {

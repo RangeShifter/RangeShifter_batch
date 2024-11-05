@@ -57,11 +57,9 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 
 	pSpecies = pSp;
 	pPatch = pPch;
+
 	// record the new population in the patch
-	patchPopn pp = patchPopn();
-	pp.pSp = pSpecies; 
-	pp.pPop = this;
-	pPatch->addPopn(pp);
+	pPatch->setPop(this);
 
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
@@ -1074,7 +1072,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 						
 							// Resolve settlement density-dependence
 							localK = pPatch->getK();
-							pPop = pPatch->getPopn(pSpecies);
+							pPop = pPatch->getPop();
 
 							// Get local density
 							if (pPop == nullptr) { // empty patch
@@ -1219,7 +1217,7 @@ bool Population::isMatePresent(Cell* pCell, short othersex)
 		if (pPatch->getPatchNum() > 0 // not the matrix patch
 			&& pPatch->getK() > 0.0) { // suitable
 			 
-				pNewPopn = pPatch->getPopn(pSpecies);
+				pNewPopn = pPatch->getPop();
 				if (pNewPopn != nullptr) {
 					for (int stg = 0; stg < nStages; stg++) {
 						if (pNewPopn->nInds[stg][othersex] > 0) 

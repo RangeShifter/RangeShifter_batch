@@ -81,31 +81,27 @@ struct popStats;
 struct patchLimits {
 	int xMin, xMax, yMin, yMax;
 };
-struct patchPopn {
-	Species* pSp;
-	Population* pPop;
-};
 
 class Patch {
 public:
 	Patch(int seqnum, int num);
 	~Patch();
+
 	int getSeqNum();
 	int getPatchNum();
 	int getNCells();
+
 	patchLimits getLimits(); // Returns the minimum and maximum co-ordinates of the patch
 	bool withinLimits( // Does the patch fall (partially) within a specified rectangle?
 		patchLimits rect// structure holding the SW and NE co-ordinates of the rectangle
 	);
 	void resetLimits(); // Reset minimum and maximum co-ordinates of the patch
+	
 	void addCell(Cell* pCell, int x, int y);
-
 	// Return co-ordinates of a specified cell
 	locn getCellLocn(int ix);
-
 	// Return pointer to a specified cell
 	Cell* getCell(int ix);
-
 	// Return co-ordinates of patch centroid
 	locn getCentroid(); 
 	void removeCell(Cell* pCell);
@@ -113,29 +109,24 @@ public:
 
 	void setPop(Population* p);
 	Population* getPop();
-
-	void addPopn(patchPopn pop);
-	Population* getPopn(Species* sp);
-
-	void resetPopn();
-	void resetPossSettlers();
+	void resetPop();
 
 	// Record the presence of a potential settler within the Patch
 	void incrPossSettler(Species* pSpecies, int sex);
-
 	// Get number of a potential settlers within the Patch
 	int getPossSettlers(Species* pSpecies, int sex);
-
+	void resetPossSettlers();
+	
 	// Calculate total Patch carrying capacity (no. of inds)
 	void setCarryingCapacity(Species* pSpecies, patchLimits landlimits,
 		float epsGlobal, short nHab, short rasterType, short landIx, bool gradK);
-
 	float getK();
+
 	int getInitNbInds(const bool& isPatchModel, const int& landResol) const;
 	
 	float getEnvVal(const bool& isPatchModel, const float& epsGlobal);
 
-	bool speciesIsPresent(Species* sp);
+	bool speciesIsPresent();
 
 	void createOccupancy(int nbOutputRows);
 	void updateOccupancy(int whichRow);
@@ -159,7 +150,6 @@ private:
 	vector<int> occupancy;	// pointer to occupancy array
 
 	std::vector <Cell*> cells;
-	std::vector <patchPopn> popns;
 };
 
 //---------------------------------------------------------------------------

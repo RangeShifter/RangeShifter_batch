@@ -248,9 +248,9 @@ void Community::initialise(Species* pSpecies, int year)
 }
 
 void Community::resetPopns() {
-	matrixPop->getPatch()->resetPopn();
+	matrixPop->getPatch()->resetPop();
 	for (auto pop : popns) {
-		pop->getPatch()->resetPopn();
+		pop->getPatch()->resetPop();
 	}
 	popns.clear();
 	// reset the individual ids to start from zero
@@ -367,7 +367,7 @@ void Community::completeDispersal(Landscape* pLandscape, bool connect)
 			pNewPatch = settler.pCell->getPatch();
 
 			// find population within the patch (if there is one)
-			pPop = pNewPatch->getPopn(pSpecies);
+			pPop = pNewPatch->getPop();
 
 			if (pPop == nullptr) { // settler is the first in a previously uninhabited patch
 				// create a new population in the corresponding sub-community
@@ -1577,7 +1577,7 @@ Rcpp::IntegerMatrix Community::addYearToPopList(int rep, int yr) {  // TODO: def
 					pop_map_year(ppLand.dimY - 1 - y, x) = 0;
 				}
 				else {
-					pPop = pPatch->getPopn();
+					pPop = pPatch->getPop();
 					if (pPop == nullptr) { // check if population exists
 						pop_map_year(ppLand.dimY - 1 - y, x) = 0;
 					}
@@ -1637,7 +1637,7 @@ void Community::outputGeneValues(const int& year, const int& gen, Species* pSpec
 		if (patch == nullptr) {
 			throw runtime_error("Sampled patch does not exist");
 		}
-		const auto pPop = patch->getPopn(pSpecies);
+		const auto pPop = patch->getPop();
 		if (pPop != nullptr) { 
 			pPop->outputGeneValues(ofsGenes, year, gen);
 		}
@@ -1659,7 +1659,7 @@ void Community::sampleIndividuals(Species* pSpecies) {
 		if (patch == nullptr) {
 			throw runtime_error("Can't sample individuals: patch" + to_string(patchId) + "doesn't exist.");
 		}
-		auto pPop = patch->getPopn(pSpecies);
+		auto pPop = patch->getPop();
 		if (pPop != nullptr) {
 			pPop->sampleIndsWithoutReplacement(nbIndsToSample, stagesToSampleFrom);
 		}
@@ -1831,7 +1831,7 @@ void Community::writePerLocusFstatFile(Species* pSpecies, const int yr, const in
 
 		for (int patchId : patchList) {
 			const auto patch = pLandscape->findPatch(patchId);
-			const auto pPop = patch->getPopn(pSpecies);
+			const auto pPop = patch->getPop();
 			int popSize = 0;
 			int het = 0;
 			if (pPop != nullptr) {
@@ -1903,7 +1903,7 @@ void Community::outNeutralGenetics(Species* pSpecies, int rep, int yr, int gen, 
 		if (patch == nullptr) {
 			throw runtime_error("Sampled patch does not exist");
 		}
-		const auto pPop = patch->getPopn(pSpecies);
+		const auto pPop = patch->getPop();
 		if (pPop != nullptr) { // empty patches do not contribute
 			nInds += pPop->sampleSize();
 			nbPops++;
