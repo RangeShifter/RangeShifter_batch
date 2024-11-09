@@ -192,7 +192,7 @@ SpeciesTrait* createTestEmigSpTrait(const set<int>& genePositions, const bool& i
 		pair<GenParamType, float>{GenParamType::MIN, 0.0},
 		pair<GenParamType, float>{GenParamType::MAX, 1.0}
 	};
-	SpeciesTrait* spTr = new SpeciesTrait(
+	SpeciesTrait* spTr = DBG_NEW SpeciesTrait(
 		TraitType::E_D0,
 		sex_t::NA,
 		genePositions,
@@ -217,7 +217,7 @@ SpeciesTrait* createTestGenLoadTrait(const set<int>& genePositions, const bool& 
 		pair<GenParamType, float>{GenParamType::MIN, 0.0},
 		pair<GenParamType, float>{GenParamType::MAX, 1.0}
 	};
-	SpeciesTrait* spTr = new SpeciesTrait(
+	SpeciesTrait* spTr = DBG_NEW SpeciesTrait(
 		TraitType::GENETIC_LOAD,
 		sex_t::NA,
 		genePositions,
@@ -242,7 +242,7 @@ SpeciesTrait* createTestNeutralSpTrait(const float& maxAlleleVal, const set<int>
 		// Set max allele value
 		pair<GenParamType, float>{GenParamType::MAX, maxAlleleVal}
 	};
-	SpeciesTrait* spTr = new SpeciesTrait(
+	SpeciesTrait* spTr = DBG_NEW SpeciesTrait(
 		TraitType::NEUTRAL,
 		sex_t::NA,
 		genePositions,

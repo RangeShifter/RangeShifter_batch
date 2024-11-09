@@ -138,7 +138,7 @@ int Cell::getCost() {
 
 void Cell::setCost(int c) {
 	if (smsData == 0) {
-		smsData = new smscosts;
+		smsData = DBG_NEW smscosts;
 		smsData->effcosts = 0;
 	}
 	smsData->cost = c;
@@ -169,7 +169,7 @@ array3x3f Cell::getEffCosts() {
 
 void Cell::setEffCosts(array3x3f a) {
 	if (smsData->effcosts == 0) 
-		smsData->effcosts = new array3x3f;
+		smsData->effcosts = DBG_NEW array3x3f;
 	*smsData->effcosts = a;
 }
 

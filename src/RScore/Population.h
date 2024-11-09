@@ -222,14 +222,13 @@ public:
 private:
 	short nStages;
 	short nSexes;
-	Species* pSpecies;	// pointer to the species
-	Patch* pPatch;			// pointer to the patch
-	int nInds[gMaxNbStages][gMaxNbSexes];		// no. of individuals in each stage/sex
+	Species* pSpecies;
+	Patch* pPatch;
+	int nInds[gMaxNbStages][gMaxNbSexes];
 
 	vector<Individual*> inds; // all individuals in population except ...
 	vector<unique_ptr<Individual>> juvs; // ... juveniles until reproduction of ALL species
-	// has been completed
-
+										 // has been completed
 	vector<Individual*> sampledInds;
 	vector<NeutralCountsTable> popNeutralCountTables;
 	void resetPopNeutralTables();

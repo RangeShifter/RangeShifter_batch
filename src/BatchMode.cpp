@@ -4946,7 +4946,7 @@ void setUpSpeciesTrait(vector<string> parameters) {
 	const bool isOutput = parameters[14] == "TRUE";
 
 	// Create species trait
-	unique_ptr<SpeciesTrait> trait(new SpeciesTrait(
+	unique_ptr<SpeciesTrait> trait(DBG_NEW SpeciesTrait(
 		traitType, sex, 
 		positions, expressionType, 
 		initDist, initParams, 
@@ -6358,7 +6358,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 	for (int j = 0; j < nLandscapes; j++) {
 		// create new landscape
 		if (pLandscape != nullptr) delete pLandscape;
-		pLandscape = new Landscape;
+		pLandscape = DBG_NEW Landscape;
 		bool landOK = true;
 
 		land_nr = ReadLandFile(pLandscape);

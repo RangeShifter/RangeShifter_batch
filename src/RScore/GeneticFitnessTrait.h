@@ -30,7 +30,9 @@ public:
    // Make a shallow copy to pass to offspring trait
     // Return new pointer to new trait created by inheritance c'tor 
     // This avoids copying shared attributes: distributions and parameters
-    virtual unique_ptr<QuantitativeTrait> clone() const override { return std::make_unique<GeneticFitnessTrait>(*this); }
+    virtual unique_ptr<QuantitativeTrait> clone() const override { 
+        return std::make_unique<GeneticFitnessTrait>(*this); 
+    } // call inheritance c'tor
 
     virtual ~GeneticFitnessTrait() { }
 

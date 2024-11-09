@@ -135,7 +135,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	if (b.ok) {
 		paramsSim->setBatchNum(b.batchNum);
 		// Set up species
-		pSpecies = new Species(
+		pSpecies = DBG_NEW Species(
 			b.reproductn,
 			b.repseasons,
 			b.stagestruct == 1, // int to bool

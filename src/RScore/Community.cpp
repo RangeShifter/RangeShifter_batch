@@ -48,6 +48,7 @@ Community::~Community() {
 		delete popns[i];
 	}
 	popns.clear();
+	delete matrixPop;
 }
 
 void Community::initialise(Species* pSpecies, int year)
@@ -141,7 +142,7 @@ void Community::initialise(Species* pSpecies, int year)
 			int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
 			if (nInds > 0) {
 				Population* pPop = DBG_NEW Population(pSpecies, pPatch, nInds, ppLand.resol);
-				popns.push_back(pPop); // add DBG_NEW population to community list
+				popns.push_back(pPop); // add new population to community list
 			}
 		}
 		break;
@@ -248,8 +249,10 @@ void Community::initialise(Species* pSpecies, int year)
 
 void Community::resetPopns() {
 	matrixPop->getPatch()->resetPop();
+	delete matrixPop;
 	for (auto pop : popns) {
 		pop->getPatch()->resetPop();
+		delete pop;
 	}
 	popns.clear();
 	// reset the individual ids to start from zero

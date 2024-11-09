@@ -47,8 +47,7 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 	int cumtotal = 0;
 	float probmale;
 	double ageprob, ageprobsum;
-	std::vector <double> ageProb; // for quasi-equilibrium initial age distribution
-	Cell* pCell;
+	std::vector<double> ageProb; // for quasi-equilibrium initial age distribution
 
 	if (ninds > 0) {
 		inds.reserve(ninds);
@@ -151,7 +150,7 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 		int sex;
 		nindivs = (int)inds.size();
 		for (int i = 0; i < n; i++) {
-			pCell = pPatch->getRandomCell();
+			Cell* pCell = pPatch->getRandomCell();
 			if (dem.stageStruct) {
 				switch (init.initAge) {
 				case 0: // lowest possible age
@@ -174,7 +173,7 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 			}
 			else age = stg;
 
-			inds.push_back(new Individual(pCell, pPatch, stg, age, sstruct.repInterval,
+			inds.push_back(DBG_NEW Individual(pCell, pPatch, stg, age, sstruct.repInterval,
 				probmale, trfr.usesMovtProc, trfr.moveType));
 
 			sex = inds[nindivs + i]->getSex();
@@ -194,6 +193,7 @@ Population::~Population() {
 	}
 	inds.clear();
 	juvs.clear();
+	sampledInds.clear();
 }
 
 traitsums Population::getIndTraitsSums(Species* pSpecies) {

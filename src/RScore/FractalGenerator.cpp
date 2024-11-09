@@ -179,7 +179,6 @@ vector<land>& fractal_landscape(int X, int Y, double Hurst, double prop,
 		}
 	}
 
-
 	sort(patches.begin(), patches.end(), compare);  // sorts the vector
 
 	Nno = (int)(prop * X * Y);
