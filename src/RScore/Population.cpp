@@ -52,7 +52,6 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 
 	if (ninds > 0) {
 		inds.reserve(ninds);
-		juvs.reserve(ninds);
 	}
 
 	pSpecies = pSp;
@@ -188,16 +187,12 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 	}
 }
 
-Population::~Population(void) {
-	int ninds = (int)inds.size();
+Population::~Population() {
+	int ninds = inds.size();
 	for (int i = 0; i < ninds; i++) {
-		if (inds[i] != NULL) delete inds[i];
+		if (inds[i] != nullptr) delete inds[i];
 	}
 	inds.clear();
-	int njuvs = (int)juvs.size();
-	for (int i = 0; i < njuvs; i++) {
-		if (juvs[i] != NULL) delete juvs[i];
-	}
 	juvs.clear();
 }
 
@@ -514,16 +509,12 @@ void Population::localExtinction(int option) {
 }
 
 // Remove all Individuals
-void Population::extirpate(void) {
-	int ninds = (int)inds.size();
+void Population::extirpate() {
+	int ninds = inds.size();
 	for (int i = 0; i < ninds; i++) {
-		if (inds[i] != NULL) delete inds[i];
+		if (inds[i] != nullptr) delete inds[i];
 	}
 	inds.clear();
-	int njuvs = (int)juvs.size();
-	for (int i = 0; i < njuvs; i++) {
-		if (juvs[i] != NULL) delete juvs[i];
-	}
 	juvs.clear();
 	for (int sex = 0; sex < nSexes; sex++) {
 		for (int stg = 0; stg < nStages; stg++) {
@@ -536,12 +527,11 @@ void Population::extirpate(void) {
 // Produce juveniles and hold them in the juvs vector
 void Population::reproduction(const float localK, const float envval, const int resol)
 {
-
 	// get population size at start of reproduction
 	int ninds = inds.size();
 	if (ninds == 0) return;
 
-	int nsexes, stage, sex, njuvs, nj, nmales, nfemales;
+	int nsexes, stage, sex, njuvs, nmales, nfemales;
 	Cell* pCell;
 	indStats ind;
 	double expected;
@@ -670,23 +660,19 @@ void Population::reproduction(const float localK, const float envval, const int 
 					expected = fec[stage][0];
 					if (expected <= 0.0) njuvs = 0;
 					else njuvs = pRandom->Poisson(expected);
-					nj = (int)juvs.size();
 					pCell = pPatch->getRandomCell();
 					for (int j = 0; j < njuvs; j++) {
 
-						Individual* newJuv = DBG_NEW Individual(pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
+						unique_ptr<Individual> newJuv = make_unique<Individual>(pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
 
 						if (pSpecies->getNTraits() > 0) {
 							newJuv->inheritTraits(pSpecies, inds[i], resol);
 						}
-
-						if (!newJuv->isViable()) {
-							delete newJuv;
-						}
-						else {
-							juvs.push_back(newJuv);
+						if (newJuv->isViable()) {
+							juvs.push_back(move(newJuv));
 							nInds[0][0]++;
 						}
+						// else (unviable) newJuv is deleted when going out of scope
 					}
 				}
 			}
@@ -706,8 +692,7 @@ void Population::reproduction(const float localK, const float envval, const int 
 				nmales++;
 			}
 		}
-		if (nfemales > 0 && nmales > 0)
-		{ // population can breed
+		if (nfemales > 0 && nmales > 0) { // population can breed
 			if (dem.repType == 2) { // complex sexual model
 				// calculate proportion of eligible females which breed
 				propBreed = (2.0 * dem.harem * nmales) / (nfemales + dem.harem * nmales);
@@ -741,9 +726,7 @@ void Population::reproduction(const float localK, const float envval, const int 
 						if (expected <= 0.0) njuvs = 0;
 						else njuvs = pRandom->Poisson(expected);
 
-						if (njuvs > 0)
-						{
-							nj = (int)juvs.size();
+						if (njuvs > 0) {
 							// select father at random from breeding males ...
 							int rrr = 0;
 							if (nmales > 1) rrr = pRandom->IRandom(0, nmales - 1);
@@ -751,20 +734,19 @@ void Population::reproduction(const float localK, const float envval, const int 
 							pCell = pPatch->getRandomCell();
 							for (int j = 0; j < njuvs; j++) {
 
-								Individual* newJuv = DBG_NEW Individual(pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
+								unique_ptr<Individual> newJuv = make_unique<Individual>(pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
 
 								if (pSpecies->getNTraits() > 0) {
 									newJuv->inheritTraits(pSpecies, inds[i], father, resol);
 								}
 
-								if (!newJuv->isViable()) {
-									delete newJuv;
-								}
-								else {
-									juvs.push_back(newJuv);
+								if (newJuv->isViable()) {
 									sex = newJuv->getSex();
 									nInds[0][sex]++;
+									juvs.push_back(move(newJuv));
 								}
+								// else (unviable) newJuv is deleted when going out of scope
+
 							}
 						}
 					}
@@ -785,8 +767,11 @@ void Population::fledge()
 {
 	demogrParams dem = pSpecies->getDemogrParams();
 
-	if (dem.stageStruct) { // juveniles are added to the individuals vector
-		inds.insert(inds.end(), juvs.begin(), juvs.end());
+	if (dem.stageStruct) { 
+		// juveniles are moved to the individuals vector
+		for (int j = 0; j < juvs.size(); j++) {
+			inds.push_back(juvs[j].release());
+		}
 	}
 	else { // all adults die and juveniles replace adults
 		int ninds = inds.size();
@@ -797,7 +782,9 @@ void Population::fledge()
 		for (int sex = 0; sex < nSexes; sex++) {
 			nInds[1][sex] = 0; // set count of adults to zero
 		}
-		inds = juvs;
+		for (int j = 0; j < juvs.size(); j++) {
+			inds.push_back(juvs[j].release());
+		}
 	}
 	juvs.clear();
 }

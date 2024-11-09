@@ -347,6 +347,7 @@ Landscape::~Landscape() {
 
 	deleteConnectMatrix();
 	deletePatchChgMatrix();
+
 	if (epsGlobal != 0) delete[] epsGlobal;
 }
 
@@ -526,9 +527,8 @@ void Landscape::clearHabitats(void) {
 }
 
 //---------------------------------------------------------------------------
-void Landscape::setCellArray(void) {
-	if (cells != 0) resetLand();
-	//cells = new Cell **[maxY+1];
+void Landscape::setCellArray() {
+	if (cells != nullptr) resetLand();
 	cells = new Cell * *[dimY];
 	for (int y = dimY - 1; y >= 0; y--) {
 		cells[y] = new Cell * [dimX];

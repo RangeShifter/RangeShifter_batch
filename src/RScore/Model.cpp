@@ -57,7 +57,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			pLandscape->allocatePatches(pSpecies);
 		}
 
-		pComm = new Community(pLandscape); // set up community
+		pComm = DBG_NEW Community(pLandscape); // set up community
 		
 		if (init.seedType == 0 && init.freeType < 2 && init.initFrzYr > 0) {
 			// restrict available landscape to initialised region
@@ -112,7 +112,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			// generate new cell-based landscape
 			pLandscape->resetLand();
 			pLandscape->generatePatches();
-			pComm = new Community(pLandscape); // set up community
+			pComm = DBG_NEW Community(pLandscape); // set up community
 			
 			if (sim.patchSamplingOption == "random") {
 				// Then patches must be resampled for new landscape

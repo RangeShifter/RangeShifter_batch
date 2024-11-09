@@ -227,7 +227,7 @@ private:
 	int nInds[gMaxNbStages][gMaxNbSexes];		// no. of individuals in each stage/sex
 
 	vector<Individual*> inds; // all individuals in population except ...
-	vector<Individual*> juvs; // ... juveniles until reproduction of ALL species
+	vector<unique_ptr<Individual>> juvs; // ... juveniles until reproduction of ALL species
 	// has been completed
 
 	vector<Individual*> sampledInds;
