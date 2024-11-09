@@ -100,9 +100,9 @@ struct indStats {
 	bool isDeveloping;
 };
 struct pathData { // to hold path data common to SMS and CRW models
-	int year, total, out; // nos. of steps
-	Patch* pSettPatch;		// pointer to most recent patch tested for settlement
-	short settleStatus; 	// whether ind may settle in current patch
+	int year = 0, total = 0, out = 0; // nos. of steps
+	Patch* pSettPatch = nullptr;		// pointer to most recent patch tested for settlement
+	short settleStatus = 0; 	// whether ind may settle in current patch
 		// 0 = not set, 
 		// 1 = debarred through density dependence rule
 		// 2 = OK to settle subject to finding a mate
@@ -112,11 +112,11 @@ struct pathData { // to hold path data common to SMS and CRW models
 #endif
 };
 struct pathSteps { // nos. of steps for movement model
-	int year, total, out;
+	int year = 0, total = 0, out = 0;
 };
 struct settlePatch {
-	Patch* pSettPatch; 
-	short settleStatus;
+	Patch* pSettPatch = nullptr; 
+	short settleStatus = 0;
 };
 
 struct trfrData {
@@ -307,8 +307,7 @@ public:
 		const short	// option: 0 = get natal locn, 1 = get current locn
 	); //
 	Patch* getNatalPatch(void);
-	void setYearSteps(int);
-	pathSteps getSteps(void);
+	pathSteps getSteps();
 	settlePatch getSettPatch(void);
 	void setSettPatch(const settlePatch);
 	void setStatus(indStatus s);
@@ -401,7 +400,7 @@ private:
 	Cell* pPrevCell;	// pointer to previous Cell
 	Cell* pCurrCell;	// pointer to current Cell
 	Patch* pNatalPatch;	// pointer to natal Patch
-	pathData* path;		// pointer to path data for movement model
+	unique_ptr<pathData> pMovtPath;		// pointer to path data for movement model
 	std::unique_ptr <emigTraits> pEmigTraits;			// pointer to emigration traits
 	std::unique_ptr <settleTraits> pSettleTraits;		// pointer to settlement traits
 	std::unique_ptr <trfrData> pTrfrData; //can be sms, kernel, crw

@@ -75,9 +75,7 @@ Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short rep
 	pTrfrData = nullptr; //set to null as default
 	if (movt) {
 		locn loc = pCell->getLocn();
-		path = DBG_NEW pathData;
-		path->year = 0; path->total = 0; path->out = 0;
-		path->pSettPatch = 0; path->settleStatus = 0;
+		pMovtPath = make_unique<pathData>();
 		if (moveType == 1) { // SMS
 			// set up location data for SMS
 			pTrfrData = make_unique<smsData>(loc, loc);
@@ -92,13 +90,13 @@ Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short rep
 		}
 	}
 	else {
-		path = 0;
+		pMovtPath = nullptr;
 		pTrfrData = make_unique<kernelData>(0.0, 0.0, 0.0);
 	}
 }
 
-Individual::~Individual(void) {
-	if (path != 0) delete path;
+Individual::~Individual() {
+
 }
 
 void Individual::setEmigTraits(const emigTraits& emig) {
@@ -364,47 +362,37 @@ Cell* Individual::getLocn(const short option) {
 	}
 }
 
-Patch* Individual::getNatalPatch(void) { return pNatalPatch; }
+Patch* Individual::getNatalPatch() { return pNatalPatch; }
 
-void Individual::setYearSteps(int t) {
-	if (path != 0 && t >= 0) {
-		if (t >= 0) path->year = t;
-		else path->year = 666;
-	}
-}
-
-pathSteps Individual::getSteps(void) {
-	pathSteps s;
-	if (path == 0) {
-		s.year = 0; s.total = 0; s.out = 0;
-	}
-	else {
-		s.year = path->year; s.total = path->total; s.out = path->out;
+pathSteps Individual::getSteps() {
+	pathSteps s = pathSteps();
+	if (pMovtPath != nullptr) {
+		s.year = pMovtPath->year; 
+		s.total = pMovtPath->total; 
+		s.out = pMovtPath->out;
 	}
 	return s;
 }
 
-settlePatch Individual::getSettPatch(void) {
+settlePatch Individual::getSettPatch() {
 	settlePatch s;
-	if (path == 0) {
-		s.pSettPatch = 0; s.settleStatus = 0;
-	}
-	else {
-		s.pSettPatch = path->pSettPatch; s.settleStatus = path->settleStatus;
+	if (pMovtPath != nullptr) {
+		s.pSettPatch = pMovtPath->pSettPatch; 
+		s.settleStatus = pMovtPath->settleStatus;
 	}
 	return s;
 }
 
 void Individual::setSettPatch(const settlePatch s) {
-	if (path == 0) {
-		path = DBG_NEW pathData;
-		path->year = 0; path->total = 0; path->out = 0; path->settleStatus = 0;
+	if (pMovtPath == nullptr) {
+		pMovtPath = make_unique<pathData>();
 #if RS_RCPP
-		path->pathoutput = 1;
+		pMovtPath->pathoutput = 1;
 #endif
 	}
-	if (s.settleStatus >= 0 && s.settleStatus <= 2) path->settleStatus = s.settleStatus;
-	path->pSettPatch = s.pSettPatch;
+	if (s.settleStatus >= 0 && s.settleStatus <= 2)
+		pMovtPath->settleStatus = s.settleStatus;
+	pMovtPath->pSettPatch = s.pSettPatch;
 }
 
 void Individual::setEmigTraits(Species* pSpecies, bool sexDep, bool densityDep) {
@@ -642,7 +630,7 @@ void Individual::ageIncrement(short maxage) {
 		age++;
 		if (age > maxage) status = diedOldAge; // exceeds max. age - dies
 		else {
-			if (path != nullptr) path->year = 0;	// reset annual step count for movement models
+			if (pMovtPath != nullptr) pMovtPath->year = 0;	// reset annual step count for movement models
 			if (status == waitNextDispersal)
 				status = dispersing;
 		}
@@ -770,7 +758,7 @@ bool Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool
 				if (nx < 0.0) newX = -1; else newX = (int)nx;
 				if (ny < 0.0) newY = -1; else newY = (int)ny;
 #ifndef NDEBUG
-				if (path != 0) (path->year)++;
+				if (pMovtPath != nullptr) (pMovtPath->year)++;
 #endif
 				loopsteps++;
 			} while (loopsteps < 1000 &&
@@ -902,8 +890,8 @@ bool Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 
 	// Apply step-dependent mortality risk
 	if (pPatch == pNatalPatch
-		&& path->out == 0
-		&& path->year == path->total) {
+		&& pMovtPath->out == 0
+		&& pMovtPath->year == pMovtPath->total) {
 		// no mortality if ind. has not yet left natal patch
 		probMort = 0.0;
 	}
@@ -919,13 +907,13 @@ bool Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 	}
 	else { 
 		// Take a step
-		(path->year)++;
-		(path->total)++;
+		(pMovtPath->year)++;
+		(pMovtPath->total)++;
 
 		if (pPatch == nullptr || patchNum == 0) { // not in a patch
 			// Reset path settlement status
-			if (path != nullptr) path->settleStatus = 0; 
-			(path->out)++;
+			if (pMovtPath != nullptr) pMovtPath->settleStatus = 0; 
+			(pMovtPath->out)++;
 		}
 		loc = pCurrCell->getLocn();
 		newX = loc.x; 
@@ -960,11 +948,11 @@ bool Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 			// Move in a straight line if...
 			if (pPatch == pNatalPatch 
 				// ... still in natal patch or
-				|| (movt.straightenPath && path->settleStatus > 0) 
+				|| (movt.straightenPath && pMovtPath->settleStatus > 0) 
 				// ... must straighten path to (previously determined) settlement patch 
 				){
 				rho = 0.99;
-				path->out = 0;
+				pMovtPath->out = 0;
 			}
 			int loopSteps = 0; // no infinite loop
 			constexpr int maxLoopSteps = 1000;
@@ -1027,7 +1015,7 @@ bool Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 
 		// Update individual status
 		if (pPatch != nullptr  // not no-data area or matrix
-			&& path->total >= settsteps.minSteps) {
+			&& pMovtPath->total >= settsteps.minSteps) {
 			if (pPatch != pNatalPatch
 				&& pPatch->getK() > 0.0) {
 				status = waitSettlement; // new patch is suitable
@@ -1035,10 +1023,10 @@ bool Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 		}
 		if (status != waitSettlement 
 			&& status != diedInTransfer) { // no suitable patch but not dead yet
-			if (path->year >= settsteps.maxStepsYr) {
+			if (pMovtPath->year >= settsteps.maxStepsYr) {
 				status = waitNextDispersal; // try again next year
 			}
-			if (path->total >= settsteps.maxSteps) {
+			if (pMovtPath->total >= settsteps.maxSteps) {
 				status = diedInTransfer;
 				isDispersing = false;
 			}
@@ -1078,22 +1066,22 @@ movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
 
 	// Get directional persistence weights
 	float directionalPersistence = indvar ? pSMS.dp : movt.dp;
-	if ((path->out > 0 && path->out <= (movt.pr + 1))
+	if ((pMovtPath->out > 0 && pMovtPath->out <= (movt.pr + 1))
 		|| natalPatch
-		|| (movt.straightenPath && path->settleStatus > 0)) {
+		|| (movt.straightenPath && pMovtPath->settleStatus > 0)) {
 		// inflate directional persistence to help leaving the patch
 		directionalPersistence *= 10.0;
 	}
 	neighbourWeights = getSimDirection(currLoc.x, currLoc.y, directionalPersistence);
 
-	if (natalPatch || path->settleStatus > 0) path->out = 0;
+	if (natalPatch || pMovtPath->settleStatus > 0) pMovtPath->out = 0;
 
 	// Get goal bias weights
 	double gb;
 	if (movt.goalType == 2) { // dispersal bias
-		int nsteps = path->year == path->total ? 
-			path->out : // first year of dispersal - use no. of steps outside natal patch
-			path->total; // use total no. of steps
+		int nsteps = pMovtPath->year == pMovtPath->total ? 
+			pMovtPath->out : // first year of dispersal - use no. of steps outside natal patch
+			pMovtPath->total; // use total no. of steps
 
 		float goalBias = indvar ? pSMS.gb : movt.gb;
 		float alphaDB = indvar ? pSMS.alphaDB : movt.alphaDB;
@@ -1571,7 +1559,7 @@ void Individual::outMovePath(const int year)
 	// if still dispersing...
 	if (status == dispersing) {
 		// at first step, record start cell first
-		if (path->total == 1) {
+		if (pMovtPath->total == 1) {
 			prev_loc = pPrevCell->getLocn();
 			outMovePaths << year << "\t" << indId << "\t"
 				<< "0\t" << prev_loc.x << "\t" << prev_loc.y << "\t"
@@ -1580,7 +1568,7 @@ void Individual::outMovePath(const int year)
 		}
 		// then record current step
 		outMovePaths << year << "\t" << indId << "\t"
-			<< path->total << "\t" << loc.x << "\t" << loc.y << "\t"
+			<< pMovtPath->total << "\t" << loc.x << "\t" << loc.y << "\t"
 			<< to_string(status) << "\t"
 			<< endl;
 	}
@@ -1588,21 +1576,21 @@ void Individual::outMovePath(const int year)
 	if (status != initial && status != dispersing) {
 		prev_loc = pPrevCell->getLocn();
 		// record only if this is the first step as non-disperser
-		if (path->pathoutput) {
+		if (pMovtPath->pathoutput) {
 			// if this is also the first step taken at all, record the start cell first
-			if (path->total == 1) {
+			if (pMovtPath->total == 1) {
 				outMovePaths << year << "\t" << indId << "\t"
 					<< "0\t" << prev_loc.x << "\t" << prev_loc.y << "\t"
 					<< "0\t"	// status at start cell is 0
 					<< endl;
 			}
 			outMovePaths << year << "\t" << indId << "\t"
-				<< path->total << "\t" << loc.x << "\t" << loc.y << "\t"
+				<< pMovtPath->total << "\t" << loc.x << "\t" << loc.y << "\t"
 				<< to_string(status) << "\t"
 				<< endl;
 			// current cell will be invalid (zero), so set back to previous cell
 			//pPrevCell = pCurrCell;
-			path->pathoutput = 0;
+			pMovtPath->pathoutput = 0;
 		}
 	}
 }
