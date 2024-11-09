@@ -184,6 +184,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	cout << "***** Simulation completed." << endl;
 	cout << "*****" << endl;
 
+	_CrtDumpMemoryLeaks();
+
 	return 0;
 }
 

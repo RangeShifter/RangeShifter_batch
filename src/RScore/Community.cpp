@@ -66,7 +66,7 @@ void Community::initialise(Species* pSpecies, int year)
 	spratio = ppLand.spResol / ppLand.resol;
 
 	// Initialise (empty) matrix population
-	matrixPop = new Population(pSpecies, pLandscape->findPatch(0), 0, ppLand.resol);
+	matrixPop = DBG_NEW Population(pSpecies, pLandscape->findPatch(0), 0, ppLand.resol);
 
 	switch (init.seedType) {
 
@@ -140,8 +140,8 @@ void Community::initialise(Species* pSpecies, int year)
 			// Determine size of initial population
 			int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
 			if (nInds > 0) {
-				Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
-				popns.push_back(pPop); // add new population to community list
+				Population* pPop = DBG_NEW Population(pSpecies, pPatch, nInds, ppLand.resol);
+				popns.push_back(pPop); // add DBG_NEW population to community list
 			}
 		}
 		break;
@@ -190,7 +190,7 @@ void Community::initialise(Species* pSpecies, int year)
 				// Determine size of initial population
 				int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
 				if (nInds > 0) {
-					Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
+					Population* pPop = DBG_NEW Population(pSpecies, pPatch, nInds, ppLand.resol);
 					popns.push_back(pPop); // add new population to community list
 				}
 			}
@@ -370,7 +370,7 @@ void Community::completeDispersal(Landscape* pLandscape, bool connect)
 
 			if (pPop == nullptr) { // settler is the first in a previously uninhabited patch
 				// create a new population in the corresponding sub-community
-				pPop = new Population(pSpecies, pNewPatch, 0, pLandscape->getLandParams().resol);
+				pPop = DBG_NEW Population(pSpecies, pNewPatch, 0, pLandscape->getLandParams().resol);
 				popns.push_back(pPop); // add new pop to community list
 			}
 
@@ -404,7 +404,7 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 	Population* pPop = pPatch->getPop();
 	// create new population if not already in existence
 	if (pPop == nullptr) {
-		pPop = new Population(pSpecies, pPatch, 0, pLandscape->getLandParams().resol);
+		pPop = DBG_NEW Population(pSpecies, pPatch, 0, pLandscape->getLandParams().resol);
 		pPatch->setPop(pPop);
 	}
 
@@ -421,7 +421,7 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 	}
 	float probmale = (dem.repType != 0 && iind.sex == 1) ? 1.0 : 0.0;
 
-	Individual* pInd = new Individual(pCell, pPatch, stg, age, repInt, probmale, trfr.usesMovtProc, trfr.moveType);
+	Individual* pInd = DBG_NEW Individual(pCell, pPatch, stg, age, repInt, probmale, trfr.usesMovtProc, trfr.moveType);
 
 	// add new individual to the population
 	pPop->recruit(pInd);
@@ -540,14 +540,14 @@ bool Community::outPopHeaders(Species* pSpecies, int option) {
 	if (option == -999) { // close the file
 		// as all populations may have been deleted, set up a dummy one
 		// species is not necessary
-		pPop = new Population();
+		pPop = DBG_NEW Population();
 		fileOK = pPop->outPopHeaders(-999, land.patchModel);
 		delete pPop;
 	}
 	else { // open the file
 		// as no population has yet been created, set up a dummy one
 		// species is necessary, as columns depend on stage and sex structure
-		pPop = new Population(pSpecies, 0, 0, land.resol);
+		pPop = DBG_NEW Population(pSpecies, 0, 0, land.resol);
 		fileOK = pPop->outPopHeaders(land.landNum, land.patchModel);
 		delete pPop;
 	}
@@ -592,7 +592,7 @@ void Community::outInds(int rep, int yr, int gen, int landNr) {
 
 	if (landNr == -999) { // close the file
 		// as all populations may have been deleted, set up a dummy one
-		Population* pPop = new Population();
+		Population* pPop = DBG_NEW Population();
 		pPop->outIndsHeaders(rep, -999, ppLand.patchModel);
 		delete pPop;
 		return;
@@ -1255,7 +1255,7 @@ void Community::outTraits(Species* pSpecies, int rep, int yr, int gen)
 
 	if (mustOutputTraitRows) {
 		// create array of traits means, etc., one for each row
-		ts = new traitsums[land.dimY];
+		ts = DBG_NEW traitsums[land.dimY];
 	}
 
 	if (v.viewTraits

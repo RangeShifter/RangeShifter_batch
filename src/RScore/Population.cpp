@@ -674,8 +674,7 @@ void Population::reproduction(const float localK, const float envval, const int 
 					pCell = pPatch->getRandomCell();
 					for (int j = 0; j < njuvs; j++) {
 
-						Individual* newJuv;
-						newJuv = new Individual(pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
+						Individual* newJuv = DBG_NEW Individual(pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
 
 						if (pSpecies->getNTraits() > 0) {
 							newJuv->inheritTraits(pSpecies, inds[i], resol);
@@ -751,9 +750,8 @@ void Population::reproduction(const float localK, const float envval, const int 
 							father = fathers[rrr];
 							pCell = pPatch->getRandomCell();
 							for (int j = 0; j < njuvs; j++) {
-								Individual* newJuv;
 
-								newJuv = new Individual(pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
+								Individual* newJuv = DBG_NEW Individual(pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
 
 								if (pSpecies->getNTraits() > 0) {
 									newJuv->inheritTraits(pSpecies, inds[i], father, resol);
@@ -1386,7 +1384,7 @@ void Population::applySurvivalDevlpt()
 
 		if (!isAlive(ind.status)) {
 			delete inds[i];
-			inds[i] = NULL;
+			inds[i] = nullptr;
 			nInds[ind.stage][ind.sex]--;
 		}
 		else {

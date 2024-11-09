@@ -75,7 +75,7 @@ Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short rep
 	pTrfrData = nullptr; //set to null as default
 	if (movt) {
 		locn loc = pCell->getLocn();
-		path = new pathData;
+		path = DBG_NEW pathData;
 		path->year = 0; path->total = 0; path->out = 0;
 		path->pSettPatch = 0; path->settleStatus = 0;
 		if (moveType == 1) { // SMS
@@ -397,7 +397,7 @@ settlePatch Individual::getSettPatch(void) {
 
 void Individual::setSettPatch(const settlePatch s) {
 	if (path == 0) {
-		path = new pathData;
+		path = DBG_NEW pathData;
 		path->year = 0; path->total = 0; path->out = 0; path->settleStatus = 0;
 #if RS_RCPP
 		path->pathoutput = 1;
