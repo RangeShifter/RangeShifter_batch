@@ -103,33 +103,23 @@ public:
 	void applySurvivalDevlpt();
 	void ageIncrement();
 	int totalInds();
-	Population* findPop( // Find the population of a given species in a given patch
-		Species*, // pointer to Species
-		Patch*		// pointer to Patch
-	);
+
 	commStats getStats();
 	void createOccupancy(int nbOutputRows, int nbReps);
 	void updateOccupancy(int whichRow, int replicate);
-	void deleteOccupancy(
-		int		// no. of rows (as above)
-	);
 
 	// Open occupancy file, write header record and set up occupancy array
 	bool outOccupancyHeaders();
 	void outOccupancy();
 	bool closeOccupancyOfs();
 
-	bool outRangeHeaders( // Open range file and write header record
-		Species* pSpecies,
-		int	landnr // (-999 to close the file)
-	);
-
+	// Open range file and write header record
+	bool outRangeHeaders(Species* pSpecies, int	landnr);
 	// Write record to range file
 	void outRange(Species* pSpecies, int rep, int yr, int gen);
 
 	// Open population file and write header record
 	bool outPopHeaders(Species* pSpecies, int option);
-
 	// Write records to population file
 	void outPop(int rep, int year, int gen);
 
@@ -139,13 +129,10 @@ public:
 	void outOccSuit(bool view);
 
 	bool outTraitsHeaders(Landscape* pLandscape, Species* pSpecies, int landnb);
-
 	// Open trait rows file and write header record
 	bool outTraitsRowsHeaders(Species* pSpecies, int landnr);
-
 	// Write records to traits file
 	void outTraits(Species* pSpecies, int rep, int year, int gen);
-
 	// Write records to trait rows file
 	void writeTraitsRows(
 		Species* pSpecies, 
@@ -182,10 +169,10 @@ public:
 private:
 	Landscape* pLandscape;
 	int indIx;				// index used to apply initial individuals
-	vector<vector <int>> occSuit;	// occupancy of suitable cells / patches
+	vector<vector<int>> occSuit;	// occupancy of suitable cells / patches
 
-	Population* matrixPop;
-	std::vector <Population*> popns;
+	unique_ptr<Population> matrixPop;
+	std::vector<unique_ptr<Population>> popns;
 
 	unique_ptr<NeutralStatsManager> pNeutralStatistics;
 };

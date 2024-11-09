@@ -44,11 +44,7 @@ Community::Community(Landscape* pLand) {
 }
 
 Community::~Community() {
-	for (int i = 0; i < popns.size(); i++) {
-		delete popns[i];
-	}
 	popns.clear();
-	delete matrixPop;
 }
 
 void Community::initialise(Species* pSpecies, int year)
@@ -67,7 +63,7 @@ void Community::initialise(Species* pSpecies, int year)
 	spratio = ppLand.spResol / ppLand.resol;
 
 	// Initialise (empty) matrix population
-	matrixPop = DBG_NEW Population(pSpecies, pLandscape->findPatch(0), 0, ppLand.resol);
+	matrixPop = make_unique<Population>(pSpecies, pLandscape->findPatch(0), 0, ppLand.resol);
 
 	switch (init.seedType) {
 
@@ -141,15 +137,14 @@ void Community::initialise(Species* pSpecies, int year)
 			// Determine size of initial population
 			int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
 			if (nInds > 0) {
-				Population* pPop = DBG_NEW Population(pSpecies, pPatch, nInds, ppLand.resol);
-				popns.push_back(pPop); // add new population to community list
+				auto pPop = make_unique<Population>(pSpecies, pPatch, nInds, ppLand.resol);
+				popns.push_back(move(pPop)); // add new population to community list
 			}
 		}
 		break;
 
 	case 1:	// from species distribution
-		if (ppLand.spDist)
-		{
+		if (ppLand.spDist) {
 			// initialise from loaded species distribution
 			switch (init.spDistType) {
 			case 0: // all presence cells
@@ -191,8 +186,8 @@ void Community::initialise(Species* pSpecies, int year)
 				// Determine size of initial population
 				int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
 				if (nInds > 0) {
-					Population* pPop = DBG_NEW Population(pSpecies, pPatch, nInds, ppLand.resol);
-					popns.push_back(pPop); // add new population to community list
+					auto pPop = make_unique<Population>(pSpecies, pPatch, nInds, ppLand.resol);
+					popns.push_back(move(pPop)); // add new population to community list
 				}
 			}
 		}
@@ -249,24 +244,21 @@ void Community::initialise(Species* pSpecies, int year)
 
 void Community::resetPopns() {
 	matrixPop->getPatch()->resetPop();
-	delete matrixPop;
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 		pop->getPatch()->resetPop();
-		delete pop;
 	}
-	popns.clear();
 	// reset the individual ids to start from zero
 	Individual::indCounter = 0;
 }
 
 void Community::localExtinction(int option) {
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 		pop->localExtinction(option);
 	}
 }
 
 void Community::patchChanges() {
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 		float localK = pop->getPatch()->getK();
 		if (localK <= 0.0) { // patch in dynamic landscape has become unsuitable
 			Species* pSpecies = pop->getSpecies();
@@ -294,7 +286,7 @@ void Community::reproduction(int yr)
 		}
 	}
 
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 		Patch* pPatch = pop->getPatch();
 		float localK = pPatch->getK();
 		if (localK > 0.0) {
@@ -307,7 +299,7 @@ void Community::reproduction(int yr)
 
 void Community::emigration()
 {
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 		pop->emigration(pop->getPatch()->getK());
 	}
 }
@@ -317,7 +309,7 @@ void Community::dispersal(short landIx, short nextseason)
 	simParams sim = paramsSim->getSim();
 
 	// initiate dispersal - all emigrants leave their natal community and join matrix community
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 
 		for (int j = 0; j < pop->getStats().nInds; j++) {
 			disperser disp = pop->extractDisperser(j);
@@ -334,7 +326,7 @@ void Community::dispersal(short landIx, short nextseason)
 	int ndispersers = 0;
 	do {
 		// Reset possible settlers for all patches before transfer
-		for (auto pop : popns) { // all populations, incl. matrix
+		for (auto& pop : popns) { // all populations, incl. matrix
 			pop->getPatch()->resetPossSettlers();
 		}
 		matrixPop->getPatch()->resetPossSettlers();
@@ -373,8 +365,8 @@ void Community::completeDispersal(Landscape* pLandscape, bool connect)
 
 			if (pPop == nullptr) { // settler is the first in a previously uninhabited patch
 				// create a new population in the corresponding sub-community
-				pPop = DBG_NEW Population(pSpecies, pNewPatch, 0, pLandscape->getLandParams().resol);
-				popns.push_back(pPop); // add new pop to community list
+				auto pPop = make_unique<Population>(pSpecies, pNewPatch, 0, pLandscape->getLandParams().resol);
+				popns.push_back(move(pPop)); // add new pop to community list
 			}
 
 			pPop->recruit(settler.pInd);
@@ -439,19 +431,19 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 void Community::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv)
 {
 	matrixPop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 		pop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
 	}
 }
 
 void Community::applySurvivalDevlpt() {
-	for (auto pop : popns) pop->applySurvivalDevlpt();
+	for (auto& pop : popns) pop->applySurvivalDevlpt();
 }
 
 void Community::ageIncrement() {
 
 	matrixPop->ageIncrement();
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 		pop->ageIncrement();
 	}
 }
@@ -459,8 +451,7 @@ void Community::ageIncrement() {
 // Calculate total no. of individuals of all species
 int Community::totalInds() {
 	int total = matrixPop->getStats().nInds;
-	const int nPops = popns.size();
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 		total += pop->getStats().nInds;
 	}
 	return total;
@@ -470,7 +461,7 @@ int Community::totalInds() {
 void Community::createOccupancy(int nbOutputRows, int nbReps) {
 
 	matrixPop->getPatch()->createOccupancy(nbOutputRows);
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 		pop->getPatch()->createOccupancy(nbOutputRows);
 	}
 	// Initialise array for occupancy of suitable cells/patches
@@ -483,7 +474,7 @@ void Community::createOccupancy(int nbOutputRows, int nbReps) {
 void Community::updateOccupancy(int whichRow, int rep)
 {
 	matrixPop->getPatch()->updateOccupancy(whichRow);
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 		pop->getPatch()->updateOccupancy(whichRow);
 	}
 	commStats s = getStats();
@@ -506,7 +497,7 @@ commStats Community::getStats()
 	s.ninds = matrixPop->getStats().nInds;
 	s.nnonjuvs = matrixPop->getStats().nNonJuvs;
 
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 
 		patchPop = pop->getStats();
 		s.ninds += patchPop.nInds;
@@ -575,7 +566,7 @@ void Community::outPop(int rep, int yr, int gen)
 	if (matrixPop->totalPop() > 0) {
 		matrixPop->outPopulation(rep, yr, gen, env.local, eps, land.patchModel, writeEnv, gradK);
 	}
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 		float localK = pop->getPatch()->getK();
 		if (localK > 0.0 || pop->totalPop() > 0) {
 			pop->outPopulation(rep, yr, gen, env.local, eps, land.patchModel, writeEnv, gradK);
@@ -603,7 +594,7 @@ void Community::outInds(int rep, int yr, int gen, int landNr) {
 
 	// generate output for each sub-community (patch) in the community
 	matrixPop->outIndividual(pLandscape, rep, yr, gen);
-	for (Population* pop : popns) { // all sub-communities
+	for (auto& pop : popns) { // all sub-communities
 		pop->outIndividual(pLandscape, rep, yr, gen);
 	}
 }
@@ -742,14 +733,14 @@ void Community::outRange(Species* pSpecies, int rep, int yr, int gen)
 		// all non-juvenile stages
 		for (int stg = 1; stg < sstruct.nStages; stg++) {
 			stagepop = matrixPop->stagePop(stg);
-			for (auto pop : popns) {
+			for (auto& pop : popns) {
 				stagepop += pop->stagePop(stg);
 			}
 			outrange << "\t" << stagepop;
 		}
 		// juveniles born in current reproductive season
 		stagepop = matrixPop->stagePop(0);
-		for (auto pop : popns) {
+		for (auto& pop : popns) {
 			stagepop += pop->stagePop(0);
 		}
 		outrange << "\t" << stagepop;
@@ -1081,7 +1072,7 @@ void Community::outOccupancy() {
 	simParams sim = paramsSim->getSim();
 	locn loc;
 
-	for (auto pop : popns) {
+	for (auto& pop : popns) {
 		if (ppLand.patchModel) {
 			outoccup << pop->getPatch()->getPatchNum();
 		}
@@ -1300,7 +1291,7 @@ void Community::outTraits(Species* pSpecies, int rep, int yr, int gen)
 				ts[y].ssqGeneticFitness[s] += sctraits.ssqGeneticFitness[s];
 			}
 		}
-		for (auto pop : popns) {
+		for (auto& pop : popns) {
 			if (mustOutputTraitCells) {
 				pop->outputTraitPatchInfo(outtraits, rep, yr, gen, land.patchModel);
 			}
