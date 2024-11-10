@@ -1,53 +1,54 @@
 /*----------------------------------------------------------------------------
- *	
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell 
- *	
+ *
+ *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *
  *	This file is part of RangeShifter.
- *	
+ *
  *	RangeShifter is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 3 of the License, or
  *	(at your option) any later version.
- *	
+ *
  *	RangeShifter is distributed in the hope that it will be useful,
  *	but WITHOUT ANY WARRANTY; without even the implied warranty of
  *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  *	GNU General Public License for more details.
- *	
+ *
  *	You should have received a copy of the GNU General Public License
  *	along with RangeShifter. If not, see <https://www.gnu.org/licenses/>.
- *	
+ *
  --------------------------------------------------------------------------*/
- 
- 
-/*------------------------------------------------------------------------------
 
-RangeShifter v2.0 Model
 
-Implements three functions which run the model and produce output common to both
-GUI and batch version.
+ /*------------------------------------------------------------------------------
 
-RunModel() handles looping through replicates, years and generations
+ RangeShifter v2.0 Model
 
-Further functions are declared here, but defined differently in main function of
-GUI and batch versions.
+ Implements three functions which run the model and produce output common to both
+ GUI and batch version.
 
-For full details of RangeShifter, please see:
-Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
-and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
-eco-evolutionary dynamics and species’ responses to environmental changes.
-Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
+ RunModel() handles looping through replicates, years and generations
 
-Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
+ Further functions are declared here, but defined differently in main function of
+ GUI and batch versions.
 
-Last updated: 26 October 2021 by Steve Palmer
-------------------------------------------------------------------------------*/
+ For full details of RangeShifter, please see:
+ Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+ and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
+ eco-evolutionary dynamics and species’ responses to environmental changes.
+ Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
+
+ Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
+
+ Last updated: 28 July 2021 by Greta Bocedi
+ ------------------------------------------------------------------------------*/
 
 #ifndef ModelH
 #define ModelH
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <chrono>
 
 #include "Parameters.h"
 #include "Landscape.h"
@@ -64,10 +65,6 @@ Last updated: 26 October 2021 by Steve Palmer
 using namespace std::filesystem;
 #endif
 
-#if RSDEBUG
-extern ofstream DEBUGLOG;
-#endif
-
 #if RS_RCPP && !R_CMD
 Rcpp::List RunModel(
 	Landscape*,	// pointer to Landscape
@@ -79,7 +76,9 @@ int RunModel(
 	int					// sequential simulation number
 );
 #endif // RS_RCPP && !R_CMD
-bool CheckDirectory(void);
+
+bool CheckDirectory(const string& pathToProjDir);
+
 void PreReproductionOutput(
 	Landscape*,	// pointer to Landscape
 	Community*, // pointer to Community
@@ -98,25 +97,17 @@ void OutParameters(
 	Landscape*	// pointer to Landscape
 );
 
-extern paramGrad *paramsGrad;
-extern paramStoch *paramsStoch;
-extern Species *pSpecies;
-extern paramSim *paramsSim;
-extern paramInit *paramsInit;
-extern Community *pComm;
+extern paramGrad* paramsGrad;
+extern paramStoch* paramsStoch;
+extern Species* pSpecies;
+extern paramSim* paramsSim;
+extern paramInit* paramsInit;
+extern Community* pComm;
 
-const bool batchMode = true;
 extern string landFile;
-extern vector <string> hfnames;
-extern string habmapname;		// see Main.cpp (batch)
-extern string patchmapname;	// see Main.cpp (batch)
-extern string distnmapname;	// see Main.cpp (batch)
-extern string costmapname;	// see Main.cpp (batch)
-extern string genfilename;	// see Main.cpp (batch)
 extern RSrandom *pRandom;
 
 #if RS_RCPP
-extern std::uint32_t RS_random_seed;
 extern string name_landscape, name_patch, name_costfile, name_sp_dist;
 #endif
 //---------------------------------------------------------------------------

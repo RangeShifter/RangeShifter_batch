@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.16)
 project(RangeShifter VERSION 2.1.0)
 
 # specify the C++ standard
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF) # required by SFML's own build
@@ -23,8 +23,6 @@ add_subdirectory(src/RScore)
 
 # declare target executable
 add_executable(RangeShifter src/Main.cpp src/BatchMode.cpp src/BatchView.cpp)
-
-target_compile_definitions(RangeShifter PRIVATE RSWIN64)
 
 # enable LINUX_CLUSTER macro on Linux + macOS
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")

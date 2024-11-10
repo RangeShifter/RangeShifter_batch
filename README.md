@@ -1,6 +1,6 @@
-# RangeShifter Batch Mode 
+# RangeShifter Batch Mode <img src="doc/RS_logo.png" align="right" height = 100/>
 
-C++ code for the RangeShifter v2 batch mode application 
+C++ code for the RangeShifter v2 batch mode application
 
 <img title="" src="https://github.com/RangeShifter/RangeShifter_batch_dev/blob/main/doc/rs_batch_logo.png" alt="" align="right" height="150">
 
@@ -25,21 +25,32 @@ The compiled software can be found in the [Software and Documentation](https://g
 
 Building RangeShifter from the source code requires CMake. If you haven't done so yet, you will need to [download and install it](https://cmake.org/download/).
 
-RangeShifter can then be configured and built (out-of-source) from `CMakeLists.txt`, with the usual CMake commands:
+RangeShifter can then be configured and built from `CMakeLists.txt`.
+If you are not seeking to develop the code yourself, it is best (=faster) to build RangeShifter in Release mode, whihc requires slightly different command on Unix vs Windows systems:
 
 ```bash
+# Unix
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+```
+
+```bash
+# Windows (Visual Studio)
 mkdir build && cd build
 cmake ..
-cmake --build .
+cmake --build . --config Release
 ```
 
 If you use Visual Studio as your IDE, CMake should be recognised automatically when `RangeShifter_batch_dev` is opened as a new folder. 
 Visual Studio will take care of the configuration, and you only need to select target RangeShifter.exe before pressing the build button.
 
-Alternatively, RangeShifter can also be built directly with the GNU C++ compiler, in which case some #define macros must be passed to it:
+Alternatively, RangeShifter can also be built directly with the GNU C++ compiler. 
+In this case, some #define macros must be passed to it, and RScore/Main.cpp must be excluded from source files:
 
 ```bash
-g++ -o RangeShifter.exe ./src/*.cpp ./src/RScore/*.cpp -DRSDEBUG -DRSWIN64 -DLINUX_CLUSTER
+shopt -s extglob # enable the !(file) pattern below
+g++ --std=c++20 -o RangeShifter.exe ./src/*.cpp ./src/RScore/!(Main).cpp -DLINUX_CLUSTER -O3 -s -DNDEBUG
 ```
 
 ## Running RangeShifter

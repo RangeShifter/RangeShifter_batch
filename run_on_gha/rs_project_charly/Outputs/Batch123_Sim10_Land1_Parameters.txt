@@ -1,0 +1,149 @@
+RangeShifter 2.0  - 64 bit implementation
+================    =====================
+
+BATCH MODE 	yes
+REPLICATES 	1
+YEARS 	5
+REPRODUCTIVE SEASONS / YEAR	1
+CELL-BASED MODEL
+BOUNDARIES 	reflective
+
+LANDSCAPE:	imported map
+TYPE: 	habitat quality
+FILE NAME:  (see batch file) Inputs/LandFile.txt
+No. HABITATS:	1
+RESOLUTION (m): 	100
+DIMENSIONS:  X 20  Y 20
+AVAILABLE:   min.X 0 min.Y 0  max.X 19 max.Y 19
+DYNAMIC LANDSCAPE: 
+Change no. 1 in year 3
+Landscape: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 2 in year 4
+Landscape: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 3 in year 2005
+Landscape: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 4 in year 2008
+Landscape: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 5 in year 2009
+Landscape: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 6 in year 2012
+Landscape: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 7 in year 2013
+Landscape: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 8 in year 2016
+Landscape: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 9 in year 2017
+Landscape: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 10 in year 2020
+Landscape: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 11 in year 2021
+Landscape: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 12 in year 2024
+Landscape: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 13 in year 2025
+Landscape: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 14 in year 2028
+Landscape: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 15 in year 2029
+Landscape: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 16 in year 2032
+Landscape: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 17 in year 2033
+Landscape: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 18 in year 2036
+Landscape: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 19 in year 2037
+Landscape: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 20 in year 2040
+Landscape: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 21 in year 2041
+Landscape: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 22 in year 2044
+Landscape: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 23 in year 2045
+Landscape: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 24 in year 2048
+Landscape: Inputs/disturbanceMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+Change no. 25 in year 2049
+Landscape: Inputs/baseMapRep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.asc
+
+SPECIES DISTRIBUTION LOADED: 	no
+
+ENVIRONMENTAL GRADIENT:	 no
+ENVIRONMENTAL STOCHASTICITY:	no
+LOCAL EXTINCTION PROBABILITY:	0.0
+
+SPECIES' PARAMETERS.
+REPRODUCTION:
+TYPE: Sexual model (simple)
+PROP. of MALES	0.5
+STAGE STRUCTURE:	yes
+PROBABILITY OF REPRODUCING IN SUBSEQUENT SEASONS	1
+No. OF REP. SEASONS BEFORE SUBSEQUENT REPRODUCTIONS	1
+ACTION AFTER POPULATION DESTRUCTION: all individuals die
+No. STAGES	2
+MAX. AGE	1000
+MIN. AGES:
+stage	0:	0	years
+stage	1:	0	years
+FECUNDITIES:
+stage	0:	0
+stage	1:	6
+DEVELOPMENT PROB.:
+stage	0:	1
+stage	1:	0
+SURVIVAL PROB.:
+stage	0:	1
+stage	1:	0
+SCHEDULING OF SURVIVAL: Between reproductive events
+DENSITY-DEPENDENCE IN FECUNDITY:	no
+DENSITY-DEPENDENCE IN DEVELOPMENT:	no
+DENSITY-DEPENDENCE IN SURVIVAL:		yes - coefficient: 1
+not stage-dependent
+
+HABITAT SPECIFIC 1/b:
+Habitat 0: 1/b 100
+
+DISPERSAL - EMIGRATION:	density-independent
+USE FULL KERNEL TO DETERMINE EMIGRATION: no
+SEX-DEPENDENT:   no
+STAGE-DEPENDENT: no
+EMIGRATION PROB.:	0.1
+
+DISPERSAL - TRANSFER: 	dispersal kernel
+TYPE: 	negative exponential
+SEX-DEPENDENT:   no
+STAGE-DEPENDENT: no
+MEAN DISTANCE I: 	100
+DISPERSAL MORTALITY:   constant
+MORTALITY PROBABILITY: 0
+
+DISPERSAL - SETTLEMENT:
+SEX-DEPENDENT:   no
+STAGE-DEPENDENT: no
+IF THE ARRIVAL CELL/PATCH IS UNSUITABLE: die
+MATING REQUIREMENTS: no
+
+GENETICS:
+DIPLOID
+Genome size: 3
+Chromosome breaks : 2 
+Recombination rate: 0
+Traits modelled:  
+0
+
+INITIALISATION CONDITIONS:
+Free initialisation: 	all suitable cells/patches
+INITIAL NO. OF INDIVIDUALS: 	at carrying capacity
+INITIAL STAGE PROPORTIONS:
+stage 1: 1 	
+Initial age distribution: lowest possible age
+GEOGRAPHICAL CONSTRAINTS (cell numbers): 
+min X: 0 max X: 19
+min Y: 0 max Y: 19
+
+OUTPUTS:
+Populations - every 1 year starting year 1
+Neutral genetics - every 1 year outputting pairwise patch fst outputting per locus fst 
+SAVE MAPS: no
+SAVE TRAITS MAPS: no

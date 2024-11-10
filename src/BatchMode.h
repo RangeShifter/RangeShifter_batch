@@ -1,42 +1,42 @@
 /*----------------------------------------------------------------------------
- *	
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell 
- *	
+ *
+ *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *
  *	This file is part of RangeShifter.
- *	
+ *
  *	RangeShifter is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 3 of the License, or
  *	(at your option) any later version.
- *	
+ *
  *	RangeShifter is distributed in the hope that it will be useful,
  *	but WITHOUT ANY WARRANTY; without even the implied warranty of
  *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  *	GNU General Public License for more details.
- *	
+ *
  *	You should have received a copy of the GNU General Public License
  *	along with RangeShifter. If not, see <https://www.gnu.org/licenses/>.
- *	
+ *
  --------------------------------------------------------------------------*/
- 
- 
-/*------------------------------------------------------------------------------
 
-RangeShifter v2.0 BatchMode
 
-Functions for running in BATCH MODE
+ /*------------------------------------------------------------------------------
 
-For full details of RangeShifter, please see:
-Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
-and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
-eco-evolutionary dynamics and species’ responses to environmental changes.
-Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
+ RangeShifter v2.0 BatchMode
 
-Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
+ Functions for running in BATCH MODE
 
-Last updated: 26 October 2021 by Steve Palmer
+ For full details of RangeShifter, please see:
+ Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+ and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
+ eco-evolutionary dynamics and species’ responses to environmental changes.
+ Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
-------------------------------------------------------------------------------*/
+ Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
+
+ Last updated: 28 July 2021 by Greta Bocedi
+
+ ------------------------------------------------------------------------------*/
 
 #ifndef BatchModeH
 #define BatchModeH
@@ -45,12 +45,15 @@ Last updated: 26 October 2021 by Steve Palmer
 #include <string>
 #include <fstream>
 #include <algorithm>
+#include <regex>
 using namespace std;
 
 #include "./RScore/Parameters.h"
 #include "./RScore/Landscape.h"
 #include "./RScore/Species.h"
 #include "./RScore/Model.h"
+#include "./RScore/SpeciesTrait.h"
+#include "./RScore/NeutralTrait.h"
 
 struct batchfiles {
 	bool ok;
@@ -62,7 +65,7 @@ struct batchfiles {
 	int repseasons;
 	int stagestruct, stages, transfer;
 	int sexesDem;		// no. of explicit sexes for demographic model
-	int sexesDisp;	// no. of explicit sexes for dispersal model
+	int nbSexesDisp;	// no. of explicit sexes for dispersal model
 	string parameterFile;
 	string landFile;
 	string stageStructFile;
@@ -70,29 +73,57 @@ struct batchfiles {
 	string transferFile;
 	string settleFile;
 	string geneticsFile;
+	string traitsFile;
 	string initFile;
 };
 
-struct simCheck {
-	bool newsimul;
-	int simul,simlines,reqdsimlines,errors;
+struct TraitInputOptions {
+	bool anyNeutral = false;
+	bool isEmigIndVar = false;
+	bool isEmigDensDep = false;
+	bool isEmigSexDep = false;
+
+	bool isSettIndVar = false;
+	bool isSettSexDep = false;
+
+	bool isKernTransfIndVar = false;
+	bool isKernTransfSexDep = false;
+	bool usesTwoKernels = false;
+
+	bool isSMSTransfIndVar = false;
+	bool usesSMSGoalBias = false;
+
+	bool isCRWTransfIndVar = false;
 };
 
-batchfiles ParseControlFile(string,string,string);
-int ParseParameterFile(void);
-int ParseLandFile(int,string);
-int ParseDynamicFile(string,string);
-int ParseStageFile(string);
-int ParseTransitionFile(short,short);
-int ParseWeightsFile(string);
-int ParseEmigFile(void);
-int ParseTransferFile(string);
-int ParseSettleFile(void);
-int ParseGeneticsFile(string);
-int ParseArchFile(void);
-int ParseInitFile(string);
-int ParseInitIndsFile(void);
-simCheck CheckStageSex(string,int,int,simCheck,int,int,int,int,int,bool,bool);
+bool traitExists(const TraitType& tr, const vector<TraitType>& existingTraits);
+TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex);
+int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& simNb);
+
+constexpr int gEmptyVal = -9;
+constexpr int nHeadersEmig = 13;
+
+struct simCheck {
+	bool isNewSim;
+	int simNb, simLines, reqdSimLines, errors;
+};
+
+batchfiles ParseControlAndCheckInputFiles(string, string, string);
+int CheckParameterFile();
+int CheckLandFile(int, string);
+int CheckGeneticsFile(string);
+int CheckDynamicFile(string, string);
+int CheckStageFile(string);
+int CheckTransitionFile(short, short);
+int CheckWeightsFile(string);
+int CheckEmigFile(void);
+int CheckTransferFile(string);
+int CheckSettleFile(void);
+int CheckInitFile(string);
+int CheckInitIndsFile(void);
+simCheck CheckStageSex(string, int, int, simCheck, int, int, int, int, int, bool, bool);
+int CheckGeneticsFile(string inputDirectory);
+int CheckTraitsFile(string indir);
 
 void BatchError(
 	string,	// file name
@@ -148,19 +179,18 @@ int power2check(int x);
 
 void CtrlFormatError(void);
 void ArchFormatError(void);
-void FormatError(string,int);
-void OpenError(string,string);
+void FormatError(string, int);
+void OpenError(string, string);
 void EOFerror(string);
-void FileOK(string,int,int);
+void FileOK(string, int, int);
 void FileHeadersOK(string);
 void SimulnCountError(string);
 
-void RunBatch(int,int);
-int ReadParameters(int,Landscape*);
-int ReadLandFile(int);
-int ReadLandFile(int,Landscape*);
+void RunBatch(int, int);
+int ReadParameters(Landscape*);
+int ReadLandFile(Landscape*);
 int ReadDynLandFile(Landscape*);
-int ReadStageStructure(int);
+int ReadStageStructure();
 int ReadTransitionMatrix(
 	short,	// no. of stages
 	short,	// no. of sexes represented for demography 
@@ -168,27 +198,38 @@ int ReadTransitionMatrix(
 	short		// season
 );
 int ReadStageWeights(int);
-int ReadEmigration(int);
-int ReadTransfer(int,Landscape*);
-int ReadSettlement(int);
-int ReadGenetics(int);
-int ReadArchFile(string);
-int ReadInitialisation(int,Landscape*);
-int ReadInitIndsFile(int,Landscape*,string);
+int ReadEmigration();
+int ReadTransferFile(Landscape*);
+int ReadTransferKernels(transferRules, const landParams&);
+void ReadTransferSMS(transferRules, const landParams&);
+int ReadTransferCRW(transferRules, const landParams&);
+int ReadSettlement();
+int ReadInitialisation(Landscape*);
+int ReadInitIndsFile(int, Landscape*, string);
+int ReadGeneticsFile(ifstream& ifs, Landscape*);
+int ReadTraitsFile(ifstream& ifs, const int& whichSim);
 
-#if RSDEBUG
-extern ofstream DEBUGLOG;
-#endif
+// Helper functions to ReadGenetics and ReadTraits
+void setUpSpeciesTrait(vector<string>);
+DistributionType stringToDistributionType(const std::string& str);
+ExpressionType stringToExpressionType(const std::string& str);
+map<GenParamType, float> stringToParameterMap(string parameters);
+set<int> selectRandomLociPositions(int noLoci, const int& genomeSize);
+set<int> stringToLoci(string pos, string nLoci, const int& genomeSize);
+TraitType stringToTraitType(const std::string& str);
+const sex_t stringToSex(const std::string& str);
+set<int> stringToPatches(const string&);
+set<int> stringToStages(const string&, const int&);
+set<int> stringToChromosomeEnds(string, const int&);
+GenParamType strToGenParamType(const string& str);
 
 // external pointers to parameter sets
-extern paramGrad *paramsGrad;
-extern paramStoch *paramsStoch;
-extern paramInit *paramsInit;
-extern paramSim *paramsSim;
+extern paramGrad* paramsGrad;
+extern paramStoch* paramsStoch;
+extern paramInit* paramsInit;
+extern paramSim* paramsSim;
 
-extern Species *pSpecies;
-extern string costmapname;
-extern string genfilename;
+extern Species* pSpecies;
 extern int RS_random_seed;
 
 //---------------------------------------------------------------------------

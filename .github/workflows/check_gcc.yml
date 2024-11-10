@@ -1,0 +1,25 @@
+name: check_gcc
+on: push
+
+jobs:
+  check:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-13]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: build
+        run: |
+          shopt -s extglob
+          g++ --std=c++20 -o RangeShifter ./src/*.cpp ./src/RScore/!(Main).cpp -DLINUX_CLUSTER
+
+      - name: run
+        run: ./RangeShifter ./run_on_gha/rs_test_project/
+
+      - name: check_output
+        if: ${{ matrix.os != 'macos-13' }}
+        run: |
+          cd ./run_on_gha/rs_test_project 
+        #  bash check_output.bash # disable until new genetics stable

@@ -1,0 +1,28 @@
+name: check_charly
+on: push
+
+jobs:
+  check:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-13]
+        include:
+          - os: windows-latest
+            path_to_exe: ./build/Debug/RangeShifter.exe
+          - os: ubuntu-latest
+            path_to_exe: ./build/RangeShifter
+          - os: macos-13
+            path_to_exe: ./build/RangeShifter
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: build
+        run: |
+          mkdir build
+          cd build
+          cmake ../
+          cmake --build .
+          
+      - name: run
+        run: ${{ matrix.path_to_exe }} run_on_gha/rs_project_charly/

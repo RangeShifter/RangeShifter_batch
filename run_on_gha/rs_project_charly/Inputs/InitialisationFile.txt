@@ -1,0 +1,2 @@
+Simulation	SeedType	FreeType 	SpType	InitDens	IndsCell	minX	maxX	minY	maxY	NCells	NSpCells	InitFreezeYear	RestrictRows	RestrictFreq	FinalFreezeYear	InitIndsFile	InitAge	PropStage1
+10	0	1	-9	0	-9	0	19	0	19	-9	-9	0	0	0	0	NULL	0	1
