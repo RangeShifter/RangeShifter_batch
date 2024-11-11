@@ -25,6 +25,9 @@ private:
 	const float relSizeLegend = 0.05; // height of time+gen label relative to dimX
 	sf::Font font;
 
+	sf::Text txtPaused;
+	sf::RectangleShape txtPausedBg;
+
 	float indRadius = 1.0;
 	sf::CircleShape indShape = sf::CircleShape(indRadius);
 	sf::Color indColour = sf::Color::Red;

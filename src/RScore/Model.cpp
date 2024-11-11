@@ -623,6 +623,12 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			pLandscape->outPathsHeaders(rep, -999);
 #endif
 
+#ifdef BATCH_VIEW
+		// Lock display on last year
+		// to allow enough time to have a look
+		while (window.isOpen()) 
+			bView.collectUserInput(window);
+#endif
 		} // end of the replicates loop
 
 	if (sim.outConnect && ppLand.patchModel) {

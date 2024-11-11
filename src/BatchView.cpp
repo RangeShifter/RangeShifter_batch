@@ -5,11 +5,7 @@ BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCom
 	pLandscape{ pLand },
 	pComm{ pCommunity } 
 {
-
-	string pathToFont = "../../../gfx/arial.ttf";
-
-	cout << std::filesystem::current_path() << endl;
-
+	string pathToFont = "../../../gfx/consola.ttf";
 	if (!std::filesystem::exists(pathToFont)) {
 		throw logic_error("Font doesn't exist.\n");
 
@@ -30,6 +26,20 @@ BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCom
 	window.create(sf::VideoMode{winWidth, winHeight}, "RangeShifter Batch");
 	window.setFramerateLimit(144);
 
+	// Create paused text box
+	float txtPausedX = dimX / 2.0f;
+	float txtPausedY = dimY / 2.0f;
+	txtPaused.setFont(font);
+	txtPaused.setOrigin(0.5, 0.5);
+	txtPaused.setPosition(sf::Vector2f(txtPausedX, txtPausedY));
+	txtPaused.setString("[Paused]");
+	txtPaused.setColor(sf::Color::Blue);
+	txtPausedBg = sf::RectangleShape(sf::Vector2f{
+		txtPaused.getGlobalBounds().width * 1.1f,
+		txtPaused.getGlobalBounds().height * 1.4f
+		});
+	txtPausedBg.setPosition(sf::Vector2f(txtPausedX, txtPausedY));
+	txtPausedBg.setFillColor(sf::Color::White);
 }
 
 
@@ -38,6 +48,7 @@ BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCom
 // e.g. clicking, scrolling, typing etc.
 // ---------------------------------------
 void BatchView::collectUserInput(sf::RenderWindow& window) {
+
 	mustPause = false;
 	do {
 		if (window.isOpen()) {
@@ -51,9 +62,6 @@ void BatchView::collectUserInput(sf::RenderWindow& window) {
 				case sf::Event::KeyPressed:
 					if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
 						mustPause = !mustPause; // pause if not paused and conversely
-						if (mustPause) {
-							//sf::Text pauseMsg;
-						}
 					}
 					break;
 				default:
@@ -152,29 +160,28 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 	}
 
 	// Display year and generation
-	float legendHeight = (1.0 - relSizeLegend) * dimY;
-	sf::Vector2f timeLegendPosition{0.0, legendHeight}; // just below plot
-	sf::RectangleShape timeLegendBg(sf::Vector2f{dimX * 1.0f, legendHeight});
+	float legendOriginY = (1.0 - relSizeLegend) * dimY;
+	float legendOriginX = 0.01f * dimX;
+	sf::Vector2f timeLegendPosition{0.0, legendOriginY}; // just below plot
+	sf::RectangleShape timeLegendBg(sf::Vector2f{dimX * 1.0f, legendOriginY});
 	timeLegendBg.setPosition(timeLegendPosition);
 	window.draw(timeLegendBg);
 
 	sf::Text timeLegendTxt;
 	timeLegendTxt.setFont(font);
-	timeLegendTxt.setPosition(timeLegendPosition);
+	timeLegendTxt.setPosition(sf::Vector2f(legendOriginX, legendOriginY));
+	timeLegendTxt.setCharacterSize(relSizeLegend * dimY / 2.0f);
 	timeLegendTxt.setString(
 		"Year:\t" + to_string(yr) 
-		+ "\n Gen:\t" + to_string(gen)
+		+ "\nGen:\t" + to_string(gen)
 	);
 	timeLegendTxt.setColor(sf::Color::Blue);
 	window.draw(timeLegendTxt);
 
-	sf::Text hello;
-	hello.setFont(font);
-	hello.setPosition(sf::Vector2f{234.0, 353.0 });
-	hello.setCharacterSize(100);
-	hello.setString("Hello");
-	hello.setColor(sf::Color::Blue);
-	window.draw(hello);
+	if (mustPause) {
+		window.draw(txtPausedBg);
+		window.draw(txtPaused);
+	}
 
 	window.display();
 }
