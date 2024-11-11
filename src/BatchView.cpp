@@ -22,17 +22,28 @@ BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCom
 // e.g. clicking, scrolling, typing etc.
 // ---------------------------------------
 void BatchView::collectUserInput(sf::RenderWindow& window) {
-	if (window.isOpen()) {
-		for (auto event = sf::Event{}; window.pollEvent(event);)
-		{
-			// Close the window
-			if (event.type == sf::Event::Closed)
-			{
-				window.close();
+	mustPause = false;
+	do {
+		if (window.isOpen()) {
+			for (auto event = sf::Event{}; window.pollEvent(event);) {
+				switch (event.type) {
+					// Close the window
+				case sf::Event::Closed:
+					window.close();
+					break;
+				case sf::Event::KeyPressed:
+					if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+						mustPause = !mustPause;
+					}
+					break;
+				default:
+					break;
+				}
 			}
-			// else, add more events...
 		}
-	}
+		else break; // ignore pause if window has closed
+	} while (mustPause);
+	
 }
 
 void BatchView::drawLandscape(sf::RenderWindow& window) {
@@ -48,7 +59,7 @@ void BatchView::drawLandscape(sf::RenderWindow& window) {
 		for (int y = 0; y < dimY; y++) {
 
 			Cell* pCell = pLandscape->findCell(x, y);
-			if (pCell != 0) {
+			if (pCell != nullptr) {
 				sf::RectangleShape c(sf::Vector2f(cellSize, cellSize));
 				int h = pCell->getHabIndex(0);
 				sf::Color col = habitatPalette[h];

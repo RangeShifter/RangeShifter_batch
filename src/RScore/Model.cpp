@@ -625,13 +625,6 @@ int RunModel(Landscape* pLandscape, int seqsim)
 
 		} // end of the replicates loop
 
-#ifdef BATCH_VIEW
-	// Keep window open until user closes it
-	while (window.isOpen()) {
-		bView.collectUserInput(window); // e.g. if close was clicked
-	}
-#endif
-
 	if (sim.outConnect && ppLand.patchModel) {
 		pLandscape->deleteConnectMatrix();
 		pLandscape->outConnectHeaders(-999); // close Connectivity Matrix file

@@ -9,7 +9,7 @@ using namespace std;
 
 class BatchView {
 public:
-	BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCommunity);
+	BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCommunity);
 
 	void collectUserInput(sf::RenderWindow& window);
 	void drawLandscape(sf::RenderWindow& window);
@@ -37,6 +37,8 @@ private:
 	sf::Color::Black,
 	sf::Color::Magenta
 	};
+
+	bool mustPause = false;
 };
 
 #endif ViewH
