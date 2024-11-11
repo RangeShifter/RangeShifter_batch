@@ -1,8 +1,22 @@
 #include "Batchview.h"
+#include <filesystem>
 
 BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCommunity) :
 	pLandscape{ pLand },
-	pComm{ pCommunity } {
+	pComm{ pCommunity } 
+{
+
+	string pathToFont = "../../../gfx/arial.ttf";
+
+	cout << std::filesystem::current_path() << endl;
+
+	if (!std::filesystem::exists(pathToFont)) {
+		throw logic_error("Font doesn't exist.\n");
+
+	}
+	if (!font.loadFromFile(pathToFont)) {
+		throw logic_error("Font couldn't be loaded.\n");
+	}
 
 	// Set cell size such that both dimensions fit on screen
 	dimX = pLandscape->getLandParams().dimX;
@@ -10,10 +24,12 @@ BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCom
 	cellSize = min(1920u / dimX, 1080u / dimY);
 
 	unsigned int winWidth = dimX * cellSize;
-	unsigned int winHeight = dimY * cellSize + dimY * relSizeLegend; // space at bottom for legend
+	unsigned int winHeight = dimY * cellSize 
+		+ dimY * relSizeLegend; // space at bottom for legend
 
 	window.create(sf::VideoMode{winWidth, winHeight}, "RangeShifter Batch");
 	window.setFramerateLimit(144);
+
 }
 
 
@@ -27,13 +43,17 @@ void BatchView::collectUserInput(sf::RenderWindow& window) {
 		if (window.isOpen()) {
 			for (auto event = sf::Event{}; window.pollEvent(event);) {
 				switch (event.type) {
-					// Close the window
+				// Close the window
 				case sf::Event::Closed:
 					window.close();
 					break;
+				// Pause the simulation
 				case sf::Event::KeyPressed:
 					if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
-						mustPause = !mustPause;
+						mustPause = !mustPause; // pause if not paused and conversely
+						if (mustPause) {
+							//sf::Text pauseMsg;
+						}
 					}
 					break;
 				default:
@@ -89,12 +109,17 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 	sf::CircleShape cInd;
 	
 	const vector<int> patchIndices = pLandscape->readPatchNums();
+	patchLimits plim;
+
 	for (int iPch : patchIndices) {
+
 		if (iPch == 0) continue; // ignore individuals in matrix
 		pPatch = pLandscape->findPatch(iPch);
 		pPop = (Population*)pPatch->getPopn((intptr)pSpecies);
-		if (pPop != 0) {
+
+		if (pPop != nullptr) {
 			popSize = pPop->getNInds();
+
 			for (int i = 0; i < popSize; i++) {
 				pRandCell = pPatch->getRandomCell();
 				randLocn = pRandCell->getLocn();
@@ -103,9 +128,10 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 				cInd.setFillColor(sf::Color::Blue);
 
 				if (pPatch->getPatchNum() == 30) {
+
 					cInd.setFillColor(indColour);
 
-					patchLimits plim = pPatch->getLimits();
+					plim = pPatch->getLimits();
 					sf::RectangleShape thatPatch{sf::Vector2f(plim.xMax - plim.xMin, plim.yMax - plim.yMin)};
 					thatPatch.setOutlineColor(indColour);
 					thatPatch.setOutlineThickness(3.0);
@@ -115,8 +141,10 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 				}
 				
 				// Randomise position inside the cell
-				indPosition = { (float)((randLocn.x * pRandom->Random() * cellSize)),
-					float((randLocn.y + pRandom->Random()) * cellSize) };
+				indPosition = { 
+					static_cast<float>(randLocn.x * pRandom->Random() * cellSize),
+					static_cast<float>(randLocn.y + pRandom->Random() * cellSize)
+				};
 				cInd.setPosition(indPosition);
 				window.draw(cInd);
 			}
@@ -124,18 +152,29 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 	}
 
 	// Display year and generation
-	sf::Vector2f timeLegendPosition{0.0, (1 + relSizeLegend) * dimY}; // just below plot
-	sf::RectangleShape timeLegendBg(sf::Vector2f{(float)dimX, relSizeLegend * dimY});
+	float legendHeight = (1.0 - relSizeLegend) * dimY;
+	sf::Vector2f timeLegendPosition{0.0, legendHeight}; // just below plot
+	sf::RectangleShape timeLegendBg(sf::Vector2f{dimX * 1.0f, legendHeight});
 	timeLegendBg.setPosition(timeLegendPosition);
+	window.draw(timeLegendBg);
+
 	sf::Text timeLegendTxt;
-	sf::Font font;
-	font.loadFromFile("../../../graphic_resources/rockwell.otf");
 	timeLegendTxt.setFont(font);
 	timeLegendTxt.setPosition(timeLegendPosition);
-	timeLegendTxt.setString("Year:\t" + to_string(yr) + "\n Gen:\t" + to_string(gen));
-	timeLegendTxt.setFillColor(sf::Color::White);
-	window.draw(timeLegendBg);
+	timeLegendTxt.setString(
+		"Year:\t" + to_string(yr) 
+		+ "\n Gen:\t" + to_string(gen)
+	);
+	timeLegendTxt.setColor(sf::Color::Blue);
 	window.draw(timeLegendTxt);
+
+	sf::Text hello;
+	hello.setFont(font);
+	hello.setPosition(sf::Vector2f{234.0, 353.0 });
+	hello.setCharacterSize(100);
+	hello.setString("Hello");
+	hello.setColor(sf::Color::Blue);
+	window.draw(hello);
 
 	window.display();
 }

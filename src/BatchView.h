@@ -23,6 +23,7 @@ private:
 	int dimX, dimY;
 
 	const float relSizeLegend = 0.05; // height of time+gen label relative to dimX
+	sf::Font font;
 
 	float indRadius = 1.0;
 	sf::CircleShape indShape = sf::CircleShape(indRadius);
