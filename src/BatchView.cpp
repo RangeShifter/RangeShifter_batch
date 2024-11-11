@@ -1,9 +1,12 @@
 #include "Batchview.h"
 #include <filesystem>
 
-BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCommunity) :
+BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCommunity,
+	const int& nbYears, const int& nbSeasons) :
 	pLandscape{ pLand },
-	pComm{ pCommunity } 
+	pComm{ pCommunity },
+	maxYear { nbYears },
+	maxSeason { nbSeasons }
 {
 	string pathToFont = "../../../gfx/consola.ttf";
 	if (!std::filesystem::exists(pathToFont)) {
@@ -25,6 +28,18 @@ BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCom
 
 	window.create(sf::VideoMode{winWidth, winHeight}, "RangeShifter Batch");
 	window.setFramerateLimit(144);
+
+	// Create legend info text box
+	float legendOriginY = (1.0 - relSizeLegend) * dimY;
+	float legendOriginX = 0.01f * dimX;
+	sf::Vector2f timeLegendPosition{ 0.0, legendOriginY }; // just below plot
+	timeLegendBg = sf::RectangleShape(sf::Vector2f{ dimX * 1.0f, legendOriginY });
+	timeLegendBg.setPosition(timeLegendPosition);
+
+	timeLegendTxt.setFont(font);
+	timeLegendTxt.setPosition(sf::Vector2f(legendOriginX, legendOriginY));
+	timeLegendTxt.setCharacterSize(relSizeLegend * dimY / 2.0f);
+	timeLegendTxt.setColor(sf::Color::Blue);
 
 	// Create paused text box
 	float txtPausedX = dimX / 2.0f;
@@ -145,7 +160,7 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 					thatPatch.setOutlineThickness(3.0);
 					thatPatch.setFillColor(sf::Color::Transparent);
 					thatPatch.setPosition(plim.xMin, plim.xMax);
-					window.draw(thatPatch);
+					//window.draw(thatPatch);
 				}
 				
 				// Randomise position inside the cell
@@ -159,23 +174,12 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 		}
 	}
 
-	// Display year and generation
-	float legendOriginY = (1.0 - relSizeLegend) * dimY;
-	float legendOriginX = 0.01f * dimX;
-	sf::Vector2f timeLegendPosition{0.0, legendOriginY}; // just below plot
-	sf::RectangleShape timeLegendBg(sf::Vector2f{dimX * 1.0f, legendOriginY});
-	timeLegendBg.setPosition(timeLegendPosition);
-	window.draw(timeLegendBg);
-
-	sf::Text timeLegendTxt;
-	timeLegendTxt.setFont(font);
-	timeLegendTxt.setPosition(sf::Vector2f(legendOriginX, legendOriginY));
-	timeLegendTxt.setCharacterSize(relSizeLegend * dimY / 2.0f);
+	// Display year and season
 	timeLegendTxt.setString(
-		"Year:\t" + to_string(yr) 
-		+ "\nGen:\t" + to_string(gen)
+		"Year:\t" + to_string(yr + 1) + "/" + to_string(maxYear) +
+		+"\Season:\t" + to_string(gen + 1) + "/" + to_string(maxSeason)
 	);
-	timeLegendTxt.setColor(sf::Color::Blue);
+	window.draw(timeLegendBg);
 	window.draw(timeLegendTxt);
 
 	if (mustPause) {

@@ -89,7 +89,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 #ifdef BATCH_VIEW
 	auto window = sf::RenderWindow{};
 	// Initialise batch view and open window
-	BatchView bView(window, pLandscape, pComm);
+	BatchView bView(window, pLandscape, pComm, sim.years, dem.repSeasons);
 #endif
 
 	// Loop through replicates

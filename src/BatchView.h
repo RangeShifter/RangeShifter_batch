@@ -9,7 +9,8 @@ using namespace std;
 
 class BatchView {
 public:
-	BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCommunity);
+	BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCommunity,
+		const int& maxYear, const int& maxGen);
 
 	void collectUserInput(sf::RenderWindow& window);
 	void drawLandscape(sf::RenderWindow& window);
@@ -19,14 +20,15 @@ private:
 	Landscape* pLandscape;
 	Community* pComm;
 
+	int maxYear, maxSeason;
 	unsigned int cellSize;
 	int dimX, dimY;
 
 	const float relSizeLegend = 0.05; // height of time+gen label relative to dimX
 	sf::Font font;
 
-	sf::Text txtPaused;
-	sf::RectangleShape txtPausedBg;
+	sf::Text timeLegendTxt, txtPaused;
+	sf::RectangleShape timeLegendBg, txtPausedBg;
 
 	float indRadius = 1.0;
 	sf::CircleShape indShape = sf::CircleShape(indRadius);
