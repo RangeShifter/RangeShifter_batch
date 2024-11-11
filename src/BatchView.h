@@ -14,6 +14,9 @@ public:
 
 	void collectUserInput(sf::RenderWindow& window);
 	bool isPaused() const { return paused; }
+	void pause() { paused = true; }
+	void runPauseLoop(sf::RenderWindow& window);
+
 	void drawLandscape(sf::RenderWindow& window);
 	void drawCommunity(sf::RenderWindow& window, Species* pSpecies, const int& yr, const int& gen);
 
@@ -44,7 +47,6 @@ private:
 	sf::Color::Black,
 	sf::Color::Magenta
 	};
-
 	bool paused = false;
 };
 

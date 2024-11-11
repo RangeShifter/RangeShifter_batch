@@ -82,6 +82,12 @@ void BatchView::collectUserInput(sf::RenderWindow& window) {
 	}
 } 
 
+void BatchView::runPauseLoop(sf::RenderWindow& window) {
+	while (paused && window.isOpen()) {
+		collectUserInput(window);
+	};
+}
+
 void BatchView::drawLandscape(sf::RenderWindow& window) {
 	const int maxY = pLandscape->getLandParams().maxY * cellSize;
 
@@ -176,7 +182,7 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 	window.draw(timeLegendBg);
 	window.draw(timeLegendTxt);
 
-	if (paused) {
+	if (paused || yr + 1 == maxYear) {
 		window.draw(txtPausedBg);
 		window.draw(txtPaused);
 	}

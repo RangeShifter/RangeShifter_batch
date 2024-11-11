@@ -435,9 +435,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				bView.collectUserInput(window);
 				if (window.isOpen())
 					bView.drawCommunity(window, pSpecies, yr, gen);
-				while (bView.isPaused() && window.isOpen()) {
-					bView.collectUserInput(window);
-				};
+				bView.runPauseLoop(window);
 #endif
 
 				if (dem.stageStruct) {
@@ -627,10 +625,10 @@ int RunModel(Landscape* pLandscape, int seqsim)
 #endif
 
 #ifdef BATCH_VIEW
-		// Lock display on last year
+		// Pause display on last year
 		// to allow enough time to have a look
-		while (window.isOpen()) 
-			bView.collectUserInput(window);
+		bView.pause();
+		bView.runPauseLoop(window);
 #endif
 		} // end of the replicates loop
 
