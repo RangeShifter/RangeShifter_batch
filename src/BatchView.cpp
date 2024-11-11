@@ -64,52 +64,33 @@ BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCom
 // ---------------------------------------
 void BatchView::collectUserInput(sf::RenderWindow& window) {
 
-	mustPause = false;
-	do {
-		for (auto event = sf::Event{}; window.pollEvent(event);) {
-			switch (event.type) {
-				// Close the window
-			case sf::Event::Closed:
-				window.close();
-				break;
-				// Pause the simulation
-			case sf::Event::KeyPressed:
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
-					mustPause = !mustPause; // pause if not paused and conversely
-				}
-				if (mustPause) {
-					
-					window.draw(txtPausedBg);
-					window.draw(txtPaused);
-					window.display();
-				}
-				break;
-			default:
-				break;
+	for (auto event = sf::Event{}; window.pollEvent(event);) {
+		switch (event.type) {
+			// Close the window
+		case sf::Event::Closed:
+			window.close();
+			break;
+			// Pause the simulation
+		case sf::Event::KeyPressed:
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+				paused = !paused; // switch on/off
 			}
+			break;
+		default:
+			break;
 		}
-	} while (mustPause && window.isOpen());
-	
-}
-
-bool BatchView::checkIfClosed(sf::RenderWindow& window) {
-	sf::Event event;
-	window.pollEvent(event);
-	if (event.type == sf::Event::Closed) {
-		window.close();
-		return true;
 	}
-	else return false;
-}
+} 
 
 void BatchView::drawLandscape(sf::RenderWindow& window) {
 	const int maxY = pLandscape->getLandParams().maxY * cellSize;
 
 	for (int x = 0; x < dimX; x++) {
 
-		// Displaying can take long, 
-		// check keys/buttons between columns
-		if (checkIfClosed(window)) return; // dinnae bother
+		// Displaying can take a while, 
+		// check input between columns
+		collectUserInput(window);
+		if (!window.isOpen()) return; // dinnae bother finishing
 
 		for (int y = 0; y < dimY; y++) {
 
@@ -191,8 +172,14 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 		"Year:\t" + to_string(yr + 1) + "/" + to_string(maxYear) +
 		+"\nSeason:\t" + to_string(gen + 1) + "/" + to_string(maxSeason)
 	);
+
 	window.draw(timeLegendBg);
 	window.draw(timeLegendTxt);
+
+	if (paused) {
+		window.draw(txtPausedBg);
+		window.draw(txtPaused);
+	}
 
 	window.display();
 }

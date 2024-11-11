@@ -435,6 +435,9 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				bView.collectUserInput(window);
 				if (window.isOpen())
 					bView.drawCommunity(window, pSpecies, yr, gen);
+				while (bView.isPaused() && window.isOpen()) {
+					bView.collectUserInput(window);
+				};
 #endif
 
 				if (dem.stageStruct) {

@@ -13,7 +13,7 @@ public:
 		const int& maxYear, const int& maxGen);
 
 	void collectUserInput(sf::RenderWindow& window);
-	bool checkIfClosed(sf::RenderWindow& window);
+	bool isPaused() const { return paused; }
 	void drawLandscape(sf::RenderWindow& window);
 	void drawCommunity(sf::RenderWindow& window, Species* pSpecies, const int& yr, const int& gen);
 
@@ -45,7 +45,7 @@ private:
 	sf::Color::Magenta
 	};
 
-	bool mustPause = false;
+	bool paused = false;
 };
 
 #endif ViewH
