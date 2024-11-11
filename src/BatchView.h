@@ -13,6 +13,7 @@ public:
 		const int& maxYear, const int& maxGen);
 
 	void collectUserInput(sf::RenderWindow& window);
+	bool checkIfClosed(sf::RenderWindow& window);
 	void drawLandscape(sf::RenderWindow& window);
 	void drawCommunity(sf::RenderWindow& window, Species* pSpecies, const int& yr, const int& gen);
 

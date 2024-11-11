@@ -66,27 +66,40 @@ void BatchView::collectUserInput(sf::RenderWindow& window) {
 
 	mustPause = false;
 	do {
-		if (window.isOpen()) {
-			for (auto event = sf::Event{}; window.pollEvent(event);) {
-				switch (event.type) {
+		for (auto event = sf::Event{}; window.pollEvent(event);) {
+			switch (event.type) {
 				// Close the window
-				case sf::Event::Closed:
-					window.close();
-					break;
+			case sf::Event::Closed:
+				window.close();
+				break;
 				// Pause the simulation
-				case sf::Event::KeyPressed:
-					if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
-						mustPause = !mustPause; // pause if not paused and conversely
-					}
-					break;
-				default:
-					break;
+			case sf::Event::KeyPressed:
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+					mustPause = !mustPause; // pause if not paused and conversely
 				}
+				if (mustPause) {
+					
+					window.draw(txtPausedBg);
+					window.draw(txtPaused);
+					window.display();
+				}
+				break;
+			default:
+				break;
 			}
 		}
-		else break; // ignore pause if window has closed
-	} while (mustPause);
+	} while (mustPause && window.isOpen());
 	
+}
+
+bool BatchView::checkIfClosed(sf::RenderWindow& window) {
+	sf::Event event;
+	window.pollEvent(event);
+	if (event.type == sf::Event::Closed) {
+		window.close();
+		return true;
+	}
+	else return false;
 }
 
 void BatchView::drawLandscape(sf::RenderWindow& window) {
@@ -96,8 +109,7 @@ void BatchView::drawLandscape(sf::RenderWindow& window) {
 
 		// Displaying can take long, 
 		// check keys/buttons between columns
-		collectUserInput(window);
-		if (!window.isOpen()) return; // dinnae bother
+		if (checkIfClosed(window)) return; // dinnae bother
 
 		for (int y = 0; y < dimY; y++) {
 
@@ -177,15 +189,10 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 	// Display year and season
 	timeLegendTxt.setString(
 		"Year:\t" + to_string(yr + 1) + "/" + to_string(maxYear) +
-		+"\Season:\t" + to_string(gen + 1) + "/" + to_string(maxSeason)
+		+"\nSeason:\t" + to_string(gen + 1) + "/" + to_string(maxSeason)
 	);
 	window.draw(timeLegendBg);
 	window.draw(timeLegendTxt);
-
-	if (mustPause) {
-		window.draw(txtPausedBg);
-		window.draw(txtPaused);
-	}
 
 	window.display();
 }
