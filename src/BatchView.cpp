@@ -17,19 +17,22 @@ BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCom
 	}
 
 	// Set cell size such that both dimensions fit on screen
-	dimX = pLandscape->getLandParams().dimX;
-	dimY = pLandscape->getLandParams().dimY;
-	cellSize = min(1920u / dimX, 1080u / dimY);
+	const int dimX = pLandscape->getLandParams().dimX;
+	const int dimY = pLandscape->getLandParams().dimY;
+	cellSize = min( 
+		(1.0f * dfltWinWidth) / dimX, 
+		dfltWinHeight * (1 - relSizeLegend) / dimY
+	);
 
-	unsigned int winWidth = dimX * cellSize;
-	unsigned int winHeight = dimY * cellSize 
-		+ dimY * relSizeLegend; // space at bottom for legend
+	winWidth = dimX * cellSize;
+	winHeight = dimY * cellSize 
+		/ (1 - relSizeLegend); // space at bottom for legend
 
 	window.create(sf::VideoMode{winWidth, winHeight}, "RangeShifter Batch");
 	window.setFramerateLimit(144);
 
 	// Create legend info text box
-	float legendOriginY = (1.0 - relSizeLegend) * dimY;
+	float legendOriginY = (1.0 - relSizeLegend) * winHeight;
 	float legendOriginX = 0.01f * dimX;
 	sf::Vector2f timeLegendPosition{ 0.0, legendOriginY }; // just below plot
 	timeLegendBg = sf::RectangleShape(sf::Vector2f{ dimX * 1.0f, legendOriginY });
@@ -37,22 +40,23 @@ BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCom
 
 	timeLegendTxt.setFont(font);
 	timeLegendTxt.setPosition(sf::Vector2f(legendOriginX, legendOriginY));
-	timeLegendTxt.setCharacterSize(relSizeLegend * dimY / 2.0f);
+	timeLegendTxt.setCharacterSize(winHeight * relSizeLegend / 3.0f);
 	timeLegendTxt.setColor(sf::Color::Blue);
 
 	// Create paused text box
-	float txtPausedX = dimX / 2.0f;
-	float txtPausedY = dimY / 2.0f;
 	txtPaused.setFont(font);
-	txtPaused.setOrigin(0.5, 0.5);
-	txtPaused.setPosition(sf::Vector2f(txtPausedX, txtPausedY));
 	txtPaused.setString("[Paused]");
+	float txtPausedX = winWidth / 2.0f - txtPaused.getGlobalBounds().width / 2.0f;
+	float txtPausedY = 0.0; // legendOriginY;
+	txtPaused.setPosition(sf::Vector2f(txtPausedX, txtPausedY));
 	txtPaused.setColor(sf::Color::Blue);
-	txtPausedBg = sf::RectangleShape(sf::Vector2f{
-		txtPaused.getGlobalBounds().width * 1.1f,
-		txtPaused.getGlobalBounds().height * 1.4f
-		});
-	txtPausedBg.setPosition(sf::Vector2f(txtPausedX, txtPausedY));
+	float bgWidth = txtPaused.getGlobalBounds().width * 1.2f;
+	float bgHeight = txtPaused.getGlobalBounds().height * 1.4f;
+	txtPausedBg = sf::RectangleShape(sf::Vector2f{bgWidth, bgHeight});
+	txtPausedBg.setPosition(sf::Vector2f(
+		winWidth / 2.0f - bgWidth / 2.0f,
+		txtPausedY
+	));
 	txtPausedBg.setFillColor(sf::Color::White);
 }
 
@@ -89,6 +93,8 @@ void BatchView::runPauseLoop(sf::RenderWindow& window) {
 
 void BatchView::drawLandscape(sf::RenderWindow& window) {
 	const int maxY = pLandscape->getLandParams().maxY * cellSize;
+	const int dimX = pLandscape->getLandParams().dimX;
+	const int dimY = pLandscape->getLandParams().dimY;
 
 	for (int x = 0; x < dimX; x++) {
 
@@ -174,8 +180,8 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 
 	// Display year and season
 	timeLegendTxt.setString(
-		"Year:\t" + to_string(yr + 1) + "/" + to_string(maxYear) +
-		+"\nSeason:\t" + to_string(gen + 1) + "/" + to_string(maxSeason)
+		"Year: " + to_string(yr + 1) + "/" + to_string(maxYear) +
+		+"\nSeason: " + to_string(gen + 1) + "/" + to_string(maxSeason)
 	);
 
 	window.draw(timeLegendBg);

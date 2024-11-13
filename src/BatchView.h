@@ -7,6 +7,10 @@ using namespace std;
 #include "RScore/Landscape.h"
 #include "RScore/Community.h"
 
+constexpr unsigned int dfltWinWidth = 1920u;
+constexpr unsigned int dfltWinHeight = 1080u;
+const float relSizeLegend = 0.10; // height of time+gen label relative to dimX
+
 class BatchView {
 public:
 	BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCommunity,
@@ -25,10 +29,10 @@ private:
 	Community* pComm;
 
 	int maxYear, maxSeason;
-	unsigned int cellSize;
-	int dimX, dimY;
 
-	const float relSizeLegend = 0.05; // height of time+gen label relative to dimX
+	unsigned int cellSize;
+	unsigned int winWidth, winHeight;
+
 	sf::Font font;
 
 	sf::Text timeLegendTxt, txtPaused;
