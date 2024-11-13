@@ -8,13 +8,12 @@ BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCom
 	maxYear { nbYears },
 	maxSeason { nbSeasons }
 {
-	string pathToFont = "../../../gfx/consola.ttf";
+	string pathToFont = "gfx/consola.ttf";
 	if (!std::filesystem::exists(pathToFont)) {
-		throw logic_error("Font doesn't exist.\n");
+		throw logic_error("Font file is missing.\n");
 
-	}
-	if (!font.loadFromFile(pathToFont)) {
-		throw logic_error("Font couldn't be loaded.\n");
+	} else if (!font.loadFromFile(pathToFont)) {
+		throw logic_error("Font file exists but couldn't be loaded.\n");
 	}
 
 	// Set cell size such that both dimensions fit on screen
