@@ -1,5 +1,4 @@
 #include "Batchview.h"
-#include <filesystem>
 
 BatchView::BatchView(sf::RenderWindow& window, Landscape* pLand, Community* pCommunity,
 	const int& nbYears, const int& nbSeasons) :
@@ -127,9 +126,9 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 
 	// Draw current community
 	Patch* pPatch;
-	Population* pPop;
+	Population* pPop = nullptr;
 	int popSize;
-	Cell* pRandCell;
+	Cell* pIndCell = nullptr;
 	locn randLocn;
 	sf::Vector2f indPosition;
 
@@ -146,10 +145,9 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 
 		if (pPop != nullptr) {
 			popSize = pPop->getNInds();
-
+			vector<locn> indCoords = pPop->getIndsCoords(false);
 			for (int i = 0; i < popSize; i++) {
-				pRandCell = pPatch->getRandomCell();
-				randLocn = pRandCell->getLocn();
+				randLocn = pPatch->getRandomCell()->getLocn();
 
 				cInd = indShape;
 				cInd.setFillColor(sf::Color::Blue);
@@ -164,7 +162,7 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 					thatPatch.setOutlineThickness(3.0);
 					thatPatch.setFillColor(sf::Color::Transparent);
 					thatPatch.setPosition(plim.xMin, plim.xMax);
-					//window.draw(thatPatch);
+					window.draw(thatPatch);
 				}
 				
 				// Randomise position inside the cell

@@ -1522,6 +1522,18 @@ void Population::clean(void)
 	}
 }
 
+vector<locn> Population::getIndsCoords(bool juveniles) {
+	vector<locn> coords(juveniles ? juvs.size() : inds.size());
+	auto getIndCoords = [](Individual* ind) { return ind->getLocn(1)->getLocn(); };
+	if (juveniles) {
+		std::transform(juvs.begin(), juvs.end(), coords.begin(), getIndCoords);
+	}
+	else {
+		std::transform(inds.begin(), inds.end(), coords.begin(), getIndCoords);
+	}
+	return coords;
+}
+
 //---------------------------------------------------------------------------
 // Open population file and write header record
 bool Population::outPopHeaders(int landNr, bool patchModel) {

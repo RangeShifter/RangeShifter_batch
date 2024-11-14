@@ -1599,10 +1599,6 @@ double cauchy(double location, double scale) {
 #ifndef NDEBUG
 // Testing utilities
 
-Cell* Individual::getCurrCell() const {
-	return pCurrCell;
-}
-
 void Individual::setInitAngle(const float angle) {
 	auto pCRW = dynamic_cast<crwData*>(pTrfrData.get());
 	pCRW->prevdrn = angle;

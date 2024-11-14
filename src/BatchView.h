@@ -6,6 +6,7 @@ using namespace std;
 #include <SFML/Graphics.hpp>
 #include "RScore/Landscape.h"
 #include "RScore/Community.h"
+#include <filesystem>
 
 constexpr unsigned int dfltWinWidth = 1920u;
 constexpr unsigned int dfltWinHeight = 1080u;

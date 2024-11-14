@@ -229,10 +229,16 @@ public:
 	vector<int> countNbHeterozygotesEachLocus();
 	double computeHs();
 
+	vector<locn> getIndsCoords(bool juveniles = false);
+
 #ifndef NDEBUG
 	// Testing only
 	void clearInds() { inds.clear(); } // empty inds vector to avoid deallocating individual is used separately in test
 #endif // NDEBUG
+
+#ifdef BATCH_VIEW
+	vector<Individual*> getInds() { return inds; }
+#endif // BATCH_VIEW
 
 private:
 	short nStages;

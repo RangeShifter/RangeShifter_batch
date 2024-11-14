@@ -56,7 +56,7 @@ void testTransferKernels() {
 	int isDispersing = ind1.moveKernel(&ls, &sp, false);
 
 	// After moving, individual should be in the only available cell
-	Cell* curr_cell = ind1.getCurrCell();
+	Cell* curr_cell = ind1.getLocn(1);
 	assert(curr_cell != init_cell);
 	assert(curr_cell == final_cell);
 	assert(ind1.getStatus() == 2); // potential settler
@@ -66,7 +66,7 @@ void testTransferKernels() {
 	sp.setSpKernTraits(0, 0, kern, ls_params.resol);
 	Individual ind2(init_cell, init_patch, 1, 0, 0, 0.0, false, 0); // reset individual
 	isDispersing = ind2.moveKernel(&ls, &sp, false);
-	curr_cell = ind2.getCurrCell();
+	curr_cell = ind2.getLocn(1);
 	assert(ind2.getStatus() == 6); // RIP in peace
 	assert(curr_cell == init_cell);
 
@@ -164,7 +164,7 @@ void testTransferKernels() {
 	// Non-absorbing boundaries
 	bool absorbing_boundaries{ false };
 	isDispersing = ind9.moveKernel(&ls, &sp, absorbing_boundaries);
-	curr_cell = ind9.getCurrCell();
+	curr_cell = ind9.getLocn(1);
 	assert(curr_cell != init_cell); // ...should be able to move eventually
 	assert(ind9.getStatus() == 2);
 
@@ -172,7 +172,7 @@ void testTransferKernels() {
 	absorbing_boundaries = true;
 	Individual ind10(init_cell, init_patch, 1, 0, 0, 0.0, false, 0); // reset individual
 	isDispersing = ind10.moveKernel(&ls, &sp, absorbing_boundaries);
-	curr_cell = ind10.getCurrCell();
+	curr_cell = ind10.getLocn(1);
 	assert(ind10.getStatus() == 6);
 	assert(curr_cell == 0); // out of the landscape
 
@@ -277,7 +277,7 @@ void testTransferCRW() {
 	assert(ind0.getStatus() == 0); // default status, not emigrating
 	int isDispersing = ind0.moveStep(&ls, &sp, hab_index, false);
 	assert(ind0.getStatus() == 0); // status didn't change
-	assert(ind0.getCurrCell() == init_cell); // not emigrating so didn't move
+	assert(ind0.getLocn(1) == init_cell); // not emigrating so didn't move
 
 	// Per-step mortality
 	m.stepMort = 1.0; // should die 
@@ -289,7 +289,7 @@ void testTransferCRW() {
 	// Individual begins in natal patch so mortality is disabled
 	assert(ind1.getStatus() != 7);
 	// Individual should be in a different patch
-	Cell* first_step_cell = ind1.getCurrCell();
+	Cell* first_step_cell = ind1.getLocn(1);
 	assert(first_step_cell != init_cell);
 
 	assert((Patch*)first_step_cell->getPatch() != init_patch);
@@ -297,7 +297,7 @@ void testTransferCRW() {
 
 	// Individual should die on second step
 	isDispersing = ind1.moveStep(&ls, &sp, hab_index, false);
-	assert(ind1.getCurrCell() == first_step_cell); // shouldn't have moved
+	assert(ind1.getLocn(1) == first_step_cell); // shouldn't have moved
 	assert(ind1.getStatus() == 7); // died by transfer
 	m.stepMort = 0.0; // not dying
 	sp.setSpMovtTraits(m);
@@ -339,16 +339,16 @@ void testTransferCRW() {
 	ind2.setStatus(1); // dispersing
 	// First step - still in unsuitable cell so still dispersing
 	isDispersing = ind2.moveStep(&ls, &sp, hab_index, false);
-	assert(ind2.getCurrCell() == init_cell);
+	assert(ind2.getLocn(1) == init_cell);
 	assert(ind2.getStatus() == 1);
 	// Second step - reaching max steps this year, wait next year
 	isDispersing = ind2.moveStep(&ls, &sp, hab_index, false);
-	assert(ind2.getCurrCell() == init_cell);
+	assert(ind2.getLocn(1) == init_cell);
 	assert(ind2.getStatus() == 3);
 	ind2.setStatus(1); // dispersing again
 	// Third step - reaching max steps, dies in unsuitable cell
 	isDispersing = ind2.moveStep(&ls, &sp, hab_index, false);
-	assert(ind2.getCurrCell() == init_cell);
+	assert(ind2.getLocn(1) == init_cell);
 	assert(ind2.getStatus() == 6);
 
 	// Step length too long
@@ -361,7 +361,7 @@ void testTransferCRW() {
 	steps.maxSteps = 1; // no need to test more than one step this time
 	sp.setSteps(0, 0, steps);
 	isDispersing = ind3.moveStep(&ls, &sp, hab_index, false);
-	assert(ind3.getCurrCell() == init_cell);
+	assert(ind3.getLocn(1) == init_cell);
 	assert(ind3.getStatus() == 6);
 
 	// Adequate step length
@@ -372,7 +372,7 @@ void testTransferCRW() {
 	// Initial angle still random but should eventually reach the suitable cell
 	isDispersing = ind4.moveStep(&ls, &sp, hab_index, false);
 	assert(ind4.getStatus() == 2);
-	assert(ind4.getCurrCell() == final_cell);
+	assert(ind4.getLocn(1) == final_cell);
 
 	// If boundaries are absorbing however, most likely to die
 	Individual ind5(init_cell, natalPatch, 0, 0, 0, 0.0, true, 2);
@@ -380,7 +380,7 @@ void testTransferCRW() {
 	bool absorbing_boundaries = true;
 	isDispersing = ind5.moveStep(&ls, &sp, hab_index, absorbing_boundaries);
 	assert(ind5.getStatus() == 6);
-	assert(ind5.getCurrCell() == 0); // deref apparently
+	assert(ind5.getLocn(1) == 0); // deref apparently
 
 	// Correlation parameter
 	// If rho = 1 should move in a straight line
@@ -413,7 +413,7 @@ void testTransferCRW() {
 		ind6.setStatus(1); // dispersing
 		isDispersing = ind6.moveStep(&ls, &sp, hab_index, false);
 		assert(ind6.getStatus() == 2);
-		assert(ind6.getCurrCell() == cell_vec[i * (ls_params.dimX + 1)]);
+		assert(ind6.getLocn(1) == cell_vec[i * (ls_params.dimX + 1)]);
 	}
 }
 
