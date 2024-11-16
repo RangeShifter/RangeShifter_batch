@@ -1028,6 +1028,9 @@ bool Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 		// Update individual status
 		if (pPatch != nullptr  // not no-data area or matrix
 			&& path->total >= settsteps.minSteps) {
+			if (indId == 125) {
+				cout << endl;
+			}
 			if (pPatch != pNatalPatch
 				&& pPatch->getK() > 0.0) {
 				status = waitSettlement; // new patch is suitable

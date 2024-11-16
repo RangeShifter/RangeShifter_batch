@@ -1029,7 +1029,9 @@ disperser Population::extractSettler(int ix) {
 
 	indStats ind = inds[ix]->getStats();
 	pCell = inds[ix]->getLocn(1);
-	d.pInd = inds[ix];  d.pCell = pCell; d.yes = false;
+	d.pInd = inds[ix];  
+	d.pCell = pCell;
+	d.yes = false;
 	if (ind.status == settled || ind.status == settledNeighbour) {
 		d.yes = true;
 		inds[ix] = 0;
@@ -1110,6 +1112,10 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 		short stgId = settletype.stgDep ? ind.stage : 0;
 		short sexId = settletype.sexDep ? ind.sex : 0;
 		sett = pSpecies->getSettRules(stgId, sexId);
+
+		if (inds[i]->getId() == 125 && inds[i]->getStatus() != dispersing) {
+			cout << endl;
+		}
 
 		// Resolve candidate settlers
 		if (ind.status == waitSettlement) { // awaiting settlement
