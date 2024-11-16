@@ -127,16 +127,9 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 	// Draw current community
 	Patch* pPatch;
 	Population* pPop = nullptr;
-	int popSize;
-	Cell* pIndCell = nullptr;
-	locn randLocn;
-	sf::Vector2f indPosition;
-
 	sf::CircleShape cInd;
 	
 	const vector<int> patchIndices = pLandscape->readPatchNums();
-	patchLimits plim;
-
 	for (int iPch : patchIndices) {
 
 		if (iPch == 0) continue; // ignore individuals in matrix
@@ -144,35 +137,22 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 		pPop = (Population*)pPatch->getPopn((intptr)pSpecies);
 
 		if (pPop != nullptr) {
-			popSize = pPop->getNInds();
+
+			vector<locn> juvCoords = pPop->getIndsCoords(true);
 			vector<locn> indCoords = pPop->getIndsCoords(false);
-			for (int i = 0; i < popSize; i++) {
-				randLocn = pPatch->getRandomCell()->getLocn();
 
+			for (auto coord : juvCoords) {
 				cInd = indShape;
-				cInd.setFillColor(sf::Color::Blue);
-
-				if (pPatch->getPatchNum() == 30) {
-
-					cInd.setFillColor(indColour);
-
-					plim = pPatch->getLimits();
-					sf::RectangleShape thatPatch{sf::Vector2f(plim.xMax - plim.xMin, plim.yMax - plim.yMin)};
-					thatPatch.setOutlineColor(indColour);
-					thatPatch.setOutlineThickness(3.0);
-					thatPatch.setFillColor(sf::Color::Transparent);
-					thatPatch.setPosition(plim.xMin, plim.xMax);
-					window.draw(thatPatch);
-				}
-				
-				// Randomise position inside the cell
-				indPosition = { 
-					static_cast<float>(randLocn.x * pRandom->Random() * cellSize),
-					static_cast<float>(randLocn.y + pRandom->Random() * cellSize)
-				};
-				cInd.setPosition(indPosition);
+				cInd.setFillColor(sf::Color::Red);
+				cInd.setPosition(coord.x * cellSize * 1.0f, coord.y * cellSize * 1.0f);
 				window.draw(cInd);
 			}
+			for (auto coord : indCoords) {
+				cInd = indShape;
+				cInd.setFillColor(sf::Color::Blue);
+				cInd.setPosition(coord.x * cellSize * 1.0f, coord.y * cellSize * 1.0f);
+				window.draw(cInd);
+			} 
 		}
 	}
 
