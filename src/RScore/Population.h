@@ -182,10 +182,8 @@ public:
 	void applySurvivalDevlpt(); // Apply survival changes to the population
 	void ageIncrement();
 
-	// Open population file and write header record
-	bool outPopHeaders(int landNr, bool patchModel);
-
 	void outPopulation( // Write record to population file
+		ofstream& outPop,
 		int rep,
 		int yr,
 		int gen,

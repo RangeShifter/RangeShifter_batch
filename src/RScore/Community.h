@@ -129,6 +129,7 @@ public:
 
 	// Open population file and write header record
 	bool outPopHeaders(Species* pSpecies, int option);
+	bool closePopOfs();
 
 	// Write records to population file
 	void outPop(int rep, int year, int gen);
@@ -188,6 +189,8 @@ private:
 	std::vector <Population*> popns;
 
 	unique_ptr<NeutralStatsManager> pNeutralStatistics;
+
+	ofstream outPopOfs;
 };
 
 extern paramSim* paramsSim;
