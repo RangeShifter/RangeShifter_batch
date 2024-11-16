@@ -1391,7 +1391,7 @@ array3x3d Individual::calcWeightings(const double base, const double theta) {
 
 // Weight neighbouring cells on basis of (habitat) costs
 array3x3f Individual::getHabMatrix(Landscape* pLand, Species* pSpecies,
-	const int x, const int y, const short pr, const short prmethod, const short landIx,
+	const int currCellX, const int currCellY, const short pr, const short prmethod, const short landIx,
 	const bool absorbing)
 {
 	array3x3f neighbourHabWeights; // array of effective costs to be returned
@@ -1473,20 +1473,20 @@ array3x3f Individual::getHabMatrix(Landscape* pLand, Species* pSpecies,
 					for (int y3 = ymin; y3 <= ymax; y3++) {
 						// if cell is out of bounds, treat landscape as a torus
 						// for purpose of obtaining a cost,
-						if ((x + x3) < 0) 
-							x4 = x + x3 + land.maxX + 1;
+						if ((currCellX + x3) < 0) 
+							x4 = currCellX + x3 + land.maxX + 1;
 						else { 
-							if ((x + x3) > land.maxX) 
-								x4 = x + x3 - land.maxX - 1; 
+							if ((currCellX + x3) > land.maxX)
+								x4 = currCellX + x3 - land.maxX - 1;
 							else 
-								x4 = x + x3; 
+								x4 = currCellX + x3;
 						}
-						if ((y + y3) < 0) 
-							y4 = y + y3 + land.maxY + 1;
+						if ((currCellY + y3) < 0)
+							y4 = currCellY + y3 + land.maxY + 1;
 						else { 
-							if ((y + y3) > land.maxY) 
-								y4 = y + y3 - land.maxY - 1;
-							else y4 = y + y3; 
+							if ((currCellY + y3) > land.maxY)
+								y4 = currCellY + y3 - land.maxY - 1;
+							else y4 = currCellY + y3;
 						}
 						if (x4 < 0 || x4 > land.maxX || y4 < 0 || y4 > land.maxY) {
 							// unexpected problem - e.g. due to ridiculously large PR
@@ -1542,7 +1542,7 @@ array3x3f Individual::getHabMatrix(Landscape* pLand, Species* pSpecies,
 			else { // central cell
 				// record cost if not already recorded
 				// has effect of preparing for storing effective costs for the cell
-				pCell = pLand->findCell(x, y);
+				pCell = pLand->findCell(currCellX, currCellY);
 				cost = pCell->getCost();
 				if (cost < 0) cost = nodatacost;
 				else if (cost == 0) { // cost not yet set for the cell
