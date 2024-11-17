@@ -1113,10 +1113,6 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 		short sexId = settletype.sexDep ? ind.sex : 0;
 		sett = pSpecies->getSettRules(stgId, sexId);
 
-		if (inds[i]->getId() == 125 && inds[i]->getStatus() != dispersing) {
-			cout << endl;
-		}
-
 		// Resolve candidate settlers
 		if (ind.status == waitSettlement) { // awaiting settlement
 			pCell = inds[i]->getLocn(1);
