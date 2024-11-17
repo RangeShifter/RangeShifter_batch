@@ -36,7 +36,7 @@ ofstream outMovePaths;
 
 bool isInLandscape(const int& x, const int& y, const landData& land) {
 	return (x >= land.minX
-		&& x <= land.minY
+		&& x <= land.maxX
 		&& y >= land.minY
 		&& y <= land.maxY);
 }
