@@ -27,7 +27,6 @@
 
 //---------------------------------------------------------------------------
 
-ofstream outPop;
 ofstream outInds;
 
 //---------------------------------------------------------------------------
@@ -949,7 +948,9 @@ disperser Population::extractSettler(int ix) {
 
 	indStats ind = inds[ix]->getStats();
 	pCell = inds[ix]->getLocn(1);
-	d.pInd = inds[ix];  d.pCell = pCell; d.yes = false;
+	d.pInd = inds[ix];  
+	d.pCell = pCell;
+	d.yes = false;
 	if (ind.status == settled || ind.status == settledNeighbour) {
 		d.yes = true;
 		inds[ix] = 0;
@@ -1418,73 +1419,22 @@ void Population::clean()
 }
 
 //---------------------------------------------------------------------------
-// Open population file and write header record
-bool Population::outPopHeaders(int landNr, bool patchModel) {
-
-	if (landNr == -999) { // close file
-		if (outPop.is_open()) outPop.close();
-		outPop.clear();
-		return true;
-	}
-	string name;
-	simParams sim = paramsSim->getSim();
-	envGradParams grad = paramsGrad->getGradient();
-
-	// NEED TO REPLACE CONDITIONAL COLUMNS BASED ON ATTRIBUTES OF ONE SPECIES TO COVER
-	// ATTRIBUTES OF *ALL* SPECIES AS DETECTED AT MODEL LEVEL
-	demogrParams dem = pSpecies->getDemogrParams();
-	stageParams sstruct = pSpecies->getStageParams();
-	name = paramsSim->getDir(2)
-		+ (sim.batchMode ? "Batch" + to_string(sim.batchNum) + "_" : "")
-		+ "Batch" + to_string(sim.batchNum) + "_"
-		+ "Sim" + to_string(sim.simulation) + "_Land" + to_string(landNr) + "_Pop.txt";
-
-	outPop.open(name.c_str());
-	outPop << "Rep\tYear\tRepSeason";
-	if (patchModel) outPop << "\tPatchID\tNcells";
-	else outPop << "\tx\ty";
-	// determine whether environmental data need be written for populations
-	bool writeEnv = false;
-	if (grad.gradient) writeEnv = true;
-	if (paramsStoch->envStoch()) writeEnv = true;
-	if (writeEnv) outPop << "\tEpsilon\tGradient\tLocal_K";
-	outPop << "\tSpecies\tNInd";
-	if (dem.stageStruct) {
-		if (dem.repType == 0)
-		{
-			for (int i = 1; i < sstruct.nStages; i++) outPop << "\tNInd_stage" << i;
-			outPop << "\tNJuvs";
-		}
-		else {
-			for (int i = 1; i < sstruct.nStages; i++)
-				outPop << "\tNfemales_stage" << i << "\tNmales_stage" << i;
-			outPop << "\tNJuvFemales\tNJuvMales";
-		}
-	}
-	else {
-		if (dem.repType != 0) outPop << "\tNfemales\tNmales";
-	}
-	outPop << endl;
-	return outPop.is_open();
-}
-
-//---------------------------------------------------------------------------
 // Write record to population file
-void Population::outPopulation(int rep, int yr, int gen, bool envLocal, float epsGlobal,
+void Population::outPopulation(ofstream& outPopOfs, int rep, int yr, int gen, bool envLocal, float epsGlobal,
 	bool patchModel, bool writeEnv, bool gradK)
 {
 	Cell* pCell;
 	demogrParams dem = pSpecies->getDemogrParams();
 
 	popStats p;
-	outPop << rep << "\t" << yr << "\t" << gen;
+	outPopOfs << rep << "\t" << yr << "\t" << gen;
 	if (patchModel) {
-		outPop << "\t" << pPatch->getPatchNum();
-		outPop << "\t" << pPatch->getNCells();
+		outPopOfs << "\t" << pPatch->getPatchNum();
+		outPopOfs << "\t" << pPatch->getNCells();
 	}
 	else {
 		locn loc = pPatch->getCellLocn(0);
-		outPop << "\t" << loc.x << "\t" << loc.y;
+		outPopOfs << "\t" << loc.x << "\t" << loc.y;
 	}
 
 	float eps = 0.0;
@@ -1494,39 +1444,39 @@ void Population::outPopulation(int rep, int yr, int gen, bool envLocal, float ep
 			if (pCell != 0) eps = pCell->getEps();
 		}
 		if (pPatch->getPatchNum() == 0) { // matrix
-			outPop << "\t0\t0\t0";
+			outPopOfs << "\t0\t0\t0";
 		}
 		else {
 			float k = pPatch->getK();
 			float envval = 0.0;
 			pCell = pPatch->getRandomCell();
 			if (pCell != 0) envval = pCell->getEnvVal();
-			outPop << "\t" << eps << "\t" << envval << "\t" << k;
+			outPopOfs << "\t" << eps << "\t" << envval << "\t" << k;
 		}
 	}
-	outPop << "\t" << pSpecies->getSpNum();
+	outPopOfs << "\t" << pSpecies->getSpNum();
 	if (dem.stageStruct) {
 		p = getStats();
-		outPop << "\t" << p.nNonJuvs;
+		outPopOfs << "\t" << p.nNonJuvs;
 		// non-juvenile stage totals from permanent array
 		for (int stg = 1; stg < nStages; stg++) {
 			for (int sex = 0; sex < nSexes; sex++) {
-				outPop << "\t" << nInds[stg][sex];
+				outPopOfs << "\t" << nInds[stg][sex];
 			}
 		}
 		// juveniles from permanent array
 		for (int sex = 0; sex < nSexes; sex++) {
-			outPop << "\t" << nInds[0][sex];
+			outPopOfs << "\t" << nInds[0][sex];
 		}
 	}
 	else { // non-structured population
-		outPop << "\t" << totalPop();
+		outPopOfs << "\t" << totalPop();
 		if (dem.repType != 0)
 		{ // sexual model
-			outPop << "\t" << nInds[1][0] << "\t" << nInds[1][1];
+			outPopOfs << "\t" << nInds[1][0] << "\t" << nInds[1][1];
 		}
 	}
-	outPop << endl;
+	outPopOfs << endl;
 }
 
 //---------------------------------------------------------------------------

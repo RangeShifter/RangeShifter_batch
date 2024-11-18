@@ -174,7 +174,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			if (sim.outOccup && sim.reps > 1)
 				pComm->closeOccupancyOfs();
 			if (sim.outPop) {
-				pComm->outPopHeaders(pSpecies, -999);
+				pComm->closePopOfs();
 			}
 			if (sim.outTraitsCells)
 				pComm->outTraitsHeaders(pLandscape, pSpecies, -999);
@@ -604,7 +604,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 		pComm->outRangeHeaders(pSpecies, -999); // close Range file
 	}
 	if (sim.outPop) {
-		pComm->outPopHeaders(pSpecies, -999); // close Population file
+		pComm->closePopOfs(); // close Population file
 	}
 	if (sim.outTraitsCells)
 		pComm->outTraitsHeaders(pLandscape, pSpecies, -999); // close Traits file
