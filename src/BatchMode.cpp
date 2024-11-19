@@ -2953,7 +2953,7 @@ int CheckTraitsFile(string indir)
 {
 	string header, colheader;
 	int simNb, nextLineSimNb;
-	string filename, inTraitType, inSex, inInitDist, inInitParams,
+	string filename, inTraitType, inSex, inInitDist, inInitParams, inInitDomDist, inInitDomParams,
 		inDominanceDist, inDominanceParams, inIsInherited, inMutationDist, 
 		inMutationParams, inPositions, inNbPositions, inExpressionType, inMutationRate, inIsOutput;
 	int nbErrors = 0;
@@ -2970,13 +2970,15 @@ int CheckTraitsFile(string indir)
 	bTraitsFile >> header; if (header != "Positions") nbErrors++;
 	bTraitsFile >> header; if (header != "NbrOfPositions") nbErrors++;
 	bTraitsFile >> header; if (header != "ExpressionType") nbErrors++;
-	bTraitsFile >> header; if (header != "InitialDistribution") nbErrors++;
-	bTraitsFile >> header; if (header != "InitialParameters") nbErrors++;
-	bTraitsFile >> header; if (header != "DominanceDistribution") nbErrors++;
-	bTraitsFile >> header; if (header != "DominanceParameters") nbErrors++;
+	bTraitsFile >> header; if (header != "InitialAlleleDist") nbErrors++;
+	bTraitsFile >> header; if (header != "InitialAlleleParams") nbErrors++;
+	bTraitsFile >> header; if (header != "InitialDomDist") nbErrors++;
+	bTraitsFile >> header; if (header != "InitialDomParams") nbErrors++;
 	bTraitsFile >> header; if (header != "IsInherited") nbErrors++;
 	bTraitsFile >> header; if (header != "MutationDistribution") nbErrors++;
 	bTraitsFile >> header; if (header != "MutationParameters") nbErrors++;
+	bTraitsFile >> header; if (header != "DominanceDistribution") nbErrors++;
+	bTraitsFile >> header; if (header != "DominanceParameters") nbErrors++;
 	bTraitsFile >> header; if (header != "MutationRate") nbErrors++;
 	bTraitsFile >> header; if (header != "OutputValues") nbErrors++;
 
@@ -3005,8 +3007,9 @@ int CheckTraitsFile(string indir)
 	while (!stopReading) {
 
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
-		bTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions >> inExpressionType >> inInitDist >> inInitParams
-			>> inDominanceDist >> inDominanceParams >> inIsInherited >> inMutationDist >> inMutationParams
+		bTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions 
+			>> inExpressionType >> inInitDist >> inInitParams >> inInitDomDist >> inInitDomParams
+			>> inIsInherited >> inMutationDist >> inMutationParams >> inDominanceDist >> inDominanceParams
 			>> inMutationRate >> inIsOutput;
 
 		current = CheckStageSex(whichInputFile, lineNb, simNb, prev, 0, 0, 0, 0, 0, true, false);
@@ -3100,24 +3103,19 @@ int CheckTraitsFile(string indir)
 			nbErrors++;
 		}
 
-		// Check InitialDistribution
+		// Check InitialAlleleDist
 		if (tr == NEUTRAL && inInitDist != "uniform") {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLog << "InitialDistribution must be uniform for the neutral trait." << endl;
-			nbErrors++;
-		}
-		if (tr == GENETIC_LOAD && inInitDist != "#") {
-			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLog << "InitialDistribution must be blank (#) for genetic load traits." << endl;
+			batchLog << "InitialAlleleDist must be uniform for the neutral trait." << endl;
 			nbErrors++;
 		}
 		if (isDisp && inInitDist != "normal" && inInitDist != "uniform") {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLog << "InitialDistribution must be either normal or uniform for dispersal traits." << endl;
+			batchLog << "InitialAlleleDist must be either normal or uniform for dispersal traits." << endl;
 			nbErrors++;
 		}
 
-		// Check InitialParameters
+		// Check InitialAlleleParams
 		const regex patternParamsUnif{ "^\"?min=[-]?([0-9]*[.])?[0-9]+,max=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsNormal{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+,sd=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsGamma{ "^\"?shape=[-]?([0-9]*[.])?[0-9]+,scale=[-]?([0-9]*[.])?[0-9]+\"?$" };
@@ -3129,7 +3127,7 @@ int CheckTraitsFile(string indir)
 				isMatch = regex_search(inInitParams, patternParamsNeutral);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For neutral trait with uniform initialisation, InitialParameters must have form max=int" << endl;
+					batchLog << "For neutral trait with uniform initialisation, InitialAlleleParams must have form max=int" << endl;
 					nbErrors++;
 				}
 				else {
@@ -3144,21 +3142,17 @@ int CheckTraitsFile(string indir)
 			// if not uniform then initDist must be blank, no params
 			else {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "For neutral trait with uniform initialisation, InitialParameters must have form max=int" << endl;
+				batchLog << "For neutral trait with uniform initialisation, InitialAlleleParams must have form max=int" << endl;
 				nbErrors++;
 			}
 		}
-		if (tr == GENETIC_LOAD && inInitParams != "#") {
-			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLog << "For genetic load traits, InitialParameters must be blank (#)" << endl;
-			nbErrors++;
-		}
+
 		if (isDisp) {
 			if (inInitDist == "uniform") {
 				isMatch = regex_search(inInitParams, patternParamsUnif);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For dispersal trait uniform initialisation, InitialParameters must have form min=float,max=float" << endl;
+					batchLog << "For dispersal trait uniform initialisation, InitialAlleleParams must have form min=float,max=float" << endl;
 					nbErrors++;
 				}
 			}
@@ -3166,81 +3160,117 @@ int CheckTraitsFile(string indir)
 				isMatch = regex_search(inInitParams, patternParamsNormal);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For normal initialisation, InitialParameters must have form mean=float,sd=float" << endl;
+					batchLog << "For normal initialisation, InitialAlleleParams must have form mean=float,sd=float" << endl;
 					nbErrors++;
 				}
-			}
-		}
-
-		// Check DominanceDistribution and DominanceParameters
-		if (tr == NEUTRAL) {
-			if (inDominanceDist != "#") {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "DominanceDistribution must be left blank (#) for the neutral trait." << endl;
-				nbErrors++;
-			}
-			if (inDominanceParams != "#") {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "DominanceParameters must be left blank (#) for the neutral trait." << endl;
-				nbErrors++;
-			}
-		}
-		if (isDisp) {
-			if (inDominanceDist != "#") {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "DominanceDistribution must be left blank (#) for dispersal traits." << endl;
-				nbErrors++;
-			}
-			if (inDominanceParams != "#") {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "DominanceParameters must be left blank (#) for dispersal traits." << endl;
-				nbErrors++;
 			}
 		}
 		if (tr == GENETIC_LOAD) {
-			if (inDominanceDist == "normal") {
-				isMatch = regex_search(inDominanceParams, patternParamsNormal);
+			if (inInitDist == "uniform") {
+				isMatch = regex_search(inInitParams, patternParamsUnif);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For a normal dominance distribution, DominanceParams must have form mean=float,sd=float" << endl;
+					batchLog << "For a uniform distribution, InitialAlleleParams must have form min=float,max=float." << endl;
 					nbErrors++;
 				}
 			}
-			else if (inDominanceDist == "gamma") {
-				isMatch = regex_search(inDominanceParams, patternParamsGamma);
+			else if (inInitDist == "normal") {
+				isMatch = regex_search(inInitParams, patternParamsNormal);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For a Gamma dominance distribution, DominanceParams must have form shape=float,scale=float" << endl;
+					batchLog << "For a normal distribution, InitialAlleleParams must have form mean=float,sd=float." << endl;
 					nbErrors++;
 				}
 			}
-			else if (inDominanceDist == "uniform") {
-				isMatch = regex_search(inDominanceParams, patternParamsUnif);
+			else if (inInitDist == "gamma") {
+				isMatch = regex_search(inInitParams, patternParamsGamma);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For a uniform dominance distribution, DominanceParams must have form min=float,max=float" << endl;
+					batchLog << "For a Gamma distribution, InitialAlleleParams must have form shape=float,scale=float." << endl;
 					nbErrors++;
 				}
 			}
-			else if (inDominanceDist == "negExp") {
-				isMatch = regex_search(inDominanceParams, patternParamsMean);
+			else if (inInitDist == "negExp") {
+				isMatch = regex_search(inInitParams, patternParamsMean);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For a negative exponential dominance distribution, DominanceParams must have form mean=float" << endl;
+					batchLog << "For a negative exponential distribution, InitialAlleleParams must have form mean=float." << endl;
 					nbErrors++;
 				}
 			}
-			else if (inDominanceDist == "scaled") {
-				isMatch = regex_search(inDominanceParams, patternParamsMean);
-				if (!isMatch) {
-					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For a scaled dominance distribution, DominanceParams must have form mean=float" << endl;
-					nbErrors++;
-				}
+			else if (inInitDist == "#" && inInitParams != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "If InitialAlleleDist is left blank, InitialAlleleParams must also be blank." << endl;
+				nbErrors++;
 			}
 			else {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "DominanceDistribution must be either normal, gamma, uniform, negExp or scaled for genetic load traits." << endl;
+				batchLog << "For genetic load traits, InitialAlleleDist must be either blank (#), uniform, gamma, negExp or normal" << endl;
+				nbErrors++;
+			}
+		}
+
+		// Check InitialDomDist and InitialDomParams
+		if ((isDisp || tr == NEUTRAL)
+			&& (inInitDomDist != "#" || inInitDomParams != "#")){
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "InitialDomDist and InitialDomParams must be blank (#) for dispersal and neutral traits." << endl;
+			nbErrors++;
+		}
+		else if (tr == GENETIC_LOAD) {
+			if (inInitDomDist == "normal") {
+				isMatch = regex_search(inInitDomParams, patternParamsNormal);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a normal dominance distribution, InitialDomParams must have form mean=float,sd=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inInitDomDist == "gamma") {
+				isMatch = regex_search(inInitDomParams, patternParamsGamma);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a Gamma dominance distribution, InitialDomParams must have form shape=float,scale=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inInitDomDist == "uniform") {
+				isMatch = regex_search(inInitDomParams, patternParamsUnif);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a uniform dominance distribution, InitialDomParams must have form min=float,max=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inInitDomDist == "negExp") {
+				isMatch = regex_search(inInitDomParams, patternParamsMean);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a negative exponential dominance distribution, InitialDomParams must have form mean=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inInitDomDist == "scaled") {
+				if (inInitDist == "#") {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "Initial scaled dominance distribution requires InitialAlleleDist to be non-blank." << endl;
+					nbErrors++;
+				}
+				isMatch = regex_search(inInitDomParams, patternParamsMean);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a scaled dominance distribution, InitialDomParams must have form mean=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inInitDomDist == "#" && inInitDomParams != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "If InitialDomDist is left blank, InitialDomParams must also be blank." << endl;
+				nbErrors++;
+			}
+			else {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "InitialDomDist must be either blank (#), normal, gamma, uniform, negExp or scaled for genetic load traits." << endl;
 				nbErrors++;
 			}
 		}
@@ -3361,6 +3391,79 @@ int CheckTraitsFile(string indir)
 			else {
 				BatchError(whichInputFile, lineNb, 0, " ");
 				batchLog << "For genetic load traits, mutationDistribution must be either uniform, gamma, negExp or normal" << endl;
+				nbErrors++;
+			}
+		}
+
+		// Check DominanceDistribution and DominanceParameters
+		if (tr == NEUTRAL) {
+			if (inDominanceDist != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "DominanceDistribution must be left blank (#) for the neutral trait." << endl;
+				nbErrors++;
+			}
+			if (inDominanceParams != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "DominanceParameters must be left blank (#) for the neutral trait." << endl;
+				nbErrors++;
+			}
+		}
+		if (isDisp) {
+			if (inDominanceDist != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "DominanceDistribution must be left blank (#) for dispersal traits." << endl;
+				nbErrors++;
+			}
+			if (inDominanceParams != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "DominanceParameters must be left blank (#) for dispersal traits." << endl;
+				nbErrors++;
+			}
+		}
+		if (tr == GENETIC_LOAD) {
+			if (inDominanceDist == "normal") {
+				isMatch = regex_search(inDominanceParams, patternParamsNormal);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a normal dominance distribution, DominanceParams must have form mean=float,sd=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inDominanceDist == "gamma") {
+				isMatch = regex_search(inDominanceParams, patternParamsGamma);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a Gamma dominance distribution, DominanceParams must have form shape=float,scale=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inDominanceDist == "uniform") {
+				isMatch = regex_search(inDominanceParams, patternParamsUnif);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a uniform dominance distribution, DominanceParams must have form min=float,max=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inDominanceDist == "negExp") {
+				isMatch = regex_search(inDominanceParams, patternParamsMean);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a negative exponential dominance distribution, DominanceParams must have form mean=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inDominanceDist == "scaled") {
+				isMatch = regex_search(inDominanceParams, patternParamsMean);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a scaled dominance distribution, DominanceParams must have form mean=float" << endl;
+					nbErrors++;
+				}
+			}
+			else {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "DominanceDistribution must be either normal, gamma, uniform, negExp or scaled for genetic load traits." << endl;
 				nbErrors++;
 			}
 		}
