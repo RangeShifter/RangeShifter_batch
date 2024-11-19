@@ -5021,13 +5021,13 @@ void setUpSpeciesTrait(vector<string> parameters) {
 	const set<int> positions = stringToLoci(parameters[3], parameters[4], genomeSize);
 	const ExpressionType expressionType = stringToExpressionType(parameters[5]);
 
-	// Initial distribution parameters
+	// Initial allele distribution parameters
 	const DistributionType initDist = stringToDistributionType(parameters[6]);
 	const map<GenParamType, float> initParams = stringToParameterMap(parameters[7]);
 
-	// Dominance distribution parameters
-	const DistributionType dominanceDist = stringToDistributionType(parameters[8]);
-	const map<GenParamType, float> dominanceParams = stringToParameterMap(parameters[9]);
+	// Initial dominance distribution parameters
+	const DistributionType initDomDist = stringToDistributionType(parameters[8]);
+	const map<GenParamType, float> initDomParams = stringToParameterMap(parameters[9]);
 
 	// Mutation parameters
 	bool isInherited = (parameters[10] == "TRUE");
@@ -5035,27 +5035,33 @@ void setUpSpeciesTrait(vector<string> parameters) {
 		stringToDistributionType(parameters[11]) : 
 		DistributionType::NONE;
 	map<GenParamType, float> mutationParameters;
-	float mutationRate = isInherited ? stof(parameters[13]) : 0.0;
 	if (isInherited) {
 		mutationParameters = stringToParameterMap(parameters[12]);
 	}
 
-	int ploidy = gNbSexesDisp;
-	parameters[14].erase(
+	// Dominance distribution parameters
+	const DistributionType dominanceDist = stringToDistributionType(parameters[13]);
+	const map<GenParamType, float> dominanceParams = stringToParameterMap(parameters[14]);
+
+	float mutationRate = isInherited ? stof(parameters[15]) : 0.0;
+	
+	parameters[16].erase(
 		// send windows line endings to hell where they belong
-		remove(parameters[14].begin(), parameters[14].end(), '\r'),
-		parameters[14].end()
+		remove(parameters[14].begin(), parameters[16].end(), '\r'),
+		parameters[16].end()
 	);
-	const bool isOutput = parameters[14] == "TRUE";
+	const bool isOutput = parameters[16] == "TRUE";
 
 	// Create species trait
+	int ploidy = gNbSexesDisp;
 	unique_ptr<SpeciesTrait> trait(new SpeciesTrait(
 		traitType, sex, 
 		positions, expressionType, 
 		initDist, initParams, 
-		dominanceDist, dominanceParams, 
+		initDomDist, initDomParams,
 		isInherited, mutationRate, 
 		mutationDistribution, mutationParameters,
+		dominanceDist, dominanceParams,
 		ploidy,
 		isOutput
 	));
