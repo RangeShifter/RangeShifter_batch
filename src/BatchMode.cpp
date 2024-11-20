@@ -5047,7 +5047,7 @@ void setUpSpeciesTrait(vector<string> parameters) {
 	
 	parameters[16].erase(
 		// send windows line endings to hell where they belong
-		remove(parameters[14].begin(), parameters[16].end(), '\r'),
+		remove(parameters[16].begin(), parameters[16].end(), '\r'),
 		parameters[16].end()
 	);
 	const bool isOutput = parameters[16] == "TRUE";
