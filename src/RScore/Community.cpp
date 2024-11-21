@@ -56,7 +56,7 @@ void Community::initialise(Species* pSpecies, int year)
 	locn distloc;
 	patchData pch;
 	patchLimits limits = patchLimits();
-	std::vector<int> selectedPatches;
+	set<int> selectedPatches;
 	set<int> suitablePatches;
 	Patch* pPatch;
 	Cell* pCell;
@@ -105,7 +105,7 @@ void Community::initialise(Species* pSpecies, int year)
 			sample(
 				suitablePatches.begin(), 
 				suitablePatches.end(),
-				back_inserter(selectedPatches),
+				inserter(selectedPatches, selectedPatches.begin()),
 				init.nSeedPatches,
 				pRandom->getRNG()
 				);
@@ -124,7 +124,7 @@ void Community::initialise(Species* pSpecies, int year)
 					patchnum = pch.pPatch->getPatchNum();
 					if (patchnum != 0 && pch.pPatch->getK() > 0.0) {
 						// patch is suitable
-						selectedPatches.push_back(patchnum);
+						selectedPatches.insert(patchnum);
 					}
 				}
 			}
@@ -175,7 +175,7 @@ void Community::initialise(Species* pSpecies, int year)
 								pPatch = pCell->getPatch();
 								if (pPatch != nullptr) {
 									if (pPatch->getSeqNum() != 0) { // not the matrix patch
-										selectedPatches.push_back(pPatch->getPatchNum());
+										selectedPatches.insert(pPatch->getPatchNum());
 									}
 								}
 							}
