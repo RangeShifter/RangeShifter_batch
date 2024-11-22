@@ -103,7 +103,7 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 
 	int t0, t1;
-	t0 = (int)time(0);
+	t0 = static_cast<int>(time(0));
 
 	// set up parameter objects
 	paramsGrad = new paramGrad;
@@ -136,12 +136,12 @@ int _tmain(int argc, _TCHAR* argv[])
 		paramsSim->setBatchNum(b.batchNum);
 		// Set up species
 		pSpecies = new Species(
-			b.reproductn,
-			b.repseasons,
-			b.stagestruct == 1, // int to bool
-			b.stages,
-			b.transfer == 1,
-			b.transfer
+			b.reproType,
+			b.nbRepSeasons,
+			b.isStageStruct == 1, // int to bool
+			b.nbStages,
+			b.transferType == 1,
+			b.transferType
 		);
 		cout << endl << "Batch input files OK" << endl;
 	}
@@ -178,7 +178,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	delete paramsSim;
 	delete pSpecies;
 
-	t1 = (int)time(0);
+	t1 = static_cast<int>(time(0));
 	cout << endl << "***** Elapsed time " << t1 - t0 << " seconds" << endl << endl;
 	cout << "*****" << endl;
 	cout << "***** Simulation completed." << endl;

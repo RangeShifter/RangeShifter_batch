@@ -56,14 +56,14 @@ using namespace std;
 #include "./RScore/NeutralTrait.h"
 
 struct batchfiles {
-	bool ok;
+	bool ok = true;
 	int batchNum;
-	int nSimuls;
-	int nLandscapes;
-	int patchmodel, resolution, landtype, maxNhab, speciesdist, distresolution;
-	int reproductn;
-	int repseasons;
-	int stagestruct, stages, transfer;
+	int nSimuls = 0;
+	int nLandscapes = 0;
+	int isPatchModel, resolution, landType, maxNbHab, speciesDist, distResol;
+	int reproType;
+	int nbRepSeasons;
+	int isStageStruct, nbStages, transferType;
 	int sexesDem;		// no. of explicit sexes for demographic model
 	int nbSexesDisp;	// no. of explicit sexes for dispersal model
 	string parameterFile;
@@ -74,7 +74,7 @@ struct batchfiles {
 	string settleFile;
 	string geneticsFile;
 	string traitsFile;
-	string initFileIfs;
+	string initFile;
 };
 
 struct TraitInputOptions {
@@ -101,7 +101,6 @@ TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex);
 int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& simNb);
 
 constexpr int gEmptyVal = -9;
-constexpr int nHeadersEmig = 13;
 
 struct simCheck {
 	bool isNewSim;
@@ -175,7 +174,7 @@ void BatchError(
 4 - fieldname must be less than fieldname2
 */
 
-int power2check(int x);
+bool isValidFractalDim(int x);
 
 void CtrlFormatError(void);
 void ArchFormatError(void);
