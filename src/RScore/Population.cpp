@@ -27,10 +27,6 @@
 
 //---------------------------------------------------------------------------
 
-ofstream outInds;
-
-//---------------------------------------------------------------------------
-
 Population::Population() {
 	nSexes = nStages = 0;
 	pPatch = NULL;
@@ -1480,70 +1476,8 @@ void Population::outPopulation(ofstream& outPopOfs, int rep, int yr, int gen, bo
 }
 
 //---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
-// Open individuals file and write header record
-void Population::outIndsHeaders(int rep, int landNr, bool patchModel)
-{
-	if (landNr == -999) { // close file
-		if (outInds.is_open()) {
-			outInds.close(); outInds.clear();
-		}
-		return;
-	}
-
-	string name;
-	demogrParams dem = pSpecies->getDemogrParams();
-	emigRules emig = pSpecies->getEmigRules();
-	transferRules trfr = pSpecies->getTransferRules();
-	settleType sett = pSpecies->getSettle();
-	simParams sim = paramsSim->getSim();
-
-	name = paramsSim->getDir(2)
-		+ (sim.batchMode ? "Batch" + to_string(sim.batchNum) + "_" : "")
-		+ "Sim" + to_string(sim.simulation)
-		+ "_Land" + to_string(landNr) + "_Rep" + to_string(rep) + "_Inds.txt";
-
-	outInds.open(name.c_str());
-	outInds << "Rep\tYear\tRepSeason\tSpecies\tIndID\tStatus";
-	if (patchModel) outInds << "\tNatal_patch\tPatchID";
-	else outInds << "\tNatal_X\tNatal_Y\tX\tY";
-	if (dem.repType != 0) outInds << "\tSex";
-	if (dem.stageStruct) outInds << "\tAge\tStage";
-	if (pSpecies->getNbGenLoadTraits() > 0) outInds << "\tProbViable";
-	if (emig.indVar) {
-		if (emig.densDep) outInds << "\tD0\tAlpha\tBeta";
-		else outInds << "\tEP";
-	}
-	if (trfr.indVar) {
-		if (trfr.usesMovtProc) {
-			if (trfr.moveType == 1) { // SMS
-				outInds << "\tDP\tGB\tAlphaDB\tBetaDB";
-			}
-			if (trfr.moveType == 2) { // CRW
-				outInds << "\tStepLength\tRho";
-			}
-		}
-		else { // kernel
-			outInds << "\tMeanDistI";
-			if (trfr.twinKern) outInds << "\tMeanDistII\tPKernelI";
-		}
-	}
-	if (sett.indVar) {
-		outInds << "\tS0\tAlphaS\tBetaS";
-	}
-	outInds << "\tDistMoved";
-#ifndef NDEBUG
-	outInds << "\tNsteps";
-#else
-	if (trfr.usesMovtProc) outInds << "\tNsteps";
-#endif
-	outInds << endl;
-}
-
-//---------------------------------------------------------------------------
 // Write records to individuals file
-void Population::outIndividual(Landscape* pLandscape, int rep, int yr, int gen)
+void Population::outIndividual(ofstream& outIndsOfs, Landscape* pLandscape, int rep, int yr, int gen)
 {
 	bool writeInd;
 	pathSteps steps;
@@ -1561,26 +1495,26 @@ void Population::outIndividual(Landscape* pLandscape, int rep, int yr, int gen)
 		indStats ind = inds[i]->getStats();
 		if (yr == -1) { // write all initialised individuals
 			writeInd = true;
-			outInds << rep << "\t" << yr << "\t" << dem.repSeasons - 1;
+			outIndsOfs << rep << "\t" << yr << "\t" << dem.repSeasons - 1;
 		}
 		else {
 			if (dem.stageStruct && gen < 0) { // write dying old age individuals only
 				if (ind.status == diedOldAge) {
 					writeInd = true;
-					outInds << rep << "\t" << yr << "\t" << dem.repSeasons - 1;
+					outIndsOfs << rep << "\t" << yr << "\t" << dem.repSeasons - 1;
 				}
 				else writeInd = false;
 			}
 			else {
 				writeInd = true;
-				outInds << rep << "\t" << yr << "\t" << gen;
+				outIndsOfs << rep << "\t" << yr << "\t" << gen;
 			}
 		}
 		if (writeInd) {
-			outInds << "\t" << spNum << "\t" << inds[i]->getId();
-			if (dem.stageStruct) outInds << "\t" << to_string(ind.status);
+			outIndsOfs << "\t" << spNum << "\t" << inds[i]->getId();
+			if (dem.stageStruct) outIndsOfs << "\t" << to_string(ind.status);
 			else { // non-structured population
-				outInds << "\t" << to_string(ind.status);
+				outIndsOfs << "\t" << to_string(ind.status);
 			}
 			pCell = inds[i]->getLocn(1);
 			locn loc = locn();
@@ -1589,75 +1523,75 @@ void Population::outIndividual(Landscape* pLandscape, int rep, int yr, int gen)
 			pCell = inds[i]->getLocn(0);
 			locn natalloc = pCell->getLocn();
 			if (ppLand.patchModel) {
-				outInds << "\t" << inds[i]->getNatalPatch()->getPatchNum();
-				if (loc.x == -1) outInds << "\t-1";
-				else outInds << "\t" << patchNum;
+				outIndsOfs << "\t" << inds[i]->getNatalPatch()->getPatchNum();
+				if (loc.x == -1) outIndsOfs << "\t-1";
+				else outIndsOfs << "\t" << patchNum;
 			}
 			else { // cell-based model
-				outInds << "\t" << (float)natalloc.x << "\t" << natalloc.y;
-				outInds << "\t" << (float)loc.x << "\t" << (float)loc.y;
+				outIndsOfs << "\t" << (float)natalloc.x << "\t" << natalloc.y;
+				outIndsOfs << "\t" << (float)loc.x << "\t" << (float)loc.y;
 			}
-			if (dem.repType != 0) outInds << "\t" << ind.sex;
-			if (dem.stageStruct) outInds << "\t" << ind.age << "\t" << ind.stage;
+			if (dem.repType != 0) outIndsOfs << "\t" << ind.sex;
+			if (dem.stageStruct) outIndsOfs << "\t" << ind.age << "\t" << ind.stage;
 
-			if (pSpecies->getNbGenLoadTraits() > 0) outInds << "\t" << inds[i]->getGeneticFitness();
+			if (pSpecies->getNbGenLoadTraits() > 0) outIndsOfs << "\t" << inds[i]->getGeneticFitness();
 		
 			if (emig.indVar) {
 				emigTraits e = inds[i]->getIndEmigTraits();
 				if (emig.densDep) {
-					outInds << "\t" << e.d0 << "\t" << e.alpha << "\t" << e.beta;
+					outIndsOfs << "\t" << e.d0 << "\t" << e.alpha << "\t" << e.beta;
 				}
 				else {
-					outInds << "\t" << e.d0;
+					outIndsOfs << "\t" << e.d0;
 				}
 			} // end of if (emig.indVar)
 			if (trfr.indVar) {
 				if (trfr.usesMovtProc) {
 					if (trfr.moveType == 1) { // SMS
 						trfrSMSTraits s = inds[i]->getIndSMSTraits();
-						outInds << "\t" << s.dp << "\t" << s.gb;
-						outInds << "\t" << s.alphaDB << "\t" << s.betaDB;
+						outIndsOfs << "\t" << s.dp << "\t" << s.gb;
+						outIndsOfs << "\t" << s.alphaDB << "\t" << s.betaDB;
 					} // end of SMS
 					if (trfr.moveType == 2) { // CRW
 						trfrCRWTraits c = inds[i]->getIndCRWTraits();
-						outInds << "\t" << c.stepLength << "\t" << c.rho;
+						outIndsOfs << "\t" << c.stepLength << "\t" << c.rho;
 					} // end of CRW
 				}
 				else { // kernel
 					trfrKernelParams k = inds[i]->getIndKernTraits();
 					if (trfr.twinKern)
 					{
-						outInds << "\t" << k.meanDist1 << "\t" << k.meanDist2 << "\t" << k.probKern1;
+						outIndsOfs << "\t" << k.meanDist1 << "\t" << k.meanDist2 << "\t" << k.probKern1;
 					}
 					else {
-						outInds << "\t" << k.meanDist1;
+						outIndsOfs << "\t" << k.meanDist1;
 					}
 				}
 			}
 
 			if (sett.indVar) {
 				settleTraits s = inds[i]->getIndSettTraits();
-				outInds << "\t" << s.s0 << "\t" << s.alpha << "\t" << s.beta;
+				outIndsOfs << "\t" << s.s0 << "\t" << s.alpha << "\t" << s.beta;
 			}
 
 			// distance moved (metres)
-			if (loc.x == -1) outInds << "\t-1";
+			if (loc.x == -1) outIndsOfs << "\t-1";
 			else {
 				float d = ppLand.resol * sqrt((float)((natalloc.x - loc.x) * (natalloc.x - loc.x)
 					+ (natalloc.y - loc.y) * (natalloc.y - loc.y)));
-				outInds << "\t" << d;
+				outIndsOfs << "\t" << d;
 			}
 #ifndef NDEBUG
 			// ALWAYS WRITE NO. OF STEPS
 			steps = inds[i]->getSteps();
-			outInds << "\t" << steps.year;
+			outIndsOfs << "\t" << steps.year;
 #else
 			if (trfr.usesMovtProc) {
 				steps = inds[i]->getSteps();
-				outInds << "\t" << steps.year;
+				outIndsOfs << "\t" << steps.year;
 			}
 #endif
-			outInds << endl;
+			outIndsOfs << endl;
 		} // end of writeInd condition
 
 	}

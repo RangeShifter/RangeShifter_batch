@@ -194,10 +194,8 @@ public:
 		bool gradK
 	);
 
-	// Open individuals file and write header record
-	void outIndsHeaders(int rep, int landnr, bool patchModel);
 	// Write records to individuals file
-	void outIndividual(Landscape* pLandscape, int rep, int yr, int gen);
+	void outIndividual(ofstream& outIndsOfs, Landscape* pLandscape, int rep, int yr, int gen);
 	void outputTraitPatchInfo(ofstream& outtraits, int rep, int yr, int gen, bool patchModel);
 	traitsums outTraits(ofstream& outtraits, const bool& writefile);
 	void outputGeneValues(ofstream& ofsGenes, const int& yr, const int& gen) const;

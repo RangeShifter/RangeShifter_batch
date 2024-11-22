@@ -144,7 +144,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				}
 			if (sim.outPop) {
 				// open Population file
-				if (!pComm->outPopHeaders(pSpecies, ppLand.landNum)) {
+				if (!pComm->outPopHeaders(pSpecies)) {
 					filesOK = false;
 				}
 			}
@@ -157,7 +157,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 					filesOK = false;
 				}
 			if (sim.outConnect && ppLand.patchModel) // open Connectivity file
-				if (!pLandscape->outConnectHeaders(0)) {
+				if (!pLandscape->outConnectHeaders()) {
 					filesOK = false;
 				}
 			if (sim.outputWeirCockerham || sim.outputWeirHill) { // open neutral genetics file
@@ -167,24 +167,15 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			}
 		}
 		if (!filesOK) {
-			// close any files which may be open
-			if (sim.outRange) {
-				pComm->outRangeHeaders(pSpecies, -999);
-			}
-			if (sim.outOccup && sim.reps > 1)
-				pComm->closeOccupancyOfs();
-			if (sim.outPop) {
-				pComm->closePopOfs();
-			}
-			if (sim.outTraitsCells)
-				pComm->outTraitsHeaders(pLandscape, pSpecies, -999);
-			if (sim.outTraitsRows)
-				pComm->outTraitsRowsHeaders(pSpecies, -999);
-			if (sim.outConnect && ppLand.patchModel)
-				pLandscape->outConnectHeaders(-999);
-			if (sim.outputWeirCockerham || sim.outputWeirHill) {
-				pComm->openNeutralOutputFile(pSpecies, -999);
-			}
+
+			// Close any files which may be open
+			if (sim.outRange) pComm->closeRangeOfs();
+			if (sim.outOccup && sim.reps > 1) pComm->closeOccupancyOfs();
+			if (sim.outPop) pComm->closePopOfs();
+			if (sim.outTraitsCells) pComm->closeOutTraitOfs();
+			if (sim.outTraitsRows) pComm->closeTraitRows();
+			if (sim.outConnect && ppLand.patchModel) pLandscape->closeConnectOfs();
+			if (sim.outputWeirCockerham || sim.outputWeirHill) pComm->closeNeutralOutputOfs();
 
 #if RS_RCPP && !R_CMD
 			return Rcpp::List::create(Rcpp::Named("Errors") = 666);
@@ -226,7 +217,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 
 		// open a new individuals file for each replicate
 		if (sim.outInds)
-			pComm->outInds(rep, 0, 0, ppLand.landNum);
+			pComm->outIndsHeaders(rep, ppLand.landNum, ppLand.patchModel, pSpecies);
 
 		if (sim.outputGeneValues) {
 			bool geneOutFileHasOpened = pComm->openOutGenesFile(pSpecies->isDiploid(), ppLand.landNum, rep);
@@ -435,7 +426,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 
 				// output Individuals
 				if (sim.outInds && yr >= sim.outStartInd && yr % sim.outIntInd == 0)
-					pComm->outInds(rep, yr, gen, -1);
+					pComm->outInds(rep, yr, gen);
 
 				if ((sim.outputGeneValues || sim.outputWeirCockerham || sim.outputWeirHill)
 					&& yr >= sim.outStartGenetics
@@ -485,7 +476,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			if (dem.stageStruct) {
 				pComm->ageIncrement(); // increment age of all individuals
 				if (sim.outInds && yr >= sim.outStartInd && yr % sim.outIntInd == 0)
-					pComm->outInds(rep, yr, -1, -1); // list any individuals dying having reached maximum age
+					pComm->outInds(rep, yr, -1); // list any individuals dying having reached maximum age
 				pComm->applySurvivalDevlpt(); // delete any such individuals
 				totalInds = pComm->totalInds();
 				if (totalInds <= 0) { 
@@ -564,17 +555,10 @@ int RunModel(Landscape* pLandscape, int seqsim)
 		if (sim.outConnect && ppLand.patchModel)
 			pLandscape->resetConnectMatrix(); // set connectivity matrix to zeroes
 
-		if (sim.outInds) // close Individuals output file
-			pComm->outInds(rep, 0, 0, -999);
-
-		if (sim.outputGeneValues) { // close genetic values output file
-			pComm->openOutGenesFile(false, -999, rep);
-		}
-
-		if (sim.outputWeirCockerham) //close per locus file 
-			pComm->openPerLocusFstFile(pSpecies, pLandscape, -999, rep);
-		if (sim.outputWeirHill) //close per locus file 
-			pComm->openPairwiseFstFile(pSpecies, pLandscape, -999, rep);
+		if (sim.outInds) pComm->closeOutIndsOfs();
+		if (sim.outputGeneValues) pComm->closeOutGenesOfs();
+		if (sim.outputWeirCockerham) pComm->closePerLocusFstFile();
+		if (sim.outputWeirHill) pComm->closePairwiseFstFile();
 
 		if (sim.saveVisits) {
 			pLandscape->outVisits(rep, ppLand.landNum);
@@ -590,7 +574,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 
 	if (sim.outConnect && ppLand.patchModel) {
 		pLandscape->deleteConnectMatrix();
-		pLandscape->outConnectHeaders(-999); // close Connectivity Matrix file
+		pLandscape->closeConnectOfs();
 	}
 
 	// Occupancy outputs
@@ -600,30 +584,21 @@ int RunModel(Landscape* pLandscape, int seqsim)
 		pComm->closeOccupancyOfs();
 	}
 
-	if (sim.outRange) {
-		pComm->outRangeHeaders(pSpecies, -999); // close Range file
-	}
-	if (sim.outPop) {
-		pComm->closePopOfs(); // close Population file
-	}
-	if (sim.outTraitsCells)
-		pComm->outTraitsHeaders(pLandscape, pSpecies, -999); // close Traits file
-	if (sim.outTraitsRows)
-		pComm->outTraitsRowsHeaders(pSpecies, -999); // close Traits rows file
+	if (sim.outRange) pComm->closeRangeOfs();
+	if (sim.outPop) pComm->closePopOfs();
+	if (sim.outTraitsCells) pComm->closeOutTraitOfs();
+	if (sim.outTraitsRows) pComm->closeTraitRows();
+
 	// close Individuals & Genetics output files if open
 	// they can still be open if the simulation was stopped by the user
-	if (sim.outInds) pComm->outInds(0, 0, 0, -999);
-	if (sim.outputGeneValues) pComm->openOutGenesFile(0, -999, 0);
-	if (sim.outputWeirCockerham || sim.outputWeirHill) {
-		pComm->openNeutralOutputFile(pSpecies, -999);
-	}
-	if (sim.outputWeirCockerham) {
-		pComm->openPerLocusFstFile(pSpecies, pLandscape, -999, 0);
-	}
-	if (sim.outputWeirHill) pComm->openPairwiseFstFile(pSpecies, pLandscape, -999, 0);
+	if (sim.outInds) pComm->closeOutIndsOfs();
+	if (sim.outputGeneValues) pComm->closeOutGenesOfs();
+	if (sim.outputWeirCockerham || sim.outputWeirHill) pComm->closeNeutralOutputOfs();
+	if (sim.outputWeirCockerham) pComm->closePerLocusFstFile();
+	if (sim.outputWeirHill) pComm->closePairwiseFstFile();
 
 	delete pComm; 
-	pComm = 0;
+	pComm = nullptr;
 
 #if RS_RCPP && !R_CMD
 	return list_outPop;
