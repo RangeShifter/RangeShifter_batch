@@ -128,14 +128,17 @@ public:
 	void outRange(Species* pSpecies, int rep, int yr, int gen);
 
 	// Open population file and write header record
-	bool outPopHeaders(Species* pSpecies, int option);
+	bool outPopHeaders(Species* pSpecies);
 	bool closePopOfs();
 
 	// Write records to population file
 	void outPop(int rep, int year, int gen);
 
+	void outIndsHeaders(int rep, int landNr, bool patchModel, Species* pSpecies);
+	void closeOutIndsOfs();
+
 	// Write records to individuals file
-	void outInds(int rep, int year,	int gen, int landnr);
+	void outInds(int rep, int year,	int gen);
 	
 	void outOccSuit(bool view);
 
@@ -191,6 +194,7 @@ private:
 	unique_ptr<NeutralStatsManager> pNeutralStatistics;
 
 	ofstream outPopOfs;
+	ofstream outIndsOfs;
 };
 
 extern paramSim* paramsSim;

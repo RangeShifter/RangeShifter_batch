@@ -532,7 +532,7 @@ commStats Community::getStats()
 // Functions to control production of output files
 
 // Open population file and write header record
-bool Community::outPopHeaders(Species* pSpecies, int option) {
+bool Community::outPopHeaders(Species* pSpecies) {
 	
 	landParams land = pLandscape->getLandParams();
 	simParams sim = paramsSim->getSim();
@@ -608,28 +608,72 @@ void Community::outPop(int rep, int yr, int gen)
 	}
 }
 
+// Open individuals file and write header record
+void Community::outIndsHeaders(int rep, int landNr, bool patchModel, Species* pSpecies)
+{
+	string name;
+	demogrParams dem = pSpecies->getDemogrParams();
+	emigRules emig = pSpecies->getEmigRules();
+	transferRules trfr = pSpecies->getTransferRules();
+	settleType sett = pSpecies->getSettle();
+	simParams sim = paramsSim->getSim();
+
+	name = paramsSim->getDir(2)
+		+ (sim.batchMode ? "Batch" + to_string(sim.batchNum) + "_" : "")
+		+ "Sim" + to_string(sim.simulation)
+		+ "_Land" + to_string(landNr) + "_Rep" + to_string(rep) + "_Inds.txt";
+
+	outIndsOfs.open(name.c_str());
+	outIndsOfs << "Rep\tYear\tRepSeason\tSpecies\tIndID\tStatus";
+	if (patchModel) outIndsOfs << "\tNatal_patch\tPatchID";
+	else outIndsOfs << "\tNatal_X\tNatal_Y\tX\tY";
+	if (dem.repType != 0) outIndsOfs << "\tSex";
+	if (dem.stageStruct) outIndsOfs << "\tAge\tStage";
+	if (pSpecies->getNbGenLoadTraits() > 0) outIndsOfs << "\tProbViable";
+	if (emig.indVar) {
+		if (emig.densDep) outIndsOfs << "\tD0\tAlpha\tBeta";
+		else outIndsOfs << "\tEP";
+	}
+	if (trfr.indVar) {
+		if (trfr.usesMovtProc) {
+			if (trfr.moveType == 1) { // SMS
+				outIndsOfs << "\tDP\tGB\tAlphaDB\tBetaDB";
+			}
+			if (trfr.moveType == 2) { // CRW
+				outIndsOfs << "\tStepLength\tRho";
+			}
+		}
+		else { // kernel
+			outIndsOfs << "\tMeanDistI";
+			if (trfr.twinKern) outIndsOfs << "\tMeanDistII\tPKernelI";
+		}
+	}
+	if (sett.indVar) {
+		outIndsOfs << "\tS0\tAlphaS\tBetaS";
+	}
+	outIndsOfs << "\tDistMoved";
+#ifndef NDEBUG
+	outIndsOfs << "\tNsteps";
+#else
+	if (trfr.usesMovtProc) outIndsOfs << "\tNsteps";
+#endif
+	outIndsOfs << endl;
+}
+
+void Community::closeOutIndsOfs() {
+	if (outIndsOfs.is_open()) {
+		outIndsOfs.close(); 
+		outIndsOfs.clear();
+	}
+	return;
+}
+
 // Write records to individuals file
-void Community::outInds(int rep, int yr, int gen, int landNr) {
-	
-	landParams ppLand = pLandscape->getLandParams();
-
-	if (landNr >= 0) { // open the file
-		popns[0]->outIndsHeaders(rep, landNr, ppLand.patchModel);
-		return;
-	}
-
-	if (landNr == -999) { // close the file
-		// as all populations may have been deleted, set up a dummy one
-		Population* pPop = new Population();
-		pPop->outIndsHeaders(rep, -999, ppLand.patchModel);
-		delete pPop;
-		return;
-	}
-
+void Community::outInds(int rep, int yr, int gen) {
 	// generate output for each sub-community (patch) in the community
-	matrixPop->outIndividual(pLandscape, rep, yr, gen);
+	matrixPop->outIndividual(outIndsOfs, pLandscape, rep, yr, gen);
 	for (Population* pop : popns) { // all sub-communities
-		pop->outIndividual(pLandscape, rep, yr, gen);
+		pop->outIndividual(outIndsOfs, pLandscape, rep, yr, gen);
 	}
 }
 

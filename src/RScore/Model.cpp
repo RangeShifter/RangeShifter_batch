@@ -144,7 +144,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				}
 			if (sim.outPop) {
 				// open Population file
-				if (!pComm->outPopHeaders(pSpecies, ppLand.landNum)) {
+				if (!pComm->outPopHeaders(pSpecies)) {
 					filesOK = false;
 				}
 			}
@@ -226,7 +226,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 
 		// open a new individuals file for each replicate
 		if (sim.outInds)
-			pComm->outInds(rep, 0, 0, ppLand.landNum);
+			pComm->outIndsHeaders(rep, ppLand.landNum, ppLand.patchModel, pSpecies);
 
 		if (sim.outputGeneValues) {
 			bool geneOutFileHasOpened = pComm->openOutGenesFile(pSpecies->isDiploid(), ppLand.landNum, rep);
@@ -435,7 +435,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 
 				// output Individuals
 				if (sim.outInds && yr >= sim.outStartInd && yr % sim.outIntInd == 0)
-					pComm->outInds(rep, yr, gen, -1);
+					pComm->outInds(rep, yr, gen);
 
 				if ((sim.outputGeneValues || sim.outputWeirCockerham || sim.outputWeirHill)
 					&& yr >= sim.outStartGenetics
@@ -485,7 +485,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			if (dem.stageStruct) {
 				pComm->ageIncrement(); // increment age of all individuals
 				if (sim.outInds && yr >= sim.outStartInd && yr % sim.outIntInd == 0)
-					pComm->outInds(rep, yr, -1, -1); // list any individuals dying having reached maximum age
+					pComm->outInds(rep, yr, -1); // list any individuals dying having reached maximum age
 				pComm->applySurvivalDevlpt(); // delete any such individuals
 				totalInds = pComm->totalInds();
 				if (totalInds <= 0) { 
@@ -564,8 +564,8 @@ int RunModel(Landscape* pLandscape, int seqsim)
 		if (sim.outConnect && ppLand.patchModel)
 			pLandscape->resetConnectMatrix(); // set connectivity matrix to zeroes
 
-		if (sim.outInds) // close Individuals output file
-			pComm->outInds(rep, 0, 0, -999);
+		if (sim.outInds)
+			pComm->closeOutIndsOfs();
 
 		if (sim.outputGeneValues) { // close genetic values output file
 			pComm->openOutGenesFile(false, -999, rep);
@@ -612,7 +612,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 		pComm->outTraitsRowsHeaders(pSpecies, -999); // close Traits rows file
 	// close Individuals & Genetics output files if open
 	// they can still be open if the simulation was stopped by the user
-	if (sim.outInds) pComm->outInds(0, 0, 0, -999);
+	if (sim.outInds) pComm->closeOutIndsOfs();
 	if (sim.outputGeneValues) pComm->openOutGenesFile(0, -999, 0);
 	if (sim.outputWeirCockerham || sim.outputWeirHill) {
 		pComm->openNeutralOutputFile(pSpecies, -999);
