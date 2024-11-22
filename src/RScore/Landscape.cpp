@@ -26,8 +26,6 @@
 
 ifstream landscape;
 
-ofstream outConnMat;
-ofstream outvisits;
 #if RS_RCPP
 ofstream outMovePaths;
 #endif // RS_RCPP
@@ -2490,15 +2488,15 @@ void Landscape::deleteConnectMatrix(void)
 	}
 }
 
-// Write connectivity file headers
-bool Landscape::outConnectHeaders(int option)
-{
-	if (option == -999) { // close the file
-		if (outConnMat.is_open()) outConnMat.close();
-		outConnMat.clear();
-		return true;
-	}
+bool Landscape::closeConnectOfs() {
+	if (outConnMat.is_open()) outConnMat.close();
+	outConnMat.clear();
+	return true;
+}
 
+// Write connectivity file headers
+bool Landscape::outConnectHeaders()
+{
 	simParams sim = paramsSim->getSim();
 
 	string name = paramsSim->getDir(2);
@@ -2613,6 +2611,7 @@ void Landscape::resetVisits(void) {
 // Save SMS path visits map to raster text file
 void Landscape::outVisits(int rep, int landNr) {
 
+	ofstream outvisits;
 	string name;
 	simParams sim = paramsSim->getSim();
 
@@ -2627,14 +2626,12 @@ void Landscape::outVisits(int rep, int landNr) {
 			+ "Sim" + to_string(sim.simulation)
 			+ "_land" + to_string(landNr) + "_rep" + to_string(rep)
 #endif
-			//		+ "_yr" + to_string(yr)
 			+ "_Visits.txt";
 	}
 	else {
 		name = paramsSim->getDir(3)
 			+ "Sim" + to_string(sim.simulation)
 			+ "_land" + to_string(landNr) + "_rep" + to_string(rep)
-			//		+ "_yr" + to_string(yr)
 			+ "_Visits.txt";
 	}
 	outvisits.open(name.c_str());

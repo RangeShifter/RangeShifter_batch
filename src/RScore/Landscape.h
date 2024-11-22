@@ -422,16 +422,13 @@ public:
 		int   // sequential no. of settlement Patch
 	);
 	void deleteConnectMatrix(void);
-	bool outConnectHeaders( // Write connectivity file headers
-		int		// option - set to -999 to close the connectivity file
-	);
+
+	bool outConnectHeaders();
+	bool closeConnectOfs();
 #if RS_RCPP
 	void outPathsHeaders(int, int);
 #endif
-	void outConnect(
-		int,	// replicate no.
-		int   // year
-	);
+	void outConnect(int rep, int year);
 
 	// functions to handle input and output
 
@@ -500,6 +497,7 @@ private:
 	// patch connectivity matrix
 	// indexed by [start patch seq num][end patch seq num]
 	int** connectMatrix;
+	ofstream outConnMat;
 
 	// global environmental stochasticity (epsilon)
 	float* epsGlobal;	// pointer to time-series	

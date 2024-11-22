@@ -101,31 +101,27 @@ public:
 		bool resolveSurv
 	);
 	void applySurvivalDevlpt();
+
 	void ageIncrement();
 	int totalInds();
-	Population* findPop( // Find the population of a given species in a given patch
-		Species*, // pointer to Species
-		Patch*		// pointer to Patch
-	);
 	commStats getStats();
+
 	void createOccupancy(int nbOutputRows, int nbReps);
 	void updateOccupancy(int whichRow, int replicate);
-	void deleteOccupancy(
-		int		// no. of rows (as above)
-	);
 
 	// Open occupancy file, write header record and set up occupancy array
 	bool outOccupancyHeaders();
 	void outOccupancy();
 	bool closeOccupancyOfs();
+	void outOccSuit(bool view);
 
 	bool outRangeHeaders( // Open range file and write header record
 		Species* pSpecies,
 		int	landnr // (-999 to close the file)
 	);
-
 	// Write record to range file
 	void outRange(Species* pSpecies, int rep, int yr, int gen);
+	bool closeRangeOfs();
 
 	// Open population file and write header record
 	bool outPopHeaders(Species* pSpecies);
@@ -140,16 +136,13 @@ public:
 	// Write records to individuals file
 	void outInds(int rep, int year,	int gen);
 	
-	void outOccSuit(bool view);
-
+	// Write records to traits file
+	void outTraits(Species* pSpecies, int rep, int year, int gen);
 	bool outTraitsHeaders(Landscape* pLandscape, Species* pSpecies, int landnb);
+	bool closeOutTraitOfs();
 
 	// Open trait rows file and write header record
 	bool outTraitsRowsHeaders(Species* pSpecies, int landnr);
-
-	// Write records to traits file
-	void outTraits(Species* pSpecies, int rep, int year, int gen);
-
 	// Write records to trait rows file
 	void writeTraitsRows(
 		Species* pSpecies, 
@@ -159,28 +152,31 @@ public:
 		int row, 
 		traitsums ts
 	);
+	bool closeTraitRows();
 
 #if RS_RCPP && !R_CMD
 	Rcpp::IntegerMatrix addYearToPopList(int rep, int yr);
 #endif
 
-	//sample individuals for genetics (or could be used for anything)
+	// sample individuals for genetics (or could be used for anything)
 	void sampleIndividuals(Species* pSpecies);
 
 	bool openOutGenesFile(const bool& isDiploid, const int landNr, const int rep);
 	void outputGeneValues(const int& year, const int& gen, Species* pSpecies);
+	bool closeOutGenesOfs();
 
-	//control neutral stat output
+	// control neutral stat output
 	void outNeutralGenetics(Species* pSpecies, int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill);
-
-	//file openers
 	bool openNeutralOutputFile(Species* pSpecies, const int landNr);
-	bool openPerLocusFstFile(Species* pSpecies, Landscape* pLandscape, const int landNr, const int rep);
-	bool openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, const int landNr, const int rep);
-
-	//file writers
 	void writeNeutralOutputFile(int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill);
+	bool closeNeutralOutputOfs();
+
+	bool openPerLocusFstFile(Species* pSpecies, Landscape* pLandscape, const int landNr, const int rep);
+	bool closePerLocusFstFile();
 	void writePerLocusFstatFile(Species* pSpecies, const int yr, const int gen, const  int nAlleles, const int nLoci, set<int> const& patchList);
+
+	bool openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, const int landNr, const int rep);
+	bool closePairwiseFstFile();
 	void writePairwiseFstFile(Species* pSpecies, const int yr, const int gen, const  int nAlleles, const int nLoci, set<int> const& patchList);
 
 private:
@@ -195,6 +191,15 @@ private:
 
 	ofstream outPopOfs;
 	ofstream outIndsOfs;
+	ofstream outOccupOfs;
+	ofstream outSuitOfs;
+	ofstream outTraitsOfs;
+	ofstream outRangeOfs;
+	ofstream outTraitsRows;
+	ofstream ofsGenes;
+	ofstream outPairwiseFstOfs;
+	ofstream outWCFstatOfs;
+	ofstream outPerLocusFstat;
 };
 
 extern paramSim* paramsSim;
