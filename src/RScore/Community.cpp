@@ -48,6 +48,7 @@ Community::~Community() {
 		delete popns[i];
 	}
 	popns.clear();
+	delete matrixPop;
 }
 
 void Community::initialise(Species* pSpecies, int year)
