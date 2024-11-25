@@ -26,34 +26,27 @@
 //---------------------------------------------------------------------------
 
 // Note - all batch files are prefixed 'b' here for reasons concerned with RS v1.0
-ifstream bParamFile, bLandFile, bDynLandFile;
-ifstream bSpDistFile, bStageStructFile, bTransMatrix;
-ifstream bStageWeightsFile;
-ifstream bEmigrationFile, bTransferFile, bSettlementFile;
-ifstream bTraitsFile, bGeneticsFile;
-ifstream bInitFile, bInitIndsFile;
+ifstream ifsParamFile, ifsLandFile, ifsDynLandFile;
+ifstream ifsSpDistFile, ifsStageStructFile, ifsTransMatrix;
+ifstream ifsStageWeightsFile;
+ifstream ifsEmigrationFile, ifsTransferFile, ifsSettlementFile;
+ifstream ifsTraitsFile, ifsGeneticsFile;
+ifstream ifsInitFile, ifsInitIndsFile;
+ifstream ifsFecDens, ifsDevDens, ifsSurvDens;
 
 ofstream batchLogOfs;
 
-// NOTE: THE STREAMS USED TO READ THE DATA AT RUN TIME COULD TAKE THE SAME NAMES AS
-// USED DURING PARSING (ABOVE)
-ifstream parameters;
-ifstream ssfile, tmfile, fdfile, ddfile, sdfile;
-ifstream emigFile, transFile, settFile, initFileIfs, initIndsFile;
-ifstream landfile, dynlandfile;
-ifstream ifsGenetics, ifsTraits;
 
 // global variables passed between parsing functions...
 // should be removed eventually, maybe share variables through members of a class
 int gBatchNb;
 int gIsPatchModel, gResol, gLandType, gMaxNbHab, gSpeciesDist, gDistResol;
-int inReproType;
-int inNbRepSeasons;
-int inStageStruct, inNbStages, gTransferType;
-int sexesDem;		// no. of explicit sexes for demographic model
+int gReproType;
+int gNbRepSeasons;
+int gStageStruct, gNbStages, gTransferType;
+int gNbSexesDem;		// no. of explicit sexes for demographic model
 int gNbSexesDisp;	// no. of explicit sexes for dispersal model
 int gFirstSimNb = 0; // not great, globals should not be modified.
-int fileNtraits; // no. of traits defined in genetic architecture file
 bool gHasGenetics = true;
 
 // Track trait-relevant options to check for coherency across input files, 
@@ -238,54 +231,54 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	}
 	else anyFormatError = true; // wrong control file format
 
-	controlIfs >> paramName >> inReproType;
-	sexesDem = gNbSexesDisp = 0;
+	controlIfs >> paramName >> gReproType;
+	gNbSexesDem = gNbSexesDisp = 0;
 	if (paramName == "Reproduction") {
-		if (inReproType != 0 && inReproType != 1 && inReproType != 2) {
+		if (gReproType != 0 && gReproType != 1 && gReproType != 2) {
 			BatchError(whichInputFile, -999, 2, "Reproduction"); nbErrors++;
 		}
 		else {
-			switch (inReproType) {
-			case 0: { sexesDem = 1; gNbSexesDisp = 1; break; }
-			case 1: { sexesDem = 1; gNbSexesDisp = 2; break; }
-			case 2: { sexesDem = 2; gNbSexesDisp = 2; break; }
+			switch (gReproType) {
+			case 0: { gNbSexesDem = 1; gNbSexesDisp = 1; break; }
+			case 1: { gNbSexesDem = 1; gNbSexesDisp = 2; break; }
+			case 2: { gNbSexesDem = 2; gNbSexesDisp = 2; break; }
 			}
-			b.reproType = inReproType; 
-			b.sexesDem = sexesDem; 
+			b.reproType = gReproType; 
+			b.sexesDem = gNbSexesDem; 
 			b.nbSexesDisp = gNbSexesDisp;
 		}
 	}
 	else anyFormatError = true; // wrong control file format
 
-	controlIfs >> paramName >> inNbRepSeasons;
+	controlIfs >> paramName >> gNbRepSeasons;
 	if (paramName == "RepSeasons") {
-		if (inNbRepSeasons < 1) {
+		if (gNbRepSeasons < 1) {
 			BatchError(whichInputFile, -999, 11, "RepSeasons"); nbErrors++;
 		}
-		else b.nbRepSeasons = inNbRepSeasons;
+		else b.nbRepSeasons = gNbRepSeasons;
 	}
 	else anyFormatError = true; // wrong control file format
 
-	controlIfs >> paramName >> inStageStruct;
+	controlIfs >> paramName >> gStageStruct;
 	if (paramName == "StageStruct") {
-		if (inStageStruct != 0 && inStageStruct != 1) {
+		if (gStageStruct != 0 && gStageStruct != 1) {
 			BatchError(whichInputFile, -999, 1, "StageStruct"); nbErrors++;
 		}
-		else b.isStageStruct = inStageStruct;
+		else b.isStageStruct = gStageStruct;
 	}
 	else anyFormatError = true; // wrong control file format
 
-	controlIfs >> paramName >> inNbStages;
+	controlIfs >> paramName >> gNbStages;
 	if (paramName == "Stages") {
-		if (inStageStruct) {
-			if (inNbStages < 2 || inNbStages > 10) {
+		if (gStageStruct) {
+			if (gNbStages < 2 || gNbStages > 10) {
 				BatchError(whichInputFile, -999, 0, " "); nbErrors++;
 				batchLogOfs << "Stages must be between 2 and 10" << endl;
 			}
-			b.nbStages = inNbStages;
+			b.nbStages = gNbStages;
 		}
 		else { // non-stage-structured model must have 2 stages
-			b.nbStages = inNbStages = 2;
+			b.nbStages = gNbStages = 2;
 		}
 	}
 	else anyFormatError = true; // wrong control file format
@@ -319,8 +312,8 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	if (paramName == "ParameterFile" && !anyFormatError) {
 		fname = inputDir + filename;
 		batchLogOfs << endl << "Checking " << paramName << " " << fname << endl;
-		bParamFile.open(fname.c_str());
-		if (bParamFile.is_open()) {
+		ifsParamFile.open(fname.c_str());
+		if (ifsParamFile.is_open()) {
 			b.nSimuls = CheckParameterFile();
 			if (b.nSimuls < 0) {
 				b.ok = false;
@@ -329,13 +322,13 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 				FileOK(paramName, b.nSimuls, 0);
 				parameterFile = fname;
 			}
-			bParamFile.close();
+			ifsParamFile.close();
 		}
 		else {
 			OpenError(paramName, fname); b.ok = false;
 			cout << "Unable to open ParameterFile" << endl;
 		}
-		bParamFile.clear();
+		ifsParamFile.clear();
 		if (!b.ok) {
 			batchLogOfs << endl
 				<< "*** ParameterFile must be corrected before further input file checks are conducted"
@@ -349,16 +342,16 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 		}
 	}
 	else anyFormatError = true; // wrong control file format
-	if (bParamFile.is_open()) bParamFile.close();
-	bParamFile.clear();
+	if (ifsParamFile.is_open()) ifsParamFile.close();
+	ifsParamFile.clear();
 
 	// Check land file
 	controlIfs >> paramName >> filename;
 	if (paramName == "LandFile" && !anyFormatError) {
 		fname = inputDir + filename;
 		batchLogOfs << endl << "Checking " << paramName << " " << fname << endl;
-		bLandFile.open(fname.c_str());
-		if (bLandFile.is_open()) {
+		ifsLandFile.open(fname.c_str());
+		if (ifsLandFile.is_open()) {
 			lines = CheckLandFile(gLandType, inputDir);
 			if (lines < 0) {
 				b.ok = false;
@@ -370,12 +363,12 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 				landFile = fname; 
 				b.nLandscapes = lines;
 			}
-			bLandFile.close();
+			ifsLandFile.close();
 		}
 		else {
 			OpenError(paramName, fname); b.ok = false;
 		}
-		bLandFile.clear();
+		ifsLandFile.clear();
 	}
 	else anyFormatError = true; // wrong control file format
 
@@ -384,18 +377,18 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	batchLogOfs << endl;
 	if (paramName == "StageStructFile" && !anyFormatError) {
 		if (filename == "NULL") {
-			if (inStageStruct) {
+			if (gStageStruct) {
 				batchLogOfs << "*** File name is required for " << paramName << endl;
 				b.ok = false;
 			}
 			else b.stageStructFile = filename;
 		}
 		else { // filename is not NULL
-			if (inStageStruct) { // check file only if it is required
+			if (gStageStruct) { // check file only if it is required
 				fname = inputDir + filename;
 				batchLogOfs << "Checking " << paramName << " " << fname << endl;
-				bStageStructFile.open(fname.c_str());
-				if (bStageStructFile.is_open()) {
+				ifsStageStructFile.open(fname.c_str());
+				if (ifsStageStructFile.is_open()) {
 					nSimuls = CheckStageFile(inputDir);
 					if (nSimuls < 0) {
 						b.ok = false;
@@ -407,17 +400,17 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 						}
 						else stageStructFile = fname;
 					}
-					bStageStructFile.close();
+					ifsStageStructFile.close();
 				}
 				else {
 					OpenError(paramName, fname); b.ok = false;
 				}
-				bStageStructFile.clear();
+				ifsStageStructFile.clear();
 			} // end of required
 			else { // file is not required, and filename should be NULL
 				if (filename != "NULL") {
 					batchLogOfs << "*** File name for stageStructFile should be NULL as StageStruct = "
-						<< inStageStruct << endl;
+						<< gStageStruct << endl;
 					b.ok = false;
 				}
 			}
@@ -430,8 +423,8 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	if (paramName == "EmigrationFile" && !anyFormatError) {
 		fname = inputDir + filename;
 		batchLogOfs << endl << "Checking " << paramName << " " << fname << endl;
-		bEmigrationFile.open(fname.c_str());
-		if (bEmigrationFile.is_open()) {
+		ifsEmigrationFile.open(fname.c_str());
+		if (ifsEmigrationFile.is_open()) {
 			nSimuls = CheckEmigFile();
 			if (nSimuls < 0) {
 				b.ok = false;
@@ -444,13 +437,13 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 				}
 				else emigrationFile = fname;
 			}
-			bEmigrationFile.close();
+			ifsEmigrationFile.close();
 		}
 		else {
 			OpenError(paramName, fname); 
 			b.ok = false;
 		}
-		bEmigrationFile.clear();
+		ifsEmigrationFile.clear();
 	}
 	else anyFormatError = true; // wrong control file format
 
@@ -459,8 +452,8 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	if (paramName == "TransferFile" && !anyFormatError) {
 		fname = inputDir + filename;
 		batchLogOfs << endl << "Checking " << paramName << " " << fname << endl;
-		bTransferFile.open(fname.c_str());
-		if (bTransferFile.is_open()) {
+		ifsTransferFile.open(fname.c_str());
+		if (ifsTransferFile.is_open()) {
 			nSimuls = CheckTransferFile(inputDir);
 			if (nSimuls < 0) {
 				b.ok = false;
@@ -472,12 +465,12 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 				}
 				else transferFile = fname;
 			}
-			bTransferFile.close(); bTransferFile.clear();
+			ifsTransferFile.close(); ifsTransferFile.clear();
 		}
 		else {
 			OpenError(paramName, fname); b.ok = false;
 		}
-		bTransferFile.clear();
+		ifsTransferFile.clear();
 	}
 	else anyFormatError = true; // wrong control file format
 
@@ -486,8 +479,8 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	if (paramName == "SettlementFile" && !anyFormatError) {
 		fname = inputDir + filename;
 		batchLogOfs << endl << "Checking " << paramName << " " << fname << endl;
-		bSettlementFile.open(fname.c_str());
-		if (bSettlementFile.is_open()) {
+		ifsSettlementFile.open(fname.c_str());
+		if (ifsSettlementFile.is_open()) {
 			nSimuls = CheckSettleFile();
 			if (nSimuls < 0) {
 				b.ok = false;
@@ -500,13 +493,13 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 				}
 				else settleFile = fname;
 			}
-			bSettlementFile.close();
+			ifsSettlementFile.close();
 		}
 		else {
 			OpenError(paramName, fname); 
 			b.ok = false;
 		}
-		bSettlementFile.clear();
+		ifsSettlementFile.clear();
 	}
 	else anyFormatError = true; // wrong control file format
 
@@ -542,8 +535,8 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 			gHasGenetics = true;
 			fname = inputDir + filename;
 			batchLogOfs << "Checking " << paramName << " " << fname << endl;
-			bGeneticsFile.open(fname.c_str());
-			if (bGeneticsFile.is_open()) {
+			ifsGeneticsFile.open(fname.c_str());
+			if (ifsGeneticsFile.is_open()) {
 				nSimuls = CheckGeneticsFile(inputDir);
 				if (nSimuls < 0) {
 					b.ok = false;
@@ -552,13 +545,13 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 					FileOK(paramName, nSimuls, 0);
 					geneticsFile = fname;
 				}
-				bGeneticsFile.close();
+				ifsGeneticsFile.close();
 			}
 			else {
 				OpenError(paramName, fname); 
 				b.ok = false;
 			}
-			bGeneticsFile.clear();
+			ifsGeneticsFile.clear();
 		}
 	}
 	else anyFormatError = true; // wrong control file format
@@ -578,8 +571,8 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 		else {
 			fname = inputDir + filename;
 			batchLogOfs << "Checking " << paramName << " " << fname << endl;
-			bTraitsFile.open(fname.c_str());
-			if (bTraitsFile.is_open()) {
+			ifsTraitsFile.open(fname.c_str());
+			if (ifsTraitsFile.is_open()) {
 				nSimuls = CheckTraitsFile(inputDir);
 				if (nSimuls < 0) {
 					b.ok = false;
@@ -588,14 +581,14 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 					FileOK(paramName, nSimuls, 0);
 					traitsFile = fname;
 				}
-				bTraitsFile.close();
+				ifsTraitsFile.close();
 			}
 			else {
 				OpenError(paramName, filename);
 				b.ok = false;
 			}
-			if (bTraitsFile.is_open()) bTraitsFile.close();
-			bTraitsFile.clear();
+			if (ifsTraitsFile.is_open()) ifsTraitsFile.close();
+			ifsTraitsFile.clear();
 		}
 	}
 
@@ -604,8 +597,8 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	if (paramName == "InitialisationFile" && !anyFormatError) {
 		fname = inputDir + filename;
 		batchLogOfs << endl << "Checking " << paramName << " " << fname << endl;
-		bInitFile.open(fname.c_str());
-		if (bInitFile.is_open()) {
+		ifsInitFile.open(fname.c_str());
+		if (ifsInitFile.is_open()) {
 			nSimuls = CheckInitFile(inputDir);
 			if (nSimuls < 0) {
 				b.ok = false;
@@ -617,12 +610,12 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 				}
 				else initialFile = fname;
 			}
-			bInitFile.close();
+			ifsInitFile.close();
 		}
 		else {
 			OpenError(paramName, fname); b.ok = false;
 		}
-		bInitFile.clear();
+		ifsInitFile.clear();
 	}
 	else anyFormatError = true; // wrong control file format
 
@@ -659,55 +652,55 @@ int CheckParameterFile()
 	string whichFile = "ParameterFile";
 
 	// Parse header line;
-	bParamFile >> header; if (header != "Simulation") nbErrors++;
-	bParamFile >> header; if (header != "Replicates") nbErrors++;
-	bParamFile >> header; if (header != "Years") nbErrors++;
-	bParamFile >> header; if (header != "Absorbing") nbErrors++;
-	bParamFile >> header; if (header != "Gradient") nbErrors++;
-	bParamFile >> header; if (header != "GradSteep") nbErrors++;
-	bParamFile >> header; if (header != "Optimum") nbErrors++;
-	bParamFile >> header; if (header != "f") nbErrors++;
-	bParamFile >> header; if (header != "LocalExtOpt") nbErrors++;
-	bParamFile >> header; if (header != "Shifting") nbErrors++;
-	bParamFile >> header; if (header != "ShiftRate") nbErrors++;
-	bParamFile >> header; if (header != "ShiftStart") nbErrors++;
-	bParamFile >> header; if (header != "ShiftEnd") nbErrors++;
-	bParamFile >> header; if (header != "EnvStoch") nbErrors++;
-	bParamFile >> header; if (header != "EnvStochType") nbErrors++;
-	bParamFile >> header; if (header != "ac") nbErrors++;
-	bParamFile >> header; if (header != "std") nbErrors++;
-	bParamFile >> header; if (header != "minR") nbErrors++;
-	bParamFile >> header; if (header != "maxR") nbErrors++;
-	bParamFile >> header; if (header != "minK") nbErrors++;
-	bParamFile >> header; if (header != "maxK") nbErrors++;
-	bParamFile >> header; if (header != "LocalExt") nbErrors++;
-	bParamFile >> header; if (header != "LocalExtProb") nbErrors++;
-	bParamFile >> header; if (header != "PropMales") nbErrors++;
-	bParamFile >> header; if (header != "Harem") nbErrors++;
-	bParamFile >> header; if (header != "bc") nbErrors++;
-	bParamFile >> header; if (header != "Rmax") nbErrors++;
+	ifsParamFile >> header; if (header != "Simulation") nbErrors++;
+	ifsParamFile >> header; if (header != "Replicates") nbErrors++;
+	ifsParamFile >> header; if (header != "Years") nbErrors++;
+	ifsParamFile >> header; if (header != "Absorbing") nbErrors++;
+	ifsParamFile >> header; if (header != "Gradient") nbErrors++;
+	ifsParamFile >> header; if (header != "GradSteep") nbErrors++;
+	ifsParamFile >> header; if (header != "Optimum") nbErrors++;
+	ifsParamFile >> header; if (header != "f") nbErrors++;
+	ifsParamFile >> header; if (header != "LocalExtOpt") nbErrors++;
+	ifsParamFile >> header; if (header != "Shifting") nbErrors++;
+	ifsParamFile >> header; if (header != "ShiftRate") nbErrors++;
+	ifsParamFile >> header; if (header != "ShiftStart") nbErrors++;
+	ifsParamFile >> header; if (header != "ShiftEnd") nbErrors++;
+	ifsParamFile >> header; if (header != "EnvStoch") nbErrors++;
+	ifsParamFile >> header; if (header != "EnvStochType") nbErrors++;
+	ifsParamFile >> header; if (header != "ac") nbErrors++;
+	ifsParamFile >> header; if (header != "std") nbErrors++;
+	ifsParamFile >> header; if (header != "minR") nbErrors++;
+	ifsParamFile >> header; if (header != "maxR") nbErrors++;
+	ifsParamFile >> header; if (header != "minK") nbErrors++;
+	ifsParamFile >> header; if (header != "maxK") nbErrors++;
+	ifsParamFile >> header; if (header != "LocalExt") nbErrors++;
+	ifsParamFile >> header; if (header != "LocalExtProb") nbErrors++;
+	ifsParamFile >> header; if (header != "PropMales") nbErrors++;
+	ifsParamFile >> header; if (header != "Harem") nbErrors++;
+	ifsParamFile >> header; if (header != "bc") nbErrors++;
+	ifsParamFile >> header; if (header != "Rmax") nbErrors++;
 	for (i = 0; i < gMaxNbHab; i++) {
 		Kheader = "K" + to_string(i + 1);
-		bParamFile >> header; 
+		ifsParamFile >> header; 
 		if (header != Kheader) nbKerrors++;
 	}
-	bParamFile >> header; if (header != "OutStartPop") nbErrors++;
-	bParamFile >> header; if (header != "OutStartInd") nbErrors++;
-	bParamFile >> header; if (header != "OutStartTraitCell") nbErrors++;
-	bParamFile >> header; if (header != "OutStartTraitRow") nbErrors++;
-	bParamFile >> header; if (header != "OutStartConn") nbErrors++;
-	bParamFile >> header; if (header != "OutIntRange") nbErrors++;
-	bParamFile >> header; if (header != "OutIntOcc") nbErrors++;
-	bParamFile >> header; if (header != "OutIntPop") nbErrors++;
-	bParamFile >> header; if (header != "OutIntInd") nbErrors++;
-	bParamFile >> header; if (header != "OutIntTraitCell") nbErrors++;
-	bParamFile >> header; if (header != "OutIntTraitRow") nbErrors++;
-	bParamFile >> header; if (header != "OutIntConn") nbErrors++;
-	bParamFile >> header; if (header != "SaveMaps") nbErrors++;
-	bParamFile >> header; if (header != "MapsInterval") nbErrors++;
-	bParamFile >> header; if (header != "SMSHeatMap") nbErrors++;
-	bParamFile >> header; if (header != "DrawLoadedSp") nbErrors++;
-	bParamFile >> header; if (header != "FixReplicateSeed") nbErrors++;
+	ifsParamFile >> header; if (header != "OutStartPop") nbErrors++;
+	ifsParamFile >> header; if (header != "OutStartInd") nbErrors++;
+	ifsParamFile >> header; if (header != "OutStartTraitCell") nbErrors++;
+	ifsParamFile >> header; if (header != "OutStartTraitRow") nbErrors++;
+	ifsParamFile >> header; if (header != "OutStartConn") nbErrors++;
+	ifsParamFile >> header; if (header != "OutIntRange") nbErrors++;
+	ifsParamFile >> header; if (header != "OutIntOcc") nbErrors++;
+	ifsParamFile >> header; if (header != "OutIntPop") nbErrors++;
+	ifsParamFile >> header; if (header != "OutIntInd") nbErrors++;
+	ifsParamFile >> header; if (header != "OutIntTraitCell") nbErrors++;
+	ifsParamFile >> header; if (header != "OutIntTraitRow") nbErrors++;
+	ifsParamFile >> header; if (header != "OutIntConn") nbErrors++;
+	ifsParamFile >> header; if (header != "SaveMaps") nbErrors++;
+	ifsParamFile >> header; if (header != "MapsInterval") nbErrors++;
+	ifsParamFile >> header; if (header != "SMSHeatMap") nbErrors++;
+	ifsParamFile >> header; if (header != "DrawLoadedSp") nbErrors++;
+	ifsParamFile >> header; if (header != "FixReplicateSeed") nbErrors++;
 
 	if (nbErrors > 0 || nbKerrors > 0) {
 		FormatError(whichFile, nbErrors);
@@ -723,7 +716,7 @@ int CheckParameterFile()
 	int nSimuls = 0;
 	const int errSimNb = -98765;
 	simNb = errSimNb;
-	bParamFile >> simNb; // first simulation number
+	ifsParamFile >> simNb; // first simulation number
 	if (simNb == errSimNb) {
 		batchLogOfs << "*** Error in ParameterFile - first simulation number could not be read." << endl;
 		nbErrors++;
@@ -741,22 +734,22 @@ int CheckParameterFile()
 		// Initialise trait option map with simulation numbers
 		gTraitOptions.emplace(simNb, TraitInputOptions());
 
-		bParamFile >> inReplicates; 
+		ifsParamFile >> inReplicates; 
 		if (inReplicates <= 0) { 
 			BatchError(whichFile, whichLine, 11, "Replicates"); 
 			nbErrors++; 
 		}
-		bParamFile >> inYears; 
+		ifsParamFile >> inYears; 
 		if (inYears <= 0) {
 			BatchError(whichFile, whichLine, 11, "Years"); 
 			nbErrors++; 
 		}
-		bParamFile >> inAbsorb;
+		ifsParamFile >> inAbsorb;
 		if (inAbsorb != 0 && inAbsorb != 1) { 
 			BatchError(whichFile, whichLine, 1, "Absorbing"); 
 			nbErrors++; 
 		}
-		bParamFile >> inGradient;
+		ifsParamFile >> inGradient;
 		if (gIsPatchModel) {
 			if (inGradient != 0) {
 				BatchError(whichFile, whichLine, 0, " ");
@@ -773,49 +766,49 @@ int CheckParameterFile()
 				nbErrors++;
 			}
 		}
-		bParamFile >> inGradSteep;
+		ifsParamFile >> inGradSteep;
 		if (inGradient && inGradSteep < 0.0) {
 			BatchError(whichFile, whichLine, 19, "GradSteep"); 
 			nbErrors++; 
 		}
-		bParamFile >> inOptimum;
+		ifsParamFile >> inOptimum;
 		if (inGradient && inOptimum < 0) {
 			BatchError(whichFile, whichLine, 19, "Optimum"); 
 			nbErrors++; 
 		}
-		bParamFile >> inGradScalingFactor;
+		ifsParamFile >> inGradScalingFactor;
 		if (inGradient && inGradScalingFactor < 0.0) {
 			BatchError(whichFile, whichLine, 19, "f"); 
 			nbErrors++; 
 		}
-		bParamFile >> inLocalExtOpt;
+		ifsParamFile >> inLocalExtOpt;
 		if (inGradient == 4 && (inLocalExtOpt < 0.0 || inLocalExtOpt >= 1.0))
 		{
 			BatchError(whichFile, whichLine, 20, "LocalExtOpt"); 
 			nbErrors++;
 		}
-		bParamFile >> inShifting;
+		ifsParamFile >> inShifting;
 		if (inGradient && (inShifting != 0 && inShifting != 1)) { 
 			BatchError(whichFile, whichLine, 1, "Shifting");
 			nbErrors++; 
 		}
-		bParamFile >> inShiftRate;
+		ifsParamFile >> inShiftRate;
 		if (inGradient && inShifting && inShiftRate <= 0.0) {
 			BatchError(whichFile, whichLine, 10, "ShiftRate"); 
 			nbErrors++; 
 		}
-		bParamFile >> inShiftStart;
+		ifsParamFile >> inShiftStart;
 		if (inGradient && inShifting && inShiftStart <= 0) {
 			BatchError(whichFile, whichLine, 10, "ShiftStart");
 			nbErrors++;
 		}
-		bParamFile >> inShiftEnd;
+		ifsParamFile >> inShiftEnd;
 		if (inGradient && inShifting && inShiftEnd <= inShiftStart) {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLogOfs << "ShiftEnd must be greater than ShiftStart" << endl;
 			nbErrors++;
 		}
-		bParamFile >> inEnvStoch;
+		ifsParamFile >> inEnvStoch;
 		if (gIsPatchModel == 0) { // cell-based model
 			if (inEnvStoch != 0 && inEnvStoch != 1 && inEnvStoch != 2) {
 				BatchError(whichFile, whichLine, 0, " ");
@@ -830,33 +823,33 @@ int CheckParameterFile()
 				nbErrors++;
 			}
 		}
-		bParamFile >> inStochType;
+		ifsParamFile >> inStochType;
 		if (inEnvStoch && (inStochType < 0 || inStochType > 1)) {
 			BatchError(whichFile, whichLine, 1, "EnvStochType"); 
 			nbErrors++;
 		}
-		bParamFile >> inStochAC;
+		ifsParamFile >> inStochAC;
 		if (inEnvStoch && (inStochAC < 0.0 || inStochAC >= 1.0)) {
 			BatchError(whichFile, whichLine, 20, "ac"); 
 			nbErrors++; 
 		}
-		bParamFile >> inStochStD;
+		ifsParamFile >> inStochStD;
 		if (inEnvStoch && (inStochStD <= 0.0 || inStochStD > 1.0)) {
 			BatchError(whichFile, whichLine, 20, "std"); 
 			nbErrors++; 
 		}
-		bParamFile >> inMinR;
+		ifsParamFile >> inMinR;
 		if (inEnvStoch && inStochType == 0 && inMinR <= 0.0) { 
 			BatchError(whichFile, whichLine, 10, "minR"); 
 			nbErrors++; 
 		}
-		bParamFile >> inMaxR;
+		ifsParamFile >> inMaxR;
 		if (inEnvStoch && inStochType == 0 && inMaxR <= inMinR) {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLogOfs << "maxR must be greater than minR" << endl;
 			nbErrors++;
 		}
-		bParamFile >> inMinK >> inMaxK;
+		ifsParamFile >> inMinK >> inMaxK;
 		if (inEnvStoch && inStochType == 1) {
 			if (inMinK <= 0.0) { 
 				BatchError(whichFile, whichLine, 10, "minK"); 
@@ -868,7 +861,7 @@ int CheckParameterFile()
 				nbErrors++;
 			}
 		}
-		bParamFile >> inLocalExt;
+		ifsParamFile >> inLocalExt;
 		if (gIsPatchModel == 0) { // cell-based model
 			if (inLocalExt < 0 || inLocalExt > 1) {
 				BatchError(whichFile, whichLine, 1, "LocalExt");
@@ -891,30 +884,30 @@ int CheckParameterFile()
 				nbErrors++;
 			}
 		}
-		bParamFile >> inLocalExtProb;
+		ifsParamFile >> inLocalExtProb;
 		if (gIsPatchModel == 0 && inLocalExt == 1 && (inLocalExtProb <= 0.0 || inLocalExtProb >= 1.0))
 		{
 			BatchError(whichFile, whichLine, 20, "LocalExtProb"); 
 			nbErrors++;
 		}
-		bParamFile >> inPropMales;
-		if (inReproType && (inPropMales <= 0.0 || inPropMales >= 1.0)) {
+		ifsParamFile >> inPropMales;
+		if (gReproType && (inPropMales <= 0.0 || inPropMales >= 1.0)) {
 			BatchError(whichFile, whichLine, 0, "");
 			batchLogOfs << "PropMales should be above 0 and below 1 for sexual models" << endl;
 			nbErrors++;
 		}
-		bParamFile >> inHarem;
-		if (inReproType == 2 && inHarem <= 0.0) {
+		ifsParamFile >> inHarem;
+		if (gReproType == 2 && inHarem <= 0.0) {
 			BatchError(whichFile, whichLine, 10, "Harem"); 
 			nbErrors++; 
 		}
-		bParamFile >> inBc;
-		if (inStageStruct == 0 && inBc <= 0.0) {
+		ifsParamFile >> inBc;
+		if (gStageStruct == 0 && inBc <= 0.0) {
 			BatchError(whichFile, whichLine, 10, "bc"); 
 			nbErrors++; 
 		}
-		bParamFile >> inRmax;
-		if (inStageStruct == 0 && inRmax <= 0.0) {
+		ifsParamFile >> inRmax;
+		if (gStageStruct == 0 && inRmax <= 0.0) {
 			BatchError(whichFile, whichLine, 10, "Rmax");
 			nbErrors++; 
 		}
@@ -922,7 +915,7 @@ int CheckParameterFile()
 		min_K = 9999999.0; 
 		max_K = 0.0;
 		for (i = 0; i < gMaxNbHab; i++) {
-			bParamFile >> inK;
+			ifsParamFile >> inK;
 			if (inK < 0.0) {
 				Kheader = "K" + to_string(i + 1);
 				BatchError(whichFile, whichLine, 19, Kheader); 
@@ -951,37 +944,37 @@ int CheckParameterFile()
 			}
 		}
 
-		bParamFile >> inOutStartPop;
+		ifsParamFile >> inOutStartPop;
 		if (inOutStartPop < 0) {
 			BatchError(whichFile, whichLine, 19, "OutStartPop"); 
 			nbErrors++; 
 		}
-		bParamFile >> inOutStartInd;
+		ifsParamFile >> inOutStartInd;
 		if (inOutStartInd < 0) {
 			BatchError(whichFile, whichLine, 19, "OutStartInd"); 
 			nbErrors++; 
 		}
-		bParamFile >> inOutStartTraitCell;
+		ifsParamFile >> inOutStartTraitCell;
 		if (inOutStartTraitCell < 0) {
 			BatchError(whichFile, whichLine, 19, "OutStartTraitCell"); 
 			nbErrors++; 
 		}
-		bParamFile >> inOutStartTraitRow;
+		ifsParamFile >> inOutStartTraitRow;
 		if (inOutStartTraitRow < 0) {
 			BatchError(whichFile, whichLine, 19, "OutStartTraitRow"); 
 			nbErrors++; 
 		}
-		bParamFile >> inOutStartConn;
+		ifsParamFile >> inOutStartConn;
 		if (inOutStartConn < 0) {
 			BatchError(whichFile, whichLine, 19, "OutStartConn"); 
 			nbErrors++; 
 		}
-		bParamFile >> inOutIntRange;
+		ifsParamFile >> inOutIntRange;
 		if (inOutIntRange < 0) {
 			BatchError(whichFile, whichLine, 19, "OutIntRange"); 
 			nbErrors++;
 		}
-		bParamFile >> inOutIntOcc;
+		ifsParamFile >> inOutIntOcc;
 		if (inOutIntOcc < 0) {
 			BatchError(whichFile, whichLine, 19, "OutIntOcc"); 
 			nbErrors++; 
@@ -1002,27 +995,27 @@ int CheckParameterFile()
 				}
 			}
 		}
-		bParamFile >> inOutIntPop;
+		ifsParamFile >> inOutIntPop;
 		if (inOutIntPop < 0) {
 			BatchError(whichFile, whichLine, 19, "OutIntPop");
 			nbErrors++; 
 		}
-		bParamFile >> inOutIntInd;
+		ifsParamFile >> inOutIntInd;
 		if (inOutIntInd < 0) {
 			BatchError(whichFile, whichLine, 19, "OutIntInd");
 			nbErrors++;
 		}
-		bParamFile >> inOutIntTraitCell;
+		ifsParamFile >> inOutIntTraitCell;
 		if (inOutIntTraitCell < 0) {
 			BatchError(whichFile, whichLine, 19, "OutIntTraitCell");
 			nbErrors++; 
 		}
-		bParamFile >> inOutIntTraitRow;
+		ifsParamFile >> inOutIntTraitRow;
 		if (inOutIntTraitRow < 0) {
 			BatchError(whichFile, whichLine, 19, "OutIntTraitRow"); 
 			nbErrors++;
 		}
-		bParamFile >> inOutIntConn;
+		ifsParamFile >> inOutIntConn;
 		if (inOutIntConn < 0) {
 			BatchError(whichFile, whichLine, 19, "OutIntConn"); 
 			nbErrors++; 
@@ -1034,28 +1027,28 @@ int CheckParameterFile()
 				nbErrors++;
 			}
 		}
-		bParamFile >> inSaveMaps; 
+		ifsParamFile >> inSaveMaps; 
 		if (inSaveMaps != 0 && inSaveMaps != 1)
 		{
 			BatchError(whichFile, whichLine, 1, "SaveMaps"); 
 			nbErrors++;
 		}
-		bParamFile >> inMapsInterval; 
+		ifsParamFile >> inMapsInterval; 
 		if (inSaveMaps == 1 && inMapsInterval < 1) {
 			BatchError(whichFile, whichLine, 11, "MapsInterval");
 			nbErrors++;
 		}
-		bParamFile >> inSMSHeatMap; 
+		ifsParamFile >> inSMSHeatMap; 
 		if (inSMSHeatMap != 0 && inSMSHeatMap != 1) {
 			BatchError(whichFile, whichLine, 1, "SMSHeatMap");
 			nbErrors++;
 		}
-		bParamFile >> inDrawLoadedSp; 
+		ifsParamFile >> inDrawLoadedSp; 
 		if (inSaveMaps == 1 && (inDrawLoadedSp != 0 && inDrawLoadedSp != 1)) {
 			BatchError(whichFile, whichLine, 1, "DrawLoadedSp");
 			nbErrors++;
 		}
-		bParamFile >> inFixReplicateSeed; 
+		ifsParamFile >> inFixReplicateSeed; 
 		if (inFixReplicateSeed != 0 && inFixReplicateSeed != 1) {
 			BatchError(whichFile, whichLine, 1, "FixReplicateSeed");
 			nbErrors++;
@@ -1064,8 +1057,8 @@ int CheckParameterFile()
 		whichLine++;
 		// read next simulation number
 		simNb = -98765;
-		bParamFile >> simNb;
-		if (bParamFile.eof()) {
+		ifsParamFile >> simNb;
+		if (ifsParamFile.eof()) {
 			simNb = -98765;
 		}
 		else { // check for valid simulation number
@@ -1077,7 +1070,7 @@ int CheckParameterFile()
 			nSimuls++;
 		}
 	} // end of while loop
-	if (!bParamFile.eof()) {
+	if (!ifsParamFile.eof()) {
 		EOFerror(whichFile);
 		nbErrors++;
 	}
@@ -1099,13 +1092,13 @@ int CheckLandFile(int landtype, string indir)
 
 	if (landtype == 0 || landtype == 2) { // real landscape
 		// Parse header line;
-		bLandFile >> header; if (header != "LandNum") errors++;
-		bLandFile >> header; if (header != "Nhabitats") errors++;
-		bLandFile >> header; if (header != "LandscapeFile") errors++;
-		bLandFile >> header; if (header != "PatchFile") errors++;
-		bLandFile >> header; if (header != "CostMapFile") errors++;
-		bLandFile >> header; if (header != "DynLandFile") errors++;
-		bLandFile >> header; if (header != "SpDistFile") errors++;
+		ifsLandFile >> header; if (header != "LandNum") errors++;
+		ifsLandFile >> header; if (header != "Nhabitats") errors++;
+		ifsLandFile >> header; if (header != "LandscapeFile") errors++;
+		ifsLandFile >> header; if (header != "PatchFile") errors++;
+		ifsLandFile >> header; if (header != "CostMapFile") errors++;
+		ifsLandFile >> header; if (header != "DynLandFile") errors++;
+		ifsLandFile >> header; if (header != "SpDistFile") errors++;
 		if (errors > 0) {
 			FormatError(filetype, 0);
 			batchLogOfs << "*** Ensure format is correct for real landscape" << endl;
@@ -1114,7 +1107,7 @@ int CheckLandFile(int landtype, string indir)
 		// Parse data lines
 		line = 1;
 		inint = -98765;
-		bLandFile >> inint;
+		ifsLandFile >> inint;
 		while (inint != -98765) {
 			//		 batchlog << "ParseLandFile(): Landscape no. = " << inint << endl;
 			if (inint < 1) {
@@ -1129,7 +1122,7 @@ int CheckLandFile(int landtype, string indir)
 				}
 				landlist.push_back(inint);
 			}
-			bLandFile >> inint;
+			ifsLandFile >> inint;
 			if (landtype == 0) { // raster map with unique habitat codes
 				if (inint < 0) {
 					BatchError(filetype, line, 10, "Nhabitats"); errors++;
@@ -1143,7 +1136,7 @@ int CheckLandFile(int landtype, string indir)
 
 			// check landscape filename
 			ftype = "LandscapeFile";
-			bLandFile >> intext;
+			ifsLandFile >> intext;
 			fname = indir + intext;
 			landraster = CheckRasterFile(fname);
 			if (landraster.ok) {
@@ -1165,7 +1158,7 @@ int CheckLandFile(int landtype, string indir)
 
 			// check patch map filename
 			ftype = "PatchFile";
-			bLandFile >> intext;
+			ifsLandFile >> intext;
 			if (intext == "NULL") {
 				if (gIsPatchModel) {
 					BatchError(filetype, line, 0, " "); errors++;
@@ -1209,7 +1202,7 @@ int CheckLandFile(int landtype, string indir)
 
 			// check cost map filename
 			ftype = "CostMapFile";
-			bLandFile >> gNameCostFile;
+			ifsLandFile >> gNameCostFile;
 			if (gNameCostFile == "NULL") {
 				if (gTransferType == 1) { // SMS
 					if (landtype == 2) {
@@ -1259,20 +1252,20 @@ int CheckLandFile(int landtype, string indir)
 
 			// check dynamic landscape filename
 			ftype = "DynLandFile";
-			bLandFile >> intext;
+			ifsLandFile >> intext;
 			if (intext != "NULL") { // landscape is dynamic
 				fname = indir + intext;
 				batchLogOfs << "Checking " << ftype << " " << fname << endl;
-				bDynLandFile.open(fname.c_str());
-				if (bDynLandFile.is_open()) {
+				ifsDynLandFile.open(fname.c_str());
+				if (ifsDynLandFile.is_open()) {
 					int something = CheckDynamicFile(indir, gNameCostFile);
 					if (something < 0) {
 						errors++;
 					}
-					bDynLandFile.close(); bDynLandFile.clear();
+					ifsDynLandFile.close(); ifsDynLandFile.clear();
 				}
 				else {
-					bDynLandFile.clear();
+					ifsDynLandFile.clear();
 					errors++;
 					OpenError(ftype, fname);
 				}
@@ -1280,7 +1273,7 @@ int CheckLandFile(int landtype, string indir)
 
 			// check initial distribution map filename
 			ftype = "SpDistFile";
-			bLandFile >> intext;
+			ifsLandFile >> intext;
 			if (intext == "NULL") {
 				if (gSpeciesDist) {
 					BatchError(filetype, line, 0, " "); errors++;
@@ -1346,7 +1339,7 @@ int CheckLandFile(int landtype, string indir)
 			totlines++; line++;
 			// read first field on next line
 			inint = -98765;
-			bLandFile >> inint;
+			ifsLandFile >> inint;
 		} // end of while loop
 		landlist.clear();
 	} // end of real landscape
@@ -1355,15 +1348,15 @@ int CheckLandFile(int landtype, string indir)
 			int fractal, type, Xdim, Ydim;
 			float minhab, maxhab;
 			// Parse header line;
-			bLandFile >> header; if (header != "LandNum") errors++;
-			bLandFile >> header; if (header != "Fractal") errors++;
-			bLandFile >> header; if (header != "Type") errors++;
-			bLandFile >> header; if (header != "Xdim") errors++;
-			bLandFile >> header; if (header != "Ydim") errors++;
-			bLandFile >> header; if (header != "MinHab") errors++;
-			bLandFile >> header; if (header != "MaxHab") errors++;
-			bLandFile >> header; if (header != "Psuit") errors++;
-			bLandFile >> header; if (header != "H") errors++;
+			ifsLandFile >> header; if (header != "LandNum") errors++;
+			ifsLandFile >> header; if (header != "Fractal") errors++;
+			ifsLandFile >> header; if (header != "Type") errors++;
+			ifsLandFile >> header; if (header != "Xdim") errors++;
+			ifsLandFile >> header; if (header != "Ydim") errors++;
+			ifsLandFile >> header; if (header != "MinHab") errors++;
+			ifsLandFile >> header; if (header != "MaxHab") errors++;
+			ifsLandFile >> header; if (header != "Psuit") errors++;
+			ifsLandFile >> header; if (header != "H") errors++;
 			if (errors > 0) {
 				FormatError(filetype, 0);
 				batchLogOfs << "*** Ensure format is correct for artificial landscape" << endl;
@@ -1372,7 +1365,7 @@ int CheckLandFile(int landtype, string indir)
 			// Parse data lines
 			line = 1;
 			inint = -98765;
-			bLandFile >> inint;
+			ifsLandFile >> inint;
 			while (inint != -98765) {
 				for (j = 0; j < (int)landlist.size(); j++) {
 					if (inint < 1 || inint == landlist[j]) {
@@ -1380,15 +1373,15 @@ int CheckLandFile(int landtype, string indir)
 					}
 				}
 				landlist.push_back(inint);
-				bLandFile >> fractal;
+				ifsLandFile >> fractal;
 				if (fractal < 0 || fractal > 1) {
 					BatchError(filetype, line, 1, "Fractal"); errors++;
 				}
-				bLandFile >> type;
+				ifsLandFile >> type;
 				if (type < 0 || type > 1) {
 					BatchError(filetype, line, 1, "Type"); errors++;
 				}
-				bLandFile >> Xdim >> Ydim;
+				ifsLandFile >> Xdim >> Ydim;
 				if (fractal == 1) {
 					if (Xdim < 3) {
 						BatchError(filetype, line, 13, "Xdim"); errors++;
@@ -1416,7 +1409,7 @@ int CheckLandFile(int landtype, string indir)
 						batchLogOfs << "X and Y dimensions must be a power of 2 plus 1" << endl; errors++;
 					}
 				}
-				bLandFile >> minhab >> maxhab;
+				ifsLandFile >> minhab >> maxhab;
 				if (type == 1) { // continuous landscape
 					if (minhab <= 0.0 || minhab >= 100.0) {
 						BatchError(filetype, line, 100, "MinHab"); errors++;
@@ -1429,11 +1422,11 @@ int CheckLandFile(int landtype, string indir)
 						batchLogOfs << "MaxHab must exceed MinHab" << endl; errors++;
 					}
 				}
-				bLandFile >> infloat;
+				ifsLandFile >> infloat;
 				if (infloat < 0.0 || infloat > 1.0) {
 					BatchError(filetype, line, 20, "Psuit"); errors++;
 				}
-				bLandFile >> infloat;
+				ifsLandFile >> infloat;
 				if (fractal == 1) {
 					if (infloat <= 0.0 || infloat >= 1.0) {
 						BatchError(filetype, line, 20, "H"); errors++;
@@ -1442,7 +1435,7 @@ int CheckLandFile(int landtype, string indir)
 				totlines++; line++;
 				// read first field on next line
 				inint = -98765;
-				bLandFile >> inint;
+				ifsLandFile >> inint;
 			} // end of while loop
 		} // end of artificial landscape
 		else { // ERROR condition which should not occur
@@ -1451,7 +1444,7 @@ int CheckLandFile(int landtype, string indir)
 			errors++;
 		}
 	}
-	if (!bLandFile.eof()) {
+	if (!ifsLandFile.eof()) {
 		EOFerror(filetype);
 		errors++;
 	}
@@ -1470,11 +1463,11 @@ int CheckDynamicFile(string indir, string costfile) {
 	string filetype = "DynLandFile";
 	//int totlines = 0;
 
-	bDynLandFile >> header; if (header != "Change") errors++;
-	bDynLandFile >> header; if (header != "Year") errors++;
-	bDynLandFile >> header; if (header != "LandChangeFile") errors++;
-	bDynLandFile >> header; if (header != "PatchChangeFile") errors++;
-	bDynLandFile >> header; if (header != "CostChangeFile") errors++;
+	ifsDynLandFile >> header; if (header != "Change") errors++;
+	ifsDynLandFile >> header; if (header != "Year") errors++;
+	ifsDynLandFile >> header; if (header != "LandChangeFile") errors++;
+	ifsDynLandFile >> header; if (header != "PatchChangeFile") errors++;
+	ifsDynLandFile >> header; if (header != "CostChangeFile") errors++;
 
 	if (errors > 0) {
 		FormatError(filetype, errors);
@@ -1484,7 +1477,7 @@ int CheckDynamicFile(string indir, string costfile) {
 	// Parse data lines
 	int line = 1;
 	change = -98765;
-	bDynLandFile >> change; // first change number
+	ifsDynLandFile >> change; // first change number
 	if (change != 1) {
 		batchLogOfs << "*** Error in DynLandFile - first change number must be 1" << endl;
 		errors++;
@@ -1494,7 +1487,7 @@ int CheckDynamicFile(string indir, string costfile) {
 	}
 	while (change != -98765) {
 
-		bDynLandFile >> year; if (year <= 0) { BatchError(filetype, line, 10, "Year"); errors++; }
+		ifsDynLandFile >> year; if (year <= 0) { BatchError(filetype, line, 10, "Year"); errors++; }
 		if (line > 1) {
 			if (year <= prevyear) {
 				BatchError(filetype, line, 1, "Year", "previous Year"); errors++;
@@ -1504,7 +1497,7 @@ int CheckDynamicFile(string indir, string costfile) {
 
 		// check landscape filename
 		ftype = "LandChangeFile";
-		bDynLandFile >> intext;
+		ifsDynLandFile >> intext;
 		//batchlog << "***** indir=" << indir << " intext=" << intext << endl;
 		fname = indir + intext;
 		landchgraster = CheckRasterFile(fname);
@@ -1537,7 +1530,7 @@ int CheckDynamicFile(string indir, string costfile) {
 
 		// check patch filename
 		ftype = "PatchChangeFile";
-		bDynLandFile >> intext;
+		ifsDynLandFile >> intext;
 		if (intext == "NULL") {
 			if (gIsPatchModel) {
 				BatchError(filetype, line, 0, " "); errors++;
@@ -1581,7 +1574,7 @@ int CheckDynamicFile(string indir, string costfile) {
 
 		// check costs change filename
 		ftype = "CostChangeFile";
-		bDynLandFile >> intext;
+		ifsDynLandFile >> intext;
 		if (intext == "NULL") {
 			if (costfile != "NULL") {
 				BatchError(filetype, line, 0, " "); errors++;
@@ -1630,8 +1623,8 @@ int CheckDynamicFile(string indir, string costfile) {
 		line++;
 		// read first field on next line
 		change = -98765;
-		bDynLandFile >> change;
-		if (bDynLandFile.eof()) {
+		ifsDynLandFile >> change;
+		if (ifsDynLandFile.eof()) {
 			change = -98765;
 		}
 		else { // check for valid change number
@@ -1663,24 +1656,24 @@ int CheckStageFile(string indir)
 	string filetype = "StageStructFile";
 
 	// Parse header line;
-	bStageStructFile >> header; if (header != "Simulation") errors++;
-	bStageStructFile >> header; if (header != "PostDestructn") errors++;
-	bStageStructFile >> header; if (header != "PRep") errors++;
-	bStageStructFile >> header; if (header != "RepInterval") errors++;
-	bStageStructFile >> header; if (header != "MaxAge") errors++;
-	bStageStructFile >> header; if (header != "TransMatrixFile") errors++;
-	bStageStructFile >> header; if (header != "SurvSched") errors++;
-	bStageStructFile >> header; if (header != "FecDensDep") errors++;
-	bStageStructFile >> header; if (header != "FecStageWts") errors++;
-	bStageStructFile >> header; if (header != "FecStageWtsFile") errors++;
-	bStageStructFile >> header; if (header != "DevDensDep") errors++;
-	bStageStructFile >> header; if (header != "DevDensCoeff") errors++;
-	bStageStructFile >> header; if (header != "DevStageWts") errors++;
-	bStageStructFile >> header; if (header != "DevStageWtsFile") errors++;
-	bStageStructFile >> header; if (header != "SurvDensDep") errors++;
-	bStageStructFile >> header; if (header != "SurvDensCoeff") errors++;
-	bStageStructFile >> header; if (header != "SurvStageWts") errors++;
-	bStageStructFile >> header; if (header != "SurvStageWtsFile") errors++;
+	ifsStageStructFile >> header; if (header != "Simulation") errors++;
+	ifsStageStructFile >> header; if (header != "PostDestructn") errors++;
+	ifsStageStructFile >> header; if (header != "PRep") errors++;
+	ifsStageStructFile >> header; if (header != "RepInterval") errors++;
+	ifsStageStructFile >> header; if (header != "MaxAge") errors++;
+	ifsStageStructFile >> header; if (header != "TransMatrixFile") errors++;
+	ifsStageStructFile >> header; if (header != "SurvSched") errors++;
+	ifsStageStructFile >> header; if (header != "FecDensDep") errors++;
+	ifsStageStructFile >> header; if (header != "FecStageWts") errors++;
+	ifsStageStructFile >> header; if (header != "FecStageWtsFile") errors++;
+	ifsStageStructFile >> header; if (header != "DevDensDep") errors++;
+	ifsStageStructFile >> header; if (header != "DevDensCoeff") errors++;
+	ifsStageStructFile >> header; if (header != "DevStageWts") errors++;
+	ifsStageStructFile >> header; if (header != "DevStageWtsFile") errors++;
+	ifsStageStructFile >> header; if (header != "SurvDensDep") errors++;
+	ifsStageStructFile >> header; if (header != "SurvDensCoeff") errors++;
+	ifsStageStructFile >> header; if (header != "SurvStageWts") errors++;
+	ifsStageStructFile >> header; if (header != "SurvStageWtsFile") errors++;
 	if (errors > 0) {
 		FormatError(filetype, errors);
 		return -111;
@@ -1689,7 +1682,7 @@ int CheckStageFile(string indir)
 	// Parse data lines
 	int line = 1;
 	inint = -98765;
-	bStageStructFile >> inint;
+	ifsStageStructFile >> inint;
 	// first simulation number must match first one in parameterFile
 	if (inint != gFirstSimNb) {
 		BatchError(filetype, line, 111, "Simulation"); errors++;
@@ -1697,16 +1690,16 @@ int CheckStageFile(string indir)
 	prevsimul = inint;
 	while (inint != -98765) {
 		simuls++;
-		bStageStructFile >> inint;
+		ifsStageStructFile >> inint;
 		if (inint < 0 || inint > 1) { BatchError(filetype, line, 1, "PostDestructn"); errors++; }
-		bStageStructFile >> infloat;
+		ifsStageStructFile >> infloat;
 		if (infloat <= 0 || infloat > 1.0) { BatchError(filetype, line, 20, "PRep"); errors++; }
-		bStageStructFile >> inint;
+		ifsStageStructFile >> inint;
 		if (inint < 0) { BatchError(filetype, line, 19, "RepInterval"); errors++; }
-		bStageStructFile >> inint;
+		ifsStageStructFile >> inint;
 		if (inint < 2) { BatchError(filetype, line, 12, "MaxAge"); errors++; }
 
-		bStageStructFile >> filename;
+		ifsStageStructFile >> filename;
 		// transition matrix file - compulsory
 		ftype2 = "TransMatrixFile";
 		checkfile = true;
@@ -1723,29 +1716,29 @@ int CheckStageFile(string indir)
 			else {
 				fname = indir + filename;
 				batchLogOfs << "Checking " << ftype2 << " " << fname << endl;
-				bTransMatrix.open(fname.c_str());
-				if (bTransMatrix.is_open()) {
-					err = CheckTransitionFile(inNbStages, sexesDem);
+				ifsTransMatrix.open(fname.c_str());
+				if (ifsTransMatrix.is_open()) {
+					err = CheckTransitionFile(gNbStages, gNbSexesDem);
 					if (err == 0) FileHeadersOK(ftype2); else errors++;
-					bTransMatrix.close();
+					ifsTransMatrix.close();
 				}
 				else {
 					OpenError(ftype2, fname); errors++;
 				}
-				if (bTransMatrix.is_open()) bTransMatrix.close();
-				bTransMatrix.clear();
+				if (ifsTransMatrix.is_open()) ifsTransMatrix.close();
+				ifsTransMatrix.clear();
 			}
 		}
 		transfiles.push_back(filename);
 
-		bStageStructFile >> inint;
+		ifsStageStructFile >> inint;
 		if (inint < 0 || inint > 2) { BatchError(filetype, line, 2, "SurvSched"); errors++; }
-		bStageStructFile >> fecdensdep;
+		ifsStageStructFile >> fecdensdep;
 		if (fecdensdep < 0 || fecdensdep > 1)
 		{
 			BatchError(filetype, line, 1, "FecDensDep"); errors++; fecdensdep = 1;
 		}
-		bStageStructFile >> fecstagewts;
+		ifsStageStructFile >> fecstagewts;
 		if (fecdensdep) {
 			if (fecstagewts < 0 || fecstagewts > 1)
 			{
@@ -1762,7 +1755,7 @@ int CheckStageFile(string indir)
 
 		// fecundity stage weights file - optional
 		ftype2 = "FecStageWtsFile";
-		bStageStructFile >> filename;
+		ifsStageStructFile >> filename;
 		if (filename == "NULL") {
 			if (fecstagewts) {
 				BatchError(filetype, line, 0, " ");
@@ -1778,27 +1771,27 @@ int CheckStageFile(string indir)
 			if (checkfile) {
 				fname = indir + filename;
 				batchLogOfs << "Checking " << ftype2 << " " << fname << endl;
-				bStageWeightsFile.open(fname.c_str());
-				if (bStageWeightsFile.is_open()) {
+				ifsStageWeightsFile.open(fname.c_str());
+				if (ifsStageWeightsFile.is_open()) {
 					err = CheckWeightsFile(ftype2);
 					if (err == 0) FileHeadersOK(ftype2); else errors++;
-					bStageWeightsFile.close();
+					ifsStageWeightsFile.close();
 				}
 				else {
 					OpenError(ftype2, fname); errors++;
 				}
-				if (bStageWeightsFile.is_open()) bStageWeightsFile.close();
-				bStageWeightsFile.clear();
+				if (ifsStageWeightsFile.is_open()) ifsStageWeightsFile.close();
+				ifsStageWeightsFile.clear();
 			}
 			wtsfiles.push_back(filename);
 		}
 
-		bStageStructFile >> devdensdep;
+		ifsStageStructFile >> devdensdep;
 		if (devdensdep < 0 || devdensdep > 1)
 		{
 			BatchError(filetype, line, 1, "DevDensDep"); errors++; devdensdep = 1;
 		}
-		bStageStructFile >> infloat >> devstagewts;
+		ifsStageStructFile >> infloat >> devstagewts;
 		if (devdensdep) {
 			if (infloat <= 0.0) {
 				BatchError(filetype, line, 10, "DevDensCoeff"); errors++;
@@ -1817,7 +1810,7 @@ int CheckStageFile(string indir)
 
 		// development stage weights file - optional
 		ftype2 = "DevStageWtsFile";
-		bStageStructFile >> filename;
+		ifsStageStructFile >> filename;
 		if (filename == "NULL") {
 			if (devstagewts) {
 				BatchError(filetype, line, 0, " ");
@@ -1833,27 +1826,27 @@ int CheckStageFile(string indir)
 			if (checkfile) {
 				fname = indir + filename;
 				batchLogOfs << "Checking " << ftype2 << " " << fname << endl;
-				bStageWeightsFile.open(fname.c_str());
-				if (bStageWeightsFile.is_open()) {
+				ifsStageWeightsFile.open(fname.c_str());
+				if (ifsStageWeightsFile.is_open()) {
 					err = CheckWeightsFile(ftype2);
 					if (err == 0) FileHeadersOK(ftype2); else errors++;
-					bStageWeightsFile.close();
+					ifsStageWeightsFile.close();
 				}
 				else {
 					OpenError(ftype2, fname); errors++;
 				}
-				if (bStageWeightsFile.is_open()) bStageWeightsFile.close();
-				bStageWeightsFile.clear();
+				if (ifsStageWeightsFile.is_open()) ifsStageWeightsFile.close();
+				ifsStageWeightsFile.clear();
 			}
 			wtsfiles.push_back(filename);
 		}
 
-		bStageStructFile >> survdensdep;
+		ifsStageStructFile >> survdensdep;
 		if (survdensdep < 0 || survdensdep > 1)
 		{
 			BatchError(filetype, line, 1, "SurvDensDep"); errors++; survdensdep = 1;
 		}
-		bStageStructFile >> infloat >> survstagewts;
+		ifsStageStructFile >> infloat >> survstagewts;
 		if (survdensdep) {
 			if (infloat <= 0.0) {
 				BatchError(filetype, line, 10, "SurvDensCoeff"); errors++;
@@ -1872,7 +1865,7 @@ int CheckStageFile(string indir)
 
 		// survival stage weights file - optional
 		ftype2 = "SurvStageWtsFile";
-		bStageStructFile >> filename;
+		ifsStageStructFile >> filename;
 		if (filename == "NULL") {
 			if (survstagewts) {
 				BatchError(filetype, line, 0, " ");
@@ -1888,17 +1881,17 @@ int CheckStageFile(string indir)
 			if (checkfile) {
 				fname = indir + filename;
 				batchLogOfs << "Checking " << ftype2 << " " << fname << endl;
-				bStageWeightsFile.open(fname.c_str());
-				if (bStageWeightsFile.is_open()) {
+				ifsStageWeightsFile.open(fname.c_str());
+				if (ifsStageWeightsFile.is_open()) {
 					err = CheckWeightsFile(ftype2);
 					if (err == 0) FileHeadersOK(ftype2); else errors++;
-					bStageWeightsFile.close();
+					ifsStageWeightsFile.close();
 				}
 				else {
 					OpenError(ftype2, fname); errors++;
 				}
-				if (bStageWeightsFile.is_open()) bStageWeightsFile.close();
-				bStageWeightsFile.clear();
+				if (ifsStageWeightsFile.is_open()) ifsStageWeightsFile.close();
+				ifsStageWeightsFile.clear();
 			}
 			wtsfiles.push_back(filename);
 		}
@@ -1906,8 +1899,8 @@ int CheckStageFile(string indir)
 		// read next simulation
 		line++;
 		inint = -98765;
-		bStageStructFile >> inint;
-		if (bStageStructFile.eof()) {
+		ifsStageStructFile >> inint;
+		if (ifsStageStructFile.eof()) {
 			inint = -98765;
 		}
 		else { // check for valid simulation number
@@ -1918,7 +1911,7 @@ int CheckStageFile(string indir)
 			prevsimul = inint;
 		}
 	}
-	if (!bStageStructFile.eof()) {
+	if (!ifsStageStructFile.eof()) {
 		EOFerror(filetype);
 		errors++;
 	}
@@ -1943,18 +1936,18 @@ int CheckTransitionFile(short nstages, short nsexesDem)
 	string filetype = "TransMatrixFile";
 
 	// check header records
-	bTransMatrix >> header; 
+	ifsTransMatrix >> header; 
 	if (header != "Transition") errors++;
 
 	for (iStage = 0; iStage < nstages; iStage++) {
 		for (iSex = 0; iSex < nsexesDem; iSex++) {
-			bTransMatrix >> header;
+			ifsTransMatrix >> header;
 			expectedHeader = to_string(iStage);
 			if (nsexesDem != 1) expectedHeader += iSex == 0 ? "m" : "f";
 			if (header != expectedHeader) errors++;
 		}
 	}
-	bTransMatrix >> header; 
+	ifsTransMatrix >> header; 
 	if (header != "MinAge") errors++;
 
 	if (errors > 0) {
@@ -1966,7 +1959,7 @@ int CheckTransitionFile(short nstages, short nsexesDem)
 
 	// single row for juveniles
 	line = 1;
-	bTransMatrix >> header;
+	ifsTransMatrix >> header;
 	if (header != "0") {
 		BatchError(filetype, line, 0, " ");
 		batchLogOfs << "Invalid row header" << endl; errors++;
@@ -1974,7 +1967,7 @@ int CheckTransitionFile(short nstages, short nsexesDem)
 	float totfecundity = 0.0;
 	for (iStage = 0; iStage < nstages; iStage++) {
 		for (iSex = 0; iSex < nsexesDem; iSex++) {
-			bTransMatrix >> infloat;
+			ifsTransMatrix >> infloat;
 			if (iStage > 0) {
 				if (infloat < 0.0) {
 					BatchError(filetype, line, 19, "Fecundity"); errors++;
@@ -1986,7 +1979,7 @@ int CheckTransitionFile(short nstages, short nsexesDem)
 	if (totfecundity <= 0.0) {
 		BatchError(filetype, line, 10, "Total fecundity"); errors++;
 	}
-	bTransMatrix >> minage;
+	ifsTransMatrix >> minage;
 	//prevminage = minage;
 	//				batchlog << "MINAGE = " << minage << endl;
 	if (minage != 0) {
@@ -2000,7 +1993,7 @@ int CheckTransitionFile(short nstages, short nsexesDem)
 		for (sex = 0; sex < nsexesDem; sex++) {
 			line++;
 			// row header
-			bTransMatrix >> header;
+			ifsTransMatrix >> header;
 			if (nsexesDem == 1) expectedHeader = to_string(stage);
 			else {
 				if (sex == 0) expectedHeader = to_string(stage) + "m"; else expectedHeader = to_string(stage) + "f";
@@ -2011,7 +2004,7 @@ int CheckTransitionFile(short nstages, short nsexesDem)
 			}
 			for (iStage = 0; iStage < nstages; iStage++) {
 				for (iSex = 0; iSex < nsexesDem; iSex++) {
-					bTransMatrix >> infloat;
+					ifsTransMatrix >> infloat;
 					//				batchlog << "TRANS PROB = " << infloat << endl;
 					if (infloat < 0.0 || infloat > 1) {
 						BatchError(filetype, line, 20, "Transition probability"); errors++;
@@ -2019,7 +2012,7 @@ int CheckTransitionFile(short nstages, short nsexesDem)
 				}
 			}
 			//		 prevminage = minage;
-			bTransMatrix >> minage;
+			ifsTransMatrix >> minage;
 			//				batchlog << "MINAGE = " << minage << endl;
 			if (stage == 1 && minage != 0) {
 				BatchError(filetype, line, 0, " ");
@@ -2041,9 +2034,9 @@ int CheckTransitionFile(short nstages, short nsexesDem)
 		}
 	}
 	// final read should hit EOF
-	bTransMatrix >> header;
+	ifsTransMatrix >> header;
 
-	if (!bTransMatrix.eof()) {
+	if (!ifsTransMatrix.eof()) {
 		EOFerror(filetype);
 		errors++;
 	}
@@ -2064,11 +2057,11 @@ int CheckWeightsFile(string filetype)
 	int errors = 0;
 
 	// check header records
-	bStageWeightsFile >> header; if (header != "StageWts") errors++;
-	for (i = 0; i < inNbStages; i++) {
-		for (j = 0; j < sexesDem; j++) {
-			bStageWeightsFile >> header;
-			if (sexesDem == 1) hhh = to_string(i);
+	ifsStageWeightsFile >> header; if (header != "StageWts") errors++;
+	for (i = 0; i < gNbStages; i++) {
+		for (j = 0; j < gNbSexesDem; j++) {
+			ifsStageWeightsFile >> header;
+			if (gNbSexesDem == 1) hhh = to_string(i);
 			else {
 				if (j == 0) hhh = to_string(i) + "m"; else hhh = to_string(i) + "f";
 			}
@@ -2084,12 +2077,12 @@ int CheckWeightsFile(string filetype)
 	// check matrix, including row headers
 	// one row for each stage/sex combination
 	line = 0;
-	for (stage = 0; stage < inNbStages; stage++) {
-		for (sex = 0; sex < sexesDem; sex++) {
+	for (stage = 0; stage < gNbStages; stage++) {
+		for (sex = 0; sex < gNbSexesDem; sex++) {
 			line++;
 			// row header
-			bStageWeightsFile >> header;
-			if (sexesDem == 1) hhh = to_string(stage);
+			ifsStageWeightsFile >> header;
+			if (gNbSexesDem == 1) hhh = to_string(stage);
 			else {
 				if (sex == 0) hhh = to_string(stage) + "m"; else hhh = to_string(stage) + "f";
 			}
@@ -2097,18 +2090,18 @@ int CheckWeightsFile(string filetype)
 				BatchError(filetype, line, 0, " ");
 				batchLogOfs << "Invalid row header" << endl; errors++;
 			}
-			for (i = 0; i < inNbStages; i++) {
-				for (j = 0; j < sexesDem; j++) {
-					bStageWeightsFile >> infloat;
+			for (i = 0; i < gNbStages; i++) {
+				for (j = 0; j < gNbSexesDem; j++) {
+					ifsStageWeightsFile >> infloat;
 					// NOTE - any real number is acceptable - no check required
 				}
 			}
 		}
 	}
 	// final read should hit EOF
-	bStageWeightsFile >> header;
+	ifsStageWeightsFile >> header;
 
-	if (!bStageWeightsFile.eof()) {
+	if (!ifsStageWeightsFile.eof()) {
 		EOFerror(filetype);
 		errors++;
 	}
@@ -2134,19 +2127,19 @@ int CheckEmigFile(void)
 	inEP = 0.0;
 
 	// Parse header line;
-	bEmigrationFile >> header; if (header != "Simulation") nbErrors++;
-	bEmigrationFile >> header; if (header != "DensDep") nbErrors++;
-	bEmigrationFile >> header; if (header != "UseFullKern") nbErrors++;
-	bEmigrationFile >> header; if (header != "StageDep") nbErrors++;
-	bEmigrationFile >> header; if (header != "SexDep") nbErrors++;
-	bEmigrationFile >> header; if (header != "IndVar") nbErrors++;
-	bEmigrationFile >> header; if (header != "EmigStage") nbErrors++;
-	bEmigrationFile >> header; if (header != "Stage") nbErrors++;
-	bEmigrationFile >> header; if (header != "Sex") nbErrors++;
-	bEmigrationFile >> header; if (header != "EP") nbErrors++;
-	bEmigrationFile >> header; if (header != "D0") nbErrors++;
-	bEmigrationFile >> header; if (header != "alpha") nbErrors++;
-	bEmigrationFile >> header; if (header != "beta") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "Simulation") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "DensDep") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "UseFullKern") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "StageDep") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "SexDep") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "IndVar") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "EmigStage") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "Stage") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "Sex") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "EP") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "D0") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "alpha") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "beta") nbErrors++;
 
 	if (nbErrors > 0) {
 		FormatError(whichInputFile, nbErrors);
@@ -2160,7 +2153,7 @@ int CheckEmigFile(void)
 	simNb = gFirstSimNb + 1; // that is, NOT first sim number
 	prevLine.simNb = -999;
 	prevLine.simLines = prevLine.reqdSimLines = 0;
-	bEmigrationFile >> simNb;
+	ifsEmigrationFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
 		BatchError(whichInputFile, lineNb, 111, "Simulation"); 
@@ -2170,8 +2163,8 @@ int CheckEmigFile(void)
 
 	while (readNextLine) {
 		// read and validate columns relating to stage and sex-dependency and to IIV
-		bEmigrationFile >> inDensDep >> inUseFullKern >> inStgDep >> inSexDep;
-		bEmigrationFile >> inIndVar >> inEmigStg >> inStage >> inSex;
+		ifsEmigrationFile >> inDensDep >> inUseFullKern >> inStgDep >> inSexDep;
+		ifsEmigrationFile >> inIndVar >> inEmigStg >> inStage >> inSex;
 		currentLine = CheckStageSex(whichInputFile, lineNb, simNb, prevLine, inStgDep, inSexDep, inStage, inSex, inIndVar, true, false);
 		if (currentLine.isNewSim) nbSims++;
 		nbErrors += currentLine.errors;
@@ -2207,12 +2200,12 @@ int CheckEmigFile(void)
 				batchLogOfs << "UseFullKern must be 0 if there is density-dependent emigration" << endl;
 		}
 		// validate emigration stage
-		if (inStageStruct && !inStgDep && inIndVar == 1
+		if (gStageStruct && !inStgDep && inIndVar == 1
 			&& inStage == 0 && inSex == 0
-			&& (inEmigStg < 0 || inEmigStg >= inNbStages)) {
+			&& (inEmigStg < 0 || inEmigStg >= gNbStages)) {
 			BatchError(whichInputFile, lineNb, 0, "EmigStage");
 			nbErrors++;
-			batchLogOfs << "EmigStage must be from 0 to " << to_string(inNbStages - 1) << endl;
+			batchLogOfs << "EmigStage must be from 0 to " << to_string(gNbStages - 1) << endl;
 		}
 		if (inSexDep != 0 && inSexDep != 1) {
 			BatchError(whichInputFile, lineNb, 1, "SexDep");
@@ -2229,7 +2222,7 @@ int CheckEmigFile(void)
 		}
 
 		// read remaining columns of the current record
-		bEmigrationFile >> inEP >> inD0 >> inAlpha >> inBeta;
+		ifsEmigrationFile >> inEP >> inD0 >> inAlpha >> inBeta;
 
 		if (gTraitOptions.at(simNb).isEmigIndVar) {
 			if (inEP != gEmptyVal) {
@@ -2290,8 +2283,8 @@ int CheckEmigFile(void)
 		lineNb++;
 		const int errSimNb = -98765;
 		simNb = errSimNb;
-		bEmigrationFile >> simNb;
-		if (simNb == errSimNb || bEmigrationFile.eof()) readNextLine = false;
+		ifsEmigrationFile >> simNb;
+		if (simNb == errSimNb || ifsEmigrationFile.eof()) readNextLine = false;
 	} // end of while loop
 
 	// check for correct number of lines for previous simulation
@@ -2301,7 +2294,7 @@ int CheckEmigFile(void)
 		batchLogOfs << gNbLinesStr << currentLine.simNb
 			<< gShouldBeStr << currentLine.reqdSimLines << endl;
 	}
-	if (!bEmigrationFile.eof()) {
+	if (!ifsEmigrationFile.eof()) {
 		EOFerror(whichInputFile);
 		nbErrors++;
 	}
@@ -2333,53 +2326,53 @@ int CheckTransferFile(string indir)
 	string whichFile = "TransferFile";
 
 	// Parse header line;
-	bTransferFile >> header; 
+	ifsTransferFile >> header; 
 	if (header != "Simulation") errors++;
 
 	switch (gTransferType) {
 
 	case 0: { // negative exponential dispersal kernel
 		batchLogOfs << "Checking dispersal kernel format file" << endl;
-		bTransferFile >> header; if (header != "StageDep") errors++;
-		bTransferFile >> header; if (header != "SexDep") errors++;
-		bTransferFile >> header; if (header != "KernelType") errors++;
-		bTransferFile >> header; if (header != "DistMort") errors++;
-		bTransferFile >> header; if (header != "IndVar") errors++;
-		bTransferFile >> header; if (header != "Stage") errors++;
-		bTransferFile >> header; if (header != "Sex") errors++;
-		bTransferFile >> header; if (header != "meanDistI") errors++;
-		bTransferFile >> header; if (header != "meanDistII") errors++;
-		bTransferFile >> header; if (header != "ProbKernelI") errors++;
-		bTransferFile >> header; if (header != "MortProb") errors++;
-		bTransferFile >> header; if (header != "Slope") errors++;
-		bTransferFile >> header; if (header != "InflPoint") errors++;
+		ifsTransferFile >> header; if (header != "StageDep") errors++;
+		ifsTransferFile >> header; if (header != "SexDep") errors++;
+		ifsTransferFile >> header; if (header != "KernelType") errors++;
+		ifsTransferFile >> header; if (header != "DistMort") errors++;
+		ifsTransferFile >> header; if (header != "IndVar") errors++;
+		ifsTransferFile >> header; if (header != "Stage") errors++;
+		ifsTransferFile >> header; if (header != "Sex") errors++;
+		ifsTransferFile >> header; if (header != "meanDistI") errors++;
+		ifsTransferFile >> header; if (header != "meanDistII") errors++;
+		ifsTransferFile >> header; if (header != "ProbKernelI") errors++;
+		ifsTransferFile >> header; if (header != "MortProb") errors++;
+		ifsTransferFile >> header; if (header != "Slope") errors++;
+		ifsTransferFile >> header; if (header != "InflPoint") errors++;
 		break;
 	} // end of negative exponential dispersal kernel
 
 	case 1: { // SMS
 		batchLogOfs << "Checking SMS format file ";
-		bTransferFile >> header; if (header != "IndVar") errors++;
-		bTransferFile >> header; if (header != "PR") errors++;
-		bTransferFile >> header; if (header != "PRMethod") errors++;
-		bTransferFile >> header; if (header != "DP") errors++;
-		bTransferFile >> header; if (header != "MemSize") errors++;
-		bTransferFile >> header; if (header != "GB") errors++;
-		bTransferFile >> header; if (header != "GoalType") errors++;
-		bTransferFile >> header; if (header != "AlphaDB") errors++;
-		bTransferFile >> header; if (header != "BetaDB") errors++;
-		bTransferFile >> header; if (header != "StraightenPath") errors++;
-		bTransferFile >> header; if (header != "SMtype") errors++;
-		bTransferFile >> header; if (header != "SMconst") errors++;
+		ifsTransferFile >> header; if (header != "IndVar") errors++;
+		ifsTransferFile >> header; if (header != "PR") errors++;
+		ifsTransferFile >> header; if (header != "PRMethod") errors++;
+		ifsTransferFile >> header; if (header != "DP") errors++;
+		ifsTransferFile >> header; if (header != "MemSize") errors++;
+		ifsTransferFile >> header; if (header != "GB") errors++;
+		ifsTransferFile >> header; if (header != "GoalType") errors++;
+		ifsTransferFile >> header; if (header != "AlphaDB") errors++;
+		ifsTransferFile >> header; if (header != "BetaDB") errors++;
+		ifsTransferFile >> header; if (header != "StraightenPath") errors++;
+		ifsTransferFile >> header; if (header != "SMtype") errors++;
+		ifsTransferFile >> header; if (header != "SMconst") errors++;
 		switch (gLandType) {
 		case 0: { // raster map with unique habitat codes
 			batchLogOfs << "for LandType = 0" << endl;
 			for (i = 0; i < gMaxNbHab; i++) {
 				colheader = "MortHab" + to_string(i + 1);
-				bTransferFile >> header; if (header != colheader) morthaberrors++;
+				ifsTransferFile >> header; if (header != colheader) morthaberrors++;
 			}
 			for (i = 0; i < gMaxNbHab; i++) {
 				colheader = "CostHab" + to_string(i + 1);
-				bTransferFile >> header; if (header != colheader) costerrors++;
+				ifsTransferFile >> header; if (header != colheader) costerrors++;
 			}
 			break;
 		} // end of raster map with unique habitat codes
@@ -2389,10 +2382,10 @@ int CheckTransferFile(string indir)
 		} // end of raster map with habitat quality
 		case 9: { // artificial landscape
 			batchLogOfs << "for LandType = 9" << endl;
-			bTransferFile >> header; if (header != "MortHabitat") errors++;
-			bTransferFile >> header; if (header != "MortMatrix") errors++;
-			bTransferFile >> header; if (header != "CostHabitat") errors++;
-			bTransferFile >> header; if (header != "CostMatrix") errors++;
+			ifsTransferFile >> header; if (header != "MortHabitat") errors++;
+			ifsTransferFile >> header; if (header != "MortMatrix") errors++;
+			ifsTransferFile >> header; if (header != "CostHabitat") errors++;
+			ifsTransferFile >> header; if (header != "CostMatrix") errors++;
 			break;
 		} // end of artificial landscape
 		} // end of switch (landtype)
@@ -2401,16 +2394,16 @@ int CheckTransferFile(string indir)
 
 	case 2: { // CRW
 		batchLogOfs << "Checking CRW format file" << endl;
-		bTransferFile >> header; if (header != "IndVar") errors++;
-		bTransferFile >> header; if (header != "SL") errors++;
-		bTransferFile >> header; if (header != "Rho") errors++;
-		bTransferFile >> header; if (header != "StraightenPath") errors++;
-		bTransferFile >> header; if (header != "SMtype") errors++;
-		bTransferFile >> header; if (header != "SMconst") errors++;
+		ifsTransferFile >> header; if (header != "IndVar") errors++;
+		ifsTransferFile >> header; if (header != "SL") errors++;
+		ifsTransferFile >> header; if (header != "Rho") errors++;
+		ifsTransferFile >> header; if (header != "StraightenPath") errors++;
+		ifsTransferFile >> header; if (header != "SMtype") errors++;
+		ifsTransferFile >> header; if (header != "SMconst") errors++;
 		if (gLandType == 0) {
 			for (i = 0; i < gMaxNbHab; i++) {
 				colheader = "MortHab" + to_string(i + 1);
-				bTransferFile >> header; if (header != colheader) morthaberrors++;
+				ifsTransferFile >> header; if (header != colheader) morthaberrors++;
 			}
 		}
 		break;
@@ -2432,7 +2425,7 @@ int CheckTransferFile(string indir)
 	simNb = -98765;
 	prev.simNb = -999;
 	prev.simLines = prev.reqdSimLines = 0;
-	bTransferFile >> simNb;
+	ifsTransferFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
 		BatchError(whichFile, whichLine, 111, "Simulation"); errors++;
@@ -2444,8 +2437,8 @@ int CheckTransferFile(string indir)
 
 		case 0: { // negative exponential dispersal kernel
 			// read and validate columns relating to stage and sex-dependency and to IIV
-			bTransferFile >> inStageDep >> inSexDep >> inKernelType >> inDistMort;
-			bTransferFile >> inIndVar >> inStage >> inSex;
+			ifsTransferFile >> inStageDep >> inSexDep >> inKernelType >> inDistMort;
+			ifsTransferFile >> inIndVar >> inStage >> inSex;
 			current = CheckStageSex(whichFile, whichLine, simNb, prev, inStageDep, inSexDep, inStage, inSex, inIndVar, true, false);
 			if (current.isNewSim) simuls++;
 			errors += current.errors;
@@ -2462,8 +2455,8 @@ int CheckTransferFile(string indir)
 				BatchError(whichFile, whichLine, 1, "DistMort"); errors++;
 			}
 			// read remaining columns of the current record
-			bTransferFile >> meanDistI >> meanDistII >> ProbKernelI;
-			bTransferFile >> mortProb >> slope >> inflPoint;
+			ifsTransferFile >> meanDistI >> meanDistII >> ProbKernelI;
+			ifsTransferFile >> mortProb >> slope >> inflPoint;
 
 			if (inIndVar != 0 && inIndVar != 1) {
 				BatchError(whichFile, whichLine, 1, "IndVar"); errors++;
@@ -2533,9 +2526,9 @@ int CheckTransferFile(string indir)
 		} // end of negative exponential dispersal kernel
 
 		case 1: { // SMS
-			bTransferFile >> inIndVar;
-			bTransferFile >> inPerceptualRange >> inPercRangeMethod >> inDirPersistence;
-			bTransferFile >> inMemSize >> inGoalBias >> inGoalType >> inAlphaDispBias >> inBetaDispBias;
+			ifsTransferFile >> inIndVar;
+			ifsTransferFile >> inPerceptualRange >> inPercRangeMethod >> inDirPersistence;
+			ifsTransferFile >> inMemSize >> inGoalBias >> inGoalType >> inAlphaDispBias >> inBetaDispBias;
 			current = CheckStageSex(whichFile, whichLine, simNb, prev, 0, 0, 0, 0, 0, true, false);
 			if (current.isNewSim) simuls++;
 			errors += current.errors;
@@ -2594,7 +2587,7 @@ int CheckTransferFile(string indir)
 			else {
 				gTraitOptions.at(simNb).usesSMSGoalBias = (inGoalType == 2);
 			}
-			bTransferFile >> inStraightenPath >> inSMType >> inSMConst;
+			ifsTransferFile >> inStraightenPath >> inSMType >> inSMConst;
 			if (inStraightenPath != 0 && inStraightenPath != 1) {
 				BatchError(whichFile, whichLine, 1, "StraightenPath"); errors++;
 			}
@@ -2620,7 +2613,7 @@ int CheckTransferFile(string indir)
 
 			case 0: { // raster map with unique habitat codes
 				for (i = 0; i < gMaxNbHab; i++) {
-					bTransferFile >> morthab;
+					ifsTransferFile >> morthab;
 					if (inSMType == 1)
 					{
 						if (morthab < 0.0 || morthab >= 1.0) {
@@ -2630,7 +2623,7 @@ int CheckTransferFile(string indir)
 					}
 				}
 				for (i = 0; i < gMaxNbHab; i++) {
-					bTransferFile >> costhab;
+					ifsTransferFile >> costhab;
 					if (gNameCostFile == "NULL") {
 						if (costhab < 1) {
 							colheader = "CostHab" + to_string(i + 1);
@@ -2647,8 +2640,8 @@ int CheckTransferFile(string indir)
 			} // end of raster map with habitat quality
 
 			case 9: { // artificial landscape
-				bTransferFile >> morthab >> mortmatrix;
-				bTransferFile >> costhab >> costmatrix;
+				ifsTransferFile >> morthab >> mortmatrix;
+				ifsTransferFile >> costhab >> costmatrix;
 				if (inSMType) { // validate habitat-dependent mortality
 					if (morthab < 0.0 || morthab >= 1.0) {
 						BatchError(whichFile, whichLine, 20, "MortHabitat"); errors++;
@@ -2673,7 +2666,7 @@ int CheckTransferFile(string indir)
 		} // end of SMS
 
 		case 2: { // CRW
-			bTransferFile >> inIndVar >> inStepLength >> inStepCorr >> inStraightenPath >> inSMType >> inSMConst;
+			ifsTransferFile >> inIndVar >> inStepLength >> inStepCorr >> inStraightenPath >> inSMType >> inSMConst;
 			current = CheckStageSex(whichFile, whichLine, simNb, prev, 0, 0, 0, 0, inIndVar, true, false);
 			if (current.isNewSim) simuls++;
 			errors += current.errors;
@@ -2720,7 +2713,7 @@ int CheckTransferFile(string indir)
 					}
 				}
 				for (int i = 0; i < gMaxNbHab; i++) {
-					bTransferFile >> morthab;
+					ifsTransferFile >> morthab;
 					if (inSMType) {
 						if (morthab < 0.0 || morthab >= 1.0) {
 							colheader = "MortHab" + to_string(i + 1);
@@ -2746,8 +2739,8 @@ int CheckTransferFile(string indir)
 		// read next simulation
 		whichLine++;
 		simNb = -98765;
-		bTransferFile >> simNb;
-		if (bTransferFile.eof()) simNb = -98765;
+		ifsTransferFile >> simNb;
+		if (ifsTransferFile.eof()) simNb = -98765;
 	} // end of while loop
 	// check for correct number of lines for previous simulation
 	if (gTransferType == 0 // no. of lines checked for dispersal kernel transfer method only
@@ -2756,7 +2749,7 @@ int CheckTransferFile(string indir)
 		batchLogOfs << gNbLinesStr << current.simNb
 			<< gShouldBeStr << current.reqdSimLines << endl;
 	}
-	if (!bTransferFile.eof()) {
+	if (!ifsTransferFile.eof()) {
 		EOFerror(whichFile);
 		errors++;
 	}
@@ -2779,26 +2772,26 @@ int CheckSettleFile(void)
 	string whichFile = "SettlementFile";
 
 	// Parse header line;
-	bSettlementFile >> header; if (header != "Simulation") nbErrors++;
-	bSettlementFile >> header; if (header != "StageDep") nbErrors++;
-	bSettlementFile >> header; if (header != "SexDep") nbErrors++;
-	bSettlementFile >> header; if (header != "Stage") nbErrors++;
-	bSettlementFile >> header; if (header != "Sex") nbErrors++;
+	ifsSettlementFile >> header; if (header != "Simulation") nbErrors++;
+	ifsSettlementFile >> header; if (header != "StageDep") nbErrors++;
+	ifsSettlementFile >> header; if (header != "SexDep") nbErrors++;
+	ifsSettlementFile >> header; if (header != "Stage") nbErrors++;
+	ifsSettlementFile >> header; if (header != "Sex") nbErrors++;
 	if (gTransferType == 0)
 	{ // dispersal kernel
-		bSettlementFile >> header; if (header != "SettleType") nbErrors++;
-		bSettlementFile >> header; if (header != "FindMate") nbErrors++;
+		ifsSettlementFile >> header; if (header != "SettleType") nbErrors++;
+		ifsSettlementFile >> header; if (header != "FindMate") nbErrors++;
 	}
 	else { // movement method
-		bSettlementFile >> header; if (header != "DensDep") nbErrors++;
-		bSettlementFile >> header; if (header != "IndVar") nbErrors++;
-		bSettlementFile >> header; if (header != "FindMate") nbErrors++;
-		bSettlementFile >> header; if (header != "MinSteps") nbErrors++;
-		bSettlementFile >> header; if (header != "MaxSteps") nbErrors++;
-		bSettlementFile >> header; if (header != "MaxStepsYear") nbErrors++;
-		bSettlementFile >> header; if (header != "S0") nbErrors++;
-		bSettlementFile >> header; if (header != "AlphaS") nbErrors++;
-		bSettlementFile >> header; if (header != "BetaS") nbErrors++;
+		ifsSettlementFile >> header; if (header != "DensDep") nbErrors++;
+		ifsSettlementFile >> header; if (header != "IndVar") nbErrors++;
+		ifsSettlementFile >> header; if (header != "FindMate") nbErrors++;
+		ifsSettlementFile >> header; if (header != "MinSteps") nbErrors++;
+		ifsSettlementFile >> header; if (header != "MaxSteps") nbErrors++;
+		ifsSettlementFile >> header; if (header != "MaxStepsYear") nbErrors++;
+		ifsSettlementFile >> header; if (header != "S0") nbErrors++;
+		ifsSettlementFile >> header; if (header != "AlphaS") nbErrors++;
+		ifsSettlementFile >> header; if (header != "BetaS") nbErrors++;
 	}
 	if (nbErrors > 0) {
 		FormatError(whichFile, nbErrors);
@@ -2811,7 +2804,7 @@ int CheckSettleFile(void)
 	simNb = -98765;
 	prev.simNb = -999;
 	prev.simLines = prev.reqdSimLines = 0;
-	bSettlementFile >> simNb;
+	ifsSettlementFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
 		BatchError(whichFile, whichLine, 111, "Simulation"); nbErrors++;
@@ -2820,7 +2813,7 @@ int CheckSettleFile(void)
 	while (simNb != -98765) {
 		if (gTransferType == 0) { // dispersal kernel
 			// read and validate columns relating to stage and sex-dependency (NB no IIV here)
-			bSettlementFile >> inStageDep >> inSexDep >> inStage >> inSex >> inSettleType >> inFindMate;
+			ifsSettlementFile >> inStageDep >> inSexDep >> inStage >> inSex >> inSettleType >> inFindMate;
 			current = CheckStageSex(whichFile, whichLine, simNb, prev, inStageDep, inSexDep, inStage, inSex, 0, true, false);
 			if (current.isNewSim) nbSims++;
 			nbErrors += current.errors;
@@ -2828,7 +2821,7 @@ int CheckSettleFile(void)
 			if (inSettleType < 0 || inSettleType > 3) {
 				BatchError(whichFile, whichLine, 3, "SettleType"); nbErrors++;
 			}
-			if (!inStageStruct && (inSettleType == 1 || inSettleType == 3)) {
+			if (!gStageStruct && (inSettleType == 1 || inSettleType == 3)) {
 				BatchError(whichFile, whichLine, 0, " "); nbErrors++;
 				batchLogOfs << "Invalid SettleType for a non-stage-structured population" << endl;
 			}
@@ -2840,7 +2833,7 @@ int CheckSettleFile(void)
 		}
 		else { // movement method
 			// read and validate columns relating to stage and sex-dependency (IIV psossible)
-			bSettlementFile >> inStageDep >> inSexDep >> inStage >> inSex >> inDensDep >> inIndVar >> inFindMate;
+			ifsSettlementFile >> inStageDep >> inSexDep >> inStage >> inSex >> inDensDep >> inIndVar >> inFindMate;
 			current = CheckStageSex(whichFile, whichLine, simNb, prev, inStageDep, inSexDep, inStage, inSex, inIndVar, true, false);
 			if (current.isNewSim) nbSims++;
 			nbErrors += current.errors;
@@ -2872,13 +2865,13 @@ int CheckSettleFile(void)
 				gTraitOptions.at(simNb).isSettSexDep = inSexDep == 1;
 			}
 
-			if (inReproType != 0 && gNbSexesDisp > 1) {
+			if (gReproType != 0 && gNbSexesDisp > 1) {
 				if (inFindMate != 0 && inFindMate != 1) {
 					BatchError(whichFile, whichLine, 1, "FindMate"); 
 					nbErrors++;
 				}
 			}
-			bSettlementFile >> inMinSteps >> inMaxSteps >> inMaxStepsYear;
+			ifsSettlementFile >> inMinSteps >> inMaxSteps >> inMaxStepsYear;
 			if (inStage == 0 && inSex == 0) {
 				if (inMinSteps < 0) {
 					BatchError(whichFile, whichLine, 19, "MinSteps"); 
@@ -2893,7 +2886,7 @@ int CheckSettleFile(void)
 				BatchError(whichFile, whichLine, 19, "MaxStepsYear");
 				nbErrors++;
 			}
-			bSettlementFile >> inS0 >> inAlphaS >> inBetaS;
+			ifsSettlementFile >> inS0 >> inAlphaS >> inBetaS;
 
 			if (gTraitOptions.at(simNb).isSettIndVar) {
 					if (inS0 != gEmptyVal) {
@@ -2924,8 +2917,8 @@ int CheckSettleFile(void)
 		// read next simulation
 		whichLine++;
 		simNb = -98765;
-		bSettlementFile >> simNb;
-		if (bSettlementFile.eof()) simNb = -98765;
+		ifsSettlementFile >> simNb;
+		if (ifsSettlementFile.eof()) simNb = -98765;
 	} // end of while loop
 	// check for correct number of lines for previous simulation
 
@@ -2934,7 +2927,7 @@ int CheckSettleFile(void)
 		batchLogOfs << gNbLinesStr << current.simNb
 			<< gShouldBeStr << current.reqdSimLines << endl;
 	}
-	if (!bSettlementFile.eof()) {
+	if (!ifsSettlementFile.eof()) {
 		EOFerror(whichFile);
 		nbErrors++;
 	}
@@ -2960,23 +2953,23 @@ int CheckTraitsFile(string indir)
 	vector <TraitType> allReadTraits;
 
 	// Parse header line
-	bTraitsFile >> header; if (header != "Simulation") nbErrors++;
-	bTraitsFile >> header; if (header != "TraitType") nbErrors++;
-	bTraitsFile >> header; if (header != "ExprSex") nbErrors++;
-	bTraitsFile >> header; if (header != "Positions") nbErrors++;
-	bTraitsFile >> header; if (header != "NbrOfPositions") nbErrors++;
-	bTraitsFile >> header; if (header != "ExpressionType") nbErrors++;
-	bTraitsFile >> header; if (header != "InitialAlleleDist") nbErrors++;
-	bTraitsFile >> header; if (header != "InitialAlleleParams") nbErrors++;
-	bTraitsFile >> header; if (header != "InitialDomDist") nbErrors++;
-	bTraitsFile >> header; if (header != "InitialDomParams") nbErrors++;
-	bTraitsFile >> header; if (header != "IsInherited") nbErrors++;
-	bTraitsFile >> header; if (header != "MutationDistribution") nbErrors++;
-	bTraitsFile >> header; if (header != "MutationParameters") nbErrors++;
-	bTraitsFile >> header; if (header != "DominanceDistribution") nbErrors++;
-	bTraitsFile >> header; if (header != "DominanceParameters") nbErrors++;
-	bTraitsFile >> header; if (header != "MutationRate") nbErrors++;
-	bTraitsFile >> header; if (header != "OutputValues") nbErrors++;
+	ifsTraitsFile >> header; if (header != "Simulation") nbErrors++;
+	ifsTraitsFile >> header; if (header != "TraitType") nbErrors++;
+	ifsTraitsFile >> header; if (header != "ExprSex") nbErrors++;
+	ifsTraitsFile >> header; if (header != "Positions") nbErrors++;
+	ifsTraitsFile >> header; if (header != "NbrOfPositions") nbErrors++;
+	ifsTraitsFile >> header; if (header != "ExpressionType") nbErrors++;
+	ifsTraitsFile >> header; if (header != "InitialAlleleDist") nbErrors++;
+	ifsTraitsFile >> header; if (header != "InitialAlleleParams") nbErrors++;
+	ifsTraitsFile >> header; if (header != "InitialDomDist") nbErrors++;
+	ifsTraitsFile >> header; if (header != "InitialDomParams") nbErrors++;
+	ifsTraitsFile >> header; if (header != "IsInherited") nbErrors++;
+	ifsTraitsFile >> header; if (header != "MutationDistribution") nbErrors++;
+	ifsTraitsFile >> header; if (header != "MutationParameters") nbErrors++;
+	ifsTraitsFile >> header; if (header != "DominanceDistribution") nbErrors++;
+	ifsTraitsFile >> header; if (header != "DominanceParameters") nbErrors++;
+	ifsTraitsFile >> header; if (header != "MutationRate") nbErrors++;
+	ifsTraitsFile >> header; if (header != "OutputValues") nbErrors++;
 
 	if (nbErrors > 0) {
 		FormatError(whichInputFile, nbErrors);
@@ -2991,7 +2984,7 @@ int CheckTraitsFile(string indir)
 	prev.simNb = -999;
 	prev.simLines = prev.reqdSimLines = 0;
 
-	bTraitsFile >> simNb;
+	ifsTraitsFile >> simNb;
 
 	bool stopReading = (simNb == simNbNotRead);
 	// first simulation number must match first one in parameterFile
@@ -3003,7 +2996,7 @@ int CheckTraitsFile(string indir)
 	while (!stopReading) {
 
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
-		bTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions 
+		ifsTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions 
 			>> inExpressionType >> inInitDist >> inInitParams >> inInitDomDist >> inInitDomParams
 			>> inIsInherited >> inMutationDist >> inMutationParams >> inDominanceDist >> inDominanceParams
 			>> inMutationRate >> inIsOutput;
@@ -3472,10 +3465,10 @@ int CheckTraitsFile(string indir)
 
 		// Preview next line
 		nextLineSimNb = simNbNotRead;
-		bTraitsFile >> nextLineSimNb;
+		ifsTraitsFile >> nextLineSimNb;
 		if (nextLineSimNb == simNbNotRead
 			// Exit loop
-			|| bTraitsFile.eof()) {
+			|| ifsTraitsFile.eof()) {
 			stopReading = true;
 			nbErrors += checkTraitSetCoherency(allReadTraits, simNb);
 			gNbTraitFileRows.push_back(nbRowsToRead);
@@ -3493,7 +3486,7 @@ int CheckTraitsFile(string indir)
 		lineNb++; 
 	} // end of while loop
 
-	if (!bTraitsFile.eof()) {
+	if (!ifsTraitsFile.eof()) {
 		EOFerror(whichInputFile);
 		nbErrors++;
 	}
@@ -3870,19 +3863,19 @@ int CheckGeneticsFile(string inputDirectory) {
 	bool isMatch = false;
 
 	// Parse header line;
-	bGeneticsFile >> header; if (header != "Simulation") nbErrors++;
-	bGeneticsFile >> header; if (header != "GenomeSize") nbErrors++;
-	bGeneticsFile >> header; if (header != "ChromosomeEnds") nbErrors++;
-	bGeneticsFile >> header; if (header != "RecombinationRate") nbErrors++;
-	bGeneticsFile >> header; if (header != "OutputGeneValues") nbErrors++;
-	bGeneticsFile >> header; if (header != "OutputFstatsWeirCockerham") nbErrors++;
-	bGeneticsFile >> header; if (header != "OutputFstatsWeirHill") nbErrors++;
-	bGeneticsFile >> header; if (header != "OutputStartGenetics") nbErrors++;
-	bGeneticsFile >> header; if (header != "OutputInterval") nbErrors++;
-	bGeneticsFile >> header; if (header != "PatchList") nbErrors++;
-	bGeneticsFile >> header; if (header != "NbrPatchesToSample") nbErrors++;
-	bGeneticsFile >> header; if (header != "nIndividualsToSample") nbErrors++;
-	bGeneticsFile >> header; if (header != "Stages") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "Simulation") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "GenomeSize") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "ChromosomeEnds") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "RecombinationRate") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "OutputGeneValues") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "OutputFstatsWeirCockerham") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "OutputFstatsWeirHill") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "OutputStartGenetics") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "OutputInterval") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "PatchList") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "NbrPatchesToSample") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "nIndividualsToSample") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "Stages") nbErrors++;
 
 	if (nbErrors > 0) {
 		FormatError(whichFile, nbErrors);
@@ -3892,14 +3885,14 @@ int CheckGeneticsFile(string inputDirectory) {
 	// Parse data lines
 	int whichLine = 1;
 	simNb = -98765;
-	bGeneticsFile >> simNb;
+	ifsGeneticsFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
 		BatchError(whichFile, whichLine, 111, "Simulation"); 
 		nbErrors++;
 	}
 	while (simNb != -98765) {
-		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutWeirCockerham >>
+		ifsGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutWeirCockerham >>
 			inOutWeirHill >> inOutStartGenetics >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
 			>> inNIndsToSample >> inStages;
 
@@ -4091,12 +4084,12 @@ int CheckGeneticsFile(string inputDirectory) {
 		// read next simulation
 		whichLine++;
 		simNb = -98765;
-		bGeneticsFile >> simNb;
-		if (bGeneticsFile.eof()) simNb = -98765;
+		ifsGeneticsFile >> simNb;
+		if (ifsGeneticsFile.eof()) simNb = -98765;
 	} // end of while loop
 	// check for correct number of lines for previous simulation
 
-	if (!bGeneticsFile.eof()) {
+	if (!ifsGeneticsFile.eof()) {
 		EOFerror(whichFile);
 		nbErrors++;
 	}
@@ -4121,30 +4114,30 @@ int CheckInitFile(string indir)
 	string filetype = "InitialisationFile";
 
 	// Parse header line;
-	bInitFile >> header; if (header != "Simulation") errors++;
-	bInitFile >> header; if (header != "SeedType") errors++;
-	bInitFile >> header; if (header != "FreeType") errors++;
-	bInitFile >> header; if (header != "SpType") errors++;
-	bInitFile >> header; if (header != "InitDens") errors++;
-	bInitFile >> header;
+	ifsInitFile >> header; if (header != "Simulation") errors++;
+	ifsInitFile >> header; if (header != "SeedType") errors++;
+	ifsInitFile >> header; if (header != "FreeType") errors++;
+	ifsInitFile >> header; if (header != "SpType") errors++;
+	ifsInitFile >> header; if (header != "InitDens") errors++;
+	ifsInitFile >> header;
 	if (gIsPatchModel) { if (header != "IndsHa") errors++; }
 	else { if (header != "IndsCell") errors++; }
-	bInitFile >> header; if (header != "minX") errors++;
-	bInitFile >> header; if (header != "maxX") errors++;
-	bInitFile >> header; if (header != "minY") errors++;
-	bInitFile >> header; if (header != "maxY") errors++;
-	bInitFile >> header; if (header != "NCells") errors++;
-	bInitFile >> header; if (header != "NSpCells") errors++;
-	bInitFile >> header; if (header != "InitFreezeYear") errors++;
-	bInitFile >> header; if (header != "RestrictRows") errors++;
-	bInitFile >> header; if (header != "RestrictFreq") errors++;
-	bInitFile >> header; if (header != "FinalFreezeYear") errors++;
-	bInitFile >> header; if (header != "InitIndsFile") errors++;
-	if (inStageStruct) {
-		bInitFile >> header; if (header != "InitAge") errors++;
-		for (i = 1; i < inNbStages; i++) {
+	ifsInitFile >> header; if (header != "minX") errors++;
+	ifsInitFile >> header; if (header != "maxX") errors++;
+	ifsInitFile >> header; if (header != "minY") errors++;
+	ifsInitFile >> header; if (header != "maxY") errors++;
+	ifsInitFile >> header; if (header != "NCells") errors++;
+	ifsInitFile >> header; if (header != "NSpCells") errors++;
+	ifsInitFile >> header; if (header != "InitFreezeYear") errors++;
+	ifsInitFile >> header; if (header != "RestrictRows") errors++;
+	ifsInitFile >> header; if (header != "RestrictFreq") errors++;
+	ifsInitFile >> header; if (header != "FinalFreezeYear") errors++;
+	ifsInitFile >> header; if (header != "InitIndsFile") errors++;
+	if (gStageStruct) {
+		ifsInitFile >> header; if (header != "InitAge") errors++;
+		for (i = 1; i < gNbStages; i++) {
 			colheader = "PropStage" + to_string(i);
-			bInitFile >> header; if (header != colheader) propnerrors++;
+			ifsInitFile >> header; if (header != colheader) propnerrors++;
 		}
 	}
 	// report any errors in headers, and if so, terminate validation
@@ -4165,7 +4158,7 @@ int CheckInitFile(string indir)
 	simNb = -98765;
 	prev.simNb = -999;
 	prev.simLines = prev.reqdSimLines = 0;
-	bInitFile >> simNb;
+	ifsInitFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
 		BatchError(filetype, line, 111, "Simulation"); errors++;
@@ -4177,7 +4170,7 @@ int CheckInitFile(string indir)
 		errors += current.errors;
 		prev = current;
 
-		bInitFile >> seedtype >> freetype >> sptype >> initdens >> inds_per_ha;
+		ifsInitFile >> seedtype >> freetype >> sptype >> initdens >> inds_per_ha;
 		if (!gIsPatchModel) indscell = (int)inds_per_ha;
 		if (seedtype < 0 || seedtype > 2) {
 			BatchError(filetype, line, 2, "SeedType"); errors++;
@@ -4220,7 +4213,7 @@ int CheckInitFile(string indir)
 			}
 		}
 
-		bInitFile >> minX >> maxX >> minY >> maxY >> nCells >> nSpCells;
+		ifsInitFile >> minX >> maxX >> minY >> maxY >> nCells >> nSpCells;
 		if (seedtype == 0) {
 			if (maxX < minX) {
 				BatchError(filetype, line, 2, "maxX", "minX"); errors++;
@@ -4245,7 +4238,7 @@ int CheckInitFile(string indir)
 			BatchError(filetype, line, 11, "NSpCells"); errors++;
 		}
 
-		bInitFile >> initFreezeYear >> restrictRows >> restrictFreq >> finalFreezeYear;
+		ifsInitFile >> initFreezeYear >> restrictRows >> restrictFreq >> finalFreezeYear;
 		if (seedtype == 0) {
 			if (initFreezeYear < 0) {
 				BatchError(filetype, line, 19, "InitFreezeYear"); errors++;
@@ -4266,7 +4259,7 @@ int CheckInitFile(string indir)
 			}
 		}
 
-		bInitFile >> filename;
+		ifsInitFile >> filename;
 		if (filename == "NULL") {
 			if (seedtype == 2) {
 				BatchError(filetype, line, 0, " "); errors++;
@@ -4284,17 +4277,17 @@ int CheckInitFile(string indir)
 				if (checkfile) {
 					fname = indir + filename;
 					batchLogOfs << "Checking " << ftype2 << " " << fname << endl;
-					bInitIndsFile.open(fname.c_str());
-					if (bInitIndsFile.is_open()) {
+					ifsInitIndsFile.open(fname.c_str());
+					if (ifsInitIndsFile.is_open()) {
 						err = CheckInitIndsFile();
 						if (err == 0) FileHeadersOK(ftype2); else errors++;
-						bInitIndsFile.close();
+						ifsInitIndsFile.close();
 					}
 					else {
 						OpenError(ftype2, fname); errors++;
 					}
-					if (bInitIndsFile.is_open()) bInitIndsFile.close();
-					bInitIndsFile.clear();
+					if (ifsInitIndsFile.is_open()) ifsInitIndsFile.close();
+					ifsInitIndsFile.clear();
 					indsfiles.push_back(filename);
 				}
 			}
@@ -4305,15 +4298,15 @@ int CheckInitFile(string indir)
 			}
 		}
 
-		if (inStageStruct) {
-			bInitFile >> initAge;
+		if (gStageStruct) {
+			ifsInitFile >> initAge;
 			if (seedtype != 2 && (initAge < 0 || initAge > 2)) {
 				BatchError(filetype, line, 2, "initAge"); errors++;
 			}
 			float propstage;
 			float cumprop = 0.0;
-			for (i = 1; i < inNbStages; i++) {
-				bInitFile >> propstage;
+			for (i = 1; i < gNbStages; i++) {
+				ifsInitFile >> propstage;
 				cumprop += propstage;
 				if (seedtype != 2 && (propstage < 0.0 || propstage > 1.0)) {
 					colheader = "PropStage" + to_string(i);
@@ -4329,8 +4322,8 @@ int CheckInitFile(string indir)
 		// read next simulation
 		line++;
 		simNb = -98765;
-		bInitFile >> simNb;
-		if (bInitFile.eof()) simNb = -98765;
+		ifsInitFile >> simNb;
+		if (ifsInitFile.eof()) simNb = -98765;
 	} // end of while loop
 	// check for correct number of lines for previous simulation
 	if (current.simLines != current.reqdSimLines) {
@@ -4338,7 +4331,7 @@ int CheckInitFile(string indir)
 		batchLogOfs << gNbLinesStr << current.simNb
 			<< gShouldBeStr << current.reqdSimLines << endl;
 	}
-	if (!bInitFile.eof()) {
+	if (!ifsInitFile.eof()) {
 		EOFerror(filetype);
 		errors++;
 	}
@@ -4357,22 +4350,22 @@ int CheckInitIndsFile(void) {
 	string filetype = "InitIndsFile";
 
 	// Parse header line
-	bInitIndsFile >> header; if (header != "Year") errors++;
-	bInitIndsFile >> header; if (header != "Species") errors++;
+	ifsInitIndsFile >> header; if (header != "Year") errors++;
+	ifsInitIndsFile >> header; if (header != "Species") errors++;
 	if (gIsPatchModel) {
-		bInitIndsFile >> header; if (header != "PatchID") errors++;
+		ifsInitIndsFile >> header; if (header != "PatchID") errors++;
 	}
 	else {
-		bInitIndsFile >> header; if (header != "X") errors++;
-		bInitIndsFile >> header; if (header != "Y") errors++;
+		ifsInitIndsFile >> header; if (header != "X") errors++;
+		ifsInitIndsFile >> header; if (header != "Y") errors++;
 	}
-	bInitIndsFile >> header; if (header != "Ninds") errors++;
-	if (inReproType > 0) {
-		bInitIndsFile >> header; if (header != "Sex") errors++;
+	ifsInitIndsFile >> header; if (header != "Ninds") errors++;
+	if (gReproType > 0) {
+		ifsInitIndsFile >> header; if (header != "Sex") errors++;
 	}
-	if (inStageStruct) {
-		bInitIndsFile >> header; if (header != "Age") errors++;
-		bInitIndsFile >> header; if (header != "Stage") errors++;
+	if (gStageStruct) {
+		ifsInitIndsFile >> header; if (header != "Age") errors++;
+		ifsInitIndsFile >> header; if (header != "Stage") errors++;
 	}
 
 	// Report any errors in headers, and if so, terminate validation
@@ -4385,7 +4378,7 @@ int CheckInitIndsFile(void) {
 	int line = 1;
 	string filename, ftype2, fname;
 	year = prevyear = -98765;
-	bInitIndsFile >> year;
+	ifsInitIndsFile >> year;
 	while (year != -98765) {
 		if (year < 0) {
 			BatchError(filetype, line, 19, "Year"); errors++;
@@ -4396,51 +4389,51 @@ int CheckInitIndsFile(void) {
 			}
 		}
 		prevyear = year;
-		bInitIndsFile >> species;
+		ifsInitIndsFile >> species;
 		if (species != 0) {
 			BatchError(filetype, line, 0, " "); errors++;
 			batchLogOfs << "Species must be 0" << endl;
 		}
 		if (gIsPatchModel) {
-			bInitIndsFile >> patchID;
+			ifsInitIndsFile >> patchID;
 			if (patchID < 1) {
 				BatchError(filetype, line, 11, "PatchID"); errors++;
 			}
 		}
 		else {
-			bInitIndsFile >> x >> y;
+			ifsInitIndsFile >> x >> y;
 			if (x < 0 || y < 0) {
 				BatchError(filetype, line, 19, "X and Y"); errors++;
 			}
 		}
-		bInitIndsFile >> ninds;
+		ifsInitIndsFile >> ninds;
 		if (ninds < 1) {
 			BatchError(filetype, line, 11, "Ninds"); errors++;
 		}
-		if (inReproType > 0) {
-			bInitIndsFile >> sex;
+		if (gReproType > 0) {
+			ifsInitIndsFile >> sex;
 			if (sex < 0 || sex > 1) {
 				BatchError(filetype, line, 1, "Sex"); errors++;
 			}
 		}
-		if (inStageStruct) {
-			bInitIndsFile >> age >> stage;
+		if (gStageStruct) {
+			ifsInitIndsFile >> age >> stage;
 			if (age < 1) {
 				BatchError(filetype, line, 11, "Age"); errors++;
 			}
 			if (stage < 1) {
 				BatchError(filetype, line, 11, "Stage"); errors++;
 			}
-			if (stage >= inNbStages) {
+			if (stage >= gNbStages) {
 				BatchError(filetype, line, 4, "Stage", "no. of stages"); errors++;
 			}
 		}
 		line++;
 		year = -98765;
-		bInitIndsFile >> year;
-		if (bInitIndsFile.eof()) year = -98765;
+		ifsInitIndsFile >> year;
+		if (ifsInitIndsFile.eof()) year = -98765;
 	} // end of while loop
-	if (!bInitIndsFile.eof()) {
+	if (!ifsInitIndsFile.eof()) {
 		EOFerror(filetype);
 		errors++;
 	}
@@ -4485,7 +4478,7 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, simCheck
 	current.simNb = simNb;
 
 	// validate inStageDep
-	if (inStageStruct) {
+	if (gStageStruct) {
 		if (isStageDep != 0 && isStageDep != 1) {
 			BatchError(whichInputFile, whichLine, 1, "StageDep"); current.errors++;
 			isStageDep = 1; // to calculate required number of lines
@@ -4514,7 +4507,7 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, simCheck
 	}
 	if (current.isNewSim) { // set required number of lines
 		if (isStageDep) {
-			current.reqdSimLines = inNbStages;
+			current.reqdSimLines = gNbStages;
 			if (isSexDep) current.reqdSimLines *= gNbSexesDisp;
 		}
 		else {
@@ -4662,11 +4655,11 @@ void BatchError(string filename, int line, int option, string fieldname)
 		break;
 	case 444:
 		batchLogOfs << "No. of " << fieldname << " columns must be one fewer than no. of stages, i.e. "
-			<< inNbStages - 1 << ", and be sequentially numbered starting from 1";
+			<< gNbStages - 1 << ", and be sequentially numbered starting from 1";
 		break;
 	case 555:
 		batchLogOfs << "No. of " << fieldname << " columns must equal no. of stages, i.e. "
-			<< inNbStages << ", and be sequentially numbered starting from 0";
+			<< gNbStages << ", and be sequentially numbered starting from 0";
 		break;
 	case 666:
 		batchLogOfs << fieldname << " must be a unique positive integer";
@@ -4782,7 +4775,7 @@ int ReadLandFile(Landscape* pLandscape)
 
 	if (gLandType == 9) { //artificial landscape
 		ppLand.rasterType = 9;
-		landfile >> ppLand.landNum >> ppGenLand.fractal >> ppGenLand.continuous
+		ifsLandFile >> ppLand.landNum >> ppGenLand.fractal >> ppGenLand.continuous
 			>> ppLand.dimX >> ppLand.dimY >> ppGenLand.minPct >> ppGenLand.maxPct
 			>> ppGenLand.propSuit >> ppGenLand.hurst;
 		ppLand.maxX = ppLand.dimX - 1; ppLand.maxY = ppLand.dimY - 1;
@@ -4810,8 +4803,8 @@ int ReadLandFile(Landscape* pLandscape)
 	}
 	else { // imported raster map
 		string inNbHab;
-		landfile >> ppLand.landNum >> inNbHab >> name_landscape >> name_patch;
-		landfile >> gNameCostFile >> name_dynland >> name_sp_dist;
+		ifsLandFile >> ppLand.landNum >> inNbHab >> name_landscape >> name_patch;
+		ifsLandFile >> gNameCostFile >> name_dynland >> name_sp_dist;
 		if (gLandType == 2) 
 			ppLand.nHab = 1; // habitat quality landscape has one habitat class
 	}
@@ -4832,24 +4825,24 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	landParams ppLand = pLandscape->getLandParams();
 	string fname = paramsSim->getDir(1) + name_dynland;
 
-	dynlandfile.open(fname.c_str());
-	if (dynlandfile.is_open()) {
+	ifsDynLandFile.open(fname.c_str());
+	if (ifsDynLandFile.is_open()) {
 		string header;
 		int nheaders = 5;
 		for (int i = 0; i < nheaders; i++) 
-			dynlandfile >> header;
+			ifsDynLandFile >> header;
 	}
 	else {
-		dynlandfile.clear();
+		ifsDynLandFile.clear();
 		return 72727;
 	}
 
 	// read data lines
 	change = -98765;
-	dynlandfile >> change; // first change number
+	ifsDynLandFile >> change; // first change number
 	while (change != -98765) {
 		chg.chgnum = change;
-		dynlandfile >> chg.chgyear >> landchangefile >> patchchangefile >> costchangefile;
+		ifsDynLandFile >> chg.chgyear >> landchangefile >> patchchangefile >> costchangefile;
 		chg.habfile = paramsSim->getDir(1) + landchangefile;
 		chg.pchfile = paramsSim->getDir(1) + patchchangefile;
 		if (costchangefile == "NULL") 
@@ -4860,14 +4853,14 @@ int ReadDynLandFile(Landscape* pLandscape) {
 		pLandscape->addLandChange(chg);
 		// read first field on next line
 		change = -98765;
-		dynlandfile >> change;
-		if (dynlandfile.eof()) {
+		ifsDynLandFile >> change;
+		if (ifsDynLandFile.eof()) {
 			change = -98765;
 		}
 	}
 
-	dynlandfile.close();
-	dynlandfile.clear();
+	ifsDynLandFile.close();
+	ifsDynLandFile.clear();
 
 	// read landscape change maps
 	if (ppLand.patchModel) {
@@ -5304,7 +5297,7 @@ int ReadParameters(Landscape* pLandscape)
 	demogrParams dem = pSpecies->getDemogrParams();
 	simParams sim = paramsSim->getSim();
 
-	if (!parameters.is_open()) {
+	if (!ifsParamFile.is_open()) {
 		cout << endl << "ReadParameters(): ERROR - ParameterFile is not open" << endl;
 		return 4086534;
 	}
@@ -5315,30 +5308,30 @@ int ReadParameters(Landscape* pLandscape)
 	string inAbsorbing, inShifting, inEnvStoch, inEnvStochType, inLocalExt,
 		inSaveMaps, inHeatMaps, inDrawLoaded, inFixRepSeed;
 
-	parameters >> sim.simulation >> sim.reps >> sim.years;
-	parameters >> inAbsorbing;
+	ifsParamFile >> sim.simulation >> sim.reps >> sim.years;
+	ifsParamFile >> inAbsorbing;
 	sim.absorbing = (inAbsorbing == "1");
 
 	// Environmental gradient
-	parameters >> gradType;
-	parameters >> grad_inc >> opt_y >> f >> optEXT >> inShifting >> shift_rate;
+	ifsParamFile >> gradType;
+	ifsParamFile >> grad_inc >> opt_y >> f >> optEXT >> inShifting >> shift_rate;
 
 	shifting = (inShifting == "1" && gradType != 0);
-	parameters >> shift_begin >> shift_stop;
+	ifsParamFile >> shift_begin >> shift_stop;
 	paramsGrad->setGradient(gradType, grad_inc, opt_y, f, optEXT);
 	if (shifting) paramsGrad->setShifting(shift_rate, shift_begin, shift_stop);
 	else paramsGrad->noShifting();
 
 	// Environmental Stochasticity
-	parameters >> inEnvStoch;
+	ifsParamFile >> inEnvStoch;
 	env.stoch = inEnvStoch == "1" || inEnvStoch == "2";
 	env.local = inEnvStoch == "2";
 	if (paramsLand.patchModel && env.local) errorCode = 101;
 
-	parameters >> inEnvStochType;
+	ifsParamFile >> inEnvStochType;
 	env.inK = (inEnvStochType == "1");
 	float minR, maxR, minK, maxK;
-	parameters >> env.ac >> env.std >> minR >> maxR >> minK >> maxK;
+	ifsParamFile >> env.ac >> env.std >> minR >> maxR >> minK >> maxK;
 	if (env.inK) {
 		float minKK, maxKK;
 		minKK = minK * (((float)paramsLand.resol * (float)paramsLand.resol) / 10000.0f);
@@ -5348,15 +5341,15 @@ int ReadParameters(Landscape* pLandscape)
 	else pSpecies->setMinMax(minR, maxR);
 
 	// Local extinction
-	parameters >> inLocalExt;
+	ifsParamFile >> inLocalExt;
 	env.localExt = (inLocalExt == "1");
 	if (paramsLand.patchModel && env.localExt) errorCode = 102;
 
-	parameters >> env.locExtProb;
+	ifsParamFile >> env.locExtProb;
 	paramsStoch->setStoch(env);
 
 	// Demographic parameters
-	parameters >> dem.propMales >> dem.harem >> dem.bc >> dem.lambda;
+	ifsParamFile >> dem.propMales >> dem.harem >> dem.bc >> dem.lambda;
 	pSpecies->setDemogr(dem);
 
 	// Artificial landscape
@@ -5368,7 +5361,7 @@ int ReadParameters(Landscape* pLandscape)
 		int nhab = genland.continuous ? 1 : 2;
 
 		pSpecies->createHabK(nhab);
-		parameters >> k;
+		ifsParamFile >> k;
 		k *= (((float)paramsLand.resol * (float)paramsLand.resol)) / 10000.0f;
 
 		if (genland.continuous) {
@@ -5382,14 +5375,14 @@ int ReadParameters(Landscape* pLandscape)
 	else {
 		pSpecies->createHabK(paramsLand.nHabMax);
 		for (int i = 0; i < paramsLand.nHabMax; i++) {
-			parameters >> k;
+			ifsParamFile >> k;
 			k *= ((float)paramsLand.resol * (float)paramsLand.resol) / 10000.0f;
 			pSpecies->setHabK(i, k);
 		}
 	}
 
 	// Output parameters
-	parameters	>> sim.outStartPop	>> sim.outStartInd
+	ifsParamFile	>> sim.outStartPop	>> sim.outStartInd
 				>> sim.outStartTraitCell >> sim.outStartTraitRow 
 				>> sim.outStartConn >> sim.outIntRange 
 				>> sim.outIntOcc >> sim.outIntPop 
@@ -5413,14 +5406,14 @@ int ReadParameters(Landscape* pLandscape)
 	}
 
 	// Output maps
-	parameters >> inSaveMaps >> sim.mapInt;
+	ifsParamFile >> inSaveMaps >> sim.mapInt;
 	sim.saveMaps = inSaveMaps == "1";
-	parameters >> inHeatMaps;
+	ifsParamFile >> inHeatMaps;
 	sim.saveVisits = inHeatMaps == "1";
-	parameters >> inDrawLoaded;
+	ifsParamFile >> inDrawLoaded;
 	sim.drawLoaded = inDrawLoaded == "1";
 
-	parameters >> inFixRepSeed;
+	ifsParamFile >> inFixRepSeed;
 	sim.fixReplicateSeed = inFixRepSeed == "1";
 
 	paramsSim->setSim(sim);
@@ -5435,36 +5428,39 @@ int ReadStageStructure()
 	stageParams sstruct = pSpecies->getStageParams();
 	string Inputs = paramsSim->getDir(1);
 
-	ssfile >> simulation;
-	ssfile >> postDestructn >> sstruct.probRep >> sstruct.repInterval >> sstruct.maxAge;
+	ifsStageStructFile >> simulation;
+	ifsStageStructFile >> postDestructn >> sstruct.probRep >> sstruct.repInterval >> sstruct.maxAge;
 	if (postDestructn == 1) sstruct.disperseOnLoss = true;
 	else sstruct.disperseOnLoss = false;
 
-	ssfile >> name;
+	ifsStageStructFile >> name;
 	// 'name' is TransMatrixFile
-	tmfile.open((Inputs + name).c_str());
-	ReadTransitionMatrix(sstruct.nStages, sexesDem, 0, 0);
-	tmfile.close(); tmfile.clear();
-	ssfile >> sstruct.survival;
+	ifsTransMatrix.open((Inputs + name).c_str());
+	ReadTransitionMatrix(sstruct.nStages, gNbSexesDem, 0, 0);
+	ifsTransMatrix.close(); ifsTransMatrix.clear();
+	ifsStageStructFile >> sstruct.survival;
 
 	float devCoeff, survCoeff;
-	ssfile >> sstruct.fecDens >> sstruct.fecStageDens >> name; // 'name' is FecStageWtsFile
+	ifsStageStructFile >> sstruct.fecDens >> sstruct.fecStageDens >> name; // 'name' is FecStageWtsFile
 	if (name != "NULL") {
-		fdfile.open((Inputs + name).c_str());
+		ifsFecDens.open((Inputs + name).c_str());
 		ReadStageWeights(1);
-		fdfile.close(); fdfile.clear();
+		ifsFecDens.close(); 
+		ifsFecDens.clear();
 	}
-	ssfile >> sstruct.devDens >> devCoeff >> sstruct.devStageDens >> name; // 'name' is DevStageWtsFile
+	ifsStageStructFile >> sstruct.devDens >> devCoeff >> sstruct.devStageDens >> name; // 'name' is DevStageWtsFile
 	if (name != "NULL") {
-		ddfile.open((Inputs + name).c_str());
+		ifsDevDens.open((Inputs + name).c_str());
 		ReadStageWeights(2);
-		ddfile.close(); ddfile.clear();
+		ifsDevDens.close(); 
+		ifsDevDens.clear();
 	}
-	ssfile >> sstruct.survDens >> survCoeff >> sstruct.survStageDens >> name; // 'name' is SurvStageWtsFile
+	ifsStageStructFile >> sstruct.survDens >> survCoeff >> sstruct.survStageDens >> name; // 'name' is SurvStageWtsFile
 	if (name != "NULL") {
-		sdfile.open((Inputs + name).c_str());
+		ifsSurvDens.open((Inputs + name).c_str());
 		ReadStageWeights(3);
-		sdfile.close(); sdfile.clear();
+		ifsSurvDens.close(); 
+		ifsSurvDens.clear();
 	}
 
 	pSpecies->setStage(sstruct);
@@ -5488,7 +5484,7 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 	// read header line
 	for (int i = 0; i < (nstages * nsexesDem) + 2; i++)
 	{
-		tmfile >> header;
+		ifsTransMatrix >> header;
 	}
 
 	if (matrix != NULL) {
@@ -5506,12 +5502,12 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 
 		for (int i = 0; i < nstages; i++)
 		{ // i = row; j = coloumn
-			tmfile >> header;
+			ifsTransMatrix >> header;
 			for (int j = 0; j < nstages; j++)
 			{
-				tmfile >> matrix[j][i];
+				ifsTransMatrix >> matrix[j][i];
 			}
-			tmfile >> minAge; pSpecies->setMinAge(i, 0, minAge);
+			ifsTransMatrix >> minAge; pSpecies->setMinAge(i, 0, minAge);
 		}
 
 		for (int j = 1; j < nstages; j++)
@@ -5539,16 +5535,16 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 
 		for (int i = 0; i < nstages * 2 - 1; i++)
 		{ // i = row; j = coloumn
-			tmfile >> header;
+			ifsTransMatrix >> header;
 			for (int j = 0; j < nstages * 2; j++) 
-				tmfile >> matrix[j][i];
+				ifsTransMatrix >> matrix[j][i];
 			if (i == 0) {
-				tmfile >> minAge; 
+				ifsTransMatrix >> minAge; 
 				pSpecies->setMinAge(i, 0, minAge); 
 				pSpecies->setMinAge(i, 1, minAge);
 			}
 			else {
-				tmfile >> minAge;
+				ifsTransMatrix >> minAge;
 				if (i % 2) 
 					pSpecies->setMinAge((i + 1) / 2, 1, minAge);	// odd lines  - males
 				else
@@ -5642,12 +5638,12 @@ int ReadStageWeights(int option)
 	case 1: { // fecundity
 		// create stage weights matrix
 		pSpecies->createDDwtFec(n);
-		for (i = 0; i < n + 1; i++) fdfile >> header;
+		for (i = 0; i < n + 1; i++) ifsFecDens >> header;
 		// read coefficients
 		for (i = 0; i < n; i++) {
-			fdfile >> header;
+			ifsFecDens >> header;
 			for (j = 0; j < n; j++) {
-				fdfile >> f; pSpecies->setDDwtFec(j, i, f);
+				ifsFecDens >> f; pSpecies->setDDwtFec(j, i, f);
 			}
 		}
 		break;
@@ -5656,12 +5652,12 @@ int ReadStageWeights(int option)
 	case 2: { // development
 		//create stage weights matrix
 		pSpecies->createDDwtDev(n);
-		for (i = 0; i < n + 1; i++) ddfile >> header;
+		for (i = 0; i < n + 1; i++) ifsDevDens >> header;
 		//read coefficients
 		for (i = 0; i < n; i++) {
-			ddfile >> header;
+			ifsDevDens >> header;
 			for (j = 0; j < n; j++) {
-				ddfile >> f; pSpecies->setDDwtDev(j, i, f);
+				ifsDevDens >> f; pSpecies->setDDwtDev(j, i, f);
 			}
 		}
 		break;
@@ -5671,12 +5667,12 @@ int ReadStageWeights(int option)
 		//create stage weights matrix
 		pSpecies->createDDwtSurv(n);
 		for (i = 0; i < n + 1; i++) 
-			sdfile >> header;
+			ifsSurvDens >> header;
 		//read coefficients
 		for (i = 0; i < n; i++) {
-			sdfile >> header;
+			ifsSurvDens >> header;
 			for (j = 0; j < n; j++) {
-				sdfile >> f; pSpecies->setDDwtSurv(j, i, f);
+				ifsSurvDens >> f; pSpecies->setDDwtSurv(j, i, f);
 			}
 		}
 		break;
@@ -5706,7 +5702,7 @@ int ReadEmigration()
 
 	for (int line = 0; line < Nlines; line++) {
 
-		emigFile >> simulationNb >> inDensDep >> inFullKernel 
+		ifsEmigrationFile >> simulationNb >> inDensDep >> inFullKernel 
 				 >> inStgDep >> inSexDep >> inIndVar >> inEmigstage;
 
 		if (isFirstLine) {
@@ -5736,7 +5732,7 @@ int ReadEmigration()
 		if (simulationNb != simNbFirstLine) { // serious problem
 			errorCode = 300;
 		}
-		emigFile >> inStage >> inSex;
+		ifsEmigrationFile >> inStage >> inSex;
 
 		// ERROR MESSAGES SHOULD NEVER BE ACTIVATED ---------------------------------
 		if (dem.repType == 0 && emig.sexDep) {
@@ -5747,7 +5743,7 @@ int ReadEmigration()
 		}
 		//---------------------------------------------------------------------------
 
-		emigFile >> inEp >> inD0 >> inAlpha >> inBeta;
+		ifsEmigrationFile >> inEp >> inD0 >> inAlpha >> inBeta;
 
 		if (emig.sexDep) {
 			if (emig.stgDep) {
@@ -5861,7 +5857,7 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 
 	for (int line = 0; line < Nlines; line++) {
 
-		transFile >> simNb >> inStageDep >> inSexDep >> inKernelType >> inDistMort >> inIndVar;
+		ifsTransferFile >> simNb >> inStageDep >> inSexDep >> inKernelType >> inDistMort >> inIndVar;
 		if (isFirstLine) {
 			simNbFirstLine = simNb;
 			trfr.twinKern = (inKernelType == 1);
@@ -5882,7 +5878,7 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 		if (simNb != simNbFirstLine) { // serious problem
 			errorCode = 400;
 		}
-		transFile >> inStage >> inSex;
+		ifsTransferFile >> inStage >> inSex;
 
 		if (dem.repType == 0) {
 			if (sexKernels == 1 || sexKernels == 3) 
@@ -5896,17 +5892,17 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 		switch (sexKernels) {
 
 		case 0: // no sex / stage dependence
-			transFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
+			ifsTransferFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
 			pSpecies->setSpKernTraits(0, 0, kernParams, paramsLand.resol);
 			break;
 
 		case 1: // sex-dependent
 			if (trfr.twinKern)
 			{
-				transFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
+				ifsTransferFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
 			}
 			else {
-				transFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
+				ifsTransferFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
 				kernParams.probKern1 = 1.0;
 			}
 			pSpecies->setSpKernTraits(0, inSex, kernParams, paramsLand.resol);
@@ -5916,10 +5912,10 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 		case 2: // stage-dependent
 			if (trfr.twinKern)
 			{
-				transFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
+				ifsTransferFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
 			}
 			else {
-				transFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
+				ifsTransferFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
 				kernParams.probKern1 = 1.0;
 			}
 			pSpecies->setSpKernTraits(inStage, 0, kernParams, paramsLand.resol);
@@ -5928,10 +5924,10 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 		case 3: // sex- & stage-dependent
 			if (trfr.twinKern)
 			{
-				transFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
+				ifsTransferFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
 			}
 			else {
-				transFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
+				ifsTransferFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
 				kernParams.probKern1 = 1.0;
 			}
 			pSpecies->setSpKernTraits(inStage, inSex, kernParams, paramsLand.resol);
@@ -5941,11 +5937,11 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 		// mortality
 		if (inStage == 0 && inSex == 0) {
 			trfrMortParams mort;
-			transFile >> mort.fixedMort >> mort.mortAlpha >> mort.mortBeta;
+			ifsTransferFile >> mort.fixedMort >> mort.mortAlpha >> mort.mortBeta;
 			pSpecies->setMortParams(mort);
 		}
 		else for (int i = 0; i < 3; i++) 
-			transFile >> flushMort;
+			ifsTransferFile >> flushMort;
 
 		if (isFirstLine) pSpecies->setTrfrRules(trfr);
 		isFirstLine = false;
@@ -5960,7 +5956,7 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 	int inCostHab, flushCostHab, inCostMatrix;
 	trfrMovtParams move;
 
-	transFile >> simNb >> inIndVar >> move.pr >> move.prMethod >> move.dp
+	ifsTransferFile >> simNb >> inIndVar >> move.pr >> move.prMethod >> move.dp
 		>> move.memSize >> move.gb >> move.goalType >> inAlphaDB >> inBetaDB
 		>> inStraightenPath >> inSMType >> move.stepMort;
 
@@ -5978,13 +5974,13 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 			{ // habitat-dependent step mortality
 				for (int i = 0; i < paramsLand.nHabMax; i++)
 				{
-					transFile >> inHabMort;
+					ifsTransferFile >> inHabMort;
 					pSpecies->setHabMort(i, inHabMort);
 				}
 			}
 			else { // constant step mortality
 				for (int i = 0; i < paramsLand.nHabMax; i++) 
-					transFile >> flushHabMort;
+					ifsTransferFile >> flushHabMort;
 			}
 		}
 	}
@@ -5992,12 +5988,12 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 		if (trfr.habMort)
 		{ // habitat-dependent step mortality
 			// values are for habitat (hab=1) then for matrix (hab=0)
-			transFile >> inMortHabitat >> inMortMatrix;
+			ifsTransferFile >> inMortHabitat >> inMortMatrix;
 			pSpecies->setHabMort(1, inMortHabitat);
 			pSpecies->setHabMort(0, inMortMatrix);
 		}
 		else { // constant step mortality
-			transFile >> flushHabMort >> flushHabMort;
+			ifsTransferFile >> flushHabMort >> flushHabMort;
 		}
 	}
 	trfr.costMap = (gNameCostFile != "NULL") ? true : false;
@@ -6007,11 +6003,11 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 			if (trfr.costMap)
 			{
 				for (int i = 0; i < paramsLand.nHabMax; i++) 
-					transFile >> flushCostHab;
+					ifsTransferFile >> flushCostHab;
 			}
 			else { // not costMap
 				for (int i = 0; i < paramsLand.nHabMax; i++) {
-					transFile >> inCostHab; 
+					ifsTransferFile >> inCostHab; 
 					pSpecies->setHabCost(i, inCostHab);
 				}
 			}
@@ -6020,11 +6016,11 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 	else { // artificial landscape
 		if (trfr.costMap) // should not occur 
 		{
-			transFile >> flushCostHab >> flushCostHab;
+			ifsTransferFile >> flushCostHab >> flushCostHab;
 		}
 		else { // not costMap
 			// costs are for habitat (hab=1) then for matrix (hab=0)
-			transFile >> inCostHab >> inCostMatrix;
+			ifsTransferFile >> inCostHab >> inCostMatrix;
 			pSpecies->setHabCost(1, inCostHab);
 			pSpecies->setHabCost(0, inCostMatrix);
 		}
@@ -6040,12 +6036,12 @@ int ReadTransferCRW(transferRules trfr, const landParams& paramsLand) {
 
 	int error = 0;
 	trfrMovtParams move;
-	transFile >> simNb >> inIndVar;
+	ifsTransferFile >> simNb >> inIndVar;
 	if (inIndVar == 0) trfr.indVar = false;
 	else trfr.indVar = true;
 
-	transFile >> move.stepLength >> move.rho;
-	transFile >> inStraightenPath >> inSMconst >> move.stepMort;
+	ifsTransferFile >> move.stepLength >> move.rho;
+	ifsTransferFile >> inStraightenPath >> inSMconst >> move.stepMort;
 
 	if (inSMconst == 0) trfr.habMort = false;
 	else trfr.habMort = true;
@@ -6061,13 +6057,13 @@ int ReadTransferCRW(transferRules trfr, const landParams& paramsLand) {
 		if (trfr.habMort)
 		{ // habitat-dependent step mortality
 			for (int i = 0; i < paramsLand.nHabMax; i++) {
-				transFile >> inHabMort;
+				ifsTransferFile >> inHabMort;
 				pSpecies->setHabMort(i, inHabMort);
 			}
 		}
 		else { // constant step mortality
 			for (int i = 0; i < paramsLand.nHabMax; i++) 
-				transFile >> flushHabMort;
+				ifsTransferFile >> flushHabMort;
 		}
 	}
 	pSpecies->setTrfrRules(trfr);
@@ -6099,13 +6095,13 @@ int ReadSettlement()
 
 	for (int line = 0; line < Nlines; line++) {
 
-		settFile >> simNb >> inStageDep >> inSexDep >> inStage >> inSex;
+		ifsSettlementFile >> simNb >> inStageDep >> inSexDep >> inStage >> inSex;
 		if (!trfr.usesMovtProc)
 		{ // dispersal kernel
-			settFile >> inSettleType >> inFindMate;
+			ifsSettlementFile >> inSettleType >> inFindMate;
 		}
 		else {
-			settFile >> inDensDep >> inIndVar >> inFindMate;
+			ifsSettlementFile >> inDensDep >> inIndVar >> inFindMate;
 		}
 		mustFindMate = (inFindMate == 1);
 
@@ -6138,8 +6134,8 @@ int ReadSettlement()
 			if (!dem.stageStruct && sett.stgDep) 
 				errorCode = 509;
 
-			settFile >> ssteps.minSteps >> ssteps.maxSteps >> ssteps.maxStepsYr;
-			settFile >> settleDD.s0 >> settleDD.alpha >> settleDD.beta;
+			ifsSettlementFile >> ssteps.minSteps >> ssteps.maxSteps >> ssteps.maxStepsYr;
+			ifsSettlementFile >> settleDD.s0 >> settleDD.alpha >> settleDD.beta;
 
 			int stageToSet = sett.stgDep ? inStage : 0;
 			int sexToSet = sett.sexDep ? inSex : 0;
@@ -6288,17 +6284,17 @@ int ReadInitialisation(Landscape* pLandscape)
 	float totalProps;
 	int errorCode = 0;
 
-	initFileIfs >> simNb >> init.seedType >> init.freeType >> init.spDistType;
+	ifsInitFile >> simNb >> init.seedType >> init.freeType >> init.spDistType;
 
 	if (init.seedType == 1 && !paramsLand.spDist) 
 		errorCode = 601;
 
 	if (paramsLand.patchModel) 
-		initFileIfs >> init.initDens >> init.indsHa;
+		ifsInitFile >> init.initDens >> init.indsHa;
 	else 
-		initFileIfs >> init.initDens >> init.indsCell;
+		ifsInitFile >> init.initDens >> init.indsCell;
 
-	initFileIfs >> init.minSeedX >> init.maxSeedX 
+	ifsInitFile >> init.minSeedX >> init.maxSeedX 
 		>> init.minSeedY >> init.maxSeedY
 		>> init.nSeedPatches >> init.nSpDistPatches
 		>> init.initFrzYr >> init.restrictRows
@@ -6309,10 +6305,10 @@ int ReadInitialisation(Landscape* pLandscape)
 
 	if (dem.stageStruct) {
 		float propStage;
-		initFileIfs >> init.initAge;
+		ifsInitFile >> init.initAge;
 		totalProps = 0.0;
 		for (int stg = 1; stg < sstruct.nStages; stg++) {
-			initFileIfs >> propStage;
+			ifsInitFile >> propStage;
 			if(init.seedType!=2){
 				totalProps += propStage;
 				paramsInit->setProp(stg, propStage);
@@ -6372,21 +6368,21 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 	initParams init = paramsInit->getInit();
 
 	if (option == 0) { // open file and read header line
-		initIndsFile.open(indsfile.c_str());
+		ifsInitIndsFile.open(indsfile.c_str());
 		string header;
 		int nheaders = 3;
 		if (paramsLand.patchModel) nheaders++;
 		else nheaders += 2;
 		if (dem.repType > 0) nheaders++;
 		if (dem.stageStruct) nheaders += 2;
-		for (int i = 0; i < nheaders; i++) initIndsFile >> header;
+		for (int i = 0; i < nheaders; i++) ifsInitIndsFile >> header;
 		paramsInit->resetInitInds();
 		//	return 0;
 	}
 
 	if (option == 9) { // close file
-		if (initIndsFile.is_open()) {
-			initIndsFile.close(); initIndsFile.clear();
+		if (ifsInitIndsFile.is_open()) {
+			ifsInitIndsFile.close(); ifsInitIndsFile.clear();
 		}
 		return 0;
 	}
@@ -6397,29 +6393,29 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 	int totinds = 0;
 
 	iind.year = gEmptyVal;
-	initIndsFile >> iind.year;
+	ifsInitIndsFile >> iind.year;
 	bool must_stop = (iind.year == gEmptyVal);
 
 	while (!must_stop) {
-		initIndsFile >> iind.species;
+		ifsInitIndsFile >> iind.species;
 
 		if (paramsLand.patchModel) {
-			initIndsFile >> iind.patchID;
+			ifsInitIndsFile >> iind.patchID;
 			iind.x = iind.y = 0;
 		}
 		else {
-			initIndsFile >> iind.x >> iind.y; 
+			ifsInitIndsFile >> iind.x >> iind.y; 
 			iind.patchID = 0;
 		}
-		initIndsFile >> ninds;
+		ifsInitIndsFile >> ninds;
 
 		if (dem.repType > 0) 
-			initIndsFile >> iind.sex;
+			ifsInitIndsFile >> iind.sex;
 		else 
 			iind.sex = 0;
 
 		if (dem.stageStruct) {
-			initIndsFile >> iind.age >> iind.stage;
+			ifsInitIndsFile >> iind.age >> iind.stage;
 		}
 		else {
 			iind.age = iind.stage = 0;
@@ -6430,13 +6426,13 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 		}
 
 		iind.year = gEmptyVal;
-		initIndsFile >> iind.year;
-		if (iind.year == gEmptyVal || initIndsFile.eof())
+		ifsInitIndsFile >> iind.year;
+		if (iind.year == gEmptyVal || ifsInitIndsFile.eof())
 			must_stop = true;
 	} // end of while loop
 
-	if (initIndsFile.is_open()) initIndsFile.close();
-	initIndsFile.clear();
+	if (ifsInitIndsFile.is_open()) ifsInitIndsFile.close();
+	ifsInitIndsFile.clear();
 
 	return totinds;
 }
@@ -6452,12 +6448,12 @@ void RunBatch(int nSimuls, int nLandscapes)
 	Landscape* pLandscape = nullptr;  		// pointer to landscape
 
 	// Open landscape batch file and read header record
-	landfile.open(landFile);
-	if (!landfile.is_open()) {
+	ifsLandFile.open(landFile);
+	if (!ifsLandFile.is_open()) {
 		cout << endl << "Error opening landFile - aborting batch run" << endl;
 		return;
 	}
-	flushHeaders(landfile);
+	flushHeaders(ifsLandFile);
 
 	for (int j = 0; j < nLandscapes; j++) {
 		// create new landscape
@@ -6470,8 +6466,8 @@ void RunBatch(int nSimuls, int nLandscapes)
 			string msg = "Error code " + to_string(-land_nr)
 				+ " returned from reading LandFile - aborting batch run";
 			cout << endl << msg << endl;
-			landfile.close();  
-			landfile.clear();
+			ifsLandFile.close();  
+			ifsLandFile.clear();
 			return;
 		}
 		landParams paramsLand = pLandscape->getLandParams();
@@ -6525,39 +6521,39 @@ void RunBatch(int nSimuls, int nLandscapes)
 		if (landOK) {
 
 			// Open all other batch files and read header records
-			parameters.open(parameterFile);
-			if (!parameters.is_open()) {
+			ifsParamFile.open(parameterFile);
+			if (!ifsParamFile.is_open()) {
 				cout << endl << "Error opening ParameterFile - aborting batch run" << endl;
 				return;
 			}
-			flushHeaders(parameters);
+			flushHeaders(ifsParamFile);
 
-			if (inStageStruct) {
-				ssfile.open(stageStructFile);
-				flushHeaders(ssfile);
+			if (gStageStruct) {
+				ifsStageStructFile.open(stageStructFile);
+				flushHeaders(ifsStageStructFile);
 			}
 
-			emigFile.open(emigrationFile);
-			flushHeaders(emigFile);
+			ifsEmigrationFile.open(emigrationFile);
+			flushHeaders(ifsEmigrationFile);
 
-			transFile.open(transferFile);
-			flushHeaders(transFile);
+			ifsTransferFile.open(transferFile);
+			flushHeaders(ifsTransferFile);
 			if (pSpecies->getTransferRules().usesMovtProc) {
 				if (paramsLand.generated)
 					pSpecies->createHabCostMort(paramsLand.nHab);
 				else pSpecies->createHabCostMort(paramsLand.nHabMax);
 			}
-			settFile.open(settleFile);
-			flushHeaders(settFile);
+			ifsSettlementFile.open(settleFile);
+			flushHeaders(ifsSettlementFile);
 
-			initFileIfs.open(initialFile);
-			flushHeaders(initFileIfs);
+			ifsInitFile.open(initialFile);
+			flushHeaders(ifsInitFile);
 
 			if (gHasGenetics) {
-				ifsGenetics.open(geneticsFile.c_str());
-				flushHeaders(ifsGenetics);
-				ifsTraits.open(traitsFile.c_str());
-				flushHeaders(ifsTraits);
+				ifsGeneticsFile.open(geneticsFile.c_str());
+				flushHeaders(ifsGeneticsFile);
+				ifsTraitsFile.open(traitsFile.c_str());
+				flushHeaders(ifsTraitsFile);
 			}
 
 			// nSimuls is the total number of lines (simulations) in
@@ -6573,7 +6569,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 				if (read_error) {
 					params_ok = false;
 				}
-				if (inStageStruct) {
+				if (gStageStruct) {
 					ReadStageStructure();
 				}
 				read_error = ReadEmigration();
@@ -6594,11 +6590,11 @@ void RunBatch(int nSimuls, int nLandscapes)
 				}
 
 				if (gHasGenetics) {
-					read_error = ReadGeneticsFile(ifsGenetics, pLandscape);
+					read_error = ReadGeneticsFile(ifsGeneticsFile, pLandscape);
 					if (read_error) {
 						params_ok = false;
 					}
-					read_error = ReadTraitsFile(ifsTraits, gNbTraitFileRows[i]);
+					read_error = ReadTraitsFile(ifsTraitsFile, gNbTraitFileRows[i]);
 					if (read_error) {
 						params_ok = false;
 					}
@@ -6620,26 +6616,26 @@ void RunBatch(int nSimuls, int nLandscapes)
 			} // end of nSimuls for loop
 
 			// close input files
-			parameters.close();
-			parameters.clear();
-			if (inStageStruct) {
-				ssfile.close(); 
-				ssfile.clear();
+			ifsParamFile.close();
+			ifsParamFile.clear();
+			if (gStageStruct) {
+				ifsStageStructFile.close(); 
+				ifsStageStructFile.clear();
 			}
-			emigFile.close(); 
-			emigFile.clear();
-			transFile.close(); 
-			transFile.clear();
-			settFile.close();
-			settFile.clear();
-			initFileIfs.close(); 
-			initFileIfs.clear();
+			ifsEmigrationFile.close(); 
+			ifsEmigrationFile.clear();
+			ifsTransferFile.close(); 
+			ifsTransferFile.clear();
+			ifsSettlementFile.close();
+			ifsSettlementFile.clear();
+			ifsInitFile.close(); 
+			ifsInitFile.clear();
 
 			if (gHasGenetics) {
-				ifsGenetics.close();
-				ifsGenetics.clear();
-				ifsTraits.close();
-				ifsTraits.clear();
+				ifsGeneticsFile.close();
+				ifsGeneticsFile.clear();
+				ifsTraitsFile.close();
+				ifsTraitsFile.clear();
 			}
 
 			if (pLandscape != nullptr)
@@ -6652,8 +6648,8 @@ void RunBatch(int nSimuls, int nLandscapes)
 
 	} // end of nLandscapes loop
 
-	landfile.close();  
-	landfile.clear();
+	ifsLandFile.close();  
+	ifsLandFile.clear();
 }
 
 //---------------------------------------------------------------------------
