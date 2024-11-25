@@ -374,7 +374,7 @@ void Landscape::setLandParams(landParams ppp, bool batchMode)
 {
 	generated = ppp.generated; 
 	patchModel = ppp.patchModel; 
-	spDist = ppp.spDist;
+	spDist = ppp.useSpDist;
 	dynamic = ppp.dynamic;
 	landNum = ppp.landNum;
 	if (ppp.resol > 0) resol = ppp.resol;
@@ -410,7 +410,7 @@ void Landscape::setLandParams(landParams ppp, bool batchMode)
 landParams Landscape::getLandParams(void)
 {
 	landParams ppp;
-	ppp.generated = generated; ppp.patchModel = patchModel; ppp.spDist = spDist;
+	ppp.generated = generated; ppp.patchModel = patchModel; ppp.useSpDist = spDist;
 	ppp.dynamic = dynamic;
 	ppp.landNum = landNum;
 	ppp.resol = resol; ppp.spResol = spResol;
@@ -1294,13 +1294,15 @@ int Landscape::readLandChange(int filenum, bool costs)
 		}
 				if (cells[y][x] != 0) { // not a no data cell (in initial landscape)
 					if (h == habnodata) { // invalid no data cell in change map
-						hfile.close(); hfile.clear();
+						hfile.close(); 
+						hfile.clear();
 						return 36;
 					}
 					else {
 						if (h < 0 || (sim.batchMode && (h < 1 || h > nHabMax))) {
 							// invalid habitat code
-							hfile.close(); hfile.clear();
+							hfile.close(); 
+							hfile.clear();
 							if (patchModel) { pfile.close(); pfile.clear(); }
 							return 33;
 						}
@@ -1315,8 +1317,10 @@ int Landscape::readLandChange(int filenum, bool costs)
 				if (p == pchnodata) Rcpp::Rcout << "Found patch NA in valid habitat cell." << std::endl;
 				else Rcpp::Rcout << "Found negative patch ID in valid habitat cell." << std::endl;
 #endif
-				hfile.close(); hfile.clear();
-				pfile.close(); pfile.clear();
+				hfile.close(); 
+				hfile.clear();
+				pfile.close(); 
+				pfile.clear();
 				return 34;
 			}
 			else {
@@ -1334,7 +1338,8 @@ int Landscape::readLandChange(int filenum, bool costs)
 #endif
 				hfile.close(); hfile.clear();
 				if (pfile.is_open()) {
-					pfile.close(); pfile.clear();
+					pfile.close(); 
+					pfile.clear();
 				}
 				return 38;
 			}
@@ -1370,7 +1375,7 @@ int Landscape::readLandChange(int filenum, bool costs)
 #else
 				hfile >> hfloat;
 #endif
-				h = (int)hfloat;
+				h = static_cast<int>(hfloat);
 #if RS_RCPP
 				}
 		else {
@@ -1393,7 +1398,7 @@ int Landscape::readLandChange(int filenum, bool costs)
 #else
 					pfile >> pfloat;
 #endif
-					p = (int)pfloat;
+					p = static_cast<int>(pfloat);
 #if RS_RCPP
 				}
 		else {
@@ -1514,7 +1519,7 @@ int Landscape::readLandChange(int filenum, bool costs)
 }
 
 // Create & initialise patch change matrix
-void Landscape::createPatchChgMatrix(void)
+void Landscape::createPatchChgMatrix()
 {
 	Patch* patch;
 	Patch* pPatch;
@@ -1576,7 +1581,7 @@ void Landscape::recordPatchChanges(int landIx) {
 
 }
 
-int Landscape::numPatchChanges(void) { return (int)patchchanges.size(); }
+int Landscape::numPatchChanges() { return static_cast<int>(patchchanges.size()); }
 
 patchChange Landscape::getPatchChange(int i) {
 	patchChange c; 
@@ -1587,8 +1592,8 @@ patchChange Landscape::getPatchChange(int i) {
 	return c;
 }
 
-void Landscape::deletePatchChgMatrix(void) {
-	if (patchChgMatrix != 0) {
+void Landscape::deletePatchChgMatrix() {
+	if (patchChgMatrix != nullptr) {
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
 				delete[] patchChgMatrix[y][x];
@@ -1596,11 +1601,11 @@ void Landscape::deletePatchChgMatrix(void) {
 			delete[] patchChgMatrix[y];
 		}
 	}
-	patchChgMatrix = 0;
+	patchChgMatrix = nullptr;
 }
 
 // Create & initialise costs change matrix
-void Landscape::createCostsChgMatrix(void)
+void Landscape::createCostsChgMatrix()
 {
 	Cell* pCell;
 	if (costsChgMatrix != 0) deleteCostsChgMatrix();
@@ -1610,7 +1615,7 @@ void Landscape::createCostsChgMatrix(void)
 		for (int x = 0; x < dimX; x++) {
 			costsChgMatrix[y][x] = new int[3];
 			pCell = findCell(x, y);
-			if (pCell == 0) { // no-data cell
+			if (pCell == nullptr) { // no-data cell
 				costsChgMatrix[y][x][0] = costsChgMatrix[y][x][1] = 0;
 			}
 			else {
@@ -1632,7 +1637,9 @@ void Landscape::recordCostChanges(int landIx) {
 			if (landIx == 0) { // reset to original landscape
 				if (costsChgMatrix[y][x][0] != costsChgMatrix[y][x][2]) {
 					// record change of cost for current cell
-					chg.chgnum = 666666; chg.x = x; chg.y = y;
+					chg.chgnum = 666666; 
+					chg.x = x; 
+					chg.y = y;
 					chg.oldcost = costsChgMatrix[y][x][2];
 					chg.newcost = costsChgMatrix[y][x][0];
 					costschanges.push_back(chg);
@@ -1654,15 +1661,17 @@ void Landscape::recordCostChanges(int landIx) {
 
 }
 
-int Landscape::numCostChanges(void) { return (int)costschanges.size(); }
+int Landscape::numCostChanges() { return static_cast<int>(costschanges.size()); }
 
 costChange Landscape::getCostChange(int i) {
-	costChange c; c.chgnum = 99999999; c.x = c.y = c.oldcost = c.newcost = -1;
-	if (i >= 0 && i < (int)costschanges.size()) c = costschanges[i];
+	costChange c; 
+	c.chgnum = 99999999; 
+	c.x = c.y = c.oldcost = c.newcost = -1;
+	if (i >= 0 && i < static_cast<int>(costschanges.size())) c = costschanges[i];
 	return c;
 }
 
-void Landscape::deleteCostsChgMatrix(void) {
+void Landscape::deleteCostsChgMatrix() {
 	if (costsChgMatrix != 0) {
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
@@ -1708,7 +1717,8 @@ bool Landscape::isInInitialDist(Species* pSpecies, locn loc) {
 }
 
 void Landscape::deleteDistribution(Species* pSpecies) {
-	if (distns[0] != 0) delete distns[0]; distns.clear();
+	if (distns[0] != nullptr) delete distns[0]; 
+	distns.clear();
 }
 
 // Return no. of initial distributions
@@ -1757,7 +1767,7 @@ void Landscape::resetDistribution(Species* pSp) {
 // Initialisation cell functions
 
 int Landscape::initCellCount(void) {
-	return (int)initcells.size();
+	return static_cast<int>(initcells.size());
 }
 
 void Landscape::addInitCell(int x, int y) {
@@ -1769,7 +1779,7 @@ locn Landscape::getInitCell(int ix) {
 }
 
 void Landscape::clearInitCells(void) {
-	int ncells = (int)initcells.size();
+	int ncells = static_cast<int>(initcells.size());
 	for (int i = 0; i < ncells; i++) {
 		delete initcells[i];
 	}
@@ -2433,7 +2443,8 @@ rasterdata CheckRasterFile(string fname)
 		if (r.errors > 0) r.ok = false;
 	}
 	else {
-		r.ok = false; r.errors = -111;
+		r.ok = false; 
+		r.errors = -111;
 	}
 	infile.clear();
 
@@ -2673,7 +2684,7 @@ landParams createDefaultLandParams(const int& dim) {
 	ls_params.rasterType = 0; // habitat types
  
 	ls_params.patchModel = false;
-	ls_params.spDist = false;
+	ls_params.useSpDist = false;
 	ls_params.generated = false;
 	ls_params.dynamic = false;
 	ls_params.landNum = 0;

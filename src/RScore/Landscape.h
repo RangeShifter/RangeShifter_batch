@@ -145,7 +145,7 @@ private:
 //---------------------------------------------------------------------------
 
 struct landParams {
-	bool patchModel; bool spDist; bool generated;
+	bool patchModel; bool useSpDist; bool generated;
 	bool dynamic;
 	int landNum; int resol; int spResol; int nHab; int nHabMax;
 	int dimX, dimY, minX, minY, maxX, maxY;

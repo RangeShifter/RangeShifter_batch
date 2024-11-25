@@ -802,7 +802,7 @@ void OutParameters(Landscape* pLandscape)
 		}
 	}
 	outPar << endl << "SPECIES DISTRIBUTION LOADED: \t";
-	if (ppLand.spDist)
+	if (ppLand.useSpDist)
 	{
 		outPar << "yes" << endl;
 		outPar << "RESOLUTION (m)\t" << ppLand.spResol << endl;

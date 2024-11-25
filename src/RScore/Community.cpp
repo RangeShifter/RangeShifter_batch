@@ -137,7 +137,7 @@ void Community::initialise(Species* pSpecies, int year)
 		break;
 
 	case 1:	// from species distribution
-		if (ppLand.spDist)
+		if (ppLand.useSpDist)
 		{
 			// initialise from loaded species distribution
 			switch (init.spDistType) {
