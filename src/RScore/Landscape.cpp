@@ -2663,19 +2663,6 @@ void Landscape::outVisits(int rep, int landNr) {
 #ifndef NDEBUG
 // Debug only: shortcut setup utilities
 
-Landscape createLandscapeFromCells(vector<Cell*> cells, const landParams& lp, Species sp) {
-	// Set up landscape
-	Landscape ls;
-	ls.setLandParams(lp, true);
-	// Add cells
-	ls.setCellArray();
-	for (auto c : cells) {
-		ls.addCellToLand(c);
-	}
-	ls.allocatePatches(&sp);
-	return ls;
-}
-
 landParams createDefaultLandParams(const int& dim) {
 
 	landParams ls_params;

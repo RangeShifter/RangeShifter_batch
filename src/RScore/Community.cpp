@@ -1816,7 +1816,7 @@ bool Community::openNeutralOutputFile(Species* pSpecies, int landNr)
 // in general population neutral genetics output file
 // ----------------------------------------------------------------------------------------
 
-bool Community::closePairwiseFstFile() {
+bool Community::closePerLocusFstFile() {
 	if (outPerLocusFstat.is_open()) outPerLocusFstat.close();
 	outPerLocusFstat.clear();
 	return true;
