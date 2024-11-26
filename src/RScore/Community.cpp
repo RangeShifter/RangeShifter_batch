@@ -198,13 +198,14 @@ void Community::initialise(Species* pSpecies, int year)
 		else { // add any initial individuals for the current year
 			initInd iind = initInd(); 
 			iind.year = 0;
-			int ninds = paramsInit->numInitInds();
+			int ninds = paramsInit->getNbInitInds();
 			while (indIx < ninds && iind.year <= year) {
-				iind = paramsInit->getInitInd(indIx);
+				initInd iind = paramsInit->getInitInd(indIx);
 				while (iind.year == year) {
 					if (ppLand.patchModel) {
 						if (pLandscape->existsPatch(iind.patchID)) {
 							pPatch = pLandscape->findPatch(iind.patchID);
+							Species* pSpecies = findSpecies(iind.speciesID);
 							if (pPatch->getK() > 0.0) { // patch is suitable
 								initialInd(pLandscape, pSpecies, pPatch, pPatch->getRandomCell(), indIx);
 							}
@@ -212,11 +213,12 @@ void Community::initialise(Species* pSpecies, int year)
 					}
 					else { // cell-based model
 						pCell = pLandscape->findCell(iind.x, iind.y);
-						if (pCell != 0) {
+						if (pCell != nullptr) {
 							Patch* ppatch = pCell->getPatch();
-							if (ppatch != 0) {
+							if (ppatch != nullptr) {
 								pPatch = ppatch;
 								if (pPatch->getK() > 0.0) { // patch is suitable
+									Species* pSpecies = findSpecies(iind.speciesID);
 									initialInd(pLandscape, pSpecies, pPatch, pCell, indIx);
 								}
 							}
@@ -416,8 +418,7 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 	// add new individual to the population
 	pPop->recruit(pInd);
 
-	if (pSpecies->getNTraits() > 0)
-	{
+	if (pSpecies->getNTraits() > 0) {
 		// individual variation - set up genetics
 		pInd->setUpGenes(pLandscape->getLandData().resol);
 	}

@@ -4350,22 +4350,31 @@ int CheckInitIndsFile() {
 	string filetype = "InitIndsFile";
 
 	// Parse header line
-	ifsInitIndsFile >> header; if (header != "Year") errors++;
-	ifsInitIndsFile >> header; if (header != "Species") errors++;
+	ifsInitIndsFile >> header; 
+	if (header != "Year") errors++;
+	ifsInitIndsFile >> header; 
+	if (header != "Species") errors++;
 	if (gIsPatchModel) {
-		ifsInitIndsFile >> header; if (header != "PatchID") errors++;
+		ifsInitIndsFile >> header; 
+		if (header != "PatchID") errors++;
 	}
 	else {
-		ifsInitIndsFile >> header; if (header != "X") errors++;
-		ifsInitIndsFile >> header; if (header != "Y") errors++;
+		ifsInitIndsFile >> header; 
+		if (header != "X") errors++;
+		ifsInitIndsFile >> header;
+		if (header != "Y") errors++;
 	}
-	ifsInitIndsFile >> header; if (header != "Ninds") errors++;
+	ifsInitIndsFile >> header; 
+	if (header != "Ninds") errors++;
 	if (gReproType > 0) {
-		ifsInitIndsFile >> header; if (header != "Sex") errors++;
+		ifsInitIndsFile >> header; 
+		if (header != "Sex") errors++;
 	}
 	if (gStageStruct) {
-		ifsInitIndsFile >> header; if (header != "Age") errors++;
-		ifsInitIndsFile >> header; if (header != "Stage") errors++;
+		ifsInitIndsFile >> header; 
+		if (header != "Age") errors++;
+		ifsInitIndsFile >> header; 
+		if (header != "Stage") errors++;
 	}
 
 	// Report any errors in headers, and if so, terminate validation
@@ -4437,7 +4446,6 @@ int CheckInitIndsFile() {
 		EOFerror(filetype);
 		errors++;
 	}
-
 	return errors;
 }
 
@@ -6382,7 +6390,8 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 
 	if (option == 9) { // close file
 		if (ifsInitIndsFile.is_open()) {
-			ifsInitIndsFile.close(); ifsInitIndsFile.clear();
+			ifsInitIndsFile.close(); 
+			ifsInitIndsFile.clear();
 		}
 		return 0;
 	}
@@ -6397,7 +6406,7 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 	bool must_stop = (iind.year == gEmptyVal);
 
 	while (!must_stop) {
-		ifsInitIndsFile >> iind.species;
+		ifsInitIndsFile >> iind.speciesID;
 
 		if (paramsLand.patchModel) {
 			ifsInitIndsFile >> iind.patchID;

@@ -29,10 +29,15 @@
 
 // Environmental gradient parameters
 
-paramGrad::paramGrad(void) {
-	gradient = false; gradType = 0; grad_inc = 0.05f;
+paramGrad::paramGrad() {
+	gradient = false; 
+	gradType = 0; 
+	grad_inc = 0.05f;
 	opt_y0 = opt_y = factor = extProbOpt = 0.0;
-	shifting = false; shift_rate = 0.5; shift_begin = 0; shift_stop = 100;
+	shifting = false;
+	shift_rate = 0.5; 
+	shift_begin = 0;
+	shift_stop = 100;
 }
 
 paramGrad::~paramGrad() { }
@@ -60,16 +65,22 @@ void paramGrad::setShifting(float r, int begin, int end)
 	if (end > 0) shift_stop = end;
 }
 
-void paramGrad::noGradient(void) { gradient = false; gradType = 0; }
+void paramGrad::noGradient() { gradient = false; gradType = 0; }
 
-void paramGrad::noShifting(void) { shifting = false; }
+void paramGrad::noShifting() { shifting = false; }
 
-envGradParams paramGrad::getGradient(void) {
+envGradParams paramGrad::getGradient() {
 	envGradParams g;
-	g.gradient = gradient; g.gradType = gradType; g.grad_inc = grad_inc;
-	g.opt_y = opt_y; g.factor = factor; g.extProbOpt = extProbOpt;
-	g.shifting = shifting; g.shift_rate = shift_rate;
-	g.shift_begin = shift_begin; g.shift_stop = shift_stop;
+	g.gradient = gradient; 
+	g.gradType = gradType; 
+	g.grad_inc = grad_inc;
+	g.opt_y = opt_y; 
+	g.factor = factor; 
+	g.extProbOpt = extProbOpt;
+	g.shifting = shifting; 
+	g.shift_rate = shift_rate;
+	g.shift_begin = shift_begin; 
+	g.shift_stop = shift_stop;
 	return g;
 }
 
@@ -84,30 +95,40 @@ void paramGrad::resetOptY(void) { opt_y = opt_y0; }
 
 // Environmental stochasticity parameters
 
-paramStoch::paramStoch(void) {
-	stoch = false; local = false; inK = false; localExt = false;
+paramStoch::paramStoch() {
+	stoch = false; 
+	local = false; 
+	inK = false; 
+	localExt = false;
 	ac = 0.0; std = 0.25;
 	locExtProb = 0.1;
 }
 
-paramStoch::~paramStoch(void) {}
+paramStoch::~paramStoch() {}
 
 
 void paramStoch::setStoch(envStochParams e)
 {
-	stoch = e.stoch; local = e.local; inK = e.inK; localExt = e.localExt;
+	stoch = e.stoch; 
+	local = e.local; 
+	inK = e.inK; 
+	localExt = e.localExt;
 	if (e.ac >= 0.0 && e.ac < 1.0) ac = e.ac;
 	if (e.std > 0.0 && e.std <= 1.0) std = e.std;
 	locExtProb = e.locExtProb;
 }
 
-bool paramStoch::envStoch(void) { return stoch; }
+bool paramStoch::envStoch() { return stoch; }
 
-envStochParams paramStoch::getStoch(void)
+envStochParams paramStoch::getStoch()
 {
 	envStochParams e;
-	e.stoch = stoch; e.local = local; e.inK = inK; e.localExt = localExt;
-	e.ac = ac; e.std = std;
+	e.stoch = stoch; 
+	e.local = local; 
+	e.inK = inK; 
+	e.localExt = localExt;
+	e.ac = ac; 
+	e.std = std;
 	e.locExtProb = locExtProb;
 	return e;
 }
@@ -124,16 +145,21 @@ paramInit::paramInit() {
 	restrictRows = 100;
 	restrictFreq = 10;
 	finalFrzYr = 99999999;
-	indsCell = 1; indsHa = 0.0;
-	minSeedX = 0; maxSeedX = 99999999; minSeedY = 0; maxSeedY = 99999999;
-	nSeedPatches = 1; nSpDistPatches = 1;
+	indsCell = 1; 
+	indsHa = 0.0;
+	minSeedX = 0; 
+	maxSeedX = 99999999; 
+	minSeedY = 0; 
+	maxSeedY = 99999999;
+	nSeedPatches = 1; 
+	nSpDistPatches = 1;
 	indsFile = "NULL";
 	for (int i = 0; i < gMaxNbStages; i++) {
 		initProp[i] = 0.0;
 	}
 }
 
-paramInit::~paramInit(void) {
+paramInit::~paramInit() {
 	initinds.clear();
 }
 
@@ -159,51 +185,50 @@ void paramInit::setInit(initParams i) {
 	indsFile = i.indsFile;
 }
 
-initParams paramInit::getInit(void) {
+initParams paramInit::getInit() {
 	initParams i;
-	i.seedType = seedType; i.freeType = freeType; i.spDistType = spDistType;
-	i.initDens = initDens; i.initAge = initAge;
+	i.seedType = seedType; 
+	i.freeType = freeType; 
+	i.spDistType = spDistType;
+	i.initDens = initDens; 
+	i.initAge = initAge;
 	i.initFrzYr = initFrzYr;
 	i.restrictRange = restrictRange;
-	i.restrictRows = restrictRows; i.restrictFreq = restrictFreq;
+	i.restrictRows = restrictRows; 
+	i.restrictFreq = restrictFreq;
 	i.finalFrzYr = finalFrzYr;
-	i.indsCell = indsCell; i.indsHa = indsHa;
-	i.minSeedX = minSeedX; i.minSeedY = minSeedY;
-	i.maxSeedX = maxSeedX; i.maxSeedY = maxSeedY;
-	i.nSeedPatches = nSeedPatches; i.nSpDistPatches = nSpDistPatches;
+	i.indsCell = indsCell; 
+	i.indsHa = indsHa;
+	i.minSeedX = minSeedX; 
+	i.minSeedY = minSeedY;
+	i.maxSeedX = maxSeedX; 
+	i.maxSeedY = maxSeedY;
+	i.nSeedPatches = nSeedPatches; 
+	i.nSpDistPatches = nSpDistPatches;
 	i.indsFile = indsFile;
 	return i;
 }
 
 void paramInit::setProp(short stg, float p) {
-	if (stg >= 0 && stg < gMaxNbStages && p >= 0.0 && p <= 1.0) initProp[stg] = p;
+	if (stg >= 0 
+		&& stg < gMaxNbStages 
+		&& p >= 0.0 && p <= 1.0) 
+		initProp[stg] = p;
 }
 
 float paramInit::getProp(short stg) {
-	float p = 0.0;
-	if (stg >= 0 && stg < gMaxNbStages) p = initProp[stg];
-	return p;
+	return initProp[stg];
 }
 
 void paramInit::addInitInd(initInd iind) {
 	initinds.push_back(iind);
 }
 
-initInd paramInit::getInitInd(int ix) {
-	initInd iind;
-	if (ix >= 0 && ix < (int)initinds.size()) {
-		iind = initinds[ix];
-	}
-	else {
-		iind.year = iind.patchID = iind.x = iind.y = iind.sex = iind.age = iind.stage = 0;
-		iind.species = -1;
-	}
-	return iind;
-}
+initInd paramInit::getInitInd(int ix) { return initinds[ix]; }
 
-void paramInit::resetInitInds(void) { initinds.clear(); }
+void paramInit::resetInitInds() { initinds.clear(); }
 
-int paramInit::numInitInds(void) { return (int)initinds.size(); }
+int paramInit::getNbInitInds() { return static_cast<int>(initinds.size()); }
 
 
 //---------------------------------------------------------------------------

@@ -228,7 +228,7 @@ struct initParams {
 
 struct initInd {
 	int year, patchID, x, y; 
-	short species, sex, age, stage;
+	short sex, age, stage, speciesID;
 };
 
 class paramInit {
@@ -243,7 +243,7 @@ public:
 	void addInitInd(initInd iind);
 	initInd getInitInd(int ix);
 	void resetInitInds();
-	int numInitInds();
+	int getNbInitInds();
 
 private:
 	short seedType;		// initialisation type: 
