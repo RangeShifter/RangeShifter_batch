@@ -170,13 +170,13 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 			}
 			else age = stg;
 
-			inds.push_back(new Individual(pCell, pPatch, stg, age, sstruct.repInterval,
+			inds.push_back(new Individual(pSpecies, pCell, pPatch, stg, age, sstruct.repInterval,
 				probmale, trfr.usesMovtProc, trfr.moveType));
 
 			sex = inds[nindivs + i]->getSex();
 			if (pSpecies->getNTraits() > 0) {
 				// individual variation - set up genetics
-				inds[nindivs + i]->setUpGenes(pSpecies, resol);
+				inds[nindivs + i]->setUpGenes(resol);
 			}
 			nInds[stg][sex]++;
 		}
@@ -670,10 +670,10 @@ void Population::reproduction(const float localK, const float envval, const int 
 					for (int j = 0; j < njuvs; j++) {
 
 						Individual* newJuv;
-						newJuv = new Individual(pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
+						newJuv = new Individual(pSpecies, pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
 
 						if (pSpecies->getNTraits() > 0) {
-							newJuv->inheritTraits(pSpecies, inds[i], resol);
+							newJuv->inheritTraits(inds[i], resol);
 						}
 
 						if (!newJuv->isViable()) {
@@ -748,10 +748,10 @@ void Population::reproduction(const float localK, const float envval, const int 
 							for (int j = 0; j < njuvs; j++) {
 								Individual* newJuv;
 
-								newJuv = new Individual(pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
+								newJuv = new Individual(pSpecies, pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
 
 								if (pSpecies->getNTraits() > 0) {
-									newJuv->inheritTraits(pSpecies, inds[i], father, resol);
+									newJuv->inheritTraits(inds[i], father, resol);
 								}
 
 								if (!newJuv->isViable()) {
@@ -1011,11 +1011,11 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 
 		if (trfr.usesMovtProc) {
 			// Resolve a single movement step
-			isDispersing = inds[i]->moveStep(pLandscape, pSpecies, landIx, sim.absorbing);
+			isDispersing = inds[i]->moveStep(pLandscape, landIx, sim.absorbing);
 		}
 		else {
 			// Resolve the (only) movement step
-			isDispersing = inds[i]->moveKernel(pLandscape, pSpecies, sim.absorbing);
+			isDispersing = inds[i]->moveKernel(pLandscape, sim.absorbing);
 		}
 		nbDispersers += isDispersing;
 

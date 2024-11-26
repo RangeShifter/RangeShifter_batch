@@ -411,7 +411,7 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 	}
 	float probmale = (dem.repType != 0 && iind.sex == 1) ? 1.0 : 0.0;
 
-	Individual* pInd = new Individual(pCell, pPatch, stg, age, repInt, probmale, trfr.usesMovtProc, trfr.moveType);
+	Individual* pInd = new Individual(pSpecies, pCell, pPatch, stg, age, repInt, probmale, trfr.usesMovtProc, trfr.moveType);
 
 	// add new individual to the population
 	pPop->recruit(pInd);
@@ -419,7 +419,7 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 	if (pSpecies->getNTraits() > 0)
 	{
 		// individual variation - set up genetics
-		pInd->setUpGenes(pSpecies, pLandscape->getLandData().resol);
+		pInd->setUpGenes(pLandscape->getLandData().resol);
 	}
 }
 

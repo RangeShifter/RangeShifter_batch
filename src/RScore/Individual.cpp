@@ -54,9 +54,11 @@ string to_string(indStatus s) {
 }
 
 // Individual constructor
-Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short repInt,
+Individual::Individual(Species* pSp, Cell* pCell, 
+	Patch* pPatch, short stg, short a, short repInt,
 	float probmale, bool movt, short moveType)
 {
+	pSpecies = pSp;
 	indId = indCounter; 
 	indCounter++; // unique identifier for each individual
 	geneticFitness = 1.0;
@@ -75,14 +77,18 @@ Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short rep
 	pNatalPatch = pPatch;
 	pTrfrData = nullptr; //set to null as default
 	if (movt) {
+
 		locn loc = pCell->getLocn();
 		path = new pathData;
-		path->year = 0; path->total = 0; path->out = 0;
-		path->pSettPatch = 0; path->settleStatus = 0;
+		path->year = 0; 
+		path->total = 0; 
+		path->out = 0;
+		path->pSettPatch = nullptr; 
+		path->settleStatus = 0;
+
 		if (moveType == 1) { // SMS
 			// set up location data for SMS
 			pTrfrData = make_unique<smsData>(loc, loc);
-
 		}
 		if (moveType == 2) { // CRW
 			// set up continuous co-ordinates etc. for CRW movement
@@ -93,7 +99,7 @@ Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short rep
 		}
 	}
 	else {
-		path = 0;
+		path = nullptr;
 		pTrfrData = make_unique<kernelData>(0.0, 0.0, 0.0);
 	}
 }
@@ -118,7 +124,7 @@ set<TraitType> Individual::getTraitTypes() {
 //---------------------------------------------------------------------------
 // Inheritance for diploid, sexual species
 //---------------------------------------------------------------------------
-void Individual::inheritGenes(Species* pSpecies, const Individual* mother, const Individual* father) {
+void Individual::inheritGenes(const Individual* mother, const Individual* father) {
 
 	int events = 0;
 	const set<int> chromosomeEnds = pSpecies->getChromosomeEnds();
@@ -189,7 +195,7 @@ void Individual::inheritGenes(Species* pSpecies, const Individual* mother, const
 //---------------------------------------------------------------------------
 // Inheritance for haploid, asexual species
 //---------------------------------------------------------------------------
-void Individual::inheritGenes(Species* pSpecies, const Individual* mother) {
+void Individual::inheritGenes(const Individual* mother) {
 	set<unsigned int> recomPositions; //not used here cos haploid but need it for inherit function, not ideal 
 	int startingChromosome = 0;
 
@@ -214,7 +220,7 @@ void Individual::inheritGenes(Species* pSpecies, const Individual* mother) {
 }
 
 // Initialise individual trait genes from species-level traits
-void Individual::setUpGenes(Species* pSpecies, int resol) {
+void Individual::setUpGenes(int resol) {
 
 	// this way to keep spp trait table immutable i.e. not able to call getTraitTable, 
 	// could pass it back by value (copy) instead but could be heavy if large map
@@ -224,10 +230,10 @@ void Individual::setUpGenes(Species* pSpecies, int resol) {
 		const auto spTrait = pSpecies->getSpTrait(traitType);
 		this->spTraitTable.emplace(traitType, traitFactory.Create(traitType, spTrait));
 	}
-	setDispersalPhenotypes(pSpecies, resol);
+	expressDispersalPhenotypes(resol);
 }
 
-void Individual::setDispersalPhenotypes(Species* pSpecies, int resol) {
+void Individual::expressDispersalPhenotypes(int resol) {
 
 	const emigRules emig = pSpecies->getEmigRules();
 	const transferRules trfr = pSpecies->getTransferRules();
@@ -236,26 +242,26 @@ void Individual::setDispersalPhenotypes(Species* pSpecies, int resol) {
 
 	// record phenotypic traits
 	if (emig.indVar)
-		this->expressEmigTraits(pSpecies, emig.sexDep, emig.densDep);
+		this->expressEmigTraits(emig.sexDep, emig.densDep);
 	if (trfr.indVar)
-		this->expressTransferTraits(pSpecies, trfr, resol);
+		this->expressTransferTraits(trfr, resol);
 	if (sett.indVar)
-		this->expressSettlementTraits(pSpecies, sett.sexDep, settRules.densDep);
+		this->expressSettlementTraits(sett.sexDep, settRules.densDep);
 }
 
-void Individual::expressTransferTraits(Species* pSpecies, transferRules trfr, int resol) {
+void Individual::expressTransferTraits(transferRules trfr, int resol) {
 	if (trfr.usesMovtProc) {
 		if (trfr.moveType == 1) {
-			expressSMSTraits(pSpecies);
+			expressSMSTraits();
 		}
 		else
-			expressCRWTraits(pSpecies);
+			expressCRWTraits();
 	}
 	else
-		expressKernelTraits(pSpecies, trfr.sexDep, trfr.twinKern, resol);
+		expressKernelTraits(trfr.sexDep, trfr.twinKern, resol);
 }
 
-void Individual::expressSettlementTraits(Species* pSpecies, bool sexDep, bool densDep) {
+void Individual::expressSettlementTraits(bool sexDep, bool densDep) {
 
 	settleTraits s; s.s0 = s.alpha = s.beta = 0.0;
 	if (sexDep) {
@@ -296,17 +302,17 @@ void Individual::expressSettlementTraits(Species* pSpecies, bool sexDep, bool de
 
 
 // Inherit genome from parent(s), diploid
-void Individual::inheritTraits(Species* pSpecies, Individual* mother, Individual* father, int resol)
+void Individual::inheritTraits(Individual* mother, Individual* father, int resol)
 {
-	inheritGenes(pSpecies, mother, father);
-	setDispersalPhenotypes(pSpecies, resol);
+	inheritGenes(mother, father);
+	expressDispersalPhenotypes(resol);
 }
 
 // Inherit genome from mother, haploid
-void Individual::inheritTraits(Species* pSpecies, Individual* mother, int resol)
+void Individual::inheritTraits(Individual* mother, int resol)
 {
-	inheritGenes(pSpecies, mother);
-	setDispersalPhenotypes(pSpecies, resol);
+	inheritGenes(mother);
+	expressDispersalPhenotypes(resol);
 }
 
 //---------------------------------------------------------------------------
@@ -328,9 +334,9 @@ int Individual::getId() { return indId; }
 
 sex_t Individual::getSex() { return sex; }
 
-indStatus Individual::getStatus(void) { return status; }
+indStatus Individual::getStatus() { return status; }
 
-float Individual::getGeneticFitness(void) { return geneticFitness; }
+float Individual::getGeneticFitness() { return geneticFitness; }
 
 bool Individual::isViable() const {
 	float probViability = geneticFitness > 1.0 ? 1.0 : geneticFitness;
@@ -357,41 +363,50 @@ Cell* Individual::getLocn(const short option) {
 	}
 }
 
-Patch* Individual::getNatalPatch(void) { return pNatalPatch; }
+Patch* Individual::getNatalPatch() { return pNatalPatch; }
 
 void Individual::setYearSteps(int t) {
-	if (path != 0 && t >= 0) {
+	if (path != nullptr && t >= 0) {
 		if (t >= 0) path->year = t;
 		else path->year = 666;
 	}
 }
 
-pathSteps Individual::getSteps(void) {
+pathSteps Individual::getSteps() {
 	pathSteps s;
-	if (path == 0) {
-		s.year = 0; s.total = 0; s.out = 0;
+	if (path == nullptr) {
+		s.year = 0; 
+		s.total = 0; 
+		s.out = 0;
 	}
 	else {
-		s.year = path->year; s.total = path->total; s.out = path->out;
+		s.year = path->year; 
+		s.total = path->total; 
+		s.out = path->out;
 	}
 	return s;
 }
 
-settlePatch Individual::getSettPatch(void) {
+settlePatch Individual::getSettPatch() {
 	settlePatch s;
-	if (path == 0) {
-		s.pSettPatch = 0; s.settleStatus = 0;
+	if (path == nullptr) {
+		s.pSettPatch = nullptr; 
+		s.settleStatus = 0;
 	}
 	else {
-		s.pSettPatch = path->pSettPatch; s.settleStatus = path->settleStatus;
+		s.pSettPatch = path->pSettPatch; 
+		s.settleStatus = path->settleStatus;
 	}
 	return s;
 }
 
 void Individual::setSettPatch(const settlePatch s) {
-	if (path == 0) {
+	if (path == nullptr) {
 		path = new pathData;
-		path->year = 0; path->total = 0; path->out = 0; path->settleStatus = 0;
+		path->year = 0; 
+		path->total = 0; 
+		path->out = 0; 
+		path->settleStatus = 0;
 #if RS_RCPP
 		path->pathoutput = 1;
 #endif
@@ -400,7 +415,7 @@ void Individual::setSettPatch(const settlePatch s) {
 	path->pSettPatch = s.pSettPatch;
 }
 
-void Individual::expressEmigTraits(Species* pSpecies, bool sexDep, bool densityDep) {
+void Individual::expressEmigTraits(bool sexDep, bool densityDep) {
 	emigTraits e; 
 	e.d0 = e.alpha = e.beta = 0.0;
 	if (sexDep) {
@@ -442,10 +457,10 @@ void Individual::expressEmigTraits(Species* pSpecies, bool sexDep, bool densityD
 }
 
 // Get phenotypic emigration traits
-emigTraits Individual::getIndEmigTraits(void) {
+emigTraits Individual::getIndEmigTraits() {
 	emigTraits e; 
 	e.d0 = e.alpha = e.beta = 0.0;
-	if (pEmigTraits != 0) {
+	if (pEmigTraits != nullptr) {
 		e.d0 = pEmigTraits->d0;
 		e.alpha = pEmigTraits->alpha;
 		e.beta = pEmigTraits->beta;
@@ -453,7 +468,7 @@ emigTraits Individual::getIndEmigTraits(void) {
 	return e;
 }
 // Set phenotypic transfer by kernel traits
-void Individual::expressKernelTraits(Species* pSpecies, bool sexDep, bool twinKernel, int resol) {
+void Individual::expressKernelTraits(bool sexDep, bool twinKernel, int resol) {
 
 	trfrKernelParams k; 
 	k.meanDist1 = k.meanDist2 = k.probKern1 = 0.0;
@@ -510,12 +525,12 @@ void Individual::expressKernelTraits(Species* pSpecies, bool sexDep, bool twinKe
 
 
 // Get phenotypic emigration traits
-trfrKernelParams Individual::getIndKernTraits(void) {
-	trfrKernelParams k; k.meanDist1 = k.meanDist2 = k.probKern1 = 0.0;
-	if (pTrfrData != 0) {
+trfrKernelParams Individual::getIndKernTraits() {
+	trfrKernelParams k; 
+	k.meanDist1 = k.meanDist2 = k.probKern1 = 0.0;
 
+	if (pTrfrData != nullptr) {
 		auto& pKernel = dynamic_cast<const kernelData&>(*pTrfrData);
-
 		k.meanDist1 = pKernel.meanDist1;
 		k.meanDist2 = pKernel.meanDist2;
 		k.probKern1 = pKernel.probKern1;
@@ -524,7 +539,7 @@ trfrKernelParams Individual::getIndKernTraits(void) {
 	return k;
 }
 
-void Individual::expressSMSTraits(Species* pSpecies) {
+void Individual::expressSMSTraits() {
 
 	trfrSMSTraits s = pSpecies->getSpSMSTraits();
 
@@ -555,20 +570,22 @@ void Individual::expressSMSTraits(Species* pSpecies) {
 	return;
 }
 
-trfrData* Individual::getTrfrData(void) {
+trfrData* Individual::getTrfrData() {
 	return pTrfrData.get();
 }
 
 // Get phenotypic transfer by SMS traits
-trfrSMSTraits Individual::getIndSMSTraits(void) {
+trfrSMSTraits Individual::getIndSMSTraits() {
 
-	trfrSMSTraits s; s.dp = s.gb = s.alphaDB = 1.0; s.betaDB = 1;
-	if (pTrfrData != 0) {
-
+	trfrSMSTraits s; 
+	s.dp = s.gb = s.alphaDB = 1.0; 
+	s.betaDB = 1;
+	if (pTrfrData != nullptr) {
 		auto& pSMS = dynamic_cast<const smsData&>(*pTrfrData);
-
-		s.dp = pSMS.dp; s.gb = pSMS.gb;
-		s.alphaDB = pSMS.alphaDB; s.betaDB = pSMS.betaDB;
+		s.dp = pSMS.dp; 
+		s.gb = pSMS.gb;
+		s.alphaDB = pSMS.alphaDB; 
+		s.betaDB = pSMS.betaDB;
 	}
 
 	return s;
@@ -576,8 +593,9 @@ trfrSMSTraits Individual::getIndSMSTraits(void) {
 
 
 // Set phenotypic transfer by CRW traits
-void Individual::expressCRWTraits(Species* pSpecies) {
-	trfrCRWTraits c; c.stepLength = c.rho = 0.0;
+void Individual::expressCRWTraits() {
+	trfrCRWTraits c; 
+	c.stepLength = c.rho = 0.0;
 
 	c.stepLength = getTrait(CRW_STEPLENGTH)->express();
 	c.rho = getTrait(CRW_STEPCORRELATION)->express();
@@ -592,7 +610,7 @@ void Individual::expressCRWTraits(Species* pSpecies) {
 }
 
 // Get phenotypic transfer by CRW traits
-trfrCRWTraits Individual::getIndCRWTraits(void) {
+trfrCRWTraits Individual::getIndCRWTraits() {
 
 	trfrCRWTraits c; 
 	c.stepLength = c.rho = 0.0;
@@ -606,9 +624,10 @@ trfrCRWTraits Individual::getIndCRWTraits(void) {
 }
 
 // Get phenotypic settlement traits
-settleTraits Individual::getIndSettTraits(void) {
-	settleTraits s; s.s0 = s.alpha = s.beta = 0.0;
-	if (pSettleTraits != 0) {
+settleTraits Individual::getIndSettTraits() {
+	settleTraits s;
+	s.s0 = s.alpha = s.beta = 0.0;
+	if (pSettleTraits != nullptr) {
 		s.s0 = pSettleTraits->s0;
 		s.alpha = pSettleTraits->alpha;
 		s.beta = pSettleTraits->beta;
@@ -622,12 +641,13 @@ void Individual::setStatus(indStatus s) {
 	status = s;
 }
 
-void Individual::setToDevelop(void) {
+void Individual::setToDevelop() {
 	isDeveloping = true;
 }
 
-void Individual::develop(void) {
-	stage++; isDeveloping = false;
+void Individual::develop() {
+	stage++; 
+	isDeveloping = false;
 }
 
 void Individual::ageIncrement(short maxage) {
@@ -665,7 +685,7 @@ void Individual::moveTo(Cell* newCell) {
 // Move to a new cell by sampling a dispersal distance from a single or double
 // negative exponential kernel
 // Returns 1 if still dispersing (including having found a potential patch), otherwise 0
-bool Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool absorbing)
+bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 {
 	Patch* patch;
 	int patchNum = 0;
@@ -864,7 +884,7 @@ bool Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool
 //---------------------------------------------------------------------------
 // Make a single movement step according to a mechanistic movement model
 // Returns 1 if still dispersing (including having found a potential patch), otherwise 0
-bool Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
+bool Individual::moveStep(Landscape* pLandscape,
 	const short landIx, const bool absorbing)
 {
 	if (status != dispersing) return false; // not currently dispersing
@@ -927,7 +947,7 @@ bool Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 		switch (trfr.moveType) {
 
 		case 1: // SMS
-			move = smsMove(pLandscape, pSpecies, landIx, pPatch == pNatalPatch, trfr.indVar, absorbing);
+			move = smsMove(pLandscape, landIx, pPatch == pNatalPatch, trfr.indVar, absorbing);
 			if (move.dist < 0.0) {
 				// either INTERNAL ERROR CONDITION - INDIVIDUAL IS IN NO-DATA SQUARE
 				// or individual has crossed absorbing boundary: individual dies
@@ -1049,8 +1069,8 @@ bool Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 // Functions to implement the SMS algorithm
 
 // Move to a neighbouring cell according to the SMS algorithm
-movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
-	const short landIx, const bool isInNatalPatch, const bool indvar, const bool absorbing)
+movedata Individual::smsMove(Landscape* pLand, const short landIx, 
+	const bool isInNatalPatch, const bool indvar, const bool absorbing)
 {
 	array3x3d neighbourWeights; // to hold weights/costs/probs of moving to neighbouring cells
 	array3x3d goalBiasWeights;	// to hold weights for moving towards a goal location
@@ -1106,7 +1126,7 @@ movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
 	if (habDepWeights.cell[0][0] >= 0.0) { 
 		// already calculated in previous step, skip
 	} else { 
-		habDepWeights = getHabMatrix(pLand, pSpecies, currLoc.x, currLoc.y, movt.pr, movt.prMethod,
+		habDepWeights = getHabMatrix(pLand, currLoc.x, currLoc.y, movt.pr, movt.prMethod,
 			landIx, absorbing);
 		pCurrCell->setEffCosts(habDepWeights);
 	}
@@ -1386,9 +1406,9 @@ array3x3d Individual::calcWeightings(const double base, const double theta) {
 }
 
 // Weight neighbouring cells on basis of (habitat) costs
-array3x3f Individual::getHabMatrix(Landscape* pLand, Species* pSpecies,
-	const int currCellX, const int currCellY, const short percRange, const short prMethod, const short landIx,
-	const bool absorbing)
+array3x3f Individual::getHabMatrix(Landscape* pLand, 
+	const int currCellX, const int currCellY, const short percRange, 
+	const short prMethod, const short landIx, const bool absorbing)
 {
 	array3x3f neighbourHabWeights; // array of effective costs to be returned
 	int ncells, x4, y4;
@@ -1647,7 +1667,7 @@ void Individual::triggerMutations(Species* pSp) {
 			|| trType == GENETIC_LOAD5)
 			geneticFitness *= indTrait->express();
 	}
-	this->setDispersalPhenotypes(pSp, 1.0);
+	this->expressDispersalPhenotypes(1);
 }
 
 // Shorthand function to edit a genotype with custom values

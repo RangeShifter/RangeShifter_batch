@@ -710,8 +710,8 @@ void testIndividual() {
 		SpeciesTrait* spTr = createTestEmigSpTrait(genePositions, isDiploid);
 		pSpecies->addTrait(TraitType::E_D0, *spTr);
 		
-		Individual indMother = Individual(pCell, pPatch, 0, 0, 0, 0.0, false, 0);
-		Individual indFather = Individual(pCell, pPatch, 0, 0, 0, 1.0, false, 0);
+		Individual indMother = Individual(pSpecies, pCell, pPatch, 0, 0, 0, 0.0, false, 0);
+		Individual indFather = Individual(pSpecies, pCell, pPatch, 0, 0, 0, 1.0, false, 0);
 		indMother.setUpGenes(pSpecies, 1.0);
 		indFather.setUpGenes(pSpecies, 1.0);
 
@@ -722,7 +722,7 @@ void testIndividual() {
 		const int nbTrials = 100;
 		for (int i = 0; i < nbTrials; ++i)
 		{
-			Individual indChild = Individual(pCell, pPatch, 0, 0, 0, 0.0, false, 0);
+			Individual indChild = Individual(pSpecies, pCell, pPatch, 0, 0, 0, 0.0, false, 0);
 			indChild.inheritTraits(pSpecies, &indMother, &indFather, 1.0);
 
 			bool hasInheritedA0 = haveSameEmigD0Allele(indChild, indMother, posA);
@@ -816,8 +816,8 @@ void testIndividual() {
 		pSpecies->addTrait(TraitType::E_D0_F, *spTrF);
 
 		// Set up male and female individuals, trigger mutations
-		Individual indFemale = Individual(pCell, pPatch, 0, 0, 0, 0.0, false, 0);
-		Individual indMale = Individual(pCell, pPatch, 0, 0, 0, 1.0, false, 0);
+		Individual indFemale = Individual(pSpecies, pCell, pPatch, 0, 0, 0, 0.0, false, 0);
+		Individual indMale = Individual(pSpecies, pCell, pPatch, 0, 0, 0, 1.0, false, 0);
 		indFemale.setUpGenes(pSpecies, 1.0);
 		indMale.setUpGenes(pSpecies, 1.0);
 		indFemale.triggerMutations(pSpecies);
@@ -879,7 +879,7 @@ void testIndividual() {
 		);
 		pSpecies->addTrait(TraitType::E_D0, *spTr);
 
-		Individual ind = Individual(pCell, pPatch, 0, 0, 0, 0.0, false, 0);
+		Individual ind = Individual(pSpecies, pCell, pPatch, 0, 0, 0, 0.0, false, 0);
 		ind.setUpGenes(pSpecies, 1.0);
 
 		// Create population to trigger emigration selection
@@ -944,7 +944,7 @@ void testIndividual() {
 		);
 		pSpecies->addTrait(TraitType::GENETIC_LOAD1, *spTr);
 
-		Individual ind = Individual(pCell, pPatch, 0, 0, 0, 0.0, false, 0);
+		Individual ind = Individual(pSpecies, pCell, pPatch, 0, 0, 0, 0.0, false, 0);
 		ind.setUpGenes(pSpecies, 1.0);
 
 		// By default, all loci are initialised at 0 so individual is viable
@@ -994,7 +994,7 @@ void testIndividual() {
 		);
 		pSpecies->addTrait(TraitType::GENETIC_LOAD1, *spTr);
 
-		Individual ind = Individual(pCell, pPatch, 0, 0, 0, 0.0, false, 0);
+		Individual ind = Individual(pSpecies, pCell, pPatch, 0, 0, 0, 0.0, false, 0);
 		ind.setUpGenes(pSpecies, 1.0);
 
 		const float valAlleleA = 1.0; // lethal
@@ -1117,7 +1117,7 @@ void testIndividual() {
 			pSpecies->addTrait(TraitType::S_BETA, *trSettBeta);
 			pSpecies->addTrait(TraitType::KERNEL_MEANDIST_1, *trMeanKern);
 
-			Individual ind = Individual(pCell, pPatch, 0, 0, 0, 0.0, false, 0);
+			Individual ind = Individual(pSpecies, pCell, pPatch, 0, 0, 0, 0.0, false, 0);
 			ind.setUpGenes(pSpecies, 1.0);
 
 			// Overwrite genotypes with alleles resulting in invalid phenotypes
@@ -1205,7 +1205,7 @@ void testIndividual() {
 
 			bool usesMovtProcess = true;
 			short whichMovtProcess = 2; // CRW
-			Individual ind = Individual(pCell, pPatch, 0, 0, 0, 0.0, usesMovtProcess, whichMovtProcess);
+			Individual ind = Individual(pSpecies, pCell, pPatch, 0, 0, 0, 0.0, usesMovtProcess, whichMovtProcess);
 			ind.setUpGenes(pSpecies, 1.0);
 
 			// Overwrite genotypes with alleles resulting in invalid phenotypes
@@ -1315,7 +1315,7 @@ void testIndividual() {
 
 			bool usesMovtProcess = true;
 			short whichMovtProcess = 1; // SMS
-			Individual ind = Individual(pCell, pPatch, 0, 0, 0, 0.0, usesMovtProcess, whichMovtProcess);
+			Individual ind = Individual(pSpecies, pCell, pPatch, 0, 0, 0, 0.0, usesMovtProcess, whichMovtProcess);
 			ind.setUpGenes(pSpecies, 1.0);
 
 			// Overwrite genotypes with alleles resulting in invalid phenotypes

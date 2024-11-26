@@ -224,6 +224,7 @@ public:
 	static int indCounter; // used to create ID, held by class, not members of class
 	static TraitFactory traitFactory;
 	Individual( // Individual constructor
+		Species* pSpecies,
 		Cell* pCell,
 		Patch* pPatch,
 		short stg,
@@ -236,32 +237,33 @@ public:
 	~Individual();
 
 	// Set genes for individual variation from species initialisation parameters
-	void setUpGenes(Species* pSpecies, int landResol);
+	void setUpGenes(int landResol);
 
 	// Inherit genome from parents
-	void inheritTraits(Species* pSpecies, Individual* pMother, Individual* pFather, int landResol); // diploid
-	void inheritTraits(Species* pSpecies, Individual* mother, int resol); // haploid
-	void setDispersalPhenotypes(Species* pSpecies, int landResol);
+	void inheritTraits(Individual* pMother, Individual* pFather, int landResol); // diploid
+	void inheritTraits(Individual* mother, int resol); // haploid
 
-	void inheritGenes(Species* pSpecies, const Individual* mother, const Individual* father); // diploid
-	void inheritGenes(Species* pSpecies, const Individual* mother); // haploid
+	void inheritGenes(const Individual* mother, const Individual* father); // diploid
+	void inheritGenes(const Individual* mother); // haploid
 
 	QuantitativeTrait* getTrait(TraitType trait) const;
 	set<TraitType> getTraitTypes();
 	
 	// Express disperal traits from allelic values
-	void expressEmigTraits(Species* pSpecies, bool sexDep, bool densityDep);
+	void expressDispersalPhenotypes(int landResol);
+
+	void expressEmigTraits(bool sexDep, bool densityDep);
 	emigTraits getIndEmigTraits(); // Get phenotypic emigration traits
 
-	void expressTransferTraits(Species* pSpecies, transferRules trfr, int resol);
-	void expressSMSTraits(Species* pSpecies);
+	void expressTransferTraits(transferRules trfr, int resol);
+	void expressSMSTraits();
 	trfrSMSTraits getIndSMSTraits(); // Get phenotypic transfer by SMS traits
-	void expressCRWTraits(Species* pSpecies);
+	void expressCRWTraits();
 	trfrCRWTraits getIndCRWTraits(); // Get phenotypic transfer by CRW traits
-	void expressKernelTraits(Species* pSpecies, bool sexDep, bool twinKernel, int resol);
+	void expressKernelTraits(bool sexDep, bool twinKernel, int resol);
 	trfrKernelParams getIndKernTraits(); // Get phenotypic transfer by kernel traits
 
-	void expressSettlementTraits(Species* pSpecies, bool sexDep, bool densDep);
+	void expressSettlementTraits(bool sexDep, bool densDep);
 	settleTraits getIndSettTraits(); // Get phenotypic settlement traits
 
 	trfrData* getTrfrData();
@@ -298,19 +300,17 @@ public:
 	// Move to a new cell by sampling a dispersal distance from a single or double
 	// negative exponential kernel
 	// Returns 1 if still dispersing (including having found a potential patch), otherwise 0
-	bool moveKernel(Landscape* pLandscape, Species* pSpecies, const bool isAbsorbing);
+	bool moveKernel(Landscape* pLandscape, const bool isAbsorbing);
 
 	// Make a single movement step according to a mechanistic movement model
 	// Returns 1 if still dispersing (including having found a potential patch), otherwise 0
 	bool moveStep(
-		Landscape* pLandscape, 
-		Species* pSpecies, 
+		Landscape* pLandscape,
 		const short landIx, // landscape change index
 		const bool isAbsorbing
 	);
 	movedata smsMove( // Move to a neighbouring cell according to the SMS algorithm
 		Landscape* pLandscape,
-		Species* pSpecies,
 		const short landIx,	// landscape change index
 		const bool isInNatalPatch,
 		const bool indVar,
@@ -333,7 +333,6 @@ public:
 	);
 	array3x3f getHabMatrix( // Weight neighbouring cells on basis of (habitat) costs
 		Landscape* pLandscape,
-		Species* pSpecies,
 		const int currCellX,
 		const int currCellY,
 		const short percRange,	// perceptual range (cells)
@@ -360,6 +359,7 @@ public:
 
 private:
 	int indId;
+	Species* pSpecies; // non-owning
 	float geneticFitness;
 	short stage;
 	sex_t sex;
