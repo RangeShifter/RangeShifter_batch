@@ -6447,7 +6447,7 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 }
 
 //---------------------------------------------------------------------------
-void RunBatch(int nSimuls, int nLandscapes)
+void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 {
 	int land_nr;
 	int read_error;
@@ -6611,12 +6611,16 @@ void RunBatch(int nSimuls, int nLandscapes)
 				
 				if (params_ok) {
 
-					cout << endl << "Running simulation nr. " << to_string(paramsSim->getSim().simulation)
+					cout << endl << "Running simulation nr. " 
+						<< to_string(paramsSim->getSim().simulation)
 						<< " on landscape no. " << to_string(land_nr) << endl;
 
 					// for batch processing, include landscape number in parameter file name
 					OutParameters(pLandscape);
-					RunModel(pLandscape, i);
+
+					map<int, Species*> allSpecies{ {0, pSpecies} }; // only one for now
+
+					RunModel(pLandscape, i, allSpecies);
 
 				} // end of if (params_ok)
 				else {
@@ -6647,8 +6651,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 				ifsTraitsFile.clear();
 			}
 
-			if (pLandscape != nullptr)
-			{
+			if (pLandscape != nullptr) {
 				delete pLandscape; 
 				pLandscape = nullptr;
 			}

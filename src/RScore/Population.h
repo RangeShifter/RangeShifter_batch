@@ -71,6 +71,7 @@ struct popStats {
 	int spNum, nInds, nNonJuvs, nAdults; 
 	bool breeding;
 };
+
 struct disperser {
 	Individual* pInd; 
 	Cell* pCell; 
@@ -116,12 +117,10 @@ struct traitsums {
 class Population {
 
 public:
-	Population(); // default constructor
-	// constructor for a Population of a specified size
 	Population(Species* pSpecies, Patch* pPatch, int ninds, int	resol);
 	~Population();
 
-	traitsums getIndTraitsSums(Species*);
+	traitsums getIndTraitsSums();
 	popStats getStats();
 	Patch* getPatch() { return pPatch; }
 	Species* getSpecies();
@@ -135,10 +134,11 @@ public:
 
 	void extirpate(); // Remove all individuals
 	void reproduction(
-		const float,	// local carrying capacity
-		const float,	// effect of environmental gradient and/or stochasticty
-		const int			// Landscape resolution
+		const float localK,	// local carrying capacity
+		const float envVal,	// effect of environmental gradient and/or stochasticty
+		const int landResol	// landscape resolution
 	);
+
 	// Following reproduction of ALL species, add juveniles to the population
 	void fledge();
 
@@ -218,9 +218,9 @@ public:
 private:
 	short nStages;
 	short nSexes;
-	Species* pSpecies;	// pointer to the species
-	Patch* pPatch;			// pointer to the patch
-	int nInds[gMaxNbStages][gMaxNbSexes];		// no. of individuals in each stage/sex
+	Species* pSpecies;	// non-owning
+	Patch* pPatch;		// non-owning
+	int nInds[gMaxNbStages][gMaxNbSexes]; // no. of individuals in each stage/sex
 
 	vector<Individual*> inds; // all individuals in population except ...
 	vector<Individual*> juvs; // ... juveniles until reproduction of ALL species

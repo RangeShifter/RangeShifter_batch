@@ -26,18 +26,8 @@
 #include "Patch.h"
 
 //---------------------------------------------------------------------------
-
-Population::Population() {
-	nSexes = nStages = 0;
-	pPatch = NULL;
-	pSpecies = NULL;
-	return;
-}
-
 Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 {
-	// constructor for a Population of a specified size
-
 	int n, nindivs, age = 0, minage, maxage, nAges = 0;
 	int cumtotal = 0;
 	float probmale;
@@ -196,7 +186,7 @@ Population::~Population(void) {
 	juvs.clear();
 }
 
-traitsums Population::getIndTraitsSums(Species* pSpecies) {
+traitsums Population::getIndTraitsSums() {
 	int g;
 	traitsums ts = traitsums();
 
@@ -1646,7 +1636,7 @@ traitsums Population::outTraits(ofstream& outtraits, const bool& writefile)
 		transferRules trfr = pSpecies->getTransferRules();
 		settleType sett = pSpecies->getSettle();
 
-		indTraitsSums = this->getIndTraitsSums(pSpecies);
+		indTraitsSums = this->getIndTraitsSums();
 
 		if (emig.indVar) {
 

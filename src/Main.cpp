@@ -161,12 +161,10 @@ int _tmain(int argc, _TCHAR* argv[])
 #endif
 
 	if (b.ok) {
-		try
-		{
-			RunBatch(b.nSimuls, b.nLandscapes);
+		try {
+			RunBatch(b.nSimuls, b.nLandscapes, pSpecies);
 		}
-		catch (const std::exception& e)
-		{
+		catch (const std::exception& e) {
 			cerr << endl << "Error: " << e.what() << endl;
 		}
 	}

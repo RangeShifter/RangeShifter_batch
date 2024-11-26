@@ -72,7 +72,7 @@ struct commStats {
 class Community {
 
 public:
-	Community(Landscape* pLand);
+	Community(Landscape* pLand, map<int, Species*> allSpecies);
 	~Community();
 	// functions to manage populations occurring in the community
 	void initialise(Species* pSpecies, int year);

@@ -26,8 +26,9 @@
 
 //---------------------------------------------------------------------------
 
-Community::Community(Landscape* pLand) {
+Community::Community(Landscape* pLand, map<int, Species*> allSpecies) {
 	pLandscape = pLand;
+	speciesMap = allSpecies;
 	indIx = 0;
 	pNeutralStatistics = nullptr;
 }

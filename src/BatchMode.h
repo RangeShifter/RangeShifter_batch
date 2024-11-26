@@ -185,7 +185,7 @@ void FileOK(string, int, int);
 void FileHeadersOK(string);
 void SimulnCountError(string);
 
-void RunBatch(int, int);
+void RunBatch(int nbSims, int nbLandscapes, Species* pSpecies);
 int ReadParameters(Landscape*);
 int ReadLandFile(Landscape*);
 int ReadDynLandFile(Landscape*);
