@@ -57,7 +57,8 @@ string to_string(indStatus s) {
 Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short repInt,
 	float probmale, bool movt, short moveType)
 {
-	indId = indCounter; indCounter++; // unique identifier for each individual
+	indId = indCounter; 
+	indCounter++; // unique identifier for each individual
 	geneticFitness = 1.0;
 	stage = stg;
 	if (probmale <= 0.0) sex = FEM;
@@ -97,16 +98,8 @@ Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short rep
 	}
 }
 
-Individual::~Individual(void) {
-	if (path != 0) delete path;
-}
-
-void Individual::setEmigTraits(const emigTraits& emig) {
-	pEmigTraits = make_unique<emigTraits>(emig);
-}
-
-void Individual::setSettleTraits(const settleTraits& settle) {
-	pSettleTraits = make_unique<settleTraits>(settle);
+Individual::~Individual() {
+	if (path != nullptr) delete path;
 }
 
 QuantitativeTrait* Individual::getTrait(TraitType trait) const {
@@ -125,7 +118,7 @@ set<TraitType> Individual::getTraitTypes() {
 //---------------------------------------------------------------------------
 // Inheritance for diploid, sexual species
 //---------------------------------------------------------------------------
-void Individual::inherit(Species* pSpecies, const Individual* mother, const Individual* father) {
+void Individual::inheritGenes(Species* pSpecies, const Individual* mother, const Individual* father) {
 
 	int events = 0;
 	const set<int> chromosomeEnds = pSpecies->getChromosomeEnds();
@@ -196,7 +189,7 @@ void Individual::inherit(Species* pSpecies, const Individual* mother, const Indi
 //---------------------------------------------------------------------------
 // Inheritance for haploid, asexual species
 //---------------------------------------------------------------------------
-void Individual::inherit(Species* pSpecies, const Individual* mother) {
+void Individual::inheritGenes(Species* pSpecies, const Individual* mother) {
 	set<unsigned int> recomPositions; //not used here cos haploid but need it for inherit function, not ideal 
 	int startingChromosome = 0;
 
@@ -243,26 +236,26 @@ void Individual::setDispersalPhenotypes(Species* pSpecies, int resol) {
 
 	// record phenotypic traits
 	if (emig.indVar)
-		this->setEmigTraits(pSpecies, emig.sexDep, emig.densDep);
+		this->expressEmigTraits(pSpecies, emig.sexDep, emig.densDep);
 	if (trfr.indVar)
-		this->setTransferTraits(pSpecies, trfr, resol);
+		this->expressTransferTraits(pSpecies, trfr, resol);
 	if (sett.indVar)
-		this->setSettlementTraits(pSpecies, sett.sexDep, settRules.densDep);
+		this->expressSettlementTraits(pSpecies, sett.sexDep, settRules.densDep);
 }
 
-void Individual::setTransferTraits(Species* pSpecies, transferRules trfr, int resol) {
+void Individual::expressTransferTraits(Species* pSpecies, transferRules trfr, int resol) {
 	if (trfr.usesMovtProc) {
 		if (trfr.moveType == 1) {
-			setIndSMSTraits(pSpecies);
+			expressSMSTraits(pSpecies);
 		}
 		else
-			setIndCRWTraits(pSpecies);
+			expressCRWTraits(pSpecies);
 	}
 	else
-		setIndKernelTraits(pSpecies, trfr.sexDep, trfr.twinKern, resol);
+		expressKernelTraits(pSpecies, trfr.sexDep, trfr.twinKern, resol);
 }
 
-void Individual::setSettlementTraits(Species* pSpecies, bool sexDep, bool densDep) {
+void Individual::expressSettlementTraits(Species* pSpecies, bool sexDep, bool densDep) {
 
 	settleTraits s; s.s0 = s.alpha = s.beta = 0.0;
 	if (sexDep) {
@@ -305,14 +298,14 @@ void Individual::setSettlementTraits(Species* pSpecies, bool sexDep, bool densDe
 // Inherit genome from parent(s), diploid
 void Individual::inheritTraits(Species* pSpecies, Individual* mother, Individual* father, int resol)
 {
-	inherit(pSpecies, mother, father);
+	inheritGenes(pSpecies, mother, father);
 	setDispersalPhenotypes(pSpecies, resol);
 }
 
 // Inherit genome from mother, haploid
 void Individual::inheritTraits(Species* pSpecies, Individual* mother, int resol)
 {
-	inherit(pSpecies, mother);
+	inheritGenes(pSpecies, mother);
 	setDispersalPhenotypes(pSpecies, resol);
 }
 
@@ -407,7 +400,7 @@ void Individual::setSettPatch(const settlePatch s) {
 	path->pSettPatch = s.pSettPatch;
 }
 
-void Individual::setEmigTraits(Species* pSpecies, bool sexDep, bool densityDep) {
+void Individual::expressEmigTraits(Species* pSpecies, bool sexDep, bool densityDep) {
 	emigTraits e; 
 	e.d0 = e.alpha = e.beta = 0.0;
 	if (sexDep) {
@@ -460,7 +453,7 @@ emigTraits Individual::getIndEmigTraits(void) {
 	return e;
 }
 // Set phenotypic transfer by kernel traits
-void Individual::setIndKernelTraits(Species* pSpecies, bool sexDep, bool twinKernel, int resol) {
+void Individual::expressKernelTraits(Species* pSpecies, bool sexDep, bool twinKernel, int resol) {
 
 	trfrKernelParams k; 
 	k.meanDist1 = k.meanDist2 = k.probKern1 = 0.0;
@@ -531,7 +524,7 @@ trfrKernelParams Individual::getIndKernTraits(void) {
 	return k;
 }
 
-void Individual::setIndSMSTraits(Species* pSpecies) {
+void Individual::expressSMSTraits(Species* pSpecies) {
 
 	trfrSMSTraits s = pSpecies->getSpSMSTraits();
 
@@ -583,7 +576,7 @@ trfrSMSTraits Individual::getIndSMSTraits(void) {
 
 
 // Set phenotypic transfer by CRW traits
-void Individual::setIndCRWTraits(Species* pSpecies) {
+void Individual::expressCRWTraits(Species* pSpecies) {
 	trfrCRWTraits c; c.stepLength = c.rho = 0.0;
 
 	c.stepLength = getTrait(CRW_STEPLENGTH)->express();
@@ -1057,7 +1050,7 @@ bool Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 
 // Move to a neighbouring cell according to the SMS algorithm
 movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
-	const short landIx, const bool natalPatch, const bool indvar, const bool absorbing)
+	const short landIx, const bool isInNatalPatch, const bool indvar, const bool absorbing)
 {
 	array3x3d neighbourWeights; // to hold weights/costs/probs of moving to neighbouring cells
 	array3x3d goalBiasWeights;	// to hold weights for moving towards a goal location
@@ -1082,14 +1075,14 @@ movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
 	// Get directional persistence weights
 	float directionalPersistence = indvar ? pSMS.dp : movt.dp;
 	if ((path->out > 0 && path->out <= (movt.pr + 1))
-		|| natalPatch
+		|| isInNatalPatch
 		|| (movt.straightenPath && path->settleStatus > 0)) {
 		// inflate directional persistence to help leaving the patch
 		directionalPersistence *= 10.0;
 	}
 	neighbourWeights = getSimDirection(currLoc.x, currLoc.y, directionalPersistence);
 
-	if (natalPatch || path->settleStatus > 0) path->out = 0;
+	if (isInNatalPatch || path->settleStatus > 0) path->out = 0;
 
 	// Get goal bias weights
 	double gb;
@@ -1243,7 +1236,7 @@ movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
 }
 
 // Weight neighbouring cells on basis of current movement direction
-array3x3d Individual::getSimDirection(const int x, const int y, const float dp)
+array3x3d Individual::getSimDirection(const int x, const int y, const float dirPersistence)
 {
 	array3x3d neighbourWeights;
 
@@ -1271,7 +1264,7 @@ array3x3d Individual::getSimDirection(const int x, const int y, const float dp)
 			}
 		}
 		double theta = atan2(x - prevLoc.x, y - prevLoc.y);
-		neighbourWeights = calcWeightings(dp, theta);
+		neighbourWeights = calcWeightings(dirPersistence, theta);
 	}
 	return neighbourWeights;
 }
@@ -1394,7 +1387,7 @@ array3x3d Individual::calcWeightings(const double base, const double theta) {
 
 // Weight neighbouring cells on basis of (habitat) costs
 array3x3f Individual::getHabMatrix(Landscape* pLand, Species* pSpecies,
-	const int currCellX, const int currCellY, const short pr, const short prmethod, const short landIx,
+	const int currCellX, const int currCellY, const short percRange, const short prMethod, const short landIx,
 	const bool absorbing)
 {
 	array3x3f neighbourHabWeights; // array of effective costs to be returned
@@ -1422,37 +1415,37 @@ array3x3f Individual::getHabMatrix(Landscape* pLand, Species* pSpecies,
 			else {
 				if (x == 0 || y == 0) { // not diagonal (rook move)
 					if (x == 0) { // vertical (N-S) move
-						if (pr % 2 == 0) { // PR even
-							xmin = -pr / 2; 
-							xmax = pr / 2; 
+						if (percRange % 2 == 0) { // PR even
+							xmin = -percRange / 2; 
+							xmax = percRange / 2; 
 							ymin = y; 
-							ymax = y * pr; 
+							ymax = y * percRange; 
 						} else { // PR odd
-							xmin = -(pr - 1) / 2; 
-							xmax = (pr - 1) / 2; 
+							xmin = -(percRange - 1) / 2; 
+							xmax = (percRange - 1) / 2; 
 							ymin = y;
-							ymax = y * pr; 
+							ymax = y * percRange; 
 						} 
 					}
 					if (y == 0) { // horizontal (E-W) move
-						if (pr % 2 == 0) { // PR even
+						if (percRange % 2 == 0) { // PR even
 							xmin = x; 
-							xmax = x * pr; 
-							ymin = -pr / 2; 
-							ymax = pr / 2; 
+							xmax = x * percRange; 
+							ymin = -percRange / 2; 
+							ymax = percRange / 2; 
 						} else { // PR odd
 							xmin = x; 
-							xmax = x * pr; 
-							ymin = -(pr - 1) / 2; 
-							ymax = (pr - 1) / 2; 
+							xmax = x * percRange; 
+							ymin = -(percRange - 1) / 2; 
+							ymax = (percRange - 1) / 2; 
 						}
 					}
 				}
 				else { // diagonal (bishop move)
 					xmin = x; 
-					xmax = x * pr; 
+					xmax = x * percRange; 
 					ymin = y; 
-					ymax = y * pr;
+					ymax = y * percRange;
 				}
 			}
 			if (xmin > xmax) { 
@@ -1512,17 +1505,17 @@ array3x3f Individual::getHabMatrix(Landscape* pLand, Species* pSpecies,
 								}
 							}
 						}
-						if (prmethod == 1) { // arithmetic mean
+						if (prMethod == 1) { // arithmetic mean
 							neighbourHabWeights.cell[x + 1][y + 1] += cost;
 							ncells++;
 						}
-						if (prmethod == 2) { // harmonic mean
+						if (prMethod == 2) { // harmonic mean
 							if (cost > 0) {
 								neighbourHabWeights.cell[x + 1][y + 1] += (1.0 / cost);
 								ncells++;
 							}
 						}
-						if (prmethod == 3) { // arithmetic mean weighted by inverse distance
+						if (prMethod == 3) { // arithmetic mean weighted by inverse distance
 							if (cost > 0) {
 								// NB distance is still given by (x3,y3)
 								weight = 1.0f / sqrt((pow(x3, 2) + pow(y3, 2)));
@@ -1536,9 +1529,9 @@ array3x3f Individual::getHabMatrix(Landscape* pLand, Species* pSpecies,
 				}  // end of x3 loop
 
 				if (ncells > 0) {
-					if (prmethod == 1) neighbourHabWeights.cell[x + 1][y + 1] /= ncells; // arithmetic mean
-					if (prmethod == 2) neighbourHabWeights.cell[x + 1][y + 1] = ncells / neighbourHabWeights.cell[x + 1][y + 1]; // hyperbolic mean
-					if (prmethod == 3 && sumweights > 0)
+					if (prMethod == 1) neighbourHabWeights.cell[x + 1][y + 1] /= ncells; // arithmetic mean
+					if (prMethod == 2) neighbourHabWeights.cell[x + 1][y + 1] = ncells / neighbourHabWeights.cell[x + 1][y + 1]; // hyperbolic mean
+					if (prMethod == 3 && sumweights > 0)
 						neighbourHabWeights.cell[x + 1][y + 1] /= sumweights; // weighted arithmetic mean
 				}
 			}

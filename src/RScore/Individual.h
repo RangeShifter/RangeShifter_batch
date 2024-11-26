@@ -224,145 +224,126 @@ public:
 	static int indCounter; // used to create ID, held by class, not members of class
 	static TraitFactory traitFactory;
 	Individual( // Individual constructor
-		Cell*,	// pointer to Cell
-		Patch*,	// pointer to patch
-		short,	// stage
-		short,	// age
-		short,	// reproduction interval (no. of years/seasons between breeding attempts)
-		float,	// probability that sex is male
-		bool,		// TRUE for a movement model, FALSE for kernel-based transfer
-		short		// movement type: 1 = SMS, 2 = CRW
+		Cell* pCell,
+		Patch* pPatch,
+		short stg,
+		short age,
+		short repInterval,	// no. of years/seasons between breeding attempts
+		float probMale,
+		bool usesMovtProc,	// TRUE for a movement model, FALSE for kernel-based transfer
+		short movtType		// 1 = SMS, 2 = CRW
 	);
-	~Individual(void);
-	void setUpGenes( // Set genes for individual variation from species initialisation parameters
-		Species*,			// pointer to Species
-		int						// Landscape resolution
-	);
-	void inheritTraits( // Inherit genome from parents
-		Species*,			// pointer to Species
-		Individual*,	// pointer to mother
-		Individual*,	// pointer to father (must be 0 for an asexual Species)
-		int						// Landscape resolution
-	);
+	~Individual();
 
-	void inheritTraits(Species* pSpecies, Individual* mother, int resol); //haploid
+	// Set genes for individual variation from species initialisation parameters
+	void setUpGenes(Species* pSpecies, int landResol);
 
-	void setDispersalPhenotypes(Species* pSpecies, int resol);
+	// Inherit genome from parents
+	void inheritTraits(Species* pSpecies, Individual* pMother, Individual* pFather, int landResol); // diploid
+	void inheritTraits(Species* pSpecies, Individual* mother, int resol); // haploid
+	void setDispersalPhenotypes(Species* pSpecies, int landResol);
+
+	void inheritGenes(Species* pSpecies, const Individual* mother, const Individual* father); // diploid
+	void inheritGenes(Species* pSpecies, const Individual* mother); // haploid
 
 	QuantitativeTrait* getTrait(TraitType trait) const;
-
 	set<TraitType> getTraitTypes();
+	
+	// Express disperal traits from allelic values
+	void expressEmigTraits(Species* pSpecies, bool sexDep, bool densityDep);
+	emigTraits getIndEmigTraits(); // Get phenotypic emigration traits
 
-	void inherit(Species* pSpecies, const Individual* mother, const Individual* father);
+	void expressTransferTraits(Species* pSpecies, transferRules trfr, int resol);
+	void expressSMSTraits(Species* pSpecies);
+	trfrSMSTraits getIndSMSTraits(); // Get phenotypic transfer by SMS traits
+	void expressCRWTraits(Species* pSpecies);
+	trfrCRWTraits getIndCRWTraits(); // Get phenotypic transfer by CRW traits
+	void expressKernelTraits(Species* pSpecies, bool sexDep, bool twinKernel, int resol);
+	trfrKernelParams getIndKernTraits(); // Get phenotypic transfer by kernel traits
 
-	void inherit(Species* pSpecies, const Individual* mother); // haploid
+	void expressSettlementTraits(Species* pSpecies, bool sexDep, bool densDep);
+	settleTraits getIndSettTraits(); // Get phenotypic settlement traits
 
-	void setEmigTraits(Species* pSpecies, bool sexDep, bool densityDep);
-	void setTransferTraits(Species* pSpecies, transferRules trfr, int resol);
-
-	emigTraits getIndEmigTraits(void); // Get phenotypic emigration traits
-
-	void setIndKernelTraits(Species* pSpecies, bool sexDep, bool twinKernel, int resol);
-
-	trfrKernelParams getIndKernTraits(void); // Get phenotypic transfer by kernel traits
-
-	void setIndSMSTraits(Species* pSpecies);
-
-	trfrSMSTraits getIndSMSTraits(void); // Get phenotypic transfer by SMS traits
-
-	void setIndCRWTraits(Species* pSpecies);
-
-	trfrCRWTraits getIndCRWTraits(void); // Get phenotypic transfer by CRW traits
-
-	void setSettlementTraits(Species* pSpecies, bool sexDep, bool densDep);
-
-	settleTraits getIndSettTraits(void); // Get phenotypic settlement traits
-
-	trfrData* getTrfrData(void);
-	void setEmigTraits(const emigTraits& emig);
-	void setSettleTraits(const settleTraits& settle);
+	trfrData* getTrfrData();
 
 	// Identify whether an individual is a potentially breeding female -
 	// if so, return her stage, otherwise return 0
-	int breedingFem(void);
-	int getId(void);
-	sex_t getSex(void);
+	int breedingFem();
+	int getId();
+	sex_t getSex();
 	indStatus getStatus();
-	float getGeneticFitness(void);
+	float getGeneticFitness();
 	bool isViable() const;
-	indStats getStats(void);
+	indStats getStats();
 	Cell* getLocn( // Return location (as pointer to Cell)
 		const short	// option: 0 = get natal locn, 1 = get current locn
 	); //
-	Patch* getNatalPatch(void);
-	void setYearSteps(int);
-	pathSteps getSteps(void);
-	settlePatch getSettPatch(void);
+	Patch* getNatalPatch();
+	void setYearSteps(int t);
+	pathSteps getSteps();
+	settlePatch getSettPatch();
 	void setSettPatch(const settlePatch);
 	void setStatus(indStatus s);
-	void setToDevelop(void);
-	void develop(void);
+	void setToDevelop();
+	void develop();
 	void ageIncrement( // Age by one year
 		short	// maximum age - if exceeded, the Individual dies
 	);
-	void incFallow(void); // Inrement no. of reproductive seasons since last reproduction
-	void resetFallow(void);
-	void moveTo( // Move to a specified neighbouring cell
-		Cell*	// pointer to the new cell
-	);
+	void incFallow(); // Increment nb of reproductive seasons since last reproduction
+	void resetFallow();
+
+	// Move to a specified neighbouring cell
+	void moveTo(Cell* pCell);
+
 	// Move to a new cell by sampling a dispersal distance from a single or double
 	// negative exponential kernel
 	// Returns 1 if still dispersing (including having found a potential patch), otherwise 0
-	bool moveKernel(
-		Landscape*,		// pointer to Landscape
-		Species*,			// pointer to Species
-		const bool    // absorbing boundaries?
-	);
+	bool moveKernel(Landscape* pLandscape, Species* pSpecies, const bool isAbsorbing);
+
 	// Make a single movement step according to a mechanistic movement model
 	// Returns 1 if still dispersing (including having found a potential patch), otherwise 0
 	bool moveStep(
-		Landscape*,		// pointer to Landscape
-		Species*,			// pointer to Species
-		const short,	// landscape change index
-		const bool    // absorbing boundaries?
+		Landscape* pLandscape, 
+		Species* pSpecies, 
+		const short landIx, // landscape change index
+		const bool isAbsorbing
 	);
 	movedata smsMove( // Move to a neighbouring cell according to the SMS algorithm
-		Landscape*,		// pointer to Landscape
-		Species*,			// pointer to Species
-		const short,	// landscape change index
-		const bool,		// TRUE if still in (or returned to) natal patch
-		const bool,   // individual variability?
-		const bool    // absorbing boundaries?
+		Landscape* pLandscape,
+		Species* pSpecies,
+		const short landIx,	// landscape change index
+		const bool isInNatalPatch,
+		const bool indVar,
+		const bool isAbsorbing
 	);
 	array3x3d getSimDirection( // Weight neighbouring cells on basis of current movement direction
-		const int,	// current x co-ordinate
-		const int,	// current y co-ordinate
-		const float	// directional persistence value
+		const int x,	// current x co-ordinate
+		const int y,	// current y co-ordinate
+		const float dirPersistence	// directional persistence value
 	);
 	array3x3d getGoalBias( // Weight neighbouring cells on basis of goal bias
-		const int,	// current x co-ordinate
-		const int,	// current y co-ordinate
-		const int,	// goal type: 0 = none, 1 = towards goal (NOT IMPLEMENTED), 2 = dispersal bias
-		const float	// GOAL BIAS VALUE
+		const int x,
+		const int y,
+		const int goalType,	// 0 = none, 2 = dispersal bias
+		const float	goalBias
 	);
 	array3x3d calcWeightings( // Calculate weightings for neighbouring cells
-		const double,	// base for power-law (directional persistence or goal bias value)
-		const double	// direction in which lowest (unit) weighting is to be applied
+		const double base,	// base for power-law (directional persistence or goal bias value)
+		const double theta	// direction in which lowest (unit) weighting is to be applied
 	);
 	array3x3f getHabMatrix( // Weight neighbouring cells on basis of (habitat) costs
-		Landscape*,		// pointer to Landscape
-		Species*,			// pointer to Species
-		const int,		// current x co-ordinate
-		const int,		// current y co-ordinate
-		const short,	// perceptual range (cells)
-		const short,	// perceptual range evaluation method (see Species)
-		const short,	// landscape change index
-		const bool    // absorbing boundaries?
+		Landscape* pLandscape,
+		Species* pSpecies,
+		const int currCellX,
+		const int currCellY,
+		const short percRange,	// perceptual range (cells)
+		const short prMethod,	// perceptual range evaluation method (see Species)
+		const short landIx,
+		const bool isAbsorbing
 	);
 #if RS_RCPP
-	void outMovePath( // Write records to movement paths file
-		const int		 	// year
-	);
+	// Write records to movement paths file
+	void outMovePath(const int year);
 #endif
 #ifndef NDEBUG
 	// Testing utilities
@@ -371,7 +352,7 @@ public:
 	void insertIndDispTrait(TraitType trType, DispersalTrait tr) {
 		spTraitTable.insert(make_pair(trType, make_unique<DispersalTrait>(tr)));
 	};
-	void triggerMutations(Species* pSp);
+	void triggerMutations(Species* pSpecies);
 	// Shorthand function to edit a genotype with custom values
 	void overrideGenotype(TraitType whichTrait, const map<int, vector<shared_ptr<Allele>>>& newGenotype); // dispersal + gen. fitness
 	void overrideGenotype(TraitType whichTrait, const map<int, vector<unsigned char>>& newGenotype); // neutral
