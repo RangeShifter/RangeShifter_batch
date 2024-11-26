@@ -77,6 +77,7 @@ public:
 	// functions to manage populations occurring in the community
 	void initialise(Species* pSpecies, int year);
 	void resetPopns();
+	Species* findSpecies(int speciesID);
 	void initialInd(
 		Landscape* pLandscape, 
 		Species* pSpecies, 
@@ -180,6 +181,7 @@ public:
 	void writePairwiseFstFile(Species* pSpecies, const int yr, const int gen, const  int nAlleles, const int nLoci, set<int> const& patchList);
 
 private:
+	map<int, Species*> speciesMap;
 	Landscape* pLandscape;
 	int indIx;				// index used to apply initial individuals
 	vector<vector <int>> occSuit;	// occupancy of suitable cells / patches
