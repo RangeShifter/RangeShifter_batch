@@ -83,7 +83,7 @@ int Cell::nHabitats() {
 	return nh;
 }
 
-void Cell::setHabitat(float q) {
+void Cell::addHabitat(float q) {
 	if (q >= 0.0 && q <= 100.0) habitats.push_back(q);
 	else habitats.push_back(0.0);
 }
@@ -99,7 +99,7 @@ void Cell::setPatch(Patch* p) {
 	pPatch = p;
 }
 
-Patch* Cell::getPatch(void)
+Patch* Cell::getPatch()
 {
 	return pPatch;
 }

@@ -453,7 +453,7 @@ private:
 	bool fractal;					//
 	bool continuous;			//
 	bool dynamic;					// landscape changes during simulation
-	bool habIndexed;			// habitat codes have been converted to index numbers
+	bool habsAreIndexed;			// habitat codes have been converted to index numbers
 	short rasterType;			// 0 = habitat codes 1 = % cover 2 = quality 9 = artificial landscape
 	int landNum;					// landscape number
 	int resol;						// cell size (m)

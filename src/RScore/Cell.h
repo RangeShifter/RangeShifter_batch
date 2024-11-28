@@ -72,7 +72,7 @@ public:
 	void changeHabIndex(short ix, short hx);
 	int getHabIndex(int ix);
 	int nHabitats(void);
-	void setHabitat(float q); // habitat prop or cell quality score
+	void addHabitat(float q); // habitat prop or cell quality score
 	float getHabitat(int ix); // Get habitat proportion / quality score
 	void setPatch(Patch* p);
 	Patch* getPatch();
