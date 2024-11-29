@@ -425,7 +425,7 @@ popStats Population::getStats(void)
 	demogrParams dem = pSpecies->getDemogrParams();
 	p.pSpecies = pSpecies;
 	p.pPatch = pPatch;
-	p.spNum = pSpecies->getSpNum();
+	p.speciesID = pSpecies->getSpeciesID();
 	p.nInds = (int)inds.size();
 	p.nNonJuvs = p.nAdults = 0;
 	p.breeding = false;
@@ -928,13 +928,13 @@ disperser Population::extractDisperser(int ix) {
 	indStats ind = inds[ix]->getStats();
 	if (ind.status == 1) { // emigrant
 		d.pInd = inds[ix]; 
-		d.yes = true;
+		d.isDispersing = true;
 		inds[ix] = 0;
 		nInds[ind.stage][ind.sex]--;
 	}
 	else {
 		d.pInd = NULL; 
-		d.yes = false;
+		d.isDispersing = false;
 	}
 	return d;
 }
@@ -950,9 +950,9 @@ disperser Population::extractSettler(int ix) {
 	Cell* pCell = inds[ix]->getLocn(1);
 	d.pInd = inds[ix];  
 	d.pCell = pCell;
-	d.yes = false;
+	d.isSettling = false;
 	if (ind.status == settled || ind.status == settledNeighbour) {
-		d.yes = true;
+		d.isSettling = true;
 		inds[ix] = nullptr;
 		nInds[ind.stage][ind.sex]--;
 	}
@@ -1454,7 +1454,7 @@ void Population::outPopulation(ofstream& outPopOfs, int rep, int yr, int gen, bo
 			outPopOfs << "\t" << eps << "\t" << envval << "\t" << k;
 		}
 	}
-	outPopOfs << "\t" << pSpecies->getSpNum();
+	outPopOfs << "\t" << pSpecies->getSpeciesID();
 	if (dem.stageStruct) {
 		p = getStats();
 		outPopOfs << "\t" << p.nNonJuvs;
@@ -1491,7 +1491,7 @@ void Population::outIndividual(ofstream& outIndsOfs, Landscape* pLandscape, int 
 	emigRules emig = pSpecies->getEmigRules();
 	transferRules trfr = pSpecies->getTransferRules();
 	settleType sett = pSpecies->getSettle();
-	short spNum = pSpecies->getSpNum();
+	short speciesID = pSpecies->getSpeciesID();
 	int patchNum = pPatch->getPatchNum();
 
 	int ninds = (int)inds.size();
@@ -1515,7 +1515,7 @@ void Population::outIndividual(ofstream& outIndsOfs, Landscape* pLandscape, int 
 			}
 		}
 		if (writeInd) {
-			outIndsOfs << "\t" << spNum << "\t" << inds[i]->getId();
+			outIndsOfs << "\t" << speciesID << "\t" << inds[i]->getId();
 			if (dem.stageStruct) outIndsOfs << "\t" << to_string(ind.status);
 			else { // non-structured population
 				outIndsOfs << "\t" << to_string(ind.status);

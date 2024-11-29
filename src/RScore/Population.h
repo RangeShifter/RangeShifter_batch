@@ -68,14 +68,15 @@ class Patch;
 struct popStats {
 	Species* pSpecies; 
 	Patch* pPatch; 
-	int spNum, nInds, nNonJuvs, nAdults; 
+	int speciesID, nInds, nNonJuvs, nAdults; 
 	bool breeding;
 };
 
 struct disperser {
 	Individual* pInd; 
 	Cell* pCell; 
-	bool yes;
+	bool isDispersing;
+	bool isSettling;
 };
 
 struct traitsums {

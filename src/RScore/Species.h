@@ -221,8 +221,8 @@ public:
 		const bool& usesMovtProc = false, 
 		const short& movementType = 1
 	);
-	~Species(void);
-	short getSpNum(void);
+	~Species();
+	short getSpeciesID();
 
 	// demographic parameter functions
 
@@ -620,7 +620,7 @@ private:
 	float betaS[gMaxNbStages][gMaxNbSexes];			// inflection point of the settlement reaction norm to density
 
 	// other attributes
-	int spNum;
+	int speciesID;
 
 };
 
