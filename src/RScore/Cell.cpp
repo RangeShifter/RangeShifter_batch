@@ -55,13 +55,13 @@ Cell::Cell(int xx, int yy, Patch* patch, float hab)
 Cell::~Cell() {
 	habIxx.clear();
 	habitats.clear();
-	if (smsData != 0) {
-		if (smsData->effcosts != 0) delete smsData->effcosts;
+	if (smsData != nullptr) {
+		if (smsData->effcosts != nullptr) delete smsData->effcosts;
 		delete smsData;
 	}
 }
 
-void Cell::setHabIndex(short hx) {
+void Cell::addHabIndex(short hx) {
 	if (hx < 0) habIxx.push_back(0);
 	else habIxx.push_back(hx);
 }
@@ -137,25 +137,25 @@ int Cell::getCost() {
 }
 
 void Cell::setCost(int c) {
-	if (smsData == 0) {
+	if (smsData == nullptr) {
 		smsData = new smscosts;
-		smsData->effcosts = 0;
+		smsData->effcosts = nullptr;
 	}
 	smsData->cost = c;
 }
 
 // Reset the cost and the effective cost of the cell
 void Cell::resetCost() {
-	if (smsData != 0) { 
+	if (smsData != nullptr) {
 		resetEffCosts(); 
 		delete smsData; 
 	}
-	smsData = 0;
+	smsData = nullptr;
 }
 
 array3x3f Cell::getEffCosts() {
 	array3x3f a;
-	if (smsData == 0 || smsData->effcosts == 0) { // effective costs have not been calculated
+	if (smsData == nullptr || smsData->effcosts == nullptr) { // effective costs have not been calculated
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
 				a.cell[i][j] = -1.0;
@@ -168,17 +168,17 @@ array3x3f Cell::getEffCosts() {
 }
 
 void Cell::setEffCosts(array3x3f a) {
-	if (smsData->effcosts == 0) 
+	if (smsData->effcosts == nullptr)
 		smsData->effcosts = new array3x3f;
 	*smsData->effcosts = a;
 }
 
 // Reset the effective cost, but not the cost, of the cell
 void Cell::resetEffCosts() {
-	if (smsData != 0) {
-		if (smsData->effcosts != 0) {
+	if (smsData != nullptr) {
+		if (smsData->effcosts != nullptr) {
 			delete smsData->effcosts;
-			smsData->effcosts = 0;
+			smsData->effcosts = nullptr;
 		}
 	}
 }

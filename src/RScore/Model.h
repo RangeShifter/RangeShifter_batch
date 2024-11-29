@@ -82,7 +82,7 @@ extern string landFile;
 extern RSrandom *pRandom;
 
 #if RS_RCPP
-extern string name_landscape, name_patch, name_costfile, name_sp_dist;
+extern string gHabMapName, gPatchMapName, name_costfile, gSpDistFileName;
 #endif
 //---------------------------------------------------------------------------
 #endif

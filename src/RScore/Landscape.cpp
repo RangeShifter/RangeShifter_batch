@@ -272,7 +272,10 @@ int InitDist::readDistribution(string distfile) {
 			if (p == 1) { // species present
 				cells.push_back(new DistCell(x, y));
 			}
-			else if (p != nodata && p != 0) { // error in file
+			else if (p == nodata || p == 0) {
+				// nothing, species absent
+			}
+			else { // any otehr value is an error
 				dfile.close();
 				dfile.clear();
 				return 22;
@@ -700,14 +703,13 @@ void Landscape::allocatePatches(Species* pSpecies)
 	Patch* pPatch;
 	Cell* pCell;
 
-	// delete all existing patches
-	int npatches = (int)patches.size();
-	for (int i = 0; i < npatches; i++) {
-		if (patches[i] != NULL) delete patches[i];
+	// Delete all existing patches (from previous landscape)
+	for (int i = 0; i < patches.size(); i++) {
+		if (patches[i] != nullptr) delete patches[i];
 	}
 	patches.clear();
 
-	// create the matrix patch
+	// Create the matrix patch
 	patches.push_back(new Patch(0, 0));
 	Patch* matrixPatch = patches[0];
 	patchnums.push_back(0);
@@ -716,9 +718,11 @@ void Landscape::allocatePatches(Species* pSpecies)
 	switch (rasterType) {
 
 	case 0: // habitat codes
+
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
-				if (cells[y][x] != 0) { // not no-data cell
+
+				if (cells[y][x] != nullptr) { // not no-data cell
 					pCell = cells[y][x];
 					habK = 0.0;
 					int nhab = pCell->nHabitats();
@@ -732,21 +736,22 @@ void Landscape::allocatePatches(Species* pSpecies)
 					}
 					else { // cell is not suitable - add to the matrix patch
 						addCellToPatch(pCell, matrixPatch);
-						pPatch = 0;
+						pPatch = nullptr;
 					}
 				}
 			}
 		}
 		break;
 	case 1: // habitat cover
+
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
-				if (cells[y][x] != 0) { // not no-data cell
+
+				if (cells[y][x] != nullptr) { // not no-data cell
 					pCell = cells[y][x];
 					habK = 0.0;
 					int nhab = pCell->nHabitats();
-					for (int i = 0; i < nhab; i++)
-					{
+					for (int i = 0; i < nhab; i++) {
 						habK += pSpecies->getHabK(i) * pCell->getHabitat(i) / 100.0f;
 					}
 					if (habK > 0.0) { // cell is suitable - create a patch for it
@@ -756,7 +761,7 @@ void Landscape::allocatePatches(Species* pSpecies)
 					}
 					else { // cell is not suitable - add to the matrix patch
 						addCellToPatch(pCell, matrixPatch);
-						pPatch = 0;
+						pPatch = nullptr;
 					}
 				}
 			}
@@ -769,8 +774,7 @@ void Landscape::allocatePatches(Species* pSpecies)
 					pCell = cells[y][x];
 					habK = 0.0;
 					int nhab = pCell->nHabitats();
-					for (int i = 0; i < nhab; i++)
-					{
+					for (int i = 0; i < nhab; i++) {
 						habK += pSpecies->getHabK(0) * pCell->getHabitat(i) / 100.0f;
 					}
 					if (habK > 0.0) { // cell is suitable (at some time) - create a patch for it
@@ -780,7 +784,7 @@ void Landscape::allocatePatches(Species* pSpecies)
 					}
 					else { // cell is never suitable - add to the matrix patch
 						addCellToPatch(pCell, matrixPatch);
-						pPatch = 0;
+						pPatch = nullptr;
 					}
 				}
 			}
@@ -872,7 +876,7 @@ void Landscape::addCellToPatch(Cell* pCell, Patch* pPatch, float q) {
 void Landscape::addCellToPatch(Cell* pCell, Patch* pPatch, int hab) {
 	pCell->setPatch(pPatch);
 	// update the habitat type of the cell
-	pCell->setHabIndex(hab);
+	pCell->addHabIndex(hab);
 	locn loc = pCell->getLocn();
 	// add the cell to the patch
 	pPatch->addCell(pCell, loc.x, loc.y);
@@ -1019,9 +1023,9 @@ int Landscape::checkTotalCover(void) {
 				}
 				if (sumCover > 100.00001) nCells++; // decimal part to allow for floating point error
 				if (sumCover <= 0.0) // cell is a matrix cell
-					cells[y][x]->setHabIndex(0);
+					cells[y][x]->addHabIndex(0);
 				else
-					cells[y][x]->setHabIndex(1);
+					cells[y][x]->addHabIndex(1);
 			}
 		}
 	}
@@ -1035,16 +1039,19 @@ void Landscape::updateHabitatIndices() {
 	sort(habCodes.begin(), habCodes.end());
 	nHab = static_cast<int>(habCodes.size());
 	// convert codes in landscape
-	int h;
-	int changes = static_cast<int>(landchanges.size());
+	int habIx;
+	int nbLandChanges = static_cast<int>(landchanges.size());
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
+
 			if (cells[y][x] != nullptr) { // not a no-data cell
-				for (int c = 0; c <= changes; c++) {
-					h = cells[y][x]->getHabIndex(c);
-					if (h >= 0) {
-						h = findHabCode(h);
-						cells[y][x]->changeHabIndex(c, h);
+				for (int changeIndex = 0; changeIndex <= nbLandChanges; changeIndex++) {
+					habIx = cells[y][x]->getHabIndex(changeIndex);
+					if (habIx >= 0) {
+						const auto it = find(habCodes.begin(), habCodes.end(), habIx);
+						if (it != habCodes.end()) {
+							cells[y][x]->changeHabIndex(changeIndex, *it);
+						}
 					}
 				}
 			}
@@ -1176,7 +1183,7 @@ void Landscape::deleteLandChanges(void) {
 }
 
 #if RS_RCPP && !R_CMD
-int Landscape::readLandChange(int filenum, bool costs, wifstream& ifsHabMap, wifstream& ifsPatchMap, wifstream& cfile, int noDataHabCode, int noDataPatch, int costnodata)
+int Landscape::readLandChange(int filenum, bool costs, wifstream& ifsHabMap, wifstream& ifsPatchMap, wifstream& ifsDynCostFile, int noDataHabCode, int noDataPatch, int costnodata)
 #else
 int Landscape::readLandChange(int filenum, bool costs)
 #endif
@@ -1190,36 +1197,34 @@ int Landscape::readLandChange(int filenum, bool costs)
 	costnodata = 0;
 	pchnodata = 0;
 #endif
-	int h = 0, p = 0, c = 0, pchseq = 0;
+	int habCode = 0, patchCode = 0, costCode = 0, pchseq = 0;
 	float hfloat, pfloat, cfloat;
 	simParams sim = paramsSim->getSim();
 
 	if (filenum < 0) return 19;
 	if (patchModel) pchseq = patchCount();
 
-#if !RS_RCPP
-	ifstream hfile; // habitat file input stream
-	ifstream pfile; // patch file input stream
-	ifstream cfile; // costs file input stream
-#endif
-
 #if !RS_RCPP || R_CMD
+	ifstream ifsDynHabFile; // habitat file input stream
+	ifstream ifsDynPatchFile; // patch file input stream
+	ifstream ifsDynCostFile; // costs file input stream
+
 	// open habitat file and optionally also patch and costs files
-	hfile.open(landchanges[filenum].habfile.c_str());
-	if (!hfile.is_open()) return 30;
+	ifsDynHabFile.open(landchanges[filenum].habfile.c_str());
+	if (!ifsDynHabFile.is_open()) return 30;
 	if (patchModel) {
-		pfile.open(landchanges[filenum].pchfile.c_str());
-		if (!pfile.is_open()) {
-			hfile.close(); hfile.clear();
+		ifsDynPatchFile.open(landchanges[filenum].pchfile.c_str());
+		if (!ifsDynPatchFile.is_open()) {
+			ifsDynHabFile.close(); ifsDynHabFile.clear();
 			return 31;
 		}
 	}
 	if (costs) {
-		cfile.open(landchanges[filenum].costfile.c_str());
-		if (!cfile.is_open()) {
-			hfile.close(); hfile.clear();
-			if (pfile.is_open()) {
-				pfile.close(); pfile.clear();
+		ifsDynCostFile.open(landchanges[filenum].costfile.c_str());
+		if (!ifsDynCostFile.is_open()) {
+			ifsDynHabFile.close(); ifsDynHabFile.clear();
+			if (ifsDynPatchFile.is_open()) {
+				ifsDynPatchFile.close(); ifsDynPatchFile.clear();
 			}
 			return 32;
 		}
@@ -1227,152 +1232,168 @@ int Landscape::readLandChange(int filenum, bool costs)
 
 	// read header records of habitat (and patch) file(s)
 	// NB headers of all files have already been compared
-	hfile >> header >> ncols >> header >> nrows >> header >> hfloat >> header >> hfloat
-		>> header >> hfloat >> header >> habnodata;
+	ifsDynHabFile
+		>> header >> ncols 
+		>> header >> nrows 
+		>> header >> hfloat 
+		>> header >> hfloat
+		>> header >> hfloat 
+		>> header >> habnodata;
 	if (patchModel) {
-		for (int i = 0; i < 5; i++) pfile >> header >> pfloat;
-		pfile >> header >> pchnodata;
+		for (int i = 0; i < 5; i++) ifsDynPatchFile 
+			>> header >> pfloat;
+		ifsDynPatchFile 
+			>> header >> pchnodata;
 	}
 	if (costs) {
-		for (int i = 0; i < 5; i++) cfile >> header >> cfloat;
-		cfile >> header >> costnodata;
+		for (int i = 0; i < 5; i++) ifsDynCostFile 
+			>> header >> cfloat;
+		ifsDynCostFile 
+			>> header >> costnodata;
 	}
 #endif
 
 	// set up bad float values to ensure that valid values are read
-	float badhfloat = -9.0; if (habnodata == -9) badhfloat = -99.0;
-	float badpfloat = -9.0; if (pchnodata == -9) badpfloat = -99.0;
-	float badcfloat = -9.0; if (costnodata == -9) badcfloat = -99.0;
+	float badHabFloat = -9.0; 
+	if (habnodata == -9) badHabFloat = -99.0;
+	float badPatchFloat = -9.0;
+	if (pchnodata == -9) badPatchFloat = -99.0;
+	float badCostFloat = -9.0; 
+	if (costnodata == -9) badCostFloat = -99.0;
 
 	switch (rasterType) {
 
 	case 0: // raster with habitat codes - 100% habitat each cell
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
-				hfloat = badhfloat;
+				hfloat = badHabFloat;
 #if RS_RCPP
 				if (ifsHabMap >> habFloat) {
-#else
-				hfile >> hfloat;
-#endif
-				h = (int)hfloat;
-#if RS_RCPP
+					habCode = static_cast<int>(hfloat);
 				}
-	else {
-		// corrupt file stream
-#if RS_RCPP && !R_CMD
-		Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
+				else {
+					// corrupt file stream
+#if !R_CMD
+					Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
 #endif
-		StreamErrorR("habitatchgfile");
-		ifsHabMap.close();
-		ifsHabMap.clear();
-		ifsPatchMap.close();
-		ifsPatchMap.clear();
-		return 171;
-	}
-#endif
+					StreamErrorR("habitatchgfile");
+					ifsHabMap.close();
+					ifsHabMap.clear();
+					ifsPatchMap.close();
+					ifsPatchMap.clear();
+					return 171;
+				}
+
 				if (patchModel) {
-					pfloat = badpfloat;
-#if RS_RCPP
-		if (ifsPatchMap >> patchFloat) {
-#else
-					pfile >> pfloat;
-#endif
-					p = (int)pfloat;
-#if RS_RCPP
-				}
-	else {
-		// corrupt file stream
-#if RS_RCPP && !R_CMD
-		Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
-#endif
-		StreamErrorR("patchchgfile");
-		ifsHabMap.close();
-		ifsHabMap.clear();
-		ifsPatchMap.close();
-		ifsPatchMap.clear();
-		return 172;
-	}
-#endif
-	}
-				if (costs) {
-					cfloat = badcfloat;
-#if RS_RCPP
-			if (cfile >> cfloat) {
-#else
-					cfile >> cfloat;
-#endif
-					c = (int)cfloat;
-#if RS_RCPP
-				}
-		else {
-			// corrupt file stream
-#if RS_RCPP && !R_CMD
-			Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
-#endif
-			StreamErrorR("costchgfile");
-			ifsHabMap.close();
-			ifsHabMap.clear();
-			ifsPatchMap.close();
-			ifsPatchMap.clear();
-			return 173;
-		}
-#endif
-		}
-				if (cells[y][x] != 0) { // not a no data cell (in initial landscape)
-					if (h == habnodata) { // invalid no data cell in change map
-						hfile.close(); 
-						hfile.clear();
-						return 36;
+					pfloat = badPatchFloat;
+					if (ifsPatchMap >> patchFloat) {
+						patchCode = static_cast<int>(pfloat);
 					}
 					else {
-						if (h < 0 || (sim.batchMode && (h < 1 || h > nHabMax))) {
-							// invalid habitat code
-							hfile.close(); 
-							hfile.clear();
-							if (patchModel) { pfile.close(); pfile.clear(); }
-							return 33;
-						}
-						else {
-							addHabCode(h);
-							cells[y][x]->setHabIndex(h);
-						}
+						// corrupt file stream
+#if !R_CMD
+						Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
+#endif
+						StreamErrorR("patchchgfile");
+						ifsHabMap.close();
+						ifsHabMap.clear();
+						ifsPatchMap.close();
+						ifsPatchMap.clear();
+						return 172;
 					}
-					if (patchModel) {
-						if (p < 0 || p == pchnodata) { // invalid patch code
+
+				}
+				if (costs) {
+					cfloat = badCostFloat;
+					if (ifsDynCostFile >> cfloat) {
+						costCode = (int)cfloat;
+					}
+					else {
+						// corrupt file stream
 #if RS_RCPP && !R_CMD
-				if (patchCode == noDataPatch) Rcpp::Rcout << "Found patch NA in valid habitat cell." << std::endl;
-				else Rcpp::Rcout << "Found negative patch ID in valid habitat cell." << std::endl;
+						Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
 #endif
-				hfile.close(); 
-				hfile.clear();
-				pfile.close(); 
-				pfile.clear();
-				return 34;
-			}
-			else {
-				patchChgMatrix[y][x][2] = p;
-				if (p > 0 && !existsPatch(p)) {
-					addPatchNum(p);
-					newPatch(pchseq++, p);
+						StreamErrorR("costchgfile");
+						ifsHabMap.close();
+						ifsHabMap.clear();
+						ifsPatchMap.close();
+						ifsPatchMap.clear();
+						return 173;
+					}
 				}
-			}
+#else
+				ifsDynHabFile >> hfloat;
+				habCode = static_cast<int>(hfloat);
+				if (patchModel) {
+					pfloat = badPatchFloat;
+					ifsDynPatchFile >> pfloat;
+					patchCode = static_cast<int>(pfloat);
+
+					}
+				if (costs) {
+					cfloat = badCostFloat;
+					ifsDynCostFile >> cfloat;
+					costCode = static_cast<int>(cfloat);
+
+				}
+#endif
+				if (cells[y][x] != nullptr) { // not a no data cell (in initial landscape)
+					if (habCode == habnodata) { // invalid no data cell in change map
+						ifsDynHabFile.close();
+						ifsDynHabFile.clear();
+						return 36;
+					}
+					else if (habCode < 0 || (sim.batchMode && (habCode < 1 || habCode > nHabMax))) {
+						// invalid habitat code
+						ifsDynHabFile.close();
+						ifsDynHabFile.clear();
+						if (patchModel) {
+							ifsDynPatchFile.close();
+							ifsDynPatchFile.clear();
+						}
+						return 33;
+					}
+					else { // valid habitat code
+						addHabCode(habCode);
+						cells[y][x]->addHabIndex(habCode);
+					}
+
+					if (patchModel) {
+						if (patchCode < 0 || patchCode == pchnodata) { // invalid patch code
+#if RS_RCPP && !R_CMD
+							if (patchCode == noDataPatch) Rcpp::Rcout << "Found patch NA in valid habitat cell." << std::endl;
+							else Rcpp::Rcout << "Found negative patch ID in valid habitat cell." << std::endl;
+#endif
+							ifsDynHabFile.close();
+							ifsDynHabFile.clear();
+							ifsDynPatchFile.close();
+							ifsDynPatchFile.clear();
+							return 34;
+				}
+						else {
+							patchChgMatrix[y][x][2] = patchCode;
+							if (patchCode > 0 && !existsPatch(patchCode)) {
+								addPatchNum(patchCode);
+								newPatch(pchseq++, patchCode);
+							}
+						}
 		}
-		if (costs) {
-			if (c < 1) { // invalid cost
+					if (costs) {
+						if (costCode < 1) { // invalid cost
 #if RS_RCPP
-			    Rcpp::Rcout << "Found invalid cost value of " << c << " in cell x " << x << " and y  " << y << std::endl;
+							Rcpp::Rcout << "Found invalid cost value of " << changeIndex << " in cell x " << x << " and y  " << y << std::endl;
 #endif
-				hfile.close(); hfile.clear();
-				if (pfile.is_open()) {
-					pfile.close(); 
-					pfile.clear();
-				}
-				return 38;
-			}
-			else {
-				costsChgMatrix[y][x][2] = c;
-			}
+							ifsDynHabFile.close(); 
+							ifsDynHabFile.clear();
+							if (ifsDynPatchFile.is_open()) {
+								ifsDynPatchFile.close();
+								ifsDynPatchFile.clear();
+							}
+							return 38;
+	}
+						else {
+							costsChgMatrix[y][x][2] = costCode;
+						}
 		}
 	}
 			} // for x
@@ -1387,8 +1408,8 @@ int Landscape::readLandChange(int filenum, bool costs)
 		}
 		if (costs)
 		{
-			cfile >> cfloat;
-			if (!cfile.eof()) EOFerrorR("costchgfile");
+			ifsDynCostFile >> cfloat;
+			if (!ifsDynCostFile.eof()) EOFerrorR("costchgfile");
 		}
 #endif
 		break;
@@ -1396,13 +1417,13 @@ int Landscape::readLandChange(int filenum, bool costs)
 	case 2: // habitat quality
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
-				hfloat = badhfloat;
+				hfloat = badHabFloat;
 #if RS_RCPP
 				if (ifsHabMap >> habFloat) {
 #else
-				hfile >> hfloat;
+				ifsDynHabFile >> hfloat;
 #endif
-				h = static_cast<int>(hfloat);
+				habCode = static_cast<int>(hfloat);
 #if RS_RCPP
 				}
 		else {
@@ -1419,13 +1440,13 @@ int Landscape::readLandChange(int filenum, bool costs)
 		}
 #endif
 				if (patchModel) {
-					pfloat = badpfloat;
+					pfloat = badPatchFloat;
 #if RS_RCPP
 			if (ifsPatchMap >> patchFloat) {
 #else
-					pfile >> pfloat;
+					ifsDynPatchFile >> pfloat;
 #endif
-					p = static_cast<int>(pfloat);
+					patchCode = static_cast<int>(pfloat);
 #if RS_RCPP
 				}
 		else {
@@ -1443,13 +1464,13 @@ int Landscape::readLandChange(int filenum, bool costs)
 #endif
 		}
 				if (costs) {
-					cfloat = badcfloat;
+					cfloat = badCostFloat;
 #if RS_RCPP
-			if (cfile >> cfloat) {
+			if (ifsDynCostFile >> cfloat) {
 #else
-					cfile >> cfloat;
+					ifsDynCostFile >> cfloat;
 #endif
-					c = (int)cfloat;
+					costCode = (int)cfloat;
 #if RS_RCPP
 				}
 		else {
@@ -1467,15 +1488,15 @@ int Landscape::readLandChange(int filenum, bool costs)
 #endif
 		}
 				if (cells[y][x] != 0) { // not a no data cell (in initial landscape)
-					if (h == habnodata) { // invalid no data cell in change map
-						hfile.close(); hfile.clear();
-						if (patchModel) { pfile.close(); pfile.clear(); }
+					if (habCode == habnodata) { // invalid no data cell in change map
+						ifsDynHabFile.close(); ifsDynHabFile.clear();
+						if (patchModel) { ifsDynPatchFile.close(); ifsDynPatchFile.clear(); }
 						return 36;
 					}
 					else {
 						if (hfloat < 0.0 || hfloat > 100.0) { // invalid quality score
-							hfile.close(); hfile.clear();
-							if (patchModel) { pfile.close(); pfile.clear(); }
+							ifsDynHabFile.close(); ifsDynHabFile.clear();
+							if (patchModel) { ifsDynPatchFile.close(); ifsDynPatchFile.clear(); }
 							return 37;
 						}
 						else {
@@ -1483,36 +1504,36 @@ int Landscape::readLandChange(int filenum, bool costs)
 						}
 					}
 					if (patchModel) {
-						if (p < 0 || p == pchnodata) { // invalid patch code
+						if (patchCode < 0 || patchCode == pchnodata) { // invalid patch code
 #if RS_RCPP && !R_CMD
 					if (patchCode == noDataPatch) Rcpp::Rcout << "Found patch NA in valid habitat cell." << std::endl;
 					else Rcpp::Rcout << "Found negative patch ID in valid habitat cell." << std::endl;
 #endif
-					hfile.close(); hfile.clear();
-					pfile.close(); pfile.clear();
+					ifsDynHabFile.close(); ifsDynHabFile.clear();
+					ifsDynPatchFile.close(); ifsDynPatchFile.clear();
 					return 34;
 				}
 				else {
-					patchChgMatrix[y][x][2] = p;
-					if (p > 0 && !existsPatch(p)) {
-						addPatchNum(p);
-						newPatch(pchseq++, p);
+					patchChgMatrix[y][x][2] = patchCode;
+					if (patchCode > 0 && !existsPatch(patchCode)) {
+						addPatchNum(patchCode);
+						newPatch(pchseq++, patchCode);
 					}
 				}
 			}
 			if (costs) {
-				if (c < 1) { // invalid cost
+				if (costCode < 1) { // invalid cost
 #if RS_RCPP
-				    Rcpp::Rcout << "Found invalid cost value of " << c << "in cell x " << x << " and y  " << y << std::endl;
+				    Rcpp::Rcout << "Found invalid cost value of " << changeIndex << "in cell x " << x << " and y  " << y << std::endl;
 #endif
-					hfile.close(); hfile.clear();
-					if (pfile.is_open()) {
-						pfile.close(); pfile.clear();
+					ifsDynHabFile.close(); ifsDynHabFile.clear();
+					if (ifsDynPatchFile.is_open()) {
+						ifsDynPatchFile.close(); ifsDynPatchFile.clear();
 					}
 					return 38;
 				}
 				else {
-					costsChgMatrix[y][x][2] = c;
+					costsChgMatrix[y][x][2] = costCode;
 				}
 			}
 		}
@@ -1528,8 +1549,8 @@ int Landscape::readLandChange(int filenum, bool costs)
 		}
 		if (costs)
 		{
-			cfile >> cfloat;
-			if (!cfile.eof()) EOFerrorR("costchgfile");
+			ifsDynCostFile >> cfloat;
+			if (!ifsDynCostFile.eof()) EOFerrorR("costchgfile");
 		}
 #endif
 		break;
@@ -1538,9 +1559,9 @@ int Landscape::readLandChange(int filenum, bool costs)
 		break;
 	}
 
-	if (hfile.is_open()) { hfile.close(); hfile.clear(); }
-	if (pfile.is_open()) { pfile.close(); pfile.clear(); }
-	if (cfile.is_open()) { cfile.close(); cfile.clear(); }
+	if (ifsDynHabFile.is_open()) { ifsDynHabFile.close(); ifsDynHabFile.clear(); }
+	if (ifsDynPatchFile.is_open()) { ifsDynPatchFile.close(); ifsDynPatchFile.clear(); }
+	if (ifsDynCostFile.is_open()) { ifsDynCostFile.close(); ifsDynCostFile.clear(); }
 	return 0;
 
 }
@@ -1551,20 +1572,20 @@ void Landscape::createPatchChgMatrix()
 	Patch* patch;
 	Patch* pPatch;
 	Cell* pCell;
-	if (patchChgMatrix != 0) deletePatchChgMatrix();
+	if (patchChgMatrix != nullptr) deletePatchChgMatrix();
 	patchChgMatrix = new int** [dimY];
 	for (int y = dimY - 1; y >= 0; y--) {
 		patchChgMatrix[y] = new int* [dimX];
 		for (int x = 0; x < dimX; x++) {
 			patchChgMatrix[y][x] = new int[3];
 			pCell = findCell(x, y);
-			if (pCell == 0) { // no-data cell
+			if (pCell == nullptr) { // no-data cell
 				patchChgMatrix[y][x][0] = patchChgMatrix[y][x][1] = 0;
 			}
 			else {
 				// record initial patch number
 				patch = pCell->getPatch();
-				if (patch == 0) { // matrix cell
+				if (patch == nullptr) { // matrix cell
 					patchChgMatrix[y][x][0] = patchChgMatrix[y][x][1] = 0;
 				}
 				else {

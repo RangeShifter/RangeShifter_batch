@@ -44,7 +44,7 @@ NeutralTrait::NeutralTrait(SpeciesTrait* P)
 		if (initialParameters.count(MAX) != 1)
 			throw logic_error("initial distribution parameter must contain one max value if set to UNIFORM (e.g. max= ), max cannot exceed " + to_string(NeutralValUpperBound) + "\n");
 
-		float maxNeutralVal = initialParameters.find(MAX)->second;
+		int maxNeutralVal = static_cast<int>(initialParameters.find(MAX)->second);
 		if (maxNeutralVal > NeutralValUpperBound) {
 			throw logic_error("initial distribution parameter max cannot exceed " + to_string(NeutralValUpperBound) + ", resetting to " + to_string(NeutralValUpperBound) + "\n");
 			maxNeutralVal = NeutralValUpperBound; //reserve 255 for wildtype

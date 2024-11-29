@@ -58,7 +58,7 @@ rasterdata landraster;
 // ...including names of the input files
 string parameterFile;
 string landFile;
-string name_landscape, name_patch, name_dynland, name_sp_dist, gNameCostFile;
+string gHabMapName, gPatchMapName, gDynLandFileName, gSpDistFileName, gNameCostFile;
 string stageStructFile, transMatrix;
 string emigrationFile, transferFile, settleFile, geneticsFile, traitsFile, initialFile;
 string prevInitialIndsFile = " ";
@@ -4781,12 +4781,13 @@ int ReadLandFile(Landscape* pLandscape)
 	landParams ppLand = pLandscape->getLandParams();
 	genLandParams ppGenLand = pLandscape->getGenLandParams();
 
-	if (gLandType == 9) { //artificial landscape
+	if (gLandType == 9) { // artificial landscape
 		ppLand.rasterType = 9;
 		ifsLandFile >> ppLand.landNum >> ppGenLand.fractal >> ppGenLand.continuous
 			>> ppLand.dimX >> ppLand.dimY >> ppGenLand.minPct >> ppGenLand.maxPct
 			>> ppGenLand.propSuit >> ppGenLand.hurst;
-		ppLand.maxX = ppLand.dimX - 1; ppLand.maxY = ppLand.dimY - 1;
+		ppLand.maxX = ppLand.dimX - 1; 
+		ppLand.maxY = ppLand.dimY - 1;
 
 		if (ppGenLand.fractal && ppLand.maxX > ppLand.maxY) {
 			return -901;
@@ -4811,8 +4812,8 @@ int ReadLandFile(Landscape* pLandscape)
 	}
 	else { // imported raster map
 		string inNbHab;
-		ifsLandFile >> ppLand.landNum >> inNbHab >> name_landscape >> name_patch;
-		ifsLandFile >> gNameCostFile >> name_dynland >> name_sp_dist;
+		ifsLandFile >> ppLand.landNum >> inNbHab >> gHabMapName >> gPatchMapName;
+		ifsLandFile >> gNameCostFile >> gDynLandFileName >> gSpDistFileName;
 		if (gLandType == 2) 
 			ppLand.nHab = 1; // habitat quality landscape has one habitat class
 	}
@@ -4831,7 +4832,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	int nchanges = 0;
 	landChange chg;
 	landParams ppLand = pLandscape->getLandParams();
-	string fname = paramsSim->getDir(1) + name_dynland;
+	string fname = paramsSim->getDir(1) + gDynLandFileName;
 
 	ifsDynLandFile.open(fname.c_str());
 	if (ifsDynLandFile.is_open()) {
@@ -6489,7 +6490,7 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 		}
 		else {
 			paramsLand.generated = false;
-			if (name_dynland == "NULL") paramsLand.dynamic = false;
+			if (gDynLandFileName == "NULL") paramsLand.dynamic = false;
 			else paramsLand.dynamic = true;
 		}
 		paramsLand.nHabMax = gMaxNbHab;
@@ -6498,15 +6499,15 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 		pLandscape->setLandParams(paramsLand, true);
 
 		if (gLandType != 9) { // imported landscape
-			string hname = paramsSim->getDir(1) + name_landscape;
+			string pathToHabMap = paramsSim->getDir(1) + gHabMapName;
 			int landcode;
-			string cname;
-			if (gNameCostFile == "NULL" || gNameCostFile == "none") cname = "NULL";
-			else cname = paramsSim->getDir(1) + gNameCostFile;
+			string pathToCostMap;
+			if (gNameCostFile == "NULL" || gNameCostFile == "none") pathToCostMap = "NULL";
+			else pathToCostMap = paramsSim->getDir(1) + gNameCostFile;
 
-			string pname = paramsLand.patchModel ? 
-				paramsSim->getDir(1) + name_patch : " ";
-			landcode = pLandscape->readLandscape(0, hname, pname, cname);
+			string pathToPatchMap = paramsLand.patchModel ? 
+				paramsSim->getDir(1) + gPatchMapName : " ";
+			landcode = pLandscape->readLandscape(0, pathToHabMap, pathToPatchMap, pathToCostMap);
 			if (landcode != 0) landOK = false;
 
 			if (paramsLand.dynamic) {
@@ -6517,7 +6518,7 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 
 			// Species Distribution
 			if (paramsLand.useSpDist) { // read initial species distribution
-				string distname = paramsSim->getDir(1) + name_sp_dist;
+				string distname = paramsSim->getDir(1) + gSpDistFileName;
 				landcode = pLandscape->newDistribution(pSpecies, distname);
 				if (landcode != 0) {
 					cout << endl << "Error reading initial distribution for landscape "

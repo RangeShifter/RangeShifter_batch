@@ -68,7 +68,7 @@ public:
 	Cell(int xx, int yy, Patch* patch, float hab);
 
 	~Cell();
-	void setHabIndex(short hx);
+	void addHabIndex(short hx);
 	void changeHabIndex(short ix, short hx);
 	int getHabIndex(int ix);
 	int nHabitats(void);

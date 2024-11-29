@@ -330,7 +330,7 @@ int RunModel(Landscape* pLandscape, int seqsim, map<int, Species*> allSpecies)
 							costchange = pLandscape->getCostChange(ixcostchg++);
 							while (costchange.chgnum <= landIx && ixcostchg <= ncostchanges) {
 								pCell = pLandscape->findCell(costchange.x, costchange.y);
-								if (pCell != 0) {
+								if (pCell != nullptr) {
 									pCell->setCost(costchange.newcost);
 								}
 								costchange = pLandscape->getCostChange(ixcostchg++);
@@ -765,13 +765,13 @@ void OutParameters(Landscape* pLandscape)
 		outPar << "FILE NAME: ";
 #if RS_RCPP
 		if (ppLand.dynamic) {
-			outPar << name_landscape << endl;
+			outPar << gHabMapName << endl;
 		}
 		else {
-			outPar << name_landscape << endl;
+			outPar << gHabMapName << endl;
 		}
 		if (ppLand.patchModel) {
-			outPar << "PATCH FILE: " << name_patch << endl;
+			outPar << "PATCH FILE: " << gPatchMapName << endl;
 		}
 		if (trfr.costMap) {
 			outPar << "COSTS FILE: " << name_costfile << endl;
@@ -810,7 +810,7 @@ void OutParameters(Landscape* pLandscape)
 #if !RS_RCPP
 		if (sim.batchMode) outPar << " (see batch file) " << landFile << endl;
 #else
-		outPar << name_sp_dist << endl;
+		outPar << gSpDistFileName << endl;
 #endif
 	}
 	else outPar << "no" << endl;

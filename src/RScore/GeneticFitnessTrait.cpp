@@ -246,9 +246,9 @@ void GeneticFitnessTrait::initialise() {
 	for (auto position : genePositions) {
 		vector<shared_ptr<Allele>> initialGene(ploidy);
 		for (int p = 0; p < ploidy; p++) {
-			initSelCoeff = initDist == NONE ? 0.0 
+			initSelCoeff = initDist == NONE ? 0.0f 
 				: drawSelectionCoef(initDist, initParams);
-			initDomCoeff = initDomDist == NONE ? 0.0
+			initDomCoeff = initDomDist == NONE ? 0.0f
 				: drawDominance(initSelCoeff, initDomDist, initDomParams);
 			initialGene[p] = make_shared<Allele>(initSelCoeff, initDomCoeff);
 		}
@@ -495,11 +495,11 @@ float GeneticFitnessTrait::express() {
 			hB = pAlleleB->getDominanceCoef();
 
 			sumDomCoeffs = hA + hB;
-			hLocus = sumDomCoeffs == 0.0 ? 0.5 : hA / sumDomCoeffs;
-			phenotype *= 1 - hLocus * sA - (1 - hLocus) * sB;
+			hLocus = sumDomCoeffs == 0.0f ? 0.5f : hA / sumDomCoeffs;
+			phenotype *= 1.0f - hLocus * sA - (1 - hLocus) * sB;
 		}
 		else {
-			phenotype *= 1 - sA;
+			phenotype *= 1.0f - sA;
 		}
 	}
 	return phenotype;

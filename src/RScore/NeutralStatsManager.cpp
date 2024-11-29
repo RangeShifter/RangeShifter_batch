@@ -247,7 +247,7 @@ void NeutralStatsManager::calculatePerLocusHo(set<int> const& patchList, const i
 		for (int patchId : patchList) {
 			const auto patch = pLandscape->findPatch(patchId);
 			const auto pPop = patch->getPop();
-			if (pPop != 0) {
+			if (pPop != nullptr) {
 				if (pPop->sampleSize() > 0) {
 					nbHeterosInPop = pPop->countNbHeterozygotesEachLocus();
 					// Add counts to community total
