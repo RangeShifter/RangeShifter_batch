@@ -783,7 +783,7 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 				if (nx < 0.0) newX = -1; else newX = (int)nx;
 				if (ny < 0.0) newY = -1; else newY = (int)ny;
 #ifndef NDEBUG
-				if (path != 0) (path->year)++;
+				if (path != nullptr) (path->year)++;
 #endif
 				loopsteps++;
 			} while (loopsteps < 1000 &&
@@ -796,20 +796,20 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 				if (newX < land.minX || newX > land.maxX
 					|| newY < land.minY || newY > land.maxY) { // beyond absorbing boundary
 					// this cannot be reached if not absorbing?
-					pCell = 0;
-					patch = 0;
+					pCell = nullptr;
+					patch = nullptr;
 					patchNum = -1;
 				}
 				else {
 					pCell = pLandscape->findCell(newX, newY);
-					if (pCell == 0) { // no-data cell
-						patch = 0;
+					if (pCell == nullptr) { // no-data cell
+						patch = nullptr;
 						patchNum = -1;
 					}
 					else {
 						patch = pCell->getPatch();
-						if (patch == 0) { // matrix
-							pPatch = 0;
+						if (patch == nullptr) { // matrix
+							pPatch = nullptr;
 							patchNum = 0;
 						}
 						else {
@@ -820,16 +820,16 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 				}
 			}
 			else { // exceeded 1000 attempts
-				patch = 0;
+				patch = nullptr;
 				patchNum = -1;
 			}
 		} while (!absorbing && patchNum < 0 && loopsteps < 1000); 			 // in a no-data region
 	} while (!usefullkernel && pPatch == pNatalPatch && loopsteps < 1000); 	// still in the original (natal) patch
 
 	if (loopsteps < 1000) {
-		if (pCell == 0) { // beyond absorbing boundary or in no-data cell
+		if (pCell == nullptr) { // beyond absorbing boundary or in no-data cell
 			// only if absorbing=true and out of bounddaries
-			pCurrCell = 0;
+			pCurrCell = nullptr;
 			status = diedInTransfer;
 			isDispersing = false;
 		}

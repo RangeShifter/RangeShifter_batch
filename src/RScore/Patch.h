@@ -112,14 +112,14 @@ public:
 	void resetPop();
 
 	// Record the presence of a potential settler within the Patch
-	void incrPossSettler(Species* pSpecies, int sex);
+	void incrPossSettler(int sex);
 	// Get number of a potential settlers within the Patch
-	int getPossSettlers(Species* pSpecies, int sex);
+	int getPossSettlers(int sex);
 	void resetPossSettlers();
 	
 	// Calculate total Patch carrying capacity (no. of inds)
-	void setCarryingCapacity(Species* pSpecies, patchLimits landlimits,
-		float epsGlobal, short nHab, short rasterType, short landIx, bool gradK);
+	void setCarryingCapacity(patchLimits landlimits, float epsGlobal, 
+		short nHab, short rasterType, short landIx, bool gradK);
 	float getK();
 
 	int getInitNbInds(const bool& isPatchModel, const int& landResol) const;

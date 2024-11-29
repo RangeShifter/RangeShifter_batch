@@ -523,7 +523,7 @@ void Population::reproduction(const float localK, const float envval, const int 
 {
 
 	// get population size at start of reproduction
-	int ninds = inds.size();
+	int ninds = static_cast<int>(inds.size());
 	if (ninds == 0) return;
 
 	int nsexes, stage, sex, njuvs, nj, nmales, nfemales;
@@ -944,17 +944,16 @@ disperser Population::extractDisperser(int ix) {
 // if it is a settler, return its new location and remove it from the current population
 // otherwise, leave it in the matrix population for possible reporting before deletion
 disperser Population::extractSettler(int ix) {
+	
 	disperser d = disperser();
-	Cell* pCell;
-
 	indStats ind = inds[ix]->getStats();
-	pCell = inds[ix]->getLocn(1);
+	Cell* pCell = inds[ix]->getLocn(1);
 	d.pInd = inds[ix];  
 	d.pCell = pCell;
 	d.yes = false;
 	if (ind.status == settled || ind.status == settledNeighbour) {
 		d.yes = true;
-		inds[ix] = 0;
+		inds[ix] = nullptr;
 		nInds[ind.stage][ind.sex]--;
 	}
 	return d;
@@ -1017,7 +1016,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 			pCell = inds[i]->getLocn(1);
 			pPatch = pCell->getPatch();
 			if (pPatch != nullptr) { // not no-data area
-				pPatch->incrPossSettler(pSpecies, inds[i]->getSex());
+				pPatch->incrPossSettler(inds[i]->getSex());
 			}
 		}
 	}
@@ -1212,7 +1211,7 @@ bool Population::isMatePresent(Cell* pCell, short othersex)
 					}
 				}
 				// If empty, check for incoming settlers
-				if (pPatch->getPossSettlers(pSpecies, othersex) > 0) 
+				if (pPatch->getPossSettlers(othersex) > 0) 
 					return true;
 		}
 	}

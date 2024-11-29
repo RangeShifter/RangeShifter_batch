@@ -32,8 +32,12 @@
 Patch::Patch(int seqnum, int num)
 {
 	pPop = nullptr;
-	patchSeqNum = seqnum; patchNum = num; nCells = 0;
-	xMin = yMin = 999999999; xMax = yMax = 0; x = y = 0;
+	patchSeqNum = seqnum; 
+	patchNum = num; 
+	nCells = 0;
+	xMin = yMin = 999999999; 
+	xMax = yMax = 0; 
+	x = y = 0;
 	localK = 0.0;
 	for (int sex = 0; sex < gMaxNbSexes; sex++) {
 		nTemp[sex] = 0;
@@ -124,9 +128,10 @@ void Patch::addCell(Cell* pCell, int x, int y) {
 
 // Calculate the total carrying capacity (no. of individuals) and
 // centroid co-ordinates of the patch
-void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits,
-	float epsGlobal, short nHab, short rasterType, short landIx, bool gradK) {
+void Patch::setCarryingCapacity(patchLimits landlimits, float epsGlobal,
+	short nHab, short rasterType, short landIx, bool gradK) {
 	
+	Species* pSpecies = pPop->getSpecies();
 	envStochParams env = paramsStoch->getStoch();
 	locn loc;
 	int xsum, ysum;
@@ -146,7 +151,7 @@ void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits,
 		return;
 	}
 
-	int ncells = cells.size();
+	int ncells = static_cast<int>(cells.size());
 	xsum = ysum = 0;
 	for (int i = 0; i < ncells; i++) {
 		if (gradK) // gradient in carrying capacity
@@ -219,14 +224,14 @@ int Patch::getInitNbInds(const bool& isPatchModel, const int& landResol) const {
 	if (localK > 0.0) { // patch is currently suitable for this species
 		switch (init.initDens) {
 		case 0: // at carrying capacity
-			nInds = trunc(localK);
+			nInds = static_cast<int>(localK);
 			break;
 		case 1: // at half carrying capacity
-			nInds = trunc(localK / 2.0);
+			nInds = static_cast<int>(localK / 2.0);
 			break;
 		case 2: // specified no. per cell or density
 			if (isPatchModel) {
-				nInds = trunc(init.indsHa * (float)(nCells * landResol * landResol) / 10000.0);
+				nInds = static_cast<int>(init.indsHa * (float)(nCells * landResol * landResol) / 10000.0);
 			}
 			else {
 				nInds = init.indsCell * nCells;
@@ -336,18 +341,13 @@ void Patch::resetPossSettlers() {
 }
 
 // Record the presence of a potential settler within the Patch
-void Patch::incrPossSettler(Species* pSpecies, int sex) {
-// NOTE: THE FOLLOWING OPERATION WILL NEED TO BE MADE SPECIES-SPECIFIC...
-	if (sex >= 0 && sex < gMaxNbSexes) {
-		nTemp[sex]++;
-	}
+void Patch::incrPossSettler(int sex) {
+	nTemp[sex]++;
 }
 
 // Get number of a potential settlers within the Patch
-int Patch::getPossSettlers(Species* pSpecies, int sex) {
-// NOTE: THE FOLLOWING OPERATION WILL NEED TO BE MADE SPECIES-SPECIFIC...
-	if (sex >= 0 && sex < gMaxNbSexes) return nTemp[sex];
-	else return 0;
+int Patch::getPossSettlers(int sex) {
+	return nTemp[sex];
 }
 
 bool Patch::speciesIsPresent() {
