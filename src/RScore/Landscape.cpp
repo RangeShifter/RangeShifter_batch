@@ -803,7 +803,7 @@ Patch* Landscape::newPatch(int num)
 Patch* Landscape::newPatch(int seqnum, int num)
 {
 	patches.push_back(new Patch(seqnum, num));
-	return patches[patches.size()];
+	return patches[patches.size() - 1];
 }
 
 void Landscape::resetPatches() {
@@ -966,7 +966,7 @@ void Landscape::updateCarryingCapacity(Species* pSpecies, int yr, short landIx) 
 	int npatches = static_cast<int>(patches.size());
 	for (int i = 0; i < npatches; i++) {
 		if (patches[i]->getPatchNum() != 0) { // not matrix patch
-			patches[i]->setCarryingCapacity(landlimits, getGlobalStoch(yr), 
+			patches[i]->setCarryingCapacity(pSpecies, landlimits, getGlobalStoch(yr), 
 				nHab, rasterType, landIx, gradK);
 		}
 	}

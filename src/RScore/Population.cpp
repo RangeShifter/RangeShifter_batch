@@ -173,15 +173,15 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 	}
 }
 
-Population::~Population(void) {
-	int ninds = (int)inds.size();
+Population::~Population() {
+	int ninds = static_cast<int>(inds.size());
 	for (int i = 0; i < ninds; i++) {
-		if (inds[i] != NULL) delete inds[i];
+		if (inds[i] != nullptr) delete inds[i];
 	}
 	inds.clear();
-	int njuvs = (int)juvs.size();
+	int njuvs = static_cast<int>(juvs.size());
 	for (int i = 0; i < njuvs; i++) {
-		if (juvs[i] != NULL) delete juvs[i];
+		if (juvs[i] != nullptr) delete juvs[i];
 	}
 	juvs.clear();
 }
@@ -279,7 +279,7 @@ traitsums Population::getIndTraitsSums() {
 	return ts;
 }
 
-int Population::getNInds(void) { return (int)inds.size(); }
+int Population::getNInds() { return static_cast<int>(inds.size()); }
 
 // ----------------------------------------------------------------------------------------
 // reset allele table
@@ -416,7 +416,7 @@ double Population::computeHs() {
 	return hs;
 }
 
-popStats Population::getStats(void)
+popStats Population::getStats()
 {
 	popStats p = popStats();
 	int ninds;
@@ -453,7 +453,7 @@ popStats Population::getStats(void)
 	return p;
 }
 
-Species* Population::getSpecies(void) { return pSpecies; }
+Species* Population::getSpecies() { return pSpecies; }
 
 int Population::totalPop() {
 	int t = 0;

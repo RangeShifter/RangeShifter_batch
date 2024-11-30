@@ -72,10 +72,7 @@ void Cell::changeHabIndex(short ix, short hx) {
 }
 
 int Cell::getHabIndex(int ix) {
-	if (ix < 0 || ix >= habIxx.size())
-		// nodata cell OR should not occur, but treat as such
-		return -1;
-	else return habIxx[ix];
+	return habIxx[ix];
 }
 int Cell::nHabitats() {
 	int nh = habIxx.size();

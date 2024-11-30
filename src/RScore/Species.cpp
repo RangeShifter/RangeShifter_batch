@@ -196,12 +196,10 @@ void Species::setHabK(short hx, float k) {
 }
 
 float Species::getHabK(short hx) {
-	float k = 0.0;
-	if (hx >= 0 && hx < habDimK) k = habK[hx];
-	return k;
+	return habK[hx];
 }
 
-float Species::getMaxK(void) {
+float Species::getMaxK() {
 	float k = 0.0;
 	for (int i = 0; i < habDimK; i++) {
 		if (habK[i] > k) k = habK[i];
@@ -209,9 +207,10 @@ float Species::getMaxK(void) {
 	return k;
 }
 
-void Species::deleteHabK(void) {
-	if (habK != 0) {
-		delete[] habK; habK = 0;
+void Species::deleteHabK() {
+	if (habK != nullptr) {
+		delete[] habK; 
+		habK = nullptr;
 	}
 }
 

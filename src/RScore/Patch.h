@@ -118,7 +118,7 @@ public:
 	void resetPossSettlers();
 	
 	// Calculate total Patch carrying capacity (no. of inds)
-	void setCarryingCapacity(patchLimits landlimits, float epsGlobal, 
+	void setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float epsGlobal,
 		short nHab, short rasterType, short landIx, bool gradK);
 	float getK();
 

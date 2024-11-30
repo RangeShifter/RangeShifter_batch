@@ -43,8 +43,7 @@ Community::~Community() {
 	}
 }
 
-void Community::initialise(Species* pSpecies, int year)
-{
+void Community::initialise(Species* pSpecies, int year) {
 	int npatches, ndistcells, spratio, patchnum, candidatePatch = 0;
 	locn distloc;
 	patchData pch;
@@ -145,8 +144,7 @@ void Community::initialise(Species* pSpecies, int year)
 		break;
 
 	case 1:	// from species distribution
-		if (ppLand.useSpDist)
-		{
+		if (ppLand.useSpDist) {
 			// initialise from loaded species distribution
 			switch (init.spDistType) {
 			case 0: // all presence cells

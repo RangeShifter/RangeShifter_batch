@@ -128,10 +128,9 @@ void Patch::addCell(Cell* pCell, int x, int y) {
 
 // Calculate the total carrying capacity (no. of individuals) and
 // centroid co-ordinates of the patch
-void Patch::setCarryingCapacity(patchLimits landlimits, float epsGlobal,
+void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float epsGlobal,
 	short nHab, short rasterType, short landIx, bool gradK) {
 	
-	Species* pSpecies = pPop->getSpecies();
 	envStochParams env = paramsStoch->getStoch();
 	locn loc;
 	int xsum, ysum;
@@ -150,7 +149,9 @@ void Patch::setCarryingCapacity(patchLimits landlimits, float epsGlobal,
 		localK = 0.0;
 		return;
 	}
-
+	if (patchNum == 30) {
+		cout << endl;
+	}
 	int ncells = static_cast<int>(cells.size());
 	xsum = ysum = 0;
 	for (int i = 0; i < ncells; i++) {
@@ -198,18 +199,18 @@ void Patch::setCarryingCapacity(patchLimits landlimits, float epsGlobal,
 	}
 // calculate centroid co-ordinates
 	if (ncells > 0) {
-		mean = (double)xsum / (double)ncells;
-		x = (int)(mean + 0.5);
-		mean = (double)ysum / (double)ncells;
-		y = (int)(mean + 0.5);
+		mean = static_cast<double>(xsum) / ncells;
+		x = static_cast<int>(mean + 0.5);
+		mean = static_cast<double>(ysum) / ncells;
+		y = static_cast<int>(mean + 0.5);
 	}
 	if (env.stoch && env.inK) { // environmental stochasticity in K
 		// apply min and max limits to K over the whole patch
 		// NB limits have been stored as N/cell rather than N/ha
 		float limit;
-		limit = pSpecies->getMinMax(0) * (float)nsuitable;
+		limit = pSpecies->getMinMax(0) * nsuitable;
 		if (localK < limit) localK = limit;
-		limit = pSpecies->getMinMax(1) * (float)nsuitable;
+		limit = pSpecies->getMinMax(1) * nsuitable;
 		if (localK > limit) localK = limit;
 	}
 }
@@ -277,31 +278,33 @@ float Patch::getEnvVal(const bool& isPatchModel, const float& epsGlobal) {
 
 // Return co-ordinates of a specified cell
 locn Patch::getCellLocn(int ix) {
-	locn loc; loc.x = -666; loc.y = -666;
-	int ncells = (int)cells.size();
-	if (ix >= 0 && ix < ncells) {
+	locn loc; 
+	loc.x = -666; 
+	loc.y = -666;
+	if (ix >= 0 && ix < cells.size()) {
 		loc = cells[ix]->getLocn();
 	}
 	return loc;
 }
 // Return pointer to a specified cell
 Cell* Patch::getCell(int ix) {
-	int ncells = (int)cells.size();
-	if (ix >= 0 && ix < ncells) return cells[ix];
+	if (ix >= 0 && ix < cells.size()) return cells[ix];
 	else return 0;
 }
 // Return co-ordinates of patch centroid
-locn Patch::getCentroid(void) {
-	locn loc; loc.x = x; loc.y = y;
+locn Patch::getCentroid() {
+	locn loc; 
+	loc.x = x; 
+	loc.y = y;
 	return loc;
 }
 
 // Select a Cell within the Patch at random, and return pointer to it
 // For a cell-based model, this will be the only Cell
-Cell* Patch::getRandomCell(void) {
+Cell* Patch::getRandomCell() {
 	Cell* pCell = 0;
 	int ix;
-	int ncells = (int)cells.size();
+	int ncells = static_cast<int>(cells.size());
 	if (ncells > 0) {
 		if (ncells == 1) ix = 0;
 		else ix = pRandom->IRandom(0, ncells - 1);
