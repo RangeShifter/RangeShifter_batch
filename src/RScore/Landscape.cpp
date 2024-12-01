@@ -1045,13 +1045,11 @@ void Landscape::updateHabitatIndices() {
 		for (int x = 0; x < dimX; x++) {
 
 			if (cells[y][x] != nullptr) { // not a no-data cell
-				for (int changeIndex = 0; changeIndex <= nbLandChanges; changeIndex++) {
-					habIx = cells[y][x]->getHabIndex(changeIndex);
+				for (int c = 0; c <= nbLandChanges; c++) {
+					habIx = cells[y][x]->getHabIndex(c);
 					if (habIx >= 0) {
-						const auto it = find(habCodes.begin(), habCodes.end(), habIx);
-						if (it != habCodes.end()) {
-							cells[y][x]->changeHabIndex(changeIndex, *it);
-						}
+						habIx = findHabCode(habIx);
+						cells[y][x]->changeHabIndex(c, habIx);
 					}
 				}
 			}
