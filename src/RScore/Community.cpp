@@ -91,7 +91,7 @@ void Community::initialise(Species* pSpecies, int year) {
 						}
 					}
 					else { // cell-based model - is cell(patch) suitable
-						if (pch.pPatch->getK() > 0.0) {
+						if (pch.pPatch->isSuitable()) {
 							suitablePatches.insert(patchnum);
 						}
 					}
@@ -119,8 +119,7 @@ void Community::initialise(Species* pSpecies, int year) {
 				pch = pLandscape->getPatchData(i);
 				if (pch.pPatch->withinLimits(limits)) {
 					patchnum = pch.pPatch->getPatchNum();
-					if (patchnum != 0 && pch.pPatch->getK() > 0.0) {
-						// patch is suitable
+					if (!pch.pPatch->isMatrix() && pch.pPatch->isSuitable()) {
 						selectedPatches.insert(patchnum);
 					}
 				}
@@ -170,7 +169,7 @@ void Community::initialise(Species* pSpecies, int year) {
 							if (pCell != nullptr) { // not a no-data cell
 								pPatch = pCell->getPatch();
 								if (pPatch != nullptr) {
-									if (pPatch->getPatchNum() != 0) { // not the matrix patch
+									if (!pPatch->isMatrix()) { // not the matrix patch
 										selectedPatches.insert(pPatch->getPatchNum());
 									}
 								}
@@ -212,7 +211,7 @@ void Community::initialise(Species* pSpecies, int year) {
 						if (pLandscape->existsPatch(iind.patchID)) {
 							pPatch = pLandscape->findPatch(iind.patchID);
 							Species* pSpecies = findSpecies(iind.speciesID);
-							if (pPatch->getK() > 0.0) { // patch is suitable
+							if (pPatch->isSuitable()) {
 								initialInd(pLandscape, pSpecies, pPatch, pPatch->getRandomCell(), indIx);
 							}
 						}
@@ -222,7 +221,7 @@ void Community::initialise(Species* pSpecies, int year) {
 						if (pCell != nullptr) {
 							pPatch = pCell->getPatch();
 							if (pPatch != nullptr) {
-								if (pPatch->getK() > 0.0) { // patch is suitable
+								if (pPatch->isSuitable()) {
 									Species* pSpecies = findSpecies(iind.speciesID);
 									initialInd(pLandscape, pSpecies, pPatch, pCell, indIx);
 								}
@@ -536,8 +535,7 @@ commStats Community::getStats()
 
 		if (patchPop.pPatch != nullptr) {
 
-			localK = patchPop.pPatch->getK();
-			if (localK > 0.0) s.suitable++;
+			if (patchPop.pPatch->isSuitable() > 0.0) s.suitable++;
 			if (patchPop.nInds > 0 && patchPop.breeding) {
 				s.occupied++;
 				patchLimits pchlim = patchPop.pPatch->getLimits();
@@ -627,8 +625,7 @@ void Community::outPop(int rep, int yr, int gen)
 		}
 	}
 	for (auto pop : popns) {
-		float localK = pop->getPatch()->getK();
-		if (localK > 0.0 || pop->totalPop() > 0) {
+		if (pop->getPatch()->isSuitable() || pop->totalPop() > 0) {
 			pop->outPopulation(outPopOfs, rep, yr, gen, env.local, eps, land.patchModel, writeEnv, gradK);
 		}
 	}

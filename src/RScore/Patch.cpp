@@ -221,6 +221,8 @@ void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float
 
 float Patch::getK() { return localK; }
 
+bool Patch::isSuitable() { return localK > 0.0f; }
+
 int Patch::getInitNbInds(const bool& isPatchModel, const int& landResol) const {
 
 	initParams init = paramsInit->getInit();

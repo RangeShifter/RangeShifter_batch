@@ -692,7 +692,6 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 	int newX = 0, newY = 0;
 	bool isDispersing = true;
 	double xrand, yrand, meandist, dist, r1, rndangle, nx, ny;
-	float localK;
 	trfrKernelParams kern;
 	Cell* pCell;
 	Patch* pPatch;
@@ -835,9 +834,8 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 		}
 		else {
 			pCurrCell = pCell;
-			if (pPatch == 0) localK = 0.0; // matrix
-			else localK = pPatch->getK();
-			if (patchNum > 0 && localK > 0.0) { // found a new patch
+			bool suitable = pPatch == nullptr ? false : pPatch->isSuitable();
+			if (patchNum > 0 && suitable) { // found a new patch
 				status = waitSettlement; // record as potential settler
 			}
 			else {
@@ -889,7 +887,6 @@ bool Individual::moveStep(Landscape* pLandscape,
 {
 	if (status != dispersing) return false; // not currently dispersing
 
-	int patchNum;
 	int newX, newY;
 	locn loc;
 	bool isDispersing = true;
@@ -907,11 +904,6 @@ bool Individual::moveStep(Landscape* pLandscape,
 	settleSteps settsteps = pSpecies->getSteps(stage, sex);
 
 	pPatch = pCurrCell->getPatch();
-	if (pPatch == nullptr) { // no data
-		patchNum = 0;
-	} else {
-		patchNum = pPatch->getPatchNum();
-	}
 
 	// Apply step-dependent mortality risk
 	if (pPatch == pNatalPatch
@@ -935,7 +927,7 @@ bool Individual::moveStep(Landscape* pLandscape,
 		(path->year)++;
 		(path->total)++;
 
-		if (pPatch == nullptr || patchNum == 0) { // not in a patch
+		if (pPatch == nullptr || pPatch->isMatrix()) { // not in a patch
 			// Reset path settlement status
 			if (path != nullptr) path->settleStatus = 0; 
 			(path->out)++;
@@ -1045,8 +1037,8 @@ bool Individual::moveStep(Landscape* pLandscape,
 		if (pPatch != nullptr  // not no-data area or matrix
 			&& path->total >= settsteps.minSteps) {
 			if (pPatch != pNatalPatch
-				&& pPatch->getK() > 0.0) {
-				status = waitSettlement; // new patch is suitable
+				&& pPatch->isSuitable()) {
+				status = waitSettlement;
 			}
 		}
 		if (status != waitSettlement 

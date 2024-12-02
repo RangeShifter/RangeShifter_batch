@@ -921,7 +921,7 @@ set<int> Landscape::samplePatches(const string& samplingOption, int nbToSample, 
 
 	// Get list of viable patches where the species is present
 	for (auto p : patches) {
-		if (p->getPatchNum() == 0) continue; // skip the matrix
+		if (p->isMatrix()) continue; // skip
 		if (samplingOption == "random") { // then all patches are eligible
 			eligiblePatches.push_back(p->getPatchNum());
 		}
@@ -968,7 +968,7 @@ void Landscape::updateCarryingCapacity(Species* pSpecies, int yr, short landIx) 
 	landlimits.yMax = maxY;
 	int npatches = static_cast<int>(patches.size());
 	for (int i = 0; i < npatches; i++) {
-		if (patches[i]->getPatchNum() != 0) { // not matrix patch
+		if (!patches[i]->isMatrix()) {
 			patches[i]->setCarryingCapacity(pSpecies, landlimits, getGlobalStoch(yr), 
 				nHab, rasterType, landIx, gradK);
 		}
@@ -2669,7 +2669,7 @@ void Landscape::outConnect(int rep, int yr) {
 		for (int i = 0; i < npatches; i++) {
 			patchnum0 = patches[i]->getPatchNum();
 			if (patchnum0 != 0) {
-				if (patches[i]->getK() > 0.0) { // suitable patch
+				if (patches[i]->isSuitable()) {
 					outConnMat << rep << "\t" << yr
 						<< "\t" << patchnum0 << "\t-999\t" << emigrants[i] << endl;
 					outConnMat << rep << "\t" << yr

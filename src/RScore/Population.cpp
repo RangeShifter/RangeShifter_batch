@@ -1162,9 +1162,9 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 						if (pPatch != nullptr) { // not no-data area
 
 							// Check whether patch is suitable
-							if (pPatch->getPatchNum() > 0 // not the matrix
+							if (!pPatch->isMatrix()
 								&& pPatch != inds[i]->getNatalPatch()// or natal patch
-								&& pPatch->getK() > 0.0) { // suitable
+								&& pPatch->isSuitable()) {
 
 								// Check mate reqt if applicable
 								if (sett.findMate) {
@@ -1200,19 +1200,18 @@ bool Population::isMatePresent(Cell* pCell, short othersex)
 
 	pPatch = pCell->getPatch();
 	if (pPatch != nullptr) {
-		if (pPatch->getPatchNum() > 0 // not the matrix patch
-			&& pPatch->getK() > 0.0) { // suitable
-			 
-				pNewPopn = pPatch->getPop();
-				if (pNewPopn != nullptr) {
-					for (int stg = 0; stg < nStages; stg++) {
-						if (pNewPopn->nInds[stg][othersex] > 0) 
-							return true; // one is enough
-					}
+		if (!pPatch->isMatrix() && pPatch->isSuitable()) {
+
+			pNewPopn = pPatch->getPop();
+			if (pNewPopn != nullptr) {
+				for (int stg = 0; stg < nStages; stg++) {
+					if (pNewPopn->nInds[stg][othersex] > 0)
+						return true; // one is enough
 				}
-				// If empty, check for incoming settlers
-				if (pPatch->getPossSettlers(othersex) > 0) 
-					return true;
+			}
+			// If empty, check for incoming settlers
+			if (pPatch->getPossSettlers(othersex) > 0)
+				return true;
 		}
 	}
 	return false; // no mates? :(
@@ -1443,14 +1442,14 @@ void Population::outPopulation(ofstream& outPopOfs, int rep, int yr, int gen, bo
 			Cell* pCell = pPatch->getRandomCell();
 			if (pCell != 0) eps = pCell->getEps();
 		}
-		if (pPatch->getPatchNum() == 0) { // matrix
+		if (pPatch->isMatrix()) {
 			outPopOfs << "\t0\t0\t0";
 		}
 		else {
 			float k = pPatch->getK();
 			float envval = 0.0;
 			pCell = pPatch->getRandomCell();
-			if (pCell != 0) envval = pCell->getEnvVal();
+			if (pCell != nullptr) envval = pCell->getEnvVal();
 			outPopOfs << "\t" << eps << "\t" << envval << "\t" << k;
 		}
 	}
@@ -1603,7 +1602,7 @@ void Population::outIndividual(ofstream& outIndsOfs, Landscape* pLandscape, int 
 
 void Population::outputTraitPatchInfo(ofstream& outtraits, int rep, int yr, int gen, bool patchModel)
 {
-	if (pPatch->getK() > 0.0 && this->getNInds() > 0) {
+	if (pPatch->isSuitable() && this->getNInds() > 0) {
 		outtraits << rep << "\t" << yr << "\t" << gen;
 		if (patchModel) {
 			outtraits << "\t" << pPatch->getPatchNum();
@@ -1626,8 +1625,7 @@ traitsums Population::outTraits(ofstream& outtraits, const bool& writefile)
 	// provided that the patch is suitable (i.e. non-zero carrying capacity)
 	
 	Species* pSpecies;
-	float localK = pPatch->getK();
-	if (localK > 0.0 && this->getNInds() > 0) {
+	if (pPatch->isSuitable() && this->getNInds() > 0) {
 
 		pSpecies = this->getSpecies();
 		demogrParams dem = pSpecies->getDemogrParams();

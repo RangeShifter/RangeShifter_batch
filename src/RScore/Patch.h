@@ -89,6 +89,7 @@ public:
 
 	int getSeqNum();
 	int getPatchNum();
+	bool isMatrix() { return patchNum == 0; };
 	int getNCells();
 
 	patchLimits getLimits(); // Returns the minimum and maximum co-ordinates of the patch
@@ -98,10 +99,13 @@ public:
 	void resetLimits(); // Reset minimum and maximum co-ordinates of the patch
 	
 	void addCell(Cell* pCell, int x, int y);
+	
 	// Return co-ordinates of a specified cell
 	locn getCellLocn(int ix);
+	
 	// Return pointer to a specified cell
 	Cell* getCell(int ix);
+	
 	// Return co-ordinates of patch centroid
 	locn getCentroid(); 
 	void removeCell(Cell* pCell);
@@ -121,6 +125,7 @@ public:
 	void setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float epsGlobal,
 		short nHab, short rasterType, short landIx, bool gradK);
 	float getK();
+	bool isSuitable();
 
 	int getInitNbInds(const bool& isPatchModel, const int& landResol) const;
 	
