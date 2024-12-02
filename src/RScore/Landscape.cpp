@@ -2518,7 +2518,7 @@ rasterdata CheckRasterFile(string fname)
 // Patch connectivity functions
 
 // Create & initialise connectivity matrix
-void Landscape::createConnectMatrix(void)
+void Landscape::createConnectMatrix(speciesMap_t& allSpecies)
 {
 	if (connectMatrix != 0) deleteConnectMatrix();
 	int npatches = (int)patches.size();

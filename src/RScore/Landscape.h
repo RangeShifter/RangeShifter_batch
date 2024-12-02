@@ -414,7 +414,7 @@ public:
 
 	// functions to handle connectivity matrix
 
-	void createConnectMatrix(void);
+	void createConnectMatrix(speciesMap_t& allSpecies);
 	void resetConnectMatrix(void);
 	void incrConnectMatrix(
 		int,	// sequential no. of origin Patch
@@ -493,9 +493,11 @@ private:
 	// list of cells to be initialised for ALL species
 	std::vector <DistCell*> initcells;
 
-	// patch connectivity matrix
+	// patch connectivity matrices (one per species)
 	// indexed by [start patch seq num][end patch seq num]
 	int** connectMatrix;
+	map<short, int**> connectMatrices;
+
 	ofstream outConnMat;
 
 	// global environmental stochasticity (epsilon)

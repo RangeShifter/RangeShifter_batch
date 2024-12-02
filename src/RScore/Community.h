@@ -72,7 +72,7 @@ struct commStats {
 class Community {
 
 public:
-	Community(Landscape* pLand, map<int, Species*> allSpecies);
+	Community(Landscape* pLand, speciesMap_t allSpecies);
 	~Community();
 	// functions to manage populations occurring in the community
 	void initialise(Species* pSpecies, int year);
@@ -181,7 +181,7 @@ public:
 	void writePairwiseFstFile(Species* pSpecies, const int yr, const int gen, const  int nAlleles, const int nLoci, set<int> const& patchList);
 
 private:
-	map<int, Species*> speciesMap;
+	speciesMap_t speciesMap;
 	Landscape* pLandscape;
 	int indIx;				// index used to apply initial individuals
 	vector<vector <int>> occSuit;	// occupancy of suitable cells / patches

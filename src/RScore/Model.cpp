@@ -29,9 +29,9 @@ using namespace std::chrono;
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #if RS_RCPP && !R_CMD
-Rcpp::List RunModel(Landscape* pLandscape, int seqsim, map<int, Species*> allSpecies)
+Rcpp::List RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 #else
-int RunModel(Landscape* pLandscape, int seqsim, map<int, Species*> allSpecies)
+int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 #endif
 {
 	int yr, totalInds;
@@ -194,7 +194,7 @@ int RunModel(Landscape* pLandscape, int seqsim, map<int, Species*> allSpecies)
 		}
 
 		if (sim.outConnect && ppLand.patchModel) {
-			pLandscape->createConnectMatrix();
+			pLandscape->createConnectMatrix(allSpecies);
 		}
 
 		// variables to control dynamic landscape

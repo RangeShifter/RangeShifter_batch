@@ -26,7 +26,7 @@
 
 //---------------------------------------------------------------------------
 
-Community::Community(Landscape* pLand, map<int, Species*> allSpecies) {
+Community::Community(Landscape* pLand, speciesMap_t allSpecies) {
 	pLandscape = pLand;
 	speciesMap = allSpecies;
 	indIx = 0;

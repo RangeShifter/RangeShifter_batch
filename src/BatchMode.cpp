@@ -6619,7 +6619,7 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 					// for batch processing, include landscape number in parameter file name
 					OutParameters(pLandscape);
 
-					map<int, Species*> allSpecies{ {0, pSpecies} }; // only one for now
+					speciesMap_t allSpecies{ {0, pSpecies} }; // only one for now
 
 					RunModel(pLandscape, i, allSpecies);
 
