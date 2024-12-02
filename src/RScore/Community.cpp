@@ -396,7 +396,7 @@ void Community::completeDispersal(Landscape* pLandscape, bool connect)
 					if (pPatch != nullptr) {
 						pPrevPatch = pPatch;
 						int prevpatch = pPrevPatch->getSeqNum();
-						pLandscape->incrConnectMatrix(prevpatch, newpatch);
+						pLandscape->incrConnectMatrix(spID, prevpatch, newpatch);
 					}
 				}
 			}

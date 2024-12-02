@@ -74,6 +74,7 @@
 #include <algorithm>
 #include <fstream>
 #include <vector>
+#include <ranges>
 
 using namespace std;
 
@@ -416,11 +417,8 @@ public:
 
 	void createConnectMatrix(speciesMap_t& allSpecies);
 	void resetConnectMatrix(void);
-	void incrConnectMatrix(
-		int,	// sequential no. of origin Patch
-		int   // sequential no. of settlement Patch
-	);
-	void deleteConnectMatrix(void);
+	void incrConnectMatrix(const short& speciesID, int originPatchNb, int settlePatchNb);
+	void deleteConnectMatrix(const short& speciesID);
 
 	bool outConnectHeaders();
 	bool closeConnectOfs();
@@ -495,7 +493,6 @@ private:
 
 	// patch connectivity matrices (one per species)
 	// indexed by [start patch seq num][end patch seq num]
-	int** connectMatrix;
 	map<short, int**> connectMatrices;
 
 	ofstream outConnMat;

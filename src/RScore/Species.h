@@ -624,6 +624,7 @@ private:
 
 };
 
+// Map to record and track all the species
 typedef map<short, Species*> speciesMap_t;
 
 //---------------------------------------------------------------------------

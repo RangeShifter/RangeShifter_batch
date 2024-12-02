@@ -312,7 +312,6 @@ Landscape::Landscape() {
 	maxCells = 100;
 	minEast = minNorth = 0.0;
 	cells = nullptr;
-	connectMatrix = nullptr;
 	epsGlobal = nullptr;
 	patchChgMatrix = nullptr;
 	costsChgMatrix = nullptr;
@@ -352,8 +351,8 @@ Landscape::~Landscape() {
 	habCodes.clear();
 	landchanges.clear();
 	patchchanges.clear();
-
-	deleteConnectMatrix();
+	for (const short& speciesID : views::keys(connectMatrices))
+		deleteConnectMatrix(speciesID);
 	deletePatchChgMatrix();
 	if (epsGlobal != nullptr) delete[] epsGlobal;
 }
@@ -2520,48 +2519,57 @@ rasterdata CheckRasterFile(string fname)
 // Create & initialise connectivity matrix
 void Landscape::createConnectMatrix(speciesMap_t& allSpecies)
 {
-	if (connectMatrix != 0) deleteConnectMatrix();
-	int npatches = (int)patches.size();
-	connectMatrix = new int* [npatches];
-	for (int i = 0; i < npatches; i++) {
-		connectMatrix[i] = new int[npatches];
-		for (int j = 0; j < npatches; j++) connectMatrix[i][j] = 0;
+	for (const short& speciesID : views::keys(allSpecies)) {
+
+		if (connectMatrices.contains(speciesID)) 
+			deleteConnectMatrix(speciesID);
+
+		//int npatches = getNbPatches(speciesID);
+		int npatches = patches.size();
+		int** connectMatrix = new int* [npatches];
+		for (int i = 0; i < npatches; i++) {
+			connectMatrix[i] = new int[npatches];
+			for (int j = 0; j < npatches; j++) connectMatrix[i][j] = 0;
+		}
+		connectMatrices.emplace(speciesID, connectMatrix);
 	}
 }
 
 // Re-initialise connectivity matrix
-void Landscape::resetConnectMatrix()
-{
-	if (connectMatrix != nullptr) {
-		int npatches = static_cast<int>(patches.size());
-		for (int i = 0; i < npatches; i++) {
-			for (int j = 0; j < npatches; j++) connectMatrix[i][j] = 0;
+void Landscape::resetConnectMatrix() {
+	for (auto& [speciesID, connectMatrix] : connectMatrices) {
+		if (connectMatrix != nullptr) {
+			int npatches = static_cast<int>(patches.size());
+			for (int i = 0; i < npatches; i++) {
+				for (int j = 0; j < npatches; j++) connectMatrix[i][j] = 0;
+			}
 		}
 	}
 }
 
 // Increment connectivity count between two specified patches
-void Landscape::incrConnectMatrix(int p0, int p1) {
+void Landscape::incrConnectMatrix(const short& speciesID, int originPatchNb, int settlePatchNb) {
+	
 	int npatches = static_cast<int>(patches.size());
-	if (connectMatrix == nullptr
-		|| p0 < 0 || p0 >= npatches
-		|| p1 < 0 || p1 >= npatches) {
+	if (connectMatrices.at(speciesID) == nullptr
+		|| originPatchNb < 0 || originPatchNb >= npatches
+		|| settlePatchNb < 0 || settlePatchNb >= npatches
+		) {
 		return;
 	}
-	connectMatrix[p0][p1]++;
+	connectMatrices.at(speciesID)[originPatchNb][settlePatchNb]++;
 }
 
 // Delete connectivity matrix
-void Landscape::deleteConnectMatrix()
-{
-	if (connectMatrix != nullptr) {
+void Landscape::deleteConnectMatrix(const short& speciesID) {
+	if (connectMatrices.at(speciesID) != nullptr) {
 		int npatches = static_cast<int>(patches.size());
 		for (int j = 0; j < npatches; j++) {
-			if (connectMatrix[j] != 0)
-				delete connectMatrix[j];
+			if (connectMatrices.at(speciesID)[j] != nullptr)
+				delete connectMatrices.at(speciesID)[j];
 		}
-		delete[] connectMatrix;
-		connectMatrix = nullptr;
+		delete[] connectMatrices.at(speciesID);
+		connectMatrices.at(speciesID) = nullptr;
 	}
 }
 
@@ -2586,7 +2594,7 @@ bool Landscape::outConnectHeaders()
 	name += "_Connect.txt";
 	outConnMat.open(name.c_str());
 
-	outConnMat << "Rep\tYear\tStartPatch\tEndPatch\tNinds" << endl;
+	outConnMat << "Rep\tYear\tSpecies\tStartPatch\tEndPatch\tNinds" << endl;
 
 	return outConnMat.is_open();
 }
@@ -2626,59 +2634,61 @@ void Landscape::outPathsHeaders(int rep, int option)
 }
 #endif
 
-void Landscape::outConnect(int rep, int yr)
-{
+void Landscape::outConnect(int rep, int yr) {
+	
 	int patchnum0, patchnum1;
-	int npatches = (int)patches.size();
-	int* emigrants = new int[npatches]; // 1D array to hold emigrants from each patch
-	int* immigrants = new int[npatches]; // 1D array to hold immigrants to  each patch
 
-	for (int i = 0; i < npatches; i++) {
-		emigrants[i] = immigrants[i] = 0;
-	}
+	for (auto& [speciesID, connectMatrix] : connectMatrices) {
 
-	for (int i = 0; i < npatches; i++) {
-		patchnum0 = patches[i]->getPatchNum();
-		if (patchnum0 != 0) {
-			for (int j = 0; j < npatches; j++) {
-				patchnum1 = patches[j]->getPatchNum();
-				if (patchnum1 != 0) {
-					emigrants[i] += connectMatrix[i][j];
-					immigrants[j] += connectMatrix[i][j];
-					if (connectMatrix[i][j] > 0) {
-						outConnMat << rep << "\t" << yr
-							<< "\t" << patchnum0 << "\t" << patchnum1
-							<< "\t" << connectMatrix[i][j] << endl;
+		int npatches = static_cast<int>(patches.size());
+		int* emigrants = new int[npatches]; // 1D array to hold emigrants from each patch
+		int* immigrants = new int[npatches]; // 1D array to hold immigrants to  each patch
+
+		for (int i = 0; i < npatches; i++) {
+			emigrants[i] = immigrants[i] = 0;
+		}
+
+		for (int i = 0; i < npatches; i++) {
+			patchnum0 = patches[i]->getPatchNum();
+			if (patchnum0 != 0) {
+				for (int j = 0; j < npatches; j++) {
+					patchnum1 = patches[j]->getPatchNum();
+					if (patchnum1 != 0) {
+						emigrants[i] += connectMatrix[i][j];
+						immigrants[j] += connectMatrix[i][j];
+						if (connectMatrix[i][j] > 0) {
+							outConnMat << rep << "\t" << yr
+								<< "\t" << patchnum0 << "\t" << patchnum1
+								<< "\t" << connectMatrix[i][j] << endl;
+						}
 					}
 				}
 			}
 		}
-	}
 
-	for (int i = 0; i < npatches; i++) {
-		patchnum0 = patches[i]->getPatchNum();
-		if (patchnum0 != 0) {
-			if (patches[i]->getK() > 0.0)
-			{ // suitable patch
-				outConnMat << rep << "\t" << yr
-					<< "\t" << patchnum0 << "\t-999\t" << emigrants[i] << endl;
-				outConnMat << rep << "\t" << yr
-					<< "\t-999\t" << patchnum0 << "\t" << immigrants[i] << endl;
+		for (int i = 0; i < npatches; i++) {
+			patchnum0 = patches[i]->getPatchNum();
+			if (patchnum0 != 0) {
+				if (patches[i]->getK() > 0.0) { // suitable patch
+					outConnMat << rep << "\t" << yr
+						<< "\t" << patchnum0 << "\t-999\t" << emigrants[i] << endl;
+					outConnMat << rep << "\t" << yr
+						<< "\t-999\t" << patchnum0 << "\t" << immigrants[i] << endl;
+				}
 			}
 		}
+		delete[] emigrants;
+		delete[] immigrants;
 	}
-
-	delete[] emigrants;
-	delete[] immigrants;
 
 }
 
 //---------------------------------------------------------------------------
 
-void Landscape::resetVisits(void) {
+void Landscape::resetVisits() {
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
-			if (cells[y][x] != 0) { // not a no-data cell
+			if (cells[y][x] != nullptr) { // not a no-data cell
 				cells[y][x]->resetVisits();
 			}
 		}
