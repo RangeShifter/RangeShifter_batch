@@ -710,8 +710,8 @@ void Landscape::allocatePatches(Species* pSpecies)
 	patches.clear();
 
 	// Create the matrix patch
-	patches.push_back(new Patch(0, 0));
-	Patch* matrixPatch = patches[0];
+	Patch* matrixPatch = new Patch(0, 0);
+	patches.push_back(matrixPatch);
 	patchnums.push_back(0);
 	int patchnum = 1;
 
@@ -884,14 +884,18 @@ void Landscape::addCellToPatch(Cell* pCell, Patch* pPatch, int hab) {
 
 patchData Landscape::getPatchData(int ix) {
 	patchData ppp;
-	ppp.pPatch = patches[ix]; ppp.patchNum = patches[ix]->getPatchNum();
+	ppp.pPatch = patches[ix]; 
+	ppp.patchNum = patches[ix]->getPatchNum();
 	ppp.nCells = patches[ix]->getNCells();
-	locn randloc; randloc.x = -666; randloc.y = -666;
+	locn randloc;
+	randloc.x = -666; 
+	randloc.y = -666;
 	Cell* pCell = patches[ix]->getRandomCell();
-	if (pCell != 0) {
+	if (pCell != nullptr) {
 		randloc = pCell->getLocn();
 	}
-	ppp.x = randloc.x; ppp.y = randloc.y;
+	ppp.x = randloc.x; 
+	ppp.y = randloc.y;
 	return ppp;
 }
 
@@ -2526,10 +2530,10 @@ void Landscape::createConnectMatrix(void)
 }
 
 // Re-initialise connectivity matrix
-void Landscape::resetConnectMatrix(void)
+void Landscape::resetConnectMatrix()
 {
-	if (connectMatrix != 0) {
-		int npatches = (int)patches.size();
+	if (connectMatrix != nullptr) {
+		int npatches = static_cast<int>(patches.size());
 		for (int i = 0; i < npatches; i++) {
 			for (int j = 0; j < npatches; j++) connectMatrix[i][j] = 0;
 		}
@@ -2538,22 +2542,26 @@ void Landscape::resetConnectMatrix(void)
 
 // Increment connectivity count between two specified patches
 void Landscape::incrConnectMatrix(int p0, int p1) {
-	int npatches = (int)patches.size();
-	if (connectMatrix == 0 || p0 < 0 || p0 >= npatches || p1 < 0 || p1 >= npatches) return;
+	int npatches = static_cast<int>(patches.size());
+	if (connectMatrix == nullptr
+		|| p0 < 0 || p0 >= npatches
+		|| p1 < 0 || p1 >= npatches) {
+		return;
+	}
 	connectMatrix[p0][p1]++;
 }
 
 // Delete connectivity matrix
-void Landscape::deleteConnectMatrix(void)
+void Landscape::deleteConnectMatrix()
 {
-	if (connectMatrix != 0) {
-		int npatches = (int)patches.size();
+	if (connectMatrix != nullptr) {
+		int npatches = static_cast<int>(patches.size());
 		for (int j = 0; j < npatches; j++) {
 			if (connectMatrix[j] != 0)
 				delete connectMatrix[j];
 		}
 		delete[] connectMatrix;
-		connectMatrix = 0;
+		connectMatrix = nullptr;
 	}
 }
 

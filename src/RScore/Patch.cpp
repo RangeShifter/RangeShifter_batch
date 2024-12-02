@@ -57,7 +57,10 @@ int Patch::getNCells() { return nCells; }
 
 patchLimits Patch::getLimits() {
 	patchLimits p;
-	p.xMin = xMin; p.xMax = xMax; p.yMin = yMin; p.yMax = yMax;
+	p.xMin = xMin; 
+	p.xMax = xMax; 
+	p.yMin = yMin;
+	p.yMax = yMax;
 	return p;
 }
 
@@ -93,9 +96,9 @@ void Patch::resetLimits() {
 	if (changed) {
 		// remove any deleted cells
 		std::vector <Cell*> newcells; // for all retained and added cells
-		int ncells = (int)cells.size();
+		int ncells = static_cast<int>(cells.size());
 		for (int i = 0; i < ncells; i++) {
-			if (cells[i] != NULL) {
+			if (cells[i] != nullptr) {
 				newcells.push_back(cells[i]);
 			}
 		}
@@ -103,8 +106,9 @@ void Patch::resetLimits() {
 		cells = newcells;
 		// reset patch limits
 		locn loc;
-		xMin = yMin = 999999999; xMax = yMax = 0;
-		ncells = (int)cells.size();
+		xMin = yMin = 999999999; 
+		xMax = yMax = 0;
+		ncells = static_cast<int>(cells.size());
 		for (int i = 0; i < ncells; i++) {
 			loc = getCellLocn(i);
 			if (loc.x < xMin) xMin = loc.x;

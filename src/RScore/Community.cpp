@@ -170,7 +170,7 @@ void Community::initialise(Species* pSpecies, int year) {
 							if (pCell != nullptr) { // not a no-data cell
 								pPatch = pCell->getPatch();
 								if (pPatch != nullptr) {
-									if (pPatch->getSeqNum() != 0) { // not the matrix patch
+									if (pPatch->getPatchNum() != 0) { // not the matrix patch
 										selectedPatches.insert(pPatch->getPatchNum());
 									}
 								}
