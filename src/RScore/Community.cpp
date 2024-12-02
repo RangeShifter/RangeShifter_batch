@@ -191,7 +191,7 @@ void Community::initialise(Species* pSpecies, int year) {
 				}
 			}
 		}
-		else {
+		else { // doesn't use species distribution
 			// WHAT HAPPENS IF INITIAL DISTRIBUTION IS NOT LOADED ??? ....
 			// should not occur - take no action - no initialisation will occur
 		}
@@ -220,9 +220,8 @@ void Community::initialise(Species* pSpecies, int year) {
 					else { // cell-based model
 						pCell = pLandscape->findCell(iind.x, iind.y);
 						if (pCell != nullptr) {
-							Patch* ppatch = pCell->getPatch();
-							if (ppatch != nullptr) {
-								pPatch = ppatch;
+							pPatch = pCell->getPatch();
+							if (pPatch != nullptr) {
 								if (pPatch->getK() > 0.0) { // patch is suitable
 									Species* pSpecies = findSpecies(iind.speciesID);
 									initialInd(pLandscape, pSpecies, pPatch, pCell, indIx);
@@ -326,7 +325,7 @@ void Community::dispersal(short landIx, short nextseason)
 		for (int j = 0; j < pop->getStats().nInds; j++) {
 			disperser disp = pop->extractDisperser(j);
 			if (disp.isDispersing) { // disperser - has already been removed from natal population
-				short spID = pop->getSpecies()->getSpeciesID();
+				short spID = pop->getSpecies()->getID();
 				auto it = matrixPops.find(spID);
 				if (it != matrixPops.end())
 					it->second->recruit(disp.pInd); // add to matrix population
@@ -1729,7 +1728,7 @@ Rcpp::IntegerMatrix Community::addYearToPopList(int rep, int yr) {  // TODO: def
 
 	for (int y = 0; y < ppLand.dimY; y++) {
 		for (int x = 0; x < ppLand.dimX; x++) {
-			Cell* pCell = pLandscape->findCell(x, y); //if (pLandscape->cells[y][x] == 0) {
+			Cell* pCell = pLandscape->findCell(x, y);
 			if (pCell == nullptr) { // no-data cell
 				pop_map_year(ppLand.dimY - 1 - y, x) = NA_INTEGER;
 			}

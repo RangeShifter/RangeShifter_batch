@@ -425,7 +425,7 @@ popStats Population::getStats()
 	demogrParams dem = pSpecies->getDemogrParams();
 	p.pSpecies = pSpecies;
 	p.pPatch = pPatch;
-	p.speciesID = pSpecies->getSpeciesID();
+	p.speciesID = pSpecies->getID();
 	p.nInds = (int)inds.size();
 	p.nNonJuvs = p.nAdults = 0;
 	p.breeding = false;
@@ -1454,7 +1454,7 @@ void Population::outPopulation(ofstream& outPopOfs, int rep, int yr, int gen, bo
 			outPopOfs << "\t" << eps << "\t" << envval << "\t" << k;
 		}
 	}
-	outPopOfs << "\t" << pSpecies->getSpeciesID();
+	outPopOfs << "\t" << pSpecies->getID();
 	if (dem.stageStruct) {
 		p = getStats();
 		outPopOfs << "\t" << p.nNonJuvs;
@@ -1491,7 +1491,7 @@ void Population::outIndividual(ofstream& outIndsOfs, Landscape* pLandscape, int 
 	emigRules emig = pSpecies->getEmigRules();
 	transferRules trfr = pSpecies->getTransferRules();
 	settleType sett = pSpecies->getSettle();
-	short speciesID = pSpecies->getSpeciesID();
+	short speciesID = pSpecies->getID();
 	int patchNum = pPatch->getPatchNum();
 
 	int ninds = (int)inds.size();

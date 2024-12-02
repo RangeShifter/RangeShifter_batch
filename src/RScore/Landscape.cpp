@@ -815,16 +815,16 @@ void Landscape::resetPatches() {
 
 void Landscape::addNewCellToLand(int x, int y, float q) {
 	if (q < 0.0) // no-data cell - no Cell created
-		cells[y][x] = 0;
+		cells[y][x] = nullptr;
 	else
-		cells[y][x] = new Cell(x, y, 0, q);
+		cells[y][x] = new Cell(x, y, nullptr, q);
 }
 
 void Landscape::addNewCellToLand(int x, int y, int hab) {
 	if (hab < 0) // no-data cell - no Cell created
 		cells[y][x] = nullptr;
 	else
-		cells[y][x] = new Cell(x, y, 0, hab);
+		cells[y][x] = new Cell(x, y, nullptr, hab);
 }
 
 void Landscape::addCellToLand(Cell* c) {
@@ -839,7 +839,7 @@ void Landscape::addNewCellToPatch(Patch* pPatch, int x, int y, float q) {
 	if (q < 0.0) throw logic_error("Attempt to add a cell with negative habitat quality.");
 	else { // create the new cell
 		cells[y][x] = new Cell(x, y, pPatch, q);
-		if (pPatch != 0) { // not the matrix patch
+		if (pPatch != nullptr) { // not the matrix patch
 			// add the cell to the patch
 			pPatch->addCell(cells[y][x], x, y);
 		}

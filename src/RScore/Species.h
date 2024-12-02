@@ -222,7 +222,7 @@ public:
 		const short& movementType = 1
 	);
 	~Species();
-	short getSpeciesID();
+	short getID();
 
 	// demographic parameter functions
 

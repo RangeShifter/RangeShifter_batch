@@ -146,7 +146,7 @@ Species::~Species() {
 	if (habCost != 0 || habStepMort != 0) deleteHabCostMort();
 }
 
-short Species::getSpeciesID() { return speciesID; }
+short Species::getID() { return speciesID; }
 
 //---------------------------------------------------------------------------
 
