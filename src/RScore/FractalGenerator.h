@@ -52,10 +52,10 @@
 
 #include "Parameters.h"
 
-class land
+class fractalPatch
 {
 public:
-	land();
+	fractalPatch();
 	int x_coord;
 	int y_coord;
 	float value;
@@ -66,7 +66,7 @@ private:
 // IMPORTANT NOTE: X AND Y ARE TRANSPOSED, i.e. X IS THE VERTICAL CO-ORDINATE
 // ==========================================================================
 
-vector<land>& fractal_landscape(
+vector<fractalPatch>& createFractalLandscape(
 	int,		// X dimension (Y of LandScape)
 	int,		// Y dimension (X of LandScape)
 	double,	// Hurst exponent
@@ -74,7 +74,7 @@ vector<land>& fractal_landscape(
 	double,	// maximum quality value
 	double	// minimum quality value
 );
-bool compare(const land&, const land&);
+bool compare(const fractalPatch&, const fractalPatch&);
 
 extern RSrandom* pRandom;
 

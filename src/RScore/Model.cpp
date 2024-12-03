@@ -54,7 +54,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			// suitable habitats has been changed from one simulation to another (GUI or batch)
 			// substantial time savings may result during simulation in certain landscapes
 			// if using neutral markers, set up patches to sample from 
-			pLandscape->allocatePatches(pSpecies);
+			pLandscape->allocatePatches(allSpecies);
 		}
 
 		pComm = new Community(pLandscape, allSpecies); // set up community
@@ -111,7 +111,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			
 			// generate new cell-based landscape
 			pLandscape->resetLand();
-			pLandscape->generatePatches();
+			pLandscape->generatePatches(allSpecies);
 			pComm = new Community(pLandscape, allSpecies); // set up community
 			
 			if (sim.patchSamplingOption == "random") {

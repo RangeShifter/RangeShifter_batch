@@ -174,10 +174,13 @@ struct rasterdata {
 #endif
 };
 struct patchData {
-	Patch* pPatch; int patchNum, nCells; int x, y;
+	Patch* pPatch; 
+	int patchNum, nCells; 
+	int x, y;
 };
 struct landChange {
-	int chgnum, chgyear; string habfile, pchfile, costfile;
+	int chgnum, chgyear; 
+	string habfile, pchfile, costfile;
 };
 struct patchChange {
 	int chgnum, x, y, oldpatch, newpatch;
@@ -216,15 +219,11 @@ public:
 	// functions to handle patches and cells
 
 	void setCellArray();
-	void generatePatches(); 		// create an artificial landscape
-	void allocatePatches(Species* pSpecies);// create patches for a cell-based landscape
-	Patch* newPatch(
-		int		// patch sequential no. (id no. is set to equal sequential no.)
-	);
-	Patch* newPatch(
-		int,  // patch sequential no.
-		int		// patch id no.
-	);
+	void generatePatches(const speciesMap_t& allSpecies); 		// create an artificial landscape
+	void allocatePatches(const speciesMap_t& allSpecies);// create patches for a cell-based landscape
+	Patch* addNewPatch(species_id id, int num);
+	Patch* addNewPatch(species_id id, int seqnum, int num);
+
 	void resetPatches();
 	void addNewCellToLand(int x, int y, float habQual);
 	void addNewCellToLand(int x, int y, int habType);
@@ -404,8 +403,7 @@ private:
 	Cell*** cells;
 
 	// list of patches in the landscape - can be in any sequence
-	std::vector<Patch*> patches;
-	// map<species_id, vector<Patch*>> patchesList;
+	map<species_id, vector<Patch*>> patchesList;
 
 	// list of habitat codes
 	std::vector<int> habCodes;

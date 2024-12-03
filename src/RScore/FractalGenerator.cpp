@@ -24,25 +24,22 @@
 
 #include "FractalGenerator.h"
 //---------------------------------------------------------------------------
-
-vector<land> patches;
-
 //----- Landscape creation --------------------------------------------------
 
-land::land() : x_coord(0), y_coord(0), value(0.0), avail(0) {}
+fractalPatch::fractalPatch() : x_coord(0), y_coord(0), value(0.0), avail(0) {}
 
-bool compare(const land& z, const land& zz) //compares only the values of the cells
+bool compare(const fractalPatch& z, const fractalPatch& zz) //compares only the values of the cells
 {
 	return z.value < zz.value;
 }
 
-vector<land>& fractal_landscape(int X, int Y, double Hurst, double prop,
-	double maxValue, double minValue)
-{
+vector<fractalPatch>& createFractalLandscape(int X, int Y, double Hurst, double prop,
+	double maxValue, double minValue) {
+
+	vector<fractalPatch> patches;
 
 	int ii, jj, x, y;
 	int ix, iy;
-	//int x0, y0, size, kx, kx2, ky, ky2;
 	int kx, kx2, ky, ky2;
 
 	double range; //range to draw random numbers at each iteration
@@ -161,13 +158,13 @@ vector<land>& fractal_landscape(int X, int Y, double Hurst, double prop,
 	// Now all the cells will be sorted and the Nno cells with the lower carrying
 	// capacity will be set as matrix, i.e. with K = 0
 
-	land* patch;
+	fractalPatch* patch;
 
 	for (x = 0; x < X; x++) // put all the cells with their values in a vector
 	{
 		for (y = 0; y < Y; y++)
 		{
-			patch = new land;
+			patch = new fractalPatch;
 			patch->x_coord = x;
 			patch->y_coord = y;
 			patch->value = (float)arena[x][y];
@@ -196,7 +193,7 @@ vector<land>& fractal_landscape(int X, int Y, double Hurst, double prop,
 	double diffK = maxValue - minValue;
 	double new_value;
 
-	vector<land>::iterator iter = patches.begin();
+	vector<fractalPatch>::iterator iter = patches.begin();
 	while (iter != patches.end())
 	{
 		if (iter->value > 0) // rescale to a range of K between Kmin and Kmax
@@ -210,7 +207,7 @@ vector<land>& fractal_landscape(int X, int Y, double Hurst, double prop,
 		iter++;
 	}
 
-	if (arena != NULL) {
+	if (arena != nullptr) {
 		for (ii = 0; ii < X; ii++) {
 			delete[] arena[ii];
 		}

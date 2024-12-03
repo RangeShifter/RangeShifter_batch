@@ -153,9 +153,6 @@ void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float
 		localK = 0.0;
 		return;
 	}
-	if (patchNum == 30) {
-		cout << endl;
-	}
 	int ncells = static_cast<int>(cells.size());
 	xsum = ysum = 0;
 	for (int i = 0; i < ncells; i++) {
