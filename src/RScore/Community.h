@@ -77,7 +77,7 @@ public:
 	// functions to manage populations occurring in the community
 	void initialise(Species* pSpecies, int year);
 	void resetPopns();
-	Species* findSpecies(int speciesID);
+	Species* findSpecies(species_id id);
 	void initialInd(
 		Landscape* pLandscape, 
 		Species* pSpecies, 

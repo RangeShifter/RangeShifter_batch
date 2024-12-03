@@ -573,7 +573,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	} // end of the replicates loop
 
 	if (sim.outConnect && ppLand.patchModel) {
-		for (const short& speciesID : views::keys(allSpecies))
+		for (const species_id& speciesID : views::keys(allSpecies))
 			pLandscape->deleteConnectMatrix(speciesID);
 		pLandscape->closeConnectOfs();
 	}

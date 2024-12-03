@@ -209,6 +209,7 @@ struct settleTraits {
 
 
 //---------------------------------------------------------------------------
+typedef short species_id;
 
 class Species {
 
@@ -222,7 +223,7 @@ public:
 		const short& movementType = 1
 	);
 	~Species();
-	short getID();
+	species_id getID();
 
 	// demographic parameter functions
 
@@ -620,12 +621,12 @@ private:
 	float betaS[gMaxNbStages][gMaxNbSexes];			// inflection point of the settlement reaction norm to density
 
 	// other attributes
-	int speciesID;
+	species_id ID;
 
 };
 
 // Map to record and track all the species
-typedef map<short, Species*> speciesMap_t;
+typedef map<species_id, Species*> speciesMap_t;
 
 //---------------------------------------------------------------------------
 

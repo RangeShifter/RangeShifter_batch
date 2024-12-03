@@ -34,7 +34,7 @@ Species::Species(const short& repro, const short& nbRepSeasons, const bool& hasS
 	moveType{movementType}
 {
 
-	speciesID = 0; // overwritten later
+	ID = 0; // overwritten later
 
 	// initialise demographic parameters
 	propMales = 0.0; 
@@ -146,7 +146,7 @@ Species::~Species() {
 	if (habCost != 0 || habStepMort != 0) deleteHabCostMort();
 }
 
-short Species::getID() { return speciesID; }
+species_id Species::getID() { return ID; }
 
 //---------------------------------------------------------------------------
 

@@ -242,11 +242,11 @@ void Community::initialise(Species* pSpecies, int year) {
 	} // end of switch (init.seedType)
 }
 
-Species* Community::findSpecies(int speciesID) {
-	if (auto search = speciesMap.find(speciesID); search != speciesMap.end()) {
+Species* Community::findSpecies(species_id id) {
+	if (auto search = speciesMap.find(id); search != speciesMap.end()) {
 		return search->second;
 	}
-	else throw logic_error("Species " + to_string(speciesID) + " couldn't be found.");
+	else throw logic_error("Species " + to_string(id) + " couldn't be found.");
 }
 
 void Community::resetPopns() {

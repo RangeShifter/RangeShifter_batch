@@ -1440,7 +1440,7 @@ void Population::outPopulation(ofstream& outPopOfs, int rep, int yr, int gen, bo
 	if (writeEnv) {
 		if (envLocal) { // then override eps with local value
 			Cell* pCell = pPatch->getRandomCell();
-			if (pCell != 0) eps = pCell->getEps();
+			if (pCell != nullptr) eps = pCell->getEps();
 		}
 		if (pPatch->isMatrix()) {
 			outPopOfs << "\t0\t0\t0";
@@ -1490,7 +1490,7 @@ void Population::outIndividual(ofstream& outIndsOfs, Landscape* pLandscape, int 
 	emigRules emig = pSpecies->getEmigRules();
 	transferRules trfr = pSpecies->getTransferRules();
 	settleType sett = pSpecies->getSettle();
-	short speciesID = pSpecies->getID();
+	species_id speciesID = pSpecies->getID();
 	int patchNum = pPatch->getPatchNum();
 
 	int ninds = (int)inds.size();

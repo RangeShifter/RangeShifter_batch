@@ -190,43 +190,35 @@ class Landscape {
 public:
 	Landscape();
 	~Landscape();
-	void resetLand(void);
+	void resetLand();
 
 	// functions to set and return parameter values
 
-	void setLandParams(
-		landParams,	// structure holding landscape parameters
-		bool				// batch mode
-	);
-	landParams getLandParams(void);
-	landData getLandData(void);
-	void setGenLandParams(genLandParams);
-	genLandParams getGenLandParams(void);
-	void setLandLimits(
-		int,	// minimum available X
-		int,	// minimum available Y
-		int,	// maximum available X
-		int		// maximum available Y
-	);
-	void resetLandLimits(void);
+	void setLandParams(landParams ppp, bool batchmode);
+	landParams getLandParams();
+	landData getLandData();
+	void setGenLandParams(genLandParams ppp);
+	genLandParams getGenLandParams();
+	void setLandLimits(int minX, int minY, int maxX, int maxY);
+	void resetLandLimits();
 
-	landOrigin getOrigin(void);
+	landOrigin getOrigin();
 
 	// functions to handle habitat codes
 
-	bool habitatsIndexed(void);
-	void listHabCodes(void);
-	void addHabCode(int);
-	int findHabCode(int);
-	int getHabCode(int);
-	void clearHabitats(void);
+	bool habitatsIndexed();
+	void listHabCodes();
+	void addHabCode(int hab);
+	int findHabCode(int hab);
+	int getHabCode(int xhab);
+	void clearHabitats();
 
 	// functions to handle patches and cells
 
 	void setCellArray(void);
 	void addPatchNum(int);
 	void generatePatches(); 		// create an artificial landscape
-	void allocatePatches(Species*);	// create patches for a cell-based landscape
+	void allocatePatches(Species* pSpecies);// create patches for a cell-based landscape
 	Patch* newPatch(
 		int		// patch sequential no. (id no. is set to equal sequential no.)
 	);
@@ -234,94 +226,40 @@ public:
 		int,  // patch sequential no.
 		int		// patch id no.
 	);
-	void resetPatches(void);
-	void addNewCellToLand(
-		int,    // x co-ordinate
-		int,    // y co-ordinate
-		float   // habitat quality value
-	);
-	void addNewCellToLand(
-		int,    // x co-ordinate
-		int,    // y co-ordinate
-		int     // habitat class no.
-	);
-	void addCellToLand(
-		Cell* // cell to add to landscape
-	);
-	void addCellToPatch(
-		Cell*,	// pointer to Cell
-		Patch*	// pointer to Patch
-	);
-	void addCellToPatch(
-		Cell*,  // pointer to Cell
-		Patch*, // pointer to Patch
-		float		// habitat quality value
-	);
-	void addCellToPatch(
-		Cell*,	// pointer to Cell
-		Patch*, // pointer to Patch
-		int     // habitat class no.
-	);
-	void addNewCellToPatch(
-		Patch*, // pointer to Patch
-		int,    // x co-ordinate
-		int,    // y co-ordinate
-		int     // habitat class no.
-	);
-	void addNewCellToPatch(
-		Patch*, // pointer to Patch
-		int,    // x co-ordinate
-		int,    // y co-ordinate
-		float   // habitat quality value
-	);
-	patchData getPatchData(
-		int		// index no. of Patch in patches vector
-	);
-	bool existsPatch(
-		int		// Patch id no.
-	);
-	Patch* findPatch(
-		int   // Patch id no.
-	);
+	void resetPatches();
+	void addNewCellToLand(int x, int y, float habQual);
+	void addNewCellToLand(int x, int y, int habType);
+	void addCellToLand(Cell* pCell);
+	void addCellToPatch(Cell* pCell, Patch* pPatch);
+	void addCellToPatch(Cell* pCell, Patch* pPatch, float habQual);
+	void addCellToPatch(Cell* pCell, Patch* pPatch, int habType);
+
+	void addNewCellToPatch(Patch* pPatch, int x, int y, int habType);
+	void addNewCellToPatch(Patch* pPatch, int x, int y, float habQual);
+	patchData getPatchData(int patchIx);
+	bool existsPatch(int patchIx);
+	Patch* findPatch(int patchIx);
 	set<int> samplePatches(const string& samplingOption, int nbToSample, Species* pSpecies);
-	int checkTotalCover(void);
-	void resetPatchPopns(void);
-	void updateCarryingCapacity(
-		Species*,	// pointer to Species
-		int,			// year
-		short			// landscape change index (always zero if not dynamic)
-	);
-	Cell* findCell(
-		int,		// x co-ordinate
-		int			// y co-ordinate
-	);
-	int patchCount(void);
-	void updateHabitatIndices(void);
-	void setEnvGradient(
-		Species*, // pointer to Species
-		bool      // TRUE for initial instance that gradient is set
-	);
-	void setGlobalStoch(
-		int		// no. of years
-	);
-	float getGlobalStoch(
-		int		// year
-	);
-	void updateLocalStoch(void);
-	void resetCosts(void);
-	void resetEffCosts(void);
+	int checkTotalCover();
+	void resetPatchPopns();
+	void updateCarryingCapacity(Species* pSpecies, int year, short landIx);
+	Cell* findCell(int x, int y);
+	int patchCount();
+	void updateHabitatIndices();
+	void setEnvGradient(Species* pSpecies, bool isInitial);
+	void setGlobalStoch(int	nbYears);
+	float getGlobalStoch(int year);
+	void updateLocalStoch();
+	void resetCosts();
+	void resetEffCosts();
 
 	// functions to handle dynamic changes
 
-	void setDynamicLand(bool);
-	void addLandChange(
-		landChange	// structure holding landscape change data
-	);
-	int numLandChanges(void);
-	landChange getLandChange(
-		short	// change number
-	);
-	void deleteLandChanges(void);
+	void setDynamicLand(bool isDynamic);
+	void addLandChange(landChange c);
+	int numLandChanges();
+	landChange getLandChange(short changeIx);
+	void deleteLandChanges();
 #if RS_RCPP && !R_CMD
 	int readLandChange(
 		int,		// change file number
@@ -334,22 +272,17 @@ public:
 		int			// costnodata
 	);
 #else
-	int readLandChange(
-		int,	// change file number
-		bool	// change SMS costs?
-	);
+	int readLandChange(int fileNb, bool changeCosts);
 #endif
-	void createPatchChgMatrix(void);
-	void recordPatchChanges(int);
-	void deletePatchChgMatrix(void);
-	int numPatchChanges(void);
-	patchChange getPatchChange(
-		int	// patch change number
-	);
-	void createCostsChgMatrix(void);
-	void recordCostChanges(int);
-	void deleteCostsChgMatrix(void);
-	int numCostChanges(void);
+	void createPatchChgMatrix();
+	void recordPatchChanges(int landIx);
+	void deletePatchChgMatrix();
+	int numPatchChanges();
+	patchChange getPatchChange(int changeIx);
+	void createCostsChgMatrix();
+	void recordCostChanges(int landIx);
+	void deleteCostsChgMatrix();
+	int numCostChanges();
 	costChange getCostChange(
 		int	// cost change number
 	);
@@ -416,9 +349,9 @@ public:
 	// functions to handle connectivity matrix
 
 	void createConnectMatrix(speciesMap_t& allSpecies);
-	void resetConnectMatrix(void);
-	void incrConnectMatrix(const short& speciesID, int originPatchNb, int settlePatchNb);
-	void deleteConnectMatrix(const short& speciesID);
+	void resetConnectMatrix();
+	void incrConnectMatrix(const species_id& speciesID, int originPatchNb, int settlePatchNb);
+	void deleteConnectMatrix(const species_id& id);
 
 	bool outConnectHeaders();
 	bool closeConnectOfs();
@@ -472,28 +405,28 @@ private:
 	Cell*** cells;
 
 	// list of patches in the landscape - can be in any sequence
-	std::vector <Patch*> patches;
+	std::vector<Patch*> patches;
 
 	// list of patch numbers in the landscape
-	std::vector <int> patchnums;
+	std::vector<int> patchnums;
 
 	// list of habitat codes
-	std::vector <int> habCodes;
+	std::vector<int> habCodes;
 
 	// list of dynamic landscape changes
-	std::vector <landChange> landchanges;
-	std::vector <patchChange> patchchanges;
-	std::vector <costChange> costschanges;
+	std::vector<landChange> landchanges;
+	std::vector<patchChange> patchchanges;
+	std::vector<costChange> costschanges;
 
 	// list of initial individual species distributions
-	std::vector <InitDist*> distns;
+	std::vector<InitDist*> distns;
 
 	// list of cells to be initialised for ALL species
-	std::vector <DistCell*> initcells;
+	std::vector<DistCell*> initcells;
 
 	// patch connectivity matrices (one per species)
 	// indexed by [start patch seq num][end patch seq num]
-	map<short, int**> connectMatrices;
+	map<species_id, int**> connectMatrices;
 
 	ofstream outConnMat;
 

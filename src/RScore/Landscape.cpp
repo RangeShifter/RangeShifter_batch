@@ -351,8 +351,8 @@ Landscape::~Landscape() {
 	habCodes.clear();
 	landchanges.clear();
 	patchchanges.clear();
-	for (const short& speciesID : views::keys(connectMatrices))
-		deleteConnectMatrix(speciesID);
+	for (const species_id& id : views::keys(connectMatrices))
+		deleteConnectMatrix(id);
 	deletePatchChgMatrix();
 	if (epsGlobal != nullptr) delete[] epsGlobal;
 }
@@ -981,13 +981,13 @@ Cell* Landscape::findCell(int x, int y) {
 	else return 0;
 }
 
-int Landscape::patchCount(void) {
-	return (int)patches.size();
+int Landscape::patchCount() {
+	return static_cast<int>(patches.size());
 }
 
-void Landscape::listPatches(void) {
+void Landscape::listPatches() {
 	patchLimits p;
-	int npatches = (int)patches.size();
+	int npatches = static_cast<int>(patches.size());
 #if RS_RCPP && !R_CMD
 	Rcpp::Rcout << endl;
 	for (int i = 0; i < npatches; i++) {
@@ -1013,12 +1013,12 @@ void Landscape::listPatches(void) {
 
 // Check that total cover of any cell does not exceed 100%
 // and identify matrix cells
-int Landscape::checkTotalCover(void) {
+int Landscape::checkTotalCover() {
 	if (rasterType != 1) return 0; // not appropriate test
 	int nCells = 0;
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
-			if (cells[y][x] != 0)
+			if (cells[y][x] != nullptr)
 			{ // not a no-data cell
 				float sumCover = 0.0;
 				for (int i = 0; i < nHab; i++) {
@@ -1568,9 +1568,7 @@ int Landscape::readLandChange(int filenum, bool costs)
 }
 
 // Create & initialise patch change matrix
-void Landscape::createPatchChgMatrix()
-{
-	Patch* patch;
+void Landscape::createPatchChgMatrix() {
 	Patch* pPatch;
 	Cell* pCell;
 	if (patchChgMatrix != nullptr) deletePatchChgMatrix();
@@ -1585,12 +1583,11 @@ void Landscape::createPatchChgMatrix()
 			}
 			else {
 				// record initial patch number
-				patch = pCell->getPatch();
-				if (patch == nullptr) { // matrix cell
+				pPatch = pCell->getPatch();
+				if (pPatch == nullptr) { // matrix cell
 					patchChgMatrix[y][x][0] = patchChgMatrix[y][x][1] = 0;
 				}
 				else {
-					pPatch = patch;
 					patchChgMatrix[y][x][0] = patchChgMatrix[y][x][1] = pPatch->getPatchNum();
 				}
 			}
@@ -2519,7 +2516,7 @@ rasterdata CheckRasterFile(string fname)
 // Create & initialise connectivity matrix
 void Landscape::createConnectMatrix(speciesMap_t& allSpecies)
 {
-	for (const short& speciesID : views::keys(allSpecies)) {
+	for (const species_id& speciesID : views::keys(allSpecies)) {
 
 		if (connectMatrices.contains(speciesID)) 
 			deleteConnectMatrix(speciesID);
@@ -2548,7 +2545,7 @@ void Landscape::resetConnectMatrix() {
 }
 
 // Increment connectivity count between two specified patches
-void Landscape::incrConnectMatrix(const short& speciesID, int originPatchNb, int settlePatchNb) {
+void Landscape::incrConnectMatrix(const species_id& speciesID, int originPatchNb, int settlePatchNb) {
 	
 	int npatches = static_cast<int>(patches.size());
 	if (connectMatrices.at(speciesID) == nullptr
@@ -2561,7 +2558,7 @@ void Landscape::incrConnectMatrix(const short& speciesID, int originPatchNb, int
 }
 
 // Delete connectivity matrix
-void Landscape::deleteConnectMatrix(const short& speciesID) {
+void Landscape::deleteConnectMatrix(const species_id& speciesID) {
 	if (connectMatrices.at(speciesID) != nullptr) {
 		int npatches = static_cast<int>(patches.size());
 		for (int j = 0; j < npatches; j++) {
