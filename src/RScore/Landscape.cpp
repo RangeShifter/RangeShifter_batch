@@ -347,7 +347,6 @@ Landscape::~Landscape() {
 		if (initcells[i] != nullptr) delete initcells[i];
 	initcells.clear();
 
-	patchnums.clear();
 	habCodes.clear();
 	landchanges.clear();
 	patchchanges.clear();
@@ -365,7 +364,6 @@ void Landscape::resetLand() {
 	for (int i = 0; i < npatches; i++) 
 		if (patches[i] != nullptr) delete patches[i];
 	patches.clear();
-	patchnums.clear();
 	if (cells != nullptr) {
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
@@ -571,15 +569,6 @@ void Landscape::setCellArray() {
 	}
 }
 
-void Landscape::addPatchNum(int p) {
-	int npatches = static_cast<int>(patchnums.size());
-	for (int i = 0; i < npatches; i++) {
-		if (p == patchnums[i]) return; // patch already exists
-	}
-	patchnums.push_back(p);
-}
-
-
 //---------------------------------------------------------------------------
 /* Create an artificial landscape (random or fractal), which can be
 either binary (habitat index 0 is the matrix, 1 is suitable habitat)
@@ -596,7 +585,6 @@ void Landscape::generatePatches()
 
 	int patchnum = 0;  // initial patch number for cell-based landscape
 	// create patch 0 - the matrix patch (even if there is no matrix)
-	patchnums.push_back(patchnum);
 	newPatch(patchnum++);
 
 	// as landscape generator returns cells in a random sequence, first set up all cells
@@ -625,7 +613,6 @@ void Landscape::generatePatches()
 			pCell = findCell(x, y);
 			if (continuous) {
 				if (iter->value > 0.0) { // habitat
-					patchnums.push_back(patchnum);
 					pPatch = newPatch(patchnum++);
 					addCellToPatch(pCell, pPatch, iter->value);
 				}
@@ -638,7 +625,6 @@ void Landscape::generatePatches()
 					addCellToPatch(pCell, patches[0]);
 				}
 				else { // habitat
-					patchnums.push_back(patchnum);
 					pPatch = newPatch(patchnum++);
 					addCellToPatch(pCell, pPatch);
 					pCell->changeHabIndex(0, 1);
@@ -657,7 +643,6 @@ void Landscape::generatePatches()
 				pCell = findCell(x, y);
 				hab = pCell->getHabIndex(0);
 			} while (hab > 0);
-			patchnums.push_back(patchnum);
 			pPatch = newPatch(patchnum++);
 			pCell = findCell(x, y);
 			addCellToPatch(pCell, pPatch);
@@ -703,15 +688,18 @@ void Landscape::allocatePatches(Species* pSpecies)
 	Cell* pCell;
 
 	// Delete all existing patches (from previous landscape)
-	for (int i = 0; i < patches.size(); i++) {
-		if (patches[i] != nullptr) delete patches[i];
-	}
-	patches.clear();
+	//for (auto& [sp, patches] : patchesList) {
+		for (int i = 0; i < patches.size(); i++) {
+			if (patches[i] != nullptr) delete patches[i];
+		}
+		patches.clear();
+	//}
+	
+	// Create the matrix patches
+	//for (auto& [sp, patches] : patchesList) {}
 
-	// Create the matrix patch
 	Patch* matrixPatch = new Patch(0, 0);
 	patches.push_back(matrixPatch);
-	patchnums.push_back(0);
 	int patchnum = 1;
 
 	switch (rasterType) {
@@ -729,7 +717,6 @@ void Landscape::allocatePatches(Species* pSpecies)
 						habK += pSpecies->getHabK(pCell->getHabIndex(i));
 					}
 					if (habK > 0.0) { // cell is suitable - create a patch for it
-						patchnums.push_back(patchnum);
 						pPatch = newPatch(patchnum++);
 						addCellToPatch(pCell, pPatch);
 					}
@@ -754,7 +741,6 @@ void Landscape::allocatePatches(Species* pSpecies)
 						habK += pSpecies->getHabK(i) * pCell->getHabitat(i) / 100.0f;
 					}
 					if (habK > 0.0) { // cell is suitable - create a patch for it
-						patchnums.push_back(patchnum);
 						pPatch = newPatch(patchnum++);
 						addCellToPatch(pCell, pPatch);
 					}
@@ -777,7 +763,6 @@ void Landscape::allocatePatches(Species* pSpecies)
 						habK += pSpecies->getHabK(0) * pCell->getHabitat(i) / 100.0f;
 					}
 					if (habK > 0.0) { // cell is suitable (at some time) - create a patch for it
-						patchnums.push_back(patchnum);
 						pPatch = newPatch(patchnum++);
 						addCellToPatch(pCell, pPatch);
 					}
@@ -1374,7 +1359,6 @@ int Landscape::readLandChange(int filenum, bool costs)
 						else {
 							patchChgMatrix[y][x][2] = patchCode;
 							if (patchCode > 0 && !existsPatch(patchCode)) {
-								addPatchNum(patchCode);
 								newPatch(pchseq++, patchCode);
 							}
 						}
@@ -1517,7 +1501,6 @@ int Landscape::readLandChange(int filenum, bool costs)
 				else {
 					patchChgMatrix[y][x][2] = patchCode;
 					if (patchCode > 0 && !existsPatch(patchCode)) {
-						addPatchNum(patchCode);
 						newPatch(pchseq++, patchCode);
 					}
 				}
@@ -2293,9 +2276,6 @@ if (patchModel) {
 							return 14;
 						}
 						
-						if (!existsPatch(patchCode))
-							addPatchNum(patchCode);
-
 						pPatch = patchCode == 0 ? nullptr : ( // matrix cell
 							existsPatch(patchCode) ?
 							findPatch(patchCode) :
