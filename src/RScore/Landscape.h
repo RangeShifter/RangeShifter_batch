@@ -234,15 +234,15 @@ public:
 
 	void addNewCellToPatch(Patch* pPatch, int x, int y, int habType);
 	void addNewCellToPatch(Patch* pPatch, int x, int y, float habQual);
-	patchData getPatchData(int patchIx);
-	bool existsPatch(int patchIx);
-	Patch* findPatch(int patchIx);
+	patchData getPatchData(species_id id, int patchIx);
+	bool existsPatch(species_id whichSpecies, int patchIx);
+	Patch* findPatch(species_id whichSpecies, int patchIx);
 	set<int> samplePatches(const string& samplingOption, int nbToSample, Species* pSpecies);
 	int checkTotalCover();
 	void resetPatchPopns();
 	void updateCarryingCapacity(Species* pSpecies, int year, short landIx);
 	Cell* findCell(int x, int y);
-	int patchCount();
+	int patchCount(species_id id);
 	void updateHabitatIndices();
 	void setEnvGradient(Species* pSpecies, bool isInitial);
 	void setGlobalStoch(int	nbYears);
@@ -367,7 +367,6 @@ public:
 		string,	// patch file name
 		string	// cost file name (may be NULL)
 	);
-	void listPatches(void);
 	int readCosts(
 		string	// costs file name
 	);

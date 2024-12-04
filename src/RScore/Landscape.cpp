@@ -897,15 +897,16 @@ void Landscape::addCellToPatch(Cell* pCell, Patch* pPatch, int hab) {
 	pPatch->addCell(pCell, loc.x, loc.y);
 }
 
-patchData Landscape::getPatchData(int ix) {
+patchData Landscape::getPatchData(species_id id, int patchID) {
 	patchData ppp;
-	ppp.pPatch = patches[ix]; 
-	ppp.patchNum = patches[ix]->getPatchNum();
-	ppp.nCells = patches[ix]->getNCells();
+	Patch* pPatch = patchesList.at(id)[patchID];
+	ppp.pPatch = pPatch;
+	ppp.patchNum = pPatch->getPatchNum();
+	ppp.nCells = pPatch->getNCells();
 	locn randloc;
 	randloc.x = -666; 
 	randloc.y = -666;
-	Cell* pCell = patches[ix]->getRandomCell();
+	Cell* pCell = pPatch->getRandomCell();
 	if (pCell != nullptr) {
 		randloc = pCell->getLocn();
 	}
@@ -914,20 +915,18 @@ patchData Landscape::getPatchData(int ix) {
 	return ppp;
 }
 
-bool Landscape::existsPatch(int num) {
-	int npatches = (int)patches.size();
-	for (int i = 0; i < npatches; i++) {
-		if (num == patches[i]->getPatchNum()) return true;
-	}
+bool Landscape::existsPatch(species_id whichSpecies, int patchID) {
+	for (auto p : patchesList.at(whichSpecies)) {
+		if (patchID == p->getPatchNum()) return true;
+	};
 	return false;
 }
 
-Patch* Landscape::findPatch(int num) {
-	int npatches = (int)patches.size();
-	for (int i = 0; i < npatches; i++) {
-		if (num == patches[i]->getPatchNum()) return patches[i];
-	}
-	return 0;
+Patch* Landscape::findPatch(species_id whichSpecies, int patchID) {
+	for (auto p : patchesList.at(whichSpecies)) {
+		if (patchID == p->getPatchNum()) return p;
+	};
+	return nullptr;
 }
 
 set<int> Landscape::samplePatches(const string& samplingOption, int nbToSample, Species* pSpecies) {
@@ -997,34 +996,8 @@ Cell* Landscape::findCell(int x, int y) {
 	else return 0;
 }
 
-int Landscape::patchCount() {
-	return static_cast<int>(patches.size());
-}
-
-void Landscape::listPatches() {
-	patchLimits p;
-	int npatches = static_cast<int>(patches.size());
-#if RS_RCPP && !R_CMD
-	Rcpp::Rcout << endl;
-	for (int i = 0; i < npatches; i++) {
-		patchCode = patches[i]->getLimits();
-		Rcpp::Rcout << "Patch " << patches[i]->getPatchNum()
-			<< " xMin = " << patchCode.xMin << " xMax = " << patchCode.xMax
-			<< " \tyMin = " << patchCode.yMin << " yMax = " << patchCode.yMax
-			<< endl;
-	}
-	Rcpp::Rcout << endl;
-#else
-	cout << endl;
-	for (int i = 0; i < npatches; i++) {
-		p = patches[i]->getLimits();
-		cout << "Patch " << patches[i]->getPatchNum()
-			<< " xMin = " << p.xMin << " xMax = " << p.xMax
-			<< " \tyMin = " << p.yMin << " yMax = " << p.yMax
-			<< endl;
-	}
-	cout << endl;
-#endif
+int Landscape::patchCount(species_id id) {
+	return static_cast<int>(patchesList.at(id).size());
 }
 
 // Check that total cover of any cell does not exceed 100%

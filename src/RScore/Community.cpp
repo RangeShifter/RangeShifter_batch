@@ -61,127 +61,77 @@ void Community::initialise(Species* pSpecies, int year) {
 	for (const auto& [speciesID, sp] : speciesMap) {
 		matrixPops.emplace(
 			speciesID, 
-			new Population(sp, pLandscape->findPatch(0), 0, ppLand.resol)
+			new Population(sp, pLandscape->findPatch(speciesID, 0), 0, ppLand.resol)
 		);
-	}
 
-	switch (init.seedType) {
+		switch (init.seedType) {
 
-	case 0:	// free initialisation
+		case 0:	// free initialisation
 
-		switch (init.freeType) {
+			switch (init.freeType) {
 
-		case 0:	// random
-			// determine no. of patches / cells within the specified initialisation limits
-			// and record their corresponding sub-communities in a list
-			// parallel list records which have been selected
-			npatches = pLandscape->patchCount();
-			limits.xMin = init.minSeedX; 
-			limits.xMax = init.maxSeedX;
-			limits.yMin = init.minSeedY; 
-			limits.yMax = init.maxSeedY;
+			case 0:	// random
+				// determine no. of patches / cells within the specified initialisation limits
+				// and record their corresponding sub-communities in a list
+				// parallel list records which have been selected
+				npatches = pLandscape->patchCount(speciesID);
+				limits.xMin = init.minSeedX;
+				limits.xMax = init.maxSeedX;
+				limits.yMin = init.minSeedY;
+				limits.yMax = init.maxSeedY;
 
-			for (int i = 0; i < npatches; i++) {
-				pch = pLandscape->getPatchData(i);
-				patchnum = pch.pPatch->getPatchNum();
-				if (pch.pPatch->withinLimits(limits)) {
-					if (ppLand.patchModel) {
-						if (patchnum != 0) {
-							suitablePatches.insert(patchnum);
-						}
-					}
-					else { // cell-based model - is cell(patch) suitable
-						if (pch.pPatch->isSuitable()) {
-							suitablePatches.insert(patchnum);
-						}
-					}
-				}
-			}
-
-			// select specified no. of patches/cells at random
-			sample(
-				suitablePatches.begin(), 
-				suitablePatches.end(),
-				inserter(selectedPatches, selectedPatches.begin()),
-				init.nSeedPatches,
-				pRandom->getRNG()
-				);
-			break;
-
-		case 1:	// all suitable patches/cells
-			npatches = pLandscape->patchCount();
-			limits.xMin = init.minSeedX; 
-			limits.xMax = init.maxSeedX;
-			limits.yMin = init.minSeedY; 
-			limits.yMax = init.maxSeedY;
-
-			for (int i = 0; i < npatches; i++) {
-				pch = pLandscape->getPatchData(i);
-				if (pch.pPatch->withinLimits(limits)) {
+				for (int i = 0; i < npatches; i++) {
+					pch = pLandscape->getPatchData(speciesID, i);
 					patchnum = pch.pPatch->getPatchNum();
-					if (!pch.pPatch->isMatrix() && pch.pPatch->isSuitable()) {
-						selectedPatches.insert(patchnum);
-					}
-				}
-			}
-
-			break;
-
-		case 2:	// manually selected patches/cells
-			break;
-		} // end of switch (init.freeType)
-
-		for (auto pchNum : selectedPatches) {
-			Patch* pPatch = pLandscape->findPatch(pchNum);
-			// Determine size of initial population
-			int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
-			if (nInds > 0) {
-				Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
-				popns.push_back(pPop); // add new population to community list
-			}
-		}
-		break;
-
-	case 1:	// from species distribution
-		if (ppLand.useSpDist) {
-			// initialise from loaded species distribution
-			switch (init.spDistType) {
-			case 0: // all presence cells
-				pLandscape->setDistribution(pSpecies, 0); // activate all patches
-				break;
-			case 1: // some randomly selected presence cells
-				pLandscape->setDistribution(pSpecies, init.nSpDistPatches); // activate random patches
-				break;
-			case 2: // manually selected presence cells
-				// cells have already been identified - no further action here
-				break;
-			}
-
-			ndistcells = pLandscape->distCellCount(0);
-			for (int i = 0; i < ndistcells; i++) {
-				distloc = pLandscape->getSelectedDistnCell(0, i);
-				if (distloc.x >= 0) { // distribution cell is selected
-					// process each landscape cell within the distribution cell
-					
-					for (int x = 0; x < spratio; x++) {
-						for (int y = 0; y < spratio; y++) {
-							pCell = pLandscape->findCell(distloc.x * spratio + x, distloc.y * spratio + y);
-							if (pCell != nullptr) { // not a no-data cell
-								pPatch = pCell->getPatch();
-								if (pPatch != nullptr) {
-									if (!pPatch->isMatrix()) { // not the matrix patch
-										selectedPatches.insert(pPatch->getPatchNum());
-									}
-								}
+					if (pch.pPatch->withinLimits(limits)) {
+						if (ppLand.patchModel) {
+							if (patchnum != 0) {
+								suitablePatches.insert(patchnum);
+							}
+						}
+						else { // cell-based model - is cell(patch) suitable
+							if (pch.pPatch->isSuitable()) {
+								suitablePatches.insert(patchnum);
 							}
 						}
 					}
-
 				}
-			}
+
+				// select specified no. of patches/cells at random
+				sample(
+					suitablePatches.begin(),
+					suitablePatches.end(),
+					inserter(selectedPatches, selectedPatches.begin()),
+					init.nSeedPatches,
+					pRandom->getRNG()
+				);
+				break;
+
+			case 1:	// all suitable patches/cells
+				npatches = pLandscape->patchCount(speciesID);
+				limits.xMin = init.minSeedX;
+				limits.xMax = init.maxSeedX;
+				limits.yMin = init.minSeedY;
+				limits.yMax = init.maxSeedY;
+
+				for (int i = 0; i < npatches; i++) {
+					pch = pLandscape->getPatchData(speciesID, i);
+					if (pch.pPatch->withinLimits(limits)) {
+						patchnum = pch.pPatch->getPatchNum();
+						if (!pch.pPatch->isMatrix() && pch.pPatch->isSuitable()) {
+							selectedPatches.insert(patchnum);
+						}
+					}
+				}
+
+				break;
+
+			case 2:	// manually selected patches/cells
+				break;
+			} // end of switch (init.freeType)
 
 			for (auto pchNum : selectedPatches) {
-				Patch* pPatch = pLandscape->findPatch(pchNum);
+				Patch* pPatch = pLandscape->findPatch(speciesID, pchNum);
 				// Determine size of initial population
 				int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
 				if (nInds > 0) {
@@ -189,57 +139,109 @@ void Community::initialise(Species* pSpecies, int year) {
 					popns.push_back(pPop); // add new population to community list
 				}
 			}
-		}
-		else { // doesn't use species distribution
-			// WHAT HAPPENS IF INITIAL DISTRIBUTION IS NOT LOADED ??? ....
-			// should not occur - take no action - no initialisation will occur
-		}
-		break;
+			break;
 
-	case 2:	// initial individuals in specified patches/cells
-		if (year < 0) {
-			indIx = 0; // reset index for initial individuals
-		}
-		else { // add any initial individuals for the current year
-			initInd iind = initInd(); 
-			iind.year = 0;
-			int ninds = paramsInit->getNbInitInds();
-			while (indIx < ninds && iind.year <= year) {
-				initInd iind = paramsInit->getInitInd(indIx);
-				while (iind.year == year) {
-					if (ppLand.patchModel) {
-						if (pLandscape->existsPatch(iind.patchID)) {
-							pPatch = pLandscape->findPatch(iind.patchID);
-							Species* pSpecies = findSpecies(iind.speciesID);
-							if (pPatch->isSuitable()) {
-								initialInd(pLandscape, pSpecies, pPatch, pPatch->getRandomCell(), indIx);
-							}
-						}
-					}
-					else { // cell-based model
-						pCell = pLandscape->findCell(iind.x, iind.y);
-						if (pCell != nullptr) {
-							pPatch = pCell->getPatch();
-							if (pPatch != nullptr) {
-								if (pPatch->isSuitable()) {
-									Species* pSpecies = findSpecies(iind.speciesID);
-									initialInd(pLandscape, pSpecies, pPatch, pCell, indIx);
+		case 1:	// from species distribution
+			if (ppLand.useSpDist) {
+				// initialise from loaded species distribution
+				switch (init.spDistType) {
+				case 0: // all presence cells
+					pLandscape->setDistribution(pSpecies, 0); // activate all patches
+					break;
+				case 1: // some randomly selected presence cells
+					pLandscape->setDistribution(pSpecies, init.nSpDistPatches); // activate random patches
+					break;
+				case 2: // manually selected presence cells
+					// cells have already been identified - no further action here
+					break;
+				}
+
+				ndistcells = pLandscape->distCellCount(0);
+				for (int i = 0; i < ndistcells; i++) {
+					distloc = pLandscape->getSelectedDistnCell(0, i);
+					if (distloc.x >= 0) { // distribution cell is selected
+						// process each landscape cell within the distribution cell
+
+						for (int x = 0; x < spratio; x++) {
+							for (int y = 0; y < spratio; y++) {
+								pCell = pLandscape->findCell(distloc.x * spratio + x, distloc.y * spratio + y);
+								if (pCell != nullptr) { // not a no-data cell
+									pPatch = pCell->getPatch();
+									if (pPatch != nullptr) {
+										if (!pPatch->isMatrix()) { // not the matrix patch
+											selectedPatches.insert(pPatch->getPatchNum());
+										}
+									}
 								}
 							}
 						}
+
 					}
-					indIx++;
-					if (indIx < ninds) {
-						iind = paramsInit->getInitInd(indIx);
-					}
-					else {
-						iind.year = 99999999;
+				}
+
+				for (auto pchNum : selectedPatches) {
+					Patch* pPatch = pLandscape->findPatch(speciesID, pchNum);
+					// Determine size of initial population
+					int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
+					if (nInds > 0) {
+						Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
+						popns.push_back(pPop); // add new population to community list
 					}
 				}
 			}
-		} // if year == 0
-		break;
-	} // end of switch (init.seedType)
+			else { // doesn't use species distribution
+				// WHAT HAPPENS IF INITIAL DISTRIBUTION IS NOT LOADED ??? ....
+				// should not occur - take no action - no initialisation will occur
+			}
+			break;
+
+		case 2:	// initial individuals in specified patches/cells
+			if (year < 0) {
+				indIx = 0; // reset index for initial individuals
+			}
+			else { // add any initial individuals for the current year
+				initInd iind = initInd();
+				iind.year = 0;
+				int ninds = paramsInit->getNbInitInds();
+				while (indIx < ninds && iind.year <= year) {
+					initInd iind = paramsInit->getInitInd(indIx);
+					while (iind.year == year) {
+						if (ppLand.patchModel) {
+							if (pLandscape->existsPatch(speciesID, iind.patchID)) {
+								pPatch = pLandscape->findPatch(speciesID, iind.patchID);
+								Species* pSpecies = findSpecies(iind.speciesID);
+								if (pPatch->isSuitable()) {
+									initialInd(pLandscape, pSpecies, pPatch, pPatch->getRandomCell(), indIx);
+								}
+							}
+						}
+						else { // cell-based model
+							pCell = pLandscape->findCell(iind.x, iind.y);
+							if (pCell != nullptr) {
+								pPatch = pCell->getPatch();
+								if (pPatch != nullptr) {
+									if (pPatch->isSuitable()) {
+										Species* pSpecies = findSpecies(iind.speciesID);
+										initialInd(pLandscape, pSpecies, pPatch, pCell, indIx);
+									}
+								}
+							}
+						}
+						indIx++;
+						if (indIx < ninds) {
+							iind = paramsInit->getInitInd(indIx);
+						}
+						else {
+							iind.year = 99999999;
+						}
+					}
+				}
+			} // if year == 0
+
+			break;
+		} // end of switch (init.seedType)
+
+	} // end loop through species
 }
 
 Species* Community::findSpecies(species_id id) {
