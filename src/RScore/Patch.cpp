@@ -321,7 +321,8 @@ void Patch::removeCell(Cell* pCell) {
 	int ncells = (int)cells.size();
 	for (int i = 0; i < ncells; i++) {
 		if (pCell == cells[i]) {
-			cells[i] = NULL; i = ncells;
+			cells[i] = nullptr; 
+			i = ncells;
 			nCells--;
 			changed = true;
 		}

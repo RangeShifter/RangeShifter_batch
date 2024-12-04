@@ -819,7 +819,7 @@ Patch* Landscape::addNewPatch(species_id id, int seqnum, int num)
 	return patchesList.at(id)[patchesList.at(id).size() - 1];
 }
 
-void Landscape::resetPatches() {
+void Landscape::resetPatchLimits() {
 	for (auto& [sp, patches] : patchesList) {
 		int npatches = static_cast<int>(patches.size());
 		for (int i = 0; i < npatches; i++) {
@@ -915,13 +915,6 @@ patchData Landscape::getPatchData(species_id id, int patchID) {
 	return ppp;
 }
 
-bool Landscape::existsPatch(species_id whichSpecies, int patchID) {
-	for (auto p : patchesList.at(whichSpecies)) {
-		if (patchID == p->getPatchNum()) return true;
-	};
-	return false;
-}
-
 Patch* Landscape::findPatch(species_id whichSpecies, int patchID) {
 	for (auto p : patchesList.at(whichSpecies)) {
 		if (patchID == p->getPatchNum()) return p;
@@ -929,50 +922,61 @@ Patch* Landscape::findPatch(species_id whichSpecies, int patchID) {
 	return nullptr;
 }
 
-set<int> Landscape::samplePatches(const string& samplingOption, int nbToSample, Species* pSpecies) {
-
-	vector<int> sampledPatches;
-	vector<int> eligiblePatches;
-
-	// Get list of viable patches where the species is present
-	for (auto p : patches) {
-		if (p->isMatrix()) continue; // skip
-		if (samplingOption == "random") { // then all patches are eligible
-			eligiblePatches.push_back(p->getPatchNum());
-		}
-		else if (p->speciesIsPresent()) {
-			// only patches with at least 1 ind can be sampled
-			eligiblePatches.push_back(p->getPatchNum());
-		}
-	}
-	
-	if (samplingOption == "all") {
-		sampledPatches = eligiblePatches;
-	}
-	else if (samplingOption == "random_occupied" || samplingOption == "random") {
-		if (nbToSample > eligiblePatches.size())
-			nbToSample = eligiblePatches.size();
-		auto rng = pRandom->getRNG();
-		sample(eligiblePatches.begin(), eligiblePatches.end(), std::back_inserter(sampledPatches),
-			nbToSample, rng);
-	}
-	else {
-		throw logic_error("Sampling option should be random, rnadom_occupied or all when sampling patches.");
-	}
-
-	set<int> patchIds;
-	copy(sampledPatches.begin(), sampledPatches.end(), inserter(patchIds, patchIds.end()));
-	return patchIds;
+bool Landscape::existsPatch(species_id whichSpecies, int patchID) {
+	return findPatch(whichSpecies, patchID) == nullptr;
 }
 
-void Landscape::resetPatchPopns(void) {
-	int npatches = (int)patches.size();
-	for (int i = 0; i < npatches; i++) {
-		patches[i]->resetPop();
+void Landscape::samplePatches(speciesMap_t& allSpecies, const string& samplingOption) {
+
+	for (auto& [sp, pSpecies] : allSpecies) {
+
+		vector<int> sampledPatches;
+		vector<int> eligiblePatches;
+		int nbToSample = pSpecies->getNbPatchesToSample();
+
+		// Get list of viable patches where the species is present
+		for (auto p : patchesList.at(sp)) {
+			if (p->isMatrix()) continue; // skip
+			if (samplingOption == "random") { // then all patches are eligible
+				eligiblePatches.push_back(p->getPatchNum());
+			}
+			else if (p->speciesIsPresent()) {
+				// only patches with at least 1 ind can be sampled
+				eligiblePatches.push_back(p->getPatchNum());
+			}
+		}
+
+		if (samplingOption == "all") {
+			sampledPatches = eligiblePatches;
+		}
+		else if (samplingOption == "random_occupied" || samplingOption == "random") {
+			if (nbToSample > eligiblePatches.size())
+				nbToSample = eligiblePatches.size();
+			auto rng = pRandom->getRNG();
+			sample(eligiblePatches.begin(), eligiblePatches.end(), std::back_inserter(sampledPatches),
+				nbToSample, rng);
+		}
+		else {
+			throw logic_error("Sampling option should be random, rnadom_occupied or all when sampling patches.");
+		}
+
+		set<int> patchIds;
+		copy(sampledPatches.begin(), sampledPatches.end(), inserter(patchIds, patchIds.end()));
+		pSpecies->setSamplePatchList(patchIds);
+
+	} // end loop through species
+}
+
+void Landscape::resetPatchPopns() {
+	for (auto& [sp, patches] : patchesList) {
+		int npatches = static_cast<int>(patches.size());
+		for (int i = 0; i < npatches; i++) {
+			patches[i]->resetPop();
+		}
 	}
 }
 
-void Landscape::updateCarryingCapacity(Species* pSpecies, int yr, short landIx) {
+void Landscape::updateCarryingCapacity(const speciesMap_t& allSpecies, int yr, short landIx) {
 	envGradParams grad = paramsGrad->getGradient();
 	bool gradK = false;
 	if (grad.gradient && grad.gradType == 1) gradK = true; // gradient in carrying capacity
@@ -981,14 +985,16 @@ void Landscape::updateCarryingCapacity(Species* pSpecies, int yr, short landIx) 
 	landlimits.xMax = maxX;
 	landlimits.yMin = minY; 
 	landlimits.yMax = maxY;
-	int npatches = static_cast<int>(patches.size());
-	for (int i = 0; i < npatches; i++) {
-		if (!patches[i]->isMatrix()) {
-			patches[i]->setCarryingCapacity(pSpecies, landlimits, getGlobalStoch(yr), 
-				nHab, rasterType, landIx, gradK);
+
+	for (auto& [sp, patches] : patchesList) {
+		int npatches = static_cast<int>(patches.size());
+		for (int i = 0; i < npatches; i++) {
+			if (!patches[i]->isMatrix()) {
+				patches[i]->setCarryingCapacity(allSpecies.at(sp), landlimits, getGlobalStoch(yr),
+					nHab, rasterType, landIx, gradK);
+			}
 		}
 	}
-
 }
 
 Cell* Landscape::findCell(int x, int y) {
@@ -996,8 +1002,15 @@ Cell* Landscape::findCell(int x, int y) {
 	else return 0;
 }
 
-int Landscape::patchCount(species_id id) {
+int Landscape::patchCount(species_id id) const {
 	return static_cast<int>(patchesList.at(id).size());
+}
+
+int Landscape::allPatchCount() const {
+	int count = 0;
+	for (const species_id& sp : views::keys(patchesList))
+		count += patchCount(sp);
+	return count;
 }
 
 // Check that total cover of any cell does not exceed 100%
@@ -1192,7 +1205,8 @@ int Landscape::readLandChange(int filenum, bool costs)
 	simParams sim = paramsSim->getSim();
 
 	if (filenum < 0) return 19;
-	if (patchModel) pchseq = patchCount();
+	const species_id sp = gSingleSpeciesID; // only one species for now
+	int pchseq = patchModel ? patchCount(sp) : 0;
 
 #if !RS_RCPP || R_CMD
 	ifstream ifsDynHabFile; // habitat file input stream
@@ -1362,8 +1376,7 @@ int Landscape::readLandChange(int filenum, bool costs)
 						}
 						else {
 							patchChgMatrix[y][x][2] = patchCode;
-							if (patchCode > 0 && !existsPatch(patchCode)) {
-								species_id sp = 0; // only one species for now
+							if (patchCode > 0 && !existsPatch(sp, patchCode)) {
 								patchesList.at(sp).push_back(new Patch(pchseq, patchCode));
 								pchseq++;
 							}
@@ -1416,7 +1429,7 @@ int Landscape::readLandChange(int filenum, bool costs)
 				}
 				else {
 					// corrupt file stream
-#if RS_RCPP && !R_CMD
+#if !R_CMD
 					Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
 #endif
 					StreamErrorR("habitatchgfile");
@@ -1433,7 +1446,7 @@ int Landscape::readLandChange(int filenum, bool costs)
 					}
 					else {
 						// corrupt file stream
-#if RS_RCPP && !R_CMD
+#if !R_CMD
 						Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
 #endif
 						StreamErrorR("patchchgfile");
@@ -1514,8 +1527,7 @@ int Landscape::readLandChange(int filenum, bool costs)
 						}
 						else {
 							patchChgMatrix[y][x][2] = patchCode;
-							if (patchCode > 0 && !existsPatch(patchCode)) {
-								species_id sp = 0;
+							if (patchCode > 0 && !existsPatch(sp, patchCode)) {
 								patchesList.at(sp).push_back(new Patch(pchseq, patchCode));
 								pchseq++;
 							}
@@ -1526,9 +1538,11 @@ int Landscape::readLandChange(int filenum, bool costs)
 #if RS_RCPP
 							Rcpp::Rcout << "Found invalid cost value of " << changeIndex << "in cell x " << x << " and y  " << y << std::endl;
 #endif
-							ifsDynHabFile.close(); ifsDynHabFile.clear();
+							ifsDynHabFile.close(); 
+							ifsDynHabFile.clear();
 							if (ifsDynPatchFile.is_open()) {
-								ifsDynPatchFile.close(); ifsDynPatchFile.clear();
+								ifsDynPatchFile.close(); 
+								ifsDynPatchFile.clear();
 							}
 							return 38;
 						}
@@ -1959,7 +1973,7 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 	float badPatchFloat = -9.0; 
 	if (noDataPatch == -9) badPatchFloat = -99.0;
 
-	species_id sp = 0;
+	species_id sp = gSingleSpeciesID;
 	// Create the matrix patch (even if there is no matrix)
 	if (fileNum == 0) {
 		patchesList.at(sp).push_back(new Patch(0, 0));
@@ -2053,9 +2067,9 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 						}
 						// Does the patch already exists?
 						pPatch = patchCode == 0 ? nullptr : ( // matrix cell
-							existsPatch(patchCode) ?
-							findPatch(patchCode) :
-							addNewPatch(sp, seq++, patchCode)
+							existsPatch(sp, patchCode) ?
+							findPatch(sp, patchCode) :
+							addNewPatch(sp, seq++, patchCode) // doesn't exist yet: create it
 							);
 						addNewCellToPatch(pPatch, x, y, habCode);
 					}
@@ -2069,12 +2083,12 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 		} // for y
 
 #if RS_RCPP
-ifsHabMap >> habFloat;
-if (!ifsHabMap.eof()) EOFerrorR(habfile);
-if (patchModel) {
-	ifsPatchMap >> patchFloat;
-	if (!ifsPatchMap.eof()) EOFerrorR(pchfile);
-}
+		ifsHabMap >> habFloat;
+		if (!ifsHabMap.eof()) EOFerrorR(habfile);
+		if (patchModel) {
+			ifsPatchMap >> patchFloat;
+			if (!ifsPatchMap.eof()) EOFerrorR(pchfile);
+		}
 #endif
 		break;
 
@@ -2146,8 +2160,8 @@ if (patchModel) {
 							}
 							
 							pPatch = patchCode == 0 ? nullptr : ( // matrix cell
-								existsPatch(patchCode) ?
-								findPatch(patchCode) :
+								existsPatch(sp, patchCode) ?
+								findPatch(sp, patchCode) :
 								addNewPatch(sp, seq++, patchCode)
 								);
 							addNewCellToPatch(pPatch, x, y, habFloat);
@@ -2291,8 +2305,8 @@ if (patchModel) {
 						}
 						
 						pPatch = patchCode == 0 ? nullptr : ( // matrix cell
-							existsPatch(patchCode) ?
-							findPatch(patchCode) :
+							existsPatch(sp, patchCode) ?
+							findPatch(sp, patchCode) :
 							addNewPatch(sp, seq++, patchCode)
 							);
 						addNewCellToPatch(pPatch, x, y, habFloat);

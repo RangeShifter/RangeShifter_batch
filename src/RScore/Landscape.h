@@ -91,6 +91,8 @@ using namespace std;
 #include <Rcpp.h>
 #endif
 
+constexpr species_id gSingleSpeciesID = 0;
+
 //---------------------------------------------------------------------------
 
 // Initial species distribution
@@ -224,7 +226,7 @@ public:
 	Patch* addNewPatch(species_id id, int num);
 	Patch* addNewPatch(species_id id, int seqnum, int num);
 
-	void resetPatches();
+	void resetPatchLimits();
 	void addNewCellToLand(int x, int y, float habQual);
 	void addNewCellToLand(int x, int y, int habType);
 	void addCellToLand(Cell* pCell);
@@ -237,12 +239,13 @@ public:
 	patchData getPatchData(species_id id, int patchIx);
 	bool existsPatch(species_id whichSpecies, int patchIx);
 	Patch* findPatch(species_id whichSpecies, int patchIx);
-	set<int> samplePatches(const string& samplingOption, int nbToSample, Species* pSpecies);
+	void samplePatches(speciesMap_t& allSpecies, const string& samplingOption);
 	int checkTotalCover();
 	void resetPatchPopns();
-	void updateCarryingCapacity(Species* pSpecies, int year, short landIx);
+	void updateCarryingCapacity(const speciesMap_t& allSpecies, int year, short landIx);
 	Cell* findCell(int x, int y);
-	int patchCount(species_id id);
+	int patchCount(species_id id) const;
+	int allPatchCount() const;
 	void updateHabitatIndices();
 	void setEnvGradient(Species* pSpecies, bool isInitial);
 	void setGlobalStoch(int	nbYears);

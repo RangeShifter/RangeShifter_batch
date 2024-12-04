@@ -818,7 +818,6 @@ void Species::setGeneticParameters(const std::set<int>& chromosomeEnds, const in
 void Species::setSamplePatchList(const set<int>& samplePatchList) {
 	this->samplePatchList = samplePatchList;
 }
-
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

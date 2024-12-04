@@ -75,7 +75,7 @@ public:
 	Community(Landscape* pLand, speciesMap_t allSpecies);
 	~Community();
 	// functions to manage populations occurring in the community
-	void initialise(Species* pSpecies, int year);
+	void initialise(speciesMap_t& speciesMap, int year);
 	void resetPopns();
 	Species* findSpecies(species_id id);
 	void initialInd(
@@ -160,16 +160,16 @@ public:
 #endif
 
 	// sample individuals for genetics (or could be used for anything)
-	void sampleIndividuals(Species* pSpecies);
+	void sampleIndividuals();
 
 	bool openOutGenesFile(const bool& isDiploid, const int landNr, const int rep);
 	void outputGeneValues(const int& year, const int& gen, Species* pSpecies);
 	bool closeOutGenesOfs();
 
 	// control neutral stat output
-	void outNeutralGenetics(Species* pSpecies, int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill);
+	void outNeutralGenetics(int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill);
 	bool openNeutralOutputFile(Species* pSpecies, const int landNr);
-	void writeNeutralOutputFile(int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill);
+	void writeNeutralOutputFile(const species_id& sp, int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill);
 	bool closeNeutralOutputOfs();
 
 	bool openPerLocusFstFile(Species* pSpecies, Landscape* pLandscape, const int landNr, const int rep);
@@ -189,7 +189,7 @@ private:
 	map<int, Population*> matrixPops;
 	std::vector <Population*> popns;
 
-	unique_ptr<NeutralStatsManager> pNeutralStatistics;
+	map<species_id, unique_ptr<NeutralStatsManager>> neutralStatsMaps;
 
 	ofstream outPopOfs;
 	ofstream outIndsOfs;

@@ -70,9 +70,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 		// Random patches are sampled only once per landscape
 		if (sim.patchSamplingOption == "random") {
-			int nbToSample = pSpecies->getNbPatchesToSample();
-			auto patchesToSample = pLandscape->samplePatches(sim.patchSamplingOption, nbToSample, pSpecies);
-			pSpecies->setSamplePatchList(patchesToSample);
+				pLandscape->samplePatches(allSpecies, sim.patchSamplingOption);
 		}
 	}
 
@@ -96,11 +94,11 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			pRandom->fixNewSeed(rep);
 		}
 
-		patchChange patchchange;
+		patchChange pchChange;
 		costChange costchange;
-		int npatchchanges = pLandscape->numPatchChanges();
+		int nbPatchChanges = pLandscape->numPatchChanges();
 		int ncostchanges = pLandscape->numCostChanges();
-		int ixpchchg = 0;
+		int indexPatchChange = 0;
 		int ixcostchg = 0;
 
 		if (ppLand.generated) {
@@ -117,8 +115,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			if (sim.patchSamplingOption == "random") {
 				// Then patches must be resampled for new landscape
 				int nbToSample = pSpecies->getNbPatchesToSample();
-				auto patchesToSample = pLandscape->samplePatches(sim.patchSamplingOption, nbToSample, pSpecies);
-				pSpecies->setSamplePatchList(patchesToSample);
+				pLandscape->samplePatches(allSpecies, sim.patchSamplingOption);
 			}
 		}
 		if (init.seedType == 0 && init.freeType < 2 && init.initFrzYr > 0) {
@@ -206,8 +203,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 
 		// set up populations in the community
-		pLandscape->updateCarryingCapacity(pSpecies, 0, 0);
-		pComm->initialise(pSpecies, -1);
+		pLandscape->updateCarryingCapacity(allSpecies, 0, 0);
+		pComm->initialise(allSpecies, -1);
 		bool updateland = false;
 		int landIx = 0; // landscape change index
 
@@ -296,60 +293,61 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					if (env.local) pLandscape->updateLocalStoch();
 					updateCC = true;
 				}
-				if (ppLand.dynamic) {
-					if (yr == landChg.chgyear) { // apply landscape change
-						landIx = landChg.chgnum;
-						updateland = updateCC = true;
-						if (ppLand.patchModel) { // apply any patch changes
-							Patch* pPatch;
-							Cell* pCell;
-							patchchange = pLandscape->getPatchChange(ixpchchg++);
-							while (patchchange.chgnum <= landIx && ixpchchg <= npatchchanges) {
+				if (ppLand.dynamic && yr == landChg.chgyear) { // apply landscape change
+					landIx = landChg.chgnum;
+					updateland = updateCC = true;
+					if (ppLand.patchModel) { // apply any patch changes
+						Patch* pPatch;
+						Cell* pCell;
+						for (const species_id sp : views::keys(allSpecies)) {
+							pchChange = pLandscape->getPatchChange(sp, indexPatchChange++);
+							while (pchChange.chgnum <= landIx 
+								&& indexPatchChange <= nbPatchChanges) {
 								// move cell from original patch to new patch
-								pCell = pLandscape->findCell(patchchange.x, patchchange.y);
-								if (patchchange.oldpatch != 0) { // not matrix
-									pPatch = pLandscape->findPatch(patchchange.oldpatch);
+								pCell = pLandscape->findCell(pchChange.x, pchChange.y);
+								if (pchChange.oldpatch != 0) { // not matrix
+									pPatch = pLandscape->findPatch(sp, pchChange.oldpatch);
 									pPatch->removeCell(pCell);
 								}
-								if (patchchange.newpatch == 0) { // matrix
-									pPatch = 0;
+								if (pchChange.newpatch == 0) { // matrix
+									pPatch = nullptr;
 								}
 								else {
-									pPatch = pLandscape->findPatch(patchchange.newpatch);
-									pPatch->addCell(pCell, patchchange.x, patchchange.y);
+									pPatch = pLandscape->findPatch(sp, pchChange.newpatch);
+
+									pPatch->addCell(pCell, pchChange.x, pchChange.y);
 								}
 								pCell->setPatch(pPatch);
-								// get next patch change
-								patchchange = pLandscape->getPatchChange(ixpchchg++);
+								pchChange = pLandscape->getPatchChange(sp, indexPatchChange++);
 							}
-							ixpchchg--;
-							pLandscape->resetPatches(); // reset patch limits
 						}
-						if (landChg.costfile != "NULL") { // apply any SMS cost changes
-							Cell* pCell;
+						indexPatchChange--;
+						pLandscape->resetPatchLimits();
+					}
+					if (landChg.costfile != "NULL") { // apply any SMS cost changes
+						Cell* pCell;
+						costchange = pLandscape->getCostChange(ixcostchg++);
+						while (costchange.chgnum <= landIx && ixcostchg <= ncostchanges) {
+							pCell = pLandscape->findCell(costchange.x, costchange.y);
+							if (pCell != nullptr) {
+								pCell->setCost(costchange.newcost);
+							}
 							costchange = pLandscape->getCostChange(ixcostchg++);
-							while (costchange.chgnum <= landIx && ixcostchg <= ncostchanges) {
-								pCell = pLandscape->findCell(costchange.x, costchange.y);
-								if (pCell != nullptr) {
-									pCell->setCost(costchange.newcost);
-								}
-								costchange = pLandscape->getCostChange(ixcostchg++);
-							}
-							ixcostchg--;
-							pLandscape->resetEffCosts();
 						}
-						if (landIx < pLandscape->numLandChanges()) { // get next change
-							landChg = pLandscape->getLandChange(landIx);
-						}
-						else {
-							landChg.chgyear = 9999999;
-						}
+						ixcostchg--;
+						pLandscape->resetEffCosts();
+					}
+					if (landIx < pLandscape->numLandChanges()) { // get next change
+						landChg = pLandscape->getLandChange(landIx);
+					}
+					else {
+						landChg.chgyear = 9999999;
 					}
 				}
 			} // end of environmental gradient, etc.
 
 			if (updateCC) {
-				pLandscape->updateCarryingCapacity(pSpecies, yr, landIx);
+				pLandscape->updateCarryingCapacity(allSpecies, yr, landIx);
 			}
 
 			if (sim.outConnect && ppLand.patchModel)
@@ -374,7 +372,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 			if (init.seedType == 2) {
 				// add any new initial individuals for the current year
-				pComm->initialise(pSpecies, yr);
+				pComm->initialise(allSpecies, yr);
 			}
 
 			for (int gen = 0; gen < dem.repSeasons; gen++) // generation loop
@@ -433,20 +431,19 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					&& yr % sim.outputGeneticInterval == 0) {
 
 					simParams sim = paramsSim->getSim();
-					if (sim.patchSamplingOption != "list" && sim.patchSamplingOption != "random") {
+					if (sim.patchSamplingOption != "list" 
+						&& sim.patchSamplingOption != "random") {
 						// then patches must be re-sampled every gen
-						int nbToSample = pSpecies->getNbPatchesToSample();
-						auto patchesToSample = pLandscape->samplePatches(sim.patchSamplingOption, nbToSample, pSpecies);
-						pSpecies->setSamplePatchList(patchesToSample);
+						pLandscape->samplePatches(allSpecies, sim.patchSamplingOption);
 					}
 					// otherwise always use the user-specified list (even if patches are empty)
-					pComm->sampleIndividuals(pSpecies);
+					pComm->sampleIndividuals();
 
 					if (sim.outputGeneValues) {
 						pComm->outputGeneValues(yr, gen, pSpecies);
 					}
 					if (sim.outputWeirCockerham || sim.outputWeirHill) {
-						pComm->outNeutralGenetics(pSpecies, rep, yr, gen, sim.outputWeirCockerham, sim.outputWeirHill);
+						pComm->outNeutralGenetics(rep, yr, gen, sim.outputWeirCockerham, sim.outputWeirHill);
 					}
 				}
 
@@ -502,33 +499,35 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		if (grad.gradient) paramsGrad->resetOptY();
 
 		pLandscape->resetLandLimits();
-		if (ppLand.patchModel && ppLand.dynamic && ixpchchg > 0) {
+		if (ppLand.patchModel && ppLand.dynamic && indexPatchChange > 0) {
 			// apply any patch changes to reset landscape to original configuration
 			// (provided that at least one has already occurred)
-			patchChange patchchange;
 			Patch* pPatch;
 			Cell* pCell;
-			patchchange = pLandscape->getPatchChange(ixpchchg++);
-			while (patchchange.chgnum <= 666666 && ixpchchg <= npatchchanges) {
-				// move cell from original patch to new patch
-				pCell = pLandscape->findCell(patchchange.x, patchchange.y);
-				if (patchchange.oldpatch != 0) { // not matrix
-					pPatch = pLandscape->findPatch(patchchange.oldpatch);
-					pPatch->removeCell(pCell);
+			for (const species_id sp : views::keys(allSpecies)) {
+				patchChange patchchange = pLandscape->getPatchChange(sp, indexPatchChange++);
+				while (patchchange.chgnum <= 666666 
+					&& indexPatchChange <= nbPatchChanges) {
+					// move cell from original patch to new patch
+					pCell = pLandscape->findCell(patchchange.x, patchchange.y);
+					if (patchchange.oldpatch != 0) { // not matrix
+						pPatch = pLandscape->findPatch(sp, patchchange.oldpatch);
+						pPatch->removeCell(pCell);
+					}
+					if (patchchange.newpatch == 0) { // matrix
+						pPatch = nullptr;
+					}
+					else {
+						pPatch = pLandscape->findPatch(sp, patchchange.newpatch);
+						pPatch->addCell(pCell, patchchange.x, patchchange.y);
+					}
+					pCell->setPatch(pPatch);
+					// get next patch change
+					patchchange = pLandscape->getPatchChange(indexPatchChange++);
 				}
-				if (patchchange.newpatch == 0) { // matrix
-					pPatch = 0;
-				}
-				else {
-					pPatch = pLandscape->findPatch(patchchange.newpatch);
-					pPatch->addCell(pCell, patchchange.x, patchchange.y);
-				}
-				pCell->setPatch(pPatch);
-				// get next patch change
-				patchchange = pLandscape->getPatchChange(ixpchchg++);
 			}
-			ixpchchg--;
-			pLandscape->resetPatches();
+			indexPatchChange--;
+			pLandscape->resetPatchLimits();
 		}
 		if (ppLand.dynamic) {
 			transferRules trfr = pSpecies->getTransferRules();
@@ -729,7 +728,7 @@ void OutParameters(Landscape* pLandscape)
 	outPar << "REPRODUCTIVE SEASONS / YEAR\t" << dem.repSeasons << endl;
 	if (ppLand.patchModel) {
 		outPar << "PATCH-BASED MODEL" << endl;
-		outPar << "No. PATCHES \t" << pLandscape->patchCount() - 1 << endl;
+		outPar << "No. PATCHES: \n" << pLandscape->allPatchCount() - 1 << endl;
 	}
 	else
 		outPar << "CELL-BASED MODEL" << endl;
