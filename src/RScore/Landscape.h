@@ -230,9 +230,9 @@ public:
 	void addNewCellToLand(int x, int y, float habQual);
 	void addNewCellToLand(int x, int y, int habType);
 	void addCellToLand(Cell* pCell);
-	void addCellToPatch(Cell* pCell, Patch* pPatch);
-	void addCellToPatch(Cell* pCell, Patch* pPatch, float habQual);
-	void addCellToPatch(Cell* pCell, Patch* pPatch, int habType);
+	void addCellToPatch(species_id whichSpecies, Cell* pCell, Patch* pPatch);
+	void addCellToPatch(species_id whichSpecies, Cell* pCell, Patch* pPatch, float habQual);
+	void addCellToPatch(species_id whichSpecies, Cell* pCell, Patch* pPatch, int habType);
 
 	void addNewCellToPatch(Patch* pPatch, int x, int y, int habType);
 	void addNewCellToPatch(Patch* pPatch, int x, int y, float habQual);

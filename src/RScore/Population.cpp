@@ -1014,7 +1014,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 			&& inds[i]->getStatus() == waitSettlement // disperser has found a patch
 			) {
 			pCell = inds[i]->getLocn(1);
-			pPatch = pCell->getPatch();
+			pPatch = pCell->getPatch(pSpecies->getID());
 			if (pPatch != nullptr) { // not no-data area
 				pPatch->incrPossSettler(inds[i]->getSex());
 			}
@@ -1048,7 +1048,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 				settle = inds[i]->getSettPatch();
 
 				if (sett.densDep) {
-					pPatch = pCell->getPatch();
+					pPatch = pCell->getPatch(pSpecies->getID());
 					if (pPatch != nullptr) { // not no-data area
 						
 						if (settle.settleStatus == 0 // not yet resolved
@@ -1158,7 +1158,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 
 					pCell = pLandscape->findCell(neighbourLoc.x, neighbourLoc.y);
 					if (pCell != nullptr) { // not no-data area
-						pPatch = pCell->getPatch();
+						pPatch = pCell->getPatch(pSpecies->getID());
 						if (pPatch != nullptr) { // not no-data area
 
 							// Check whether patch is suitable
@@ -1198,7 +1198,7 @@ bool Population::isMatePresent(Cell* pCell, short othersex)
 	Patch* pPatch;
 	Population* pNewPopn;
 
-	pPatch = pCell->getPatch();
+	pPatch = pCell->getPatch(pSpecies->getID());
 	if (pPatch != nullptr) {
 		if (!pPatch->isMatrix() && pPatch->isSuitable()) {
 

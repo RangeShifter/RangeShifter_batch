@@ -5,6 +5,8 @@
 
 void testPopulation()
 {
+	set<species_id> spID = { gSingleSpeciesID; }
+
 	// Given a genetic load trait, offspring 
 	// Survival is (inversely) proportional to the mutation rate
 	{
@@ -31,7 +33,7 @@ void testPopulation()
 		for (float mutationRate : mutationRates) {
 			Landscape* pLandscape = new Landscape;
 			Patch* pPatch = pLandscape->newPatch(1);
-			Cell* pCell = new Cell(0, 0, pPatch, 0);
+			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 			pPatch->addCell(pCell, 0, 0);
 
 			Species* pSpecies = createDefaultSpecies();
@@ -90,7 +92,7 @@ void testPopulation()
 		for (float mutationRate : mutationRates) {
 			Landscape* pLandscape = new Landscape;
 			Patch* pPatch = pLandscape->newPatch(1);
-			Cell* pCell = new Cell(0, 0, pPatch, 0);
+			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 			pPatch->addCell(pCell, 0, 0);
 
 			Species* pSpecies = createDefaultSpecies();
@@ -172,7 +174,7 @@ void testPopulation()
 		Landscape* pLandscape = new Landscape;
 		Patch* pPatch = pLandscape->newPatch(1);
 		pPatch->overrideK(localK);
-		Cell* pCell = new Cell(0, 0, pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 		pPatch->addCell(pCell, 0, 0);
 
 		Species* pSpecies = new Species();
@@ -246,7 +248,7 @@ void testPopulation()
 
 		Landscape* pLandscape = new Landscape;
 		Patch* pPatch = pLandscape->newPatch(1);
-		Cell* pCell = new Cell(0, 0, pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 		pPatch->addCell(pCell, 0, 0);
 
 		Species* pSpecies = new Species();

@@ -624,21 +624,21 @@ void Landscape::generatePatches(const speciesMap_t& allSpecies)
 						pPatch = new Patch(patchnum, patchnum);
 						patchnum++;
 						patches.push_back(pPatch);
-						addCellToPatch(pCell, pPatch, iter->value);
+						addCellToPatch(sp, pCell, pPatch, iter->value);
 					}
 					else { // matrix
-						addCellToPatch(pCell, matrixPatch, iter->value);
+						addCellToPatch(sp, pCell, matrixPatch, iter->value);
 					}
 				}
 				else { // discrete
 					if (iter->avail == 0) { // matrix
-						addCellToPatch(pCell, matrixPatch);
+						addCellToPatch(sp, pCell, matrixPatch);
 					}
 					else { // habitat
 						pPatch = new Patch(patchnum, patchnum);
 						patchnum++;
 						patches.push_back(pPatch);
-						addCellToPatch(pCell, pPatch);
+						addCellToPatch(sp, pCell, pPatch);
 						pCell->changeHabIndex(0, 1);
 					}
 				}
@@ -660,7 +660,7 @@ void Landscape::generatePatches(const speciesMap_t& allSpecies)
 				pPatch = new Patch(patchnum, patchnum);
 				patchnum++;
 				patches.push_back(pPatch);
-				addCellToPatch(findCell(x, y), pPatch);
+				addCellToPatch(sp, findCell(x, y), pPatch);
 				pCell->changeHabIndex(0, 1);
 
 				if (continuous) {
@@ -677,10 +677,10 @@ void Landscape::generatePatches(const speciesMap_t& allSpecies)
 
 					pCell = findCell(xx, yy);
 					if (continuous && pCell->getHabitat(0) <= 0.0) {
-						addCellToPatch(pCell, matrixPatch, (float)p);
+						addCellToPatch(sp, pCell, matrixPatch, (float)p);
 					}
 					else if (pCell->getHabIndex(0) == 0) {
-						addCellToPatch(pCell, matrixPatch, x);
+						addCellToPatch(sp, pCell, matrixPatch, x);
 					}
 
 				}
@@ -716,7 +716,7 @@ void Landscape::allocatePatches(const speciesMap_t& allSpecies)
 	
 	int patchnum = 1; // patch number is unique across all species
 
-	for (auto& [spId, pSpecies] : allSpecies) {
+	for (auto& [sp, pSpecies] : allSpecies) {
 
 		vector<Patch*> patches;
 
@@ -742,10 +742,10 @@ void Landscape::allocatePatches(const speciesMap_t& allSpecies)
 							pPatch = new Patch(patchnum, patchnum);
 							patchnum++;
 							patches.push_back(pPatch);
-							addCellToPatch(pCell, pPatch);
+							addCellToPatch(sp, pCell, pPatch);
 						}
 						else { // cell is not suitable - add to the matrix patch
-							addCellToPatch(pCell, matrixPatch);
+							addCellToPatch(sp, pCell, matrixPatch);
 						}
 					}
 				}
@@ -767,10 +767,10 @@ void Landscape::allocatePatches(const speciesMap_t& allSpecies)
 							pPatch = new Patch(patchnum, patchnum);
 							patchnum++;
 							patches.push_back(pPatch);
-							addCellToPatch(pCell, pPatch);
+							addCellToPatch(sp, pCell, pPatch);
 						}
 						else { // cell is not suitable - add to the matrix patch
-							addCellToPatch(pCell, matrixPatch);
+							addCellToPatch(sp, pCell, matrixPatch);
 						}
 					}
 				}
@@ -790,10 +790,10 @@ void Landscape::allocatePatches(const speciesMap_t& allSpecies)
 							pPatch = new Patch(patchnum, patchnum);
 							patchnum++;
 							patches.push_back(pPatch);
-							addCellToPatch(pCell, pPatch);
+							addCellToPatch(sp, pCell, pPatch);
 						}
 						else { // cell is never suitable - add to the matrix patch
-							addCellToPatch(pCell, matrixPatch);
+							addCellToPatch(sp, pCell, matrixPatch);
 						}
 					}
 				}
@@ -802,7 +802,7 @@ void Landscape::allocatePatches(const speciesMap_t& allSpecies)
 
 		} // end of switch (rasterType)
 
-		patchesList.emplace(spId, patches);
+		patchesList.emplace(sp, patches);
 
 	} // end of loop through species
 }
@@ -831,15 +831,25 @@ void Landscape::resetPatchLimits() {
 void Landscape::addNewCellToLand(int x, int y, float q) {
 	if (q < 0.0) // no-data cell - no Cell created
 		cells[y][x] = nullptr;
-	else
-		cells[y][x] = new Cell(x, y, nullptr, q);
+	else {
+		set<species_id> spLabels;
+		for (const species_id& sp : views::keys(patchesList)) {
+			spLabels.insert(sp);
+		}
+		cells[y][x] = new Cell(x, y, nullptr, q, spLabels);
+	}
 }
 
 void Landscape::addNewCellToLand(int x, int y, int hab) {
 	if (hab < 0) // no-data cell - no Cell created
 		cells[y][x] = nullptr;
-	else
-		cells[y][x] = new Cell(x, y, nullptr, hab);
+	else {
+		set<species_id> spLabels;
+		for (const species_id& sp : views::keys(patchesList)) {
+			spLabels.insert(sp);
+		}
+		cells[y][x] = new Cell(x, y, nullptr, hab, spLabels);
+	}
 }
 
 void Landscape::addCellToLand(Cell* c) {
@@ -853,7 +863,11 @@ void Landscape::addCellToLand(Cell* c) {
 void Landscape::addNewCellToPatch(Patch* pPatch, int x, int y, float q) {
 	if (q < 0.0) throw logic_error("Attempt to add a cell with negative habitat quality.");
 	else { // create the new cell
-		cells[y][x] = new Cell(x, y, pPatch, q);
+		set<species_id> spLabels;
+		for (const species_id& sp : views::keys(patchesList)) {
+			spLabels.insert(sp);
+		}
+		cells[y][x] = new Cell(x, y, pPatch, q, spLabels);
 		if (pPatch != nullptr) { // not the matrix patch
 			// add the cell to the patch
 			pPatch->addCell(cells[y][x], x, y);
@@ -864,7 +878,11 @@ void Landscape::addNewCellToPatch(Patch* pPatch, int x, int y, float q) {
 void Landscape::addNewCellToPatch(Patch* pPatch, int x, int y, int hab) {
 	if (hab < 0) throw logic_error("Attempt to add a cell with negative habitat code.");
 	else { // create the new cell
-		cells[y][x] = new Cell(x, y, pPatch, hab);
+		set<species_id> spLabels;
+		for (const species_id& sp : views::keys(patchesList)) {
+			spLabels.insert(sp);
+		}
+		cells[y][x] = new Cell(x, y, pPatch, hab, spLabels);
 		if (pPatch != nullptr) { // not the matrix patch
 			// add the cell to the patch
 			pPatch->addCell(cells[y][x], x, y);
@@ -872,15 +890,15 @@ void Landscape::addNewCellToPatch(Patch* pPatch, int x, int y, int hab) {
 	}
 }
 
-void Landscape::addCellToPatch(Cell* pCell, Patch* pPatch) {
-	pCell->setPatch(pPatch);
+void Landscape::addCellToPatch(species_id whichSpecies, Cell* pCell, Patch* pPatch) {
+	pCell->setPatch(whichSpecies, pPatch);
 	locn loc = pCell->getLocn();
 	// add the cell to the patch
 	pPatch->addCell(pCell, loc.x, loc.y);
 }
 
-void Landscape::addCellToPatch(Cell* pCell, Patch* pPatch, float q) {
-	pCell->setPatch(pPatch);
+void Landscape::addCellToPatch(species_id whichSpecies, Cell* pCell, Patch* pPatch, float q) {
+	pCell->setPatch(whichSpecies, pPatch);
 	// update the habitat type of the cell
 	pCell->addHabitat(q);
 	locn loc = pCell->getLocn();
@@ -888,8 +906,8 @@ void Landscape::addCellToPatch(Cell* pCell, Patch* pPatch, float q) {
 	pPatch->addCell(pCell, loc.x, loc.y);
 }
 
-void Landscape::addCellToPatch(Cell* pCell, Patch* pPatch, int hab) {
-	pCell->setPatch(pPatch);
+void Landscape::addCellToPatch(species_id whichSpecies, Cell* pCell, Patch* pPatch, int hab) {
+	pCell->setPatch(whichSpecies, pPatch);
 	// update the habitat type of the cell
 	pCell->addHabIndex(hab);
 	locn loc = pCell->getLocn();

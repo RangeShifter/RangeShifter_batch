@@ -806,7 +806,7 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 						patchNum = -1;
 					}
 					else {
-						patch = pCell->getPatch();
+						patch = pCell->getPatch(pSpecies->getID());
 						if (patch == nullptr) { // matrix
 							pPatch = nullptr;
 							patchNum = 0;
@@ -903,7 +903,7 @@ bool Individual::moveStep(Landscape* pLandscape,
 	trfrCRWTraits movt = pSpecies->getSpCRWTraits();
 	settleSteps settsteps = pSpecies->getSteps(stage, sex);
 
-	pPatch = pCurrCell->getPatch();
+	pPatch = pCurrCell->getPatch(pSpecies->getID());
 
 	// Apply step-dependent mortality risk
 	if (pPatch == pNatalPatch
@@ -947,7 +947,7 @@ bool Individual::moveStep(Landscape* pLandscape,
 				isDispersing = false;
 			}
 			else {
-				pPatch = pCurrCell->getPatch();
+				pPatch = pCurrCell->getPatch(pSpecies->getID());
 				if (sim.saveVisits && pPatch != pNatalPatch) {
 					pCurrCell->incrVisits();
 				}
@@ -1004,7 +1004,7 @@ bool Individual::moveStep(Landscape* pLandscape,
 					pPatch = nullptr;
 					if (absorbing) absorbed = true;
 				}
-				else pPatch = pCurrCell->getPatch();
+				else pPatch = pCurrCell->getPatch(pSpecies->getID());
 
 			} while (!absorbing 
 				&& pCurrCell == nullptr 

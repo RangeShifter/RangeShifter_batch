@@ -60,10 +60,10 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 	spratio = ppLand.spResol / ppLand.resol;
 
 	// Initialise (empty) matrix populations
-	for (const auto& [speciesID, sp] : allSpecies) {
+	for (const auto& [sp, pSpecies] : allSpecies) {
 		matrixPops.emplace(
-			speciesID, 
-			new Population(sp, pLandscape->findPatch(speciesID, 0), 0, ppLand.resol)
+			sp, 
+			new Population(pSpecies, pLandscape->findPatch(sp, 0), 0, ppLand.resol)
 		);
 
 		switch (init.seedType) {
@@ -76,14 +76,14 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 				// determine no. of patches / cells within the specified initialisation limits
 				// and record their corresponding sub-communities in a list
 				// parallel list records which have been selected
-				npatches = pLandscape->patchCount(speciesID);
+				npatches = pLandscape->patchCount(sp);
 				limits.xMin = init.minSeedX;
 				limits.xMax = init.maxSeedX;
 				limits.yMin = init.minSeedY;
 				limits.yMax = init.maxSeedY;
 
 				for (int i = 0; i < npatches; i++) {
-					pch = pLandscape->getPatchData(speciesID, i);
+					pch = pLandscape->getPatchData(sp, i);
 					patchnum = pch.pPatch->getPatchNum();
 					if (pch.pPatch->withinLimits(limits)) {
 						if (ppLand.patchModel) {
@@ -110,14 +110,14 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 				break;
 
 			case 1:	// all suitable patches/cells
-				npatches = pLandscape->patchCount(speciesID);
+				npatches = pLandscape->patchCount(sp);
 				limits.xMin = init.minSeedX;
 				limits.xMax = init.maxSeedX;
 				limits.yMin = init.minSeedY;
 				limits.yMax = init.maxSeedY;
 
 				for (int i = 0; i < npatches; i++) {
-					pch = pLandscape->getPatchData(speciesID, i);
+					pch = pLandscape->getPatchData(sp, i);
 					if (pch.pPatch->withinLimits(limits)) {
 						patchnum = pch.pPatch->getPatchNum();
 						if (!pch.pPatch->isMatrix() && pch.pPatch->isSuitable()) {
@@ -133,11 +133,11 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 			} // end of switch (init.freeType)
 
 			for (auto pchNum : selectedPatches) {
-				Patch* pPatch = pLandscape->findPatch(speciesID, pchNum);
+				Patch* pPatch = pLandscape->findPatch(sp, pchNum);
 				// Determine size of initial population
 				int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
 				if (nInds > 0) {
-					Population* pPop = new Population(sp, pPatch, nInds, ppLand.resol);
+					Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
 					popns.push_back(pPop); // add new population to community list
 				}
 			}
@@ -148,10 +148,10 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 				// initialise from loaded species distribution
 				switch (init.spDistType) {
 				case 0: // all presence cells
-					pLandscape->setDistribution(sp, 0); // activate all patches
+					pLandscape->setDistribution(pSpecies, 0); // activate all patches
 					break;
 				case 1: // some randomly selected presence cells
-					pLandscape->setDistribution(sp, init.nSpDistPatches); // activate random patches
+					pLandscape->setDistribution(pSpecies, init.nSpDistPatches); // activate random patches
 					break;
 				case 2: // manually selected presence cells
 					// cells have already been identified - no further action here
@@ -168,7 +168,7 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 							for (int y = 0; y < spratio; y++) {
 								pCell = pLandscape->findCell(distloc.x * spratio + x, distloc.y * spratio + y);
 								if (pCell != nullptr) { // not a no-data cell
-									pPatch = pCell->getPatch();
+									pPatch = pCell->getPatch(sp);
 									if (pPatch != nullptr) {
 										if (!pPatch->isMatrix()) { // not the matrix patch
 											selectedPatches.insert(pPatch->getPatchNum());
@@ -182,11 +182,11 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 				}
 
 				for (auto pchNum : selectedPatches) {
-					Patch* pPatch = pLandscape->findPatch(speciesID, pchNum);
+					Patch* pPatch = pLandscape->findPatch(sp, pchNum);
 					// Determine size of initial population
 					int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
 					if (nInds > 0) {
-						Population* pPop = new Population(sp, pPatch, nInds, ppLand.resol);
+						Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
 						popns.push_back(pPop); // add new population to community list
 					}
 				}
@@ -209,8 +209,8 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 					initInd iind = paramsInit->getInitInd(indIx);
 					while (iind.year == year) {
 						if (ppLand.patchModel) {
-							if (pLandscape->existsPatch(speciesID, iind.patchID)) {
-								pPatch = pLandscape->findPatch(speciesID, iind.patchID);
+							if (pLandscape->existsPatch(sp, iind.patchID)) {
+								pPatch = pLandscape->findPatch(sp, iind.patchID);
 								Species* pSpecies = findSpecies(iind.speciesID);
 								if (pPatch->isSuitable()) {
 									initialInd(pLandscape, pSpecies, pPatch, pPatch->getRandomCell(), indIx);
@@ -220,7 +220,7 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 						else { // cell-based model
 							pCell = pLandscape->findCell(iind.x, iind.y);
 							if (pCell != nullptr) {
-								pPatch = pCell->getPatch();
+								pPatch = pCell->getPatch(sp);
 								if (pPatch != nullptr) {
 									if (pPatch->isSuitable()) {
 										Species* pSpecies = findSpecies(iind.speciesID);
@@ -370,7 +370,7 @@ void Community::completeDispersal(Landscape* pLandscape, bool connect)
 	Patch* pNewPatch;
 	Cell* pPrevCell;
 
-	for (auto& [spID, mtxPop] : matrixPops) {
+	for (auto& [sp, mtxPop] : matrixPops) {
 
 		int popsize = mtxPop->getNInds();
 		for (int j = 0; j < popsize; j++) {
@@ -379,7 +379,7 @@ void Community::completeDispersal(Landscape* pLandscape, bool connect)
 			if (settler.isSettling) {
 				// settler - has already been removed from matrix population
 				// find new patch
-				pNewPatch = settler.pCell->getPatch();
+				pNewPatch = settler.pCell->getPatch(sp);
 
 				// find population within the patch (if there is one)
 				pPop = pNewPatch->getPop();
@@ -395,11 +395,11 @@ void Community::completeDispersal(Landscape* pLandscape, bool connect)
 				if (connect) { // increment connectivity totals
 					int newpatch = pNewPatch->getSeqNum();
 					pPrevCell = settler.pInd->getLocn(0); // previous cell
-					Patch* pPatch = pPrevCell->getPatch();
+					Patch* pPatch = pPrevCell->getPatch(sp);
 					if (pPatch != nullptr) {
 						pPrevPatch = pPatch;
 						int prevpatch = pPrevPatch->getSeqNum();
-						pLandscape->incrConnectMatrix(spID, prevpatch, newpatch);
+						pLandscape->incrConnectMatrix(sp, prevpatch, newpatch);
 					}
 				}
 			}

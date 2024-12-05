@@ -4,6 +4,8 @@
 #include "../Population.h"
 
 void testTransferKernels() {
+	set<species_id> spID = { gSingleSpeciesID; }
+
 	// Simple 5*5 cell-based landscape layout
 	int lsDim = 5;
 	landParams ls_params = createDefaultLandParams(lsDim);
@@ -12,8 +14,8 @@ void testTransferKernels() {
 	ls.setLandParams(ls_params, true);
 
 	// Two suitable cells in opposite corners
-	Cell* init_cell = new Cell(0, 0, 0, 0);
-	Cell* final_cell = new Cell(ls_params.dimX - 1, ls_params.dimY - 1, 0, 0);
+	Cell* init_cell = new Cell(0, 0, 0, 0, spID);
+	Cell* final_cell = new Cell(ls_params.dimX - 1, ls_params.dimY - 1, 0, 0, spID);
 	ls.setCellArray();
 	ls.addCellToLand(init_cell);
 	ls.addCellToLand(final_cell);
@@ -49,7 +51,7 @@ void testTransferKernels() {
 	// Set up patches
 	ls.allocatePatches(&sp);
 	ls.updateCarryingCapacity(&sp, 0, 0);
-	Patch* init_patch = (Patch*)init_cell->getPatch();
+	Patch* init_patch = init_cell->getPatch(spID);
 
 	// Create and set up individual
 	Individual ind1(init_cell, init_patch, 1, 0, 0, 0.0, false, 0);
@@ -147,7 +149,7 @@ void testTransferKernels() {
 	// Set central cell and all adjacent
 	for (int x = ls_params.minX + 1; x < ls_params.maxX; ++x) {
 		for (int y = ls_params.minY + 1; y < ls_params.maxY; ++y) {
-			cells.push_back(new Cell(x, y, 0, 0));
+			cells.push_back(new Cell(x, y, 0, 0, spID));
 		}
 	}
 
@@ -155,7 +157,7 @@ void testTransferKernels() {
 	ls.allocatePatches(&sp);
 	ls.updateCarryingCapacity(&sp, 0, 0);
 	init_cell = cells[4]; // that is, the center
-	init_patch = (Patch*)init_cell->getPatch();
+	init_patch = init_cell->getPatch(sp);
 
 	kern.meanDist1 = 10; // overshoots *most* of the time...
 	sp.setSpKernTraits(0, 0, kern, ls_params.resol);
@@ -210,6 +212,8 @@ void testTransferKernels() {
 }
 
 void testTransferCRW() {
+	set<species_id> spID = { gSingleSpeciesID; }
+
 	// Simple 5*5 cell-based landscape layout
 	int lsDim = 5;
 	landParams ls_params = createDefaultLandParams(lsDim);
@@ -223,7 +227,7 @@ void testTransferCRW() {
 	vector<Cell*> cell_vec;
 	for (int x = ls_params.minX; x < ls_params.dimX; ++x) {
 		for (int y = ls_params.minY; y < ls_params.dimY; ++y) {
-			cell_vec.push_back(new Cell(x, y, 0, hab_index));
+			cell_vec.push_back(new Cell(x, y, 0, hab_index, spID));
 		}
 	}
 	Cell* init_cell = cell_vec[12]; // central
@@ -268,7 +272,7 @@ void testTransferCRW() {
 	// Set up patches
 	ls.allocatePatches(&sp);
 	ls.updateCarryingCapacity(&sp, 0, 0);
-	Patch* init_patch = (Patch*)init_cell->getPatch();
+	Patch* init_patch = init_cell->getPatch(sp);
 
 	// Create and set up individual
 	Individual ind0(init_cell, init_patch, 1, 0, 0, 0.0, true, 2);
@@ -292,7 +296,7 @@ void testTransferCRW() {
 	Cell* first_step_cell = ind1.getCurrCell();
 	assert(first_step_cell != init_cell);
 
-	assert((Patch*)first_step_cell->getPatch() != init_patch);
+	assert(first_step_cell->getPatch(sp) != init_patch);
 	ind1.setStatus(dispersing); // emigrating again
 
 	// Individual should die on second step
@@ -316,8 +320,8 @@ void testTransferCRW() {
 	sp.setHabK(hab_unsuitable, 0.0);
 
 	// Initial cell unsuitable, suitable cell in opposite corner
-	init_cell = new Cell(0, 0, 0, hab_unsuitable);
-	Cell* final_cell = new Cell(ls_params.dimX - 1, ls_params.dimY - 1, 0, hab_suitable);
+	init_cell = new Cell(0, 0, 0, hab_unsuitable, spID);
+	Cell* final_cell = new Cell(ls_params.dimX - 1, ls_params.dimY - 1, 0, hab_suitable, spID);
 	ls.setCellArray();
 	ls.addCellToLand(init_cell);
 	ls.addCellToLand(final_cell);
@@ -325,7 +329,7 @@ void testTransferCRW() {
 	ls.updateCarryingCapacity(&sp, 0, 0);
 	// Init cell is NOT in natal patch
 	Patch* natalPatch = new Patch(0, 0);
-	init_patch = (Patch*)init_cell->getPatch();
+	init_patch = init_cell->getPatch(sp);
 
 	// Step length too short
 	m.stepLength = 0.1; // will not reach final cell
@@ -392,7 +396,7 @@ void testTransferCRW() {
 	cell_vec.clear();
 	for (int x = ls_params.minX; x < ls_params.dimX; ++x) {
 		for (int y = ls_params.minY; y < ls_params.dimY; ++y) {
-			cell_vec.push_back(new Cell(x, y, 0, hab_suitable));
+			cell_vec.push_back(new Cell(x, y, 0, hab_suitable, spID));
 		}
 	}
 	ls.setCellArray();
@@ -667,6 +671,7 @@ bool haveSameEmigD0Allele(const Individual& indA, const Individual& indB, const 
 }
 
 void testIndividual() {
+	set<species_id> sp = { gSingleSpeciesID; }
 
 	// Kernel-based transfer
 	testTransferKernels();
@@ -688,7 +693,7 @@ void testIndividual() {
 		// (both freq. have p < 0.001 from a binomial with p 0.5 and 100 trials) 
 	{
 		Patch* pPatch = new Patch(0, 0);
-		Cell* pCell = new Cell(0, 0, pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 		const float recombinationRate = 0.01;
 		const int genomeSz = 10;
@@ -746,7 +751,7 @@ void testIndividual() {
 	/// Emigration probability is 1 initially, but female trait mutates.
 	{
 		Patch* pPatch = new Patch(0, 0);
-		Cell* pCell = new Cell(0, 0, pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 		// Species-level paramters
 		const int genomeSz = 6;
@@ -838,7 +843,7 @@ void testIndividual() {
 		float indEmigProb = 0.0;
 
 		Patch* pPatch = new Patch(0, 0);
-		Cell* pCell = new Cell(0, 0, pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 		// Species-level paramters
 		const int genomeSz = 1;
@@ -908,7 +913,7 @@ void testIndividual() {
 	// Individuals with genetic fitness = 0 are never viable
 	{
 		Patch* pPatch = new Patch(0, 0);
-		Cell* pCell = new Cell(0, 0, pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 		// Species-level paramters
 		const int genomeSz = 1;
@@ -961,7 +966,7 @@ void testIndividual() {
 	// A largely dominant alleles overrides the expression of its homologue
 	{
 		Patch* pPatch = new Patch(0, 0);
-		Cell* pCell = new Cell(0, 0, pPatch, 0);
+		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 		// Species-level paramters
 		const int genomeSz = 1;
@@ -1024,7 +1029,7 @@ void testIndividual() {
 			const float mutationRate = 0.0; // no mutations
 
 			Patch* pPatch = new Patch(0, 0);
-			Cell* pCell = new Cell(0, 0, pPatch, 0);
+			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 			// Genome-level settings
 			Species* pSpecies = createDefaultSpecies();
@@ -1146,7 +1151,7 @@ void testIndividual() {
 			const float mutationRate = 0.0; // no mutations
 
 			Patch* pPatch = new Patch(0, 0);
-			Cell* pCell = new Cell(0, 0, pPatch, 0);
+			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 			// Genome-level settings
 			Species* pSpecies = createDefaultSpecies();
@@ -1228,7 +1233,7 @@ void testIndividual() {
 			const float mutationRate = 0.0; // no mutations
 
 			Patch* pPatch = new Patch(0, 0);
-			Cell* pCell = new Cell(0, 0, pPatch, 0);
+			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 			// Genome-level settings
 			Species* pSpecies = createDefaultSpecies();

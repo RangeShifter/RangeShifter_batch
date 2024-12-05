@@ -23,6 +23,8 @@
  //---------------------------------------------------------------------------
 
 #include "Cell.h"
+#include "Patch.h"
+#include "Population.h"
 
 //---------------------------------------------------------------------------
 
@@ -30,26 +32,44 @@
 
 // Cell functions
 
-Cell::Cell(int xx, int yy, Patch* patch, int hab)
+Cell::Cell(int xx, int yy, Patch* patch, int hab, set<species_id> spLabels)
 {
-	x = xx; y = yy;
-	pPatch = patch;
+	x = xx; 
+	y = yy;
+
+	// Initialise patch map
+	for (auto& sp : spLabels) {
+		patches.emplace(sp, nullptr);
+	}
+	if (patch != nullptr) {
+		species_id sp = patch->getPop()->getSpecies()->getID();
+		patches.at(sp) = patch;
+	}
 	envVal = 1.0; // default - no effect of any gradient
 	envDev = eps = 0.0;
 	habIxx.push_back(hab);
 	visits = 0;
-	smsData = 0;
+	smsData = nullptr;
 }
 
-Cell::Cell(int xx, int yy, Patch* patch, float hab)
+Cell::Cell(int xx, int yy, Patch* patch, float hab, set<species_id> spLabels)
 {
-	x = xx; y = yy;
-	pPatch = patch;
+	x = xx; 
+	y = yy;
+
+	// Initialise patch map
+	for (auto& sp : spLabels) {
+		patches.emplace(sp, nullptr);
+	}
+	if (patch != nullptr) {
+		species_id sp = patch->getPop()->getSpecies()->getID();
+		patches.at(sp) = patch;
+	}
 	envVal = 1.0; // default - no effect of any gradient
 	envDev = eps = 0.0;
 	habitats.push_back(hab);
 	visits = 0;
-	smsData = 0;
+	smsData = nullptr;
 }
 
 Cell::~Cell() {
@@ -92,13 +112,12 @@ float Cell::getHabitat(int ix) {
 	else return habitats[ix];
 }
 
-void Cell::setPatch(Patch* p) {
-	pPatch = p;
+void Cell::setPatch(species_id whichSpecies, Patch* p) {
+	patches.at(whichSpecies) = p;
 }
 
-Patch* Cell::getPatch()
-{
-	return pPatch;
+Patch* Cell::getPatch(species_id whichSpecies) {
+	return patches.at(whichSpecies);
 }
 
 locn Cell::getLocn() { 

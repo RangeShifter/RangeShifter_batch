@@ -62,10 +62,10 @@ struct smscosts { int cost; array3x3f* effcosts; };	// cell costs for SMS
 class Cell {
 public:
 	// Constructor for habitat codes
-	Cell(int xx, int yy, Patch* patch, int hab);
+	Cell(int xx, int yy, Patch* patch, int hab, set<species_id> spLabels);
 
 	// Constructor for habitat % cover or habitat quality
-	Cell(int xx, int yy, Patch* patch, float hab);
+	Cell(int xx, int yy, Patch* patch, float hab, set<species_id> spLabels);
 
 	~Cell();
 	void addHabIndex(short hx);
@@ -74,8 +74,8 @@ public:
 	int nHabitats(void);
 	void addHabitat(float q); // habitat prop or cell quality score
 	float getHabitat(int ix); // Get habitat proportion / quality score
-	void setPatch(Patch* p);
-	Patch* getPatch();
+	void setPatch(species_id whichSpecies, Patch* p);
+	Patch* getPatch(species_id whichSpecies);
 	locn getLocn();
 	void setEnvDev(
 		float	// local environmental deviation
@@ -100,20 +100,20 @@ public:
 	unsigned long int getVisits();
 
 private:
-	int x, y;			// cell co-ordinates
-	Patch* pPatch; 	// pointer (cast as integer) to the Patch to which cell belongs
-	// NOTE: THE FOLLOWING ENVIRONMENTAL VARIABLES COULD BE COMBINED IN A STRUCTURE
-	// AND ACCESSED BY A POINTER ...
-	float envVal; // environmental value, representing one of:
-	// gradient in K, r or extinction probability
+	int x, y;		// cell co-ordinates
+
+	map<species_id, Patch*> patches; // which patch the cell belongs to for each species
+
+	float envVal;	// environmental value, representing one of:
+					// gradient in K, r or extinction probability
 	float envDev;	// local environmental deviation (static, in range -1.0 to +1.0)
 	float eps;		// local environmental stochasticity (epsilon) (dynamic, from N(0,std))
 	unsigned long int visits; // no. of times square is visited by dispersers
 	smscosts* smsData;
 
-	vector <short> habIxx; 		// habitat indices (rasterType=0)
-	// NB initially, habitat codes are loaded, then converted to index nos.
-	//    once landscape is fully loaded
+	vector <short> habIxx; 	// habitat indices (rasterType=0)
+							// initially, habitat codes are loaded, then converted to index nos.
+							// once landscape is fully loaded
 	vector <float> habitats;	// habitat proportions (rasterType=1) or quality (rasterType=2)
 };
 
