@@ -41,16 +41,16 @@ private:
 
 	float indRadius = 1.0;
 	sf::CircleShape indShape = sf::CircleShape(indRadius);
-	sf::Color indColour = sf::Color::Red;
+	sf::Color indColour = sf::Color(255, 0, 110);
 
 	const vector <sf::Color> habitatPalette{
-	sf::Color::White,
-	sf::Color::Blue,
-	sf::Color::Cyan,
+	sf::Color(33, 158, 188),
+	sf::Color(251, 133, 0),
+	sf::Color(142, 202, 230),
 	sf::Color::Green,
-	sf::Color::Yellow,
+	sf::Color(255, 183, 3),
 	sf::Color::Black,
-	sf::Color::Magenta
+	sf::Color(2, 48, 71)
 	};
 	bool paused = false;
 };

@@ -138,18 +138,20 @@ void BatchView::drawCommunity(sf::RenderWindow& window, Species* pSpecies, const
 
 		if (pPop != nullptr) {
 
-			vector<locn> juvCoords = pPop->getIndsCoords(true);
+			//vector<locn> juvCoords = pPop->getIndsCoords(true);
 			vector<locn> indCoords = pPop->getIndsCoords(false);
 
+			/*
 			for (auto coord : juvCoords) {
 				cInd = indShape;
-				cInd.setFillColor(sf::Color::Red);
+				cInd.setFillColor();
 				cInd.setPosition(coord.x * cellSize * 1.0f, coord.y * cellSize * 1.0f);
 				window.draw(cInd);
 			}
+			*/
 			for (auto coord : indCoords) {
 				cInd = indShape;
-				cInd.setFillColor(sf::Color::Blue);
+				cInd.setFillColor(indColour);
 				cInd.setPosition(coord.x * cellSize * 1.0f, coord.y * cellSize * 1.0f);
 				window.draw(cInd);
 			} 
