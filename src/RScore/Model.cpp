@@ -48,7 +48,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	simView v = paramsSim->getViews();
 
 	if (!ppLand.generated) {
-		if (!ppLand.patchModel) { // cell-based landscape
+		if (!ppLand.usesPatches) { // cell-based landscape
 			// create patches for suitable cells, adding unsuitable cells to the matrix
 			// NB this is an overhead here, but is necessary in case the identity of
 			// suitable habitats has been changed from one simulation to another (GUI or batch)
@@ -153,7 +153,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				if (!pComm->outTraitsRowsHeaders(pSpecies, ppLand.landNum)) {
 					filesOK = false;
 				}
-			if (sim.outConnect && ppLand.patchModel) // open Connectivity file
+			if (sim.outConnect && ppLand.usesPatches) // open Connectivity file
 				if (!pLandscape->outConnectHeaders()) {
 					filesOK = false;
 				}
@@ -171,7 +171,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			if (sim.outPop) pComm->closePopOfs();
 			if (sim.outTraitsCells) pComm->closeOutTraitOfs();
 			if (sim.outTraitsRows) pComm->closeTraitRows();
-			if (sim.outConnect && ppLand.patchModel) pLandscape->closeConnectOfs();
+			if (sim.outConnect && ppLand.usesPatches) pLandscape->closeConnectOfs();
 			if (sim.outputWeirCockerham || sim.outputWeirHill) pComm->closeNeutralOutputOfs();
 
 #if RS_RCPP && !R_CMD
@@ -190,7 +190,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			pLandscape->setEnvGradient(pSpecies, true);
 		}
 
-		if (sim.outConnect && ppLand.patchModel) {
+		if (sim.outConnect && ppLand.usesPatches) {
 			pLandscape->createConnectMatrix(allSpecies);
 		}
 
@@ -214,7 +214,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 		// open a new individuals file for each replicate
 		if (sim.outInds)
-			pComm->outIndsHeaders(rep, ppLand.landNum, ppLand.patchModel, pSpecies);
+			pComm->outIndsHeaders(rep, ppLand.landNum, ppLand.usesPatches, pSpecies);
 
 		if (sim.outputGeneValues) {
 			bool geneOutFileHasOpened = pComm->openOutGenesFile(pSpecies->isDiploid(), ppLand.landNum, rep);
@@ -239,7 +239,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 #if RS_RCPP && !R_CMD
 			Rcpp::checkUserInterrupt();
 #endif
-			bool updateCC = false;
+			bool mustUpdateK = false;
 			if (yr < 4
 				|| (yr < 31 && yr % 10 == 0)
 				|| (yr < 301 && yr % 100 == 0)
@@ -259,7 +259,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				if (yr == init.initFrzYr) {
 					// release initial frozen range - reset landscape to its full extent
 					pLandscape->resetLandLimits();
-					updateCC = true;
+					mustUpdateK = true;
 				}
 				if (init.restrictRange) {
 					if (yr > init.initFrzYr && yr < init.finalFrzYr) {
@@ -269,14 +269,14 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 							int minY = s.maxY - init.restrictRows;
 							if (minY < 0) minY = 0;
 							pLandscape->setLandLimits(ppLand.minX, minY, ppLand.maxX, ppLand.maxY);
-							updateCC = true;
+							mustUpdateK = true;
 						}
 					}
 					if (yr == init.finalFrzYr) {
 						// apply final range restriction
 						commStats s = pComm->getStats();
 						pLandscape->setLandLimits(ppLand.minX, s.minY, ppLand.maxX, s.maxY);
-						updateCC = true;
+						mustUpdateK = true;
 					}
 				}
 			}
@@ -287,23 +287,28 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				if (grad.shifting && yr > grad.shift_begin && yr < grad.shift_stop) {
 					paramsGrad->incrOptY();
 					pLandscape->setEnvGradient(pSpecies, false);
-					updateCC = true;
+					mustUpdateK = true;
 				}
 				if (env.stoch) {
 					if (env.local) pLandscape->updateLocalStoch();
-					updateCC = true;
+					mustUpdateK = true;
 				}
 				if (ppLand.dynamic && yr == landChg.chgyear) { // apply landscape change
 					landIx = landChg.chgnum;
-					updateland = updateCC = true;
-					if (ppLand.patchModel) { // apply any patch changes
+					updateland = mustUpdateK = true;
+
+					if (ppLand.usesPatches) { // apply any patch changes
 						Patch* pPatch;
 						Cell* pCell;
+
 						for (const species_id sp : views::keys(allSpecies)) {
+
 							pchChange = pLandscape->getPatchChange(sp, indexPatchChange++);
+
 							while (pchChange.chgnum <= landIx 
 								&& indexPatchChange <= nbPatchChanges) {
-								// move cell from original patch to new patch
+
+								// Move cell from original patch to new patch
 								pCell = pLandscape->findCell(pchChange.x, pchChange.y);
 								if (pchChange.oldpatch != 0) { // not matrix
 									pPatch = pLandscape->findPatch(sp, pchChange.oldpatch);
@@ -314,16 +319,16 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 								}
 								else {
 									pPatch = pLandscape->findPatch(sp, pchChange.newpatch);
-
 									pPatch->addCell(pCell, pchChange.x, pchChange.y);
 								}
-								pCell->setPatch(pPatch);
+								pCell->setPatch(sp, pPatch);
 								pchChange = pLandscape->getPatchChange(sp, indexPatchChange++);
 							}
 						}
 						indexPatchChange--;
 						pLandscape->resetPatchLimits();
 					}
+
 					if (landChg.costfile != "NULL") { // apply any SMS cost changes
 						Cell* pCell;
 						costchange = pLandscape->getCostChange(ixcostchg++);
@@ -346,11 +351,11 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				}
 			} // end of environmental gradient, etc.
 
-			if (updateCC) {
+			if (mustUpdateK) {
 				pLandscape->updateCarryingCapacity(allSpecies, yr, landIx);
 			}
 
-			if (sim.outConnect && ppLand.patchModel)
+			if (sim.outConnect && ppLand.usesPatches)
 				pLandscape->resetConnectMatrix();
 
 			if (ppLand.dynamic && updateland) {
@@ -392,7 +397,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				// apply local extinction for generation 0 only
 				// CHANGED TO *BEFORE* RANGE & POPN OUTPUT PRODUCTION IN v1.1,
 				// SO THAT NOS. OF JUVENILES BORN CAN BE REPORTED
-				if (!ppLand.patchModel && gen == 0) {
+				if (!ppLand.usesPatches && gen == 0) {
 					if (env.localExt) pComm->localExtinction(0);
 					if (grad.gradient && grad.gradType == 3) pComm->localExtinction(1);
 				}
@@ -460,7 +465,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			}
 
 			// Connectivity Matrix
-			if (sim.outConnect && ppLand.patchModel
+			if (sim.outConnect && ppLand.usesPatches
 				&& yr >= sim.outStartConn && yr % sim.outIntConn == 0)
 				pLandscape->outConnect(rep, yr);
 
@@ -499,7 +504,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		if (grad.gradient) paramsGrad->resetOptY();
 
 		pLandscape->resetLandLimits();
-		if (ppLand.patchModel && ppLand.dynamic && indexPatchChange > 0) {
+		if (ppLand.usesPatches && ppLand.dynamic && indexPatchChange > 0) {
 			// apply any patch changes to reset landscape to original configuration
 			// (provided that at least one has already occurred)
 			Patch* pPatch;
@@ -551,7 +556,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			}
 		}
 
-		if (sim.outConnect && ppLand.patchModel)
+		if (sim.outConnect && ppLand.usesPatches)
 			pLandscape->resetConnectMatrix(); // set connectivity matrix to zeroes
 
 		if (sim.outInds) pComm->closeOutIndsOfs();
@@ -571,7 +576,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 	} // end of the replicates loop
 
-	if (sim.outConnect && ppLand.patchModel) {
+	if (sim.outConnect && ppLand.usesPatches) {
 		for (const species_id& speciesID : views::keys(allSpecies))
 			pLandscape->deleteConnectMatrix(speciesID);
 		pLandscape->closeConnectOfs();
@@ -726,7 +731,7 @@ void OutParameters(Landscape* pLandscape)
 	outPar << "REPLICATES \t" << sim.reps << endl;
 	outPar << "YEARS \t" << sim.years << endl;
 	outPar << "REPRODUCTIVE SEASONS / YEAR\t" << dem.repSeasons << endl;
-	if (ppLand.patchModel) {
+	if (ppLand.usesPatches) {
 		outPar << "PATCH-BASED MODEL" << endl;
 		outPar << "No. PATCHES: \n" << pLandscape->allPatchCount() - 1 << endl;
 	}
@@ -770,7 +775,7 @@ void OutParameters(Landscape* pLandscape)
 		else {
 			outPar << gHabMapName << endl;
 		}
-		if (ppLand.patchModel) {
+		if (ppLand.usesPatches) {
 			outPar << "PATCH FILE: " << gPatchMapName << endl;
 		}
 		if (trfr.costMap) {
@@ -793,7 +798,7 @@ void OutParameters(Landscape* pLandscape)
 			chg = pLandscape->getLandChange(i);
 			outPar << "Change no. " << chg.chgnum << " in year " << chg.chgyear << endl;
 			outPar << "Landscape: " << chg.habfile << endl;
-			if (ppLand.patchModel) {
+			if (ppLand.usesPatches) {
 				outPar << "Patches  : " << chg.pchfile << endl;
 			}
 			if (chg.costfile != "none" && chg.costfile != "NULL") {
@@ -1549,7 +1554,7 @@ void OutParameters(Landscape* pLandscape)
 			outPar << "at half carrying capacity" << endl;
 			break;
 		case 2:
-			if (ppLand.patchModel) {
+			if (ppLand.usesPatches) {
 				outPar << init.indsHa << " individuals per ha" << endl;
 			}
 			else {
@@ -1632,7 +1637,7 @@ void OutParameters(Landscape* pLandscape)
 
 	if (sim.outTraitsCells) {
 		outPar << "Traits per ";
-		if (ppLand.patchModel) outPar << "patch"; else outPar << "cell";
+		if (ppLand.usesPatches) outPar << "patch"; else outPar << "cell";
 		outPar << " - every " << sim.outIntTraitCell << " year";
 		if (sim.outIntTraitCell > 1) outPar << "s";
 		if (sim.outStartTraitCell > 0) outPar << " starting year " << sim.outStartTraitCell;

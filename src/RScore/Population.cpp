@@ -1420,14 +1420,14 @@ void Population::clean()
 //---------------------------------------------------------------------------
 // Write record to population file
 void Population::outPopulation(ofstream& outPopOfs, int rep, int yr, int gen, bool envLocal, float epsGlobal,
-	bool patchModel, bool writeEnv, bool gradK)
+	bool usesPatches, bool writeEnv, bool gradK)
 {
 	Cell* pCell;
 	demogrParams dem = pSpecies->getDemogrParams();
 
 	popStats p;
 	outPopOfs << rep << "\t" << yr << "\t" << gen;
-	if (patchModel) {
+	if (usesPatches) {
 		outPopOfs << "\t" << pPatch->getPatchNum();
 		outPopOfs << "\t" << pPatch->getNCells();
 	}
@@ -1525,7 +1525,7 @@ void Population::outIndividual(ofstream& outIndsOfs, Landscape* pLandscape, int 
 			else loc = pCell->getLocn();
 			pCell = inds[i]->getLocn(0);
 			locn natalloc = pCell->getLocn();
-			if (ppLand.patchModel) {
+			if (ppLand.usesPatches) {
 				outIndsOfs << "\t" << inds[i]->getNatalPatch()->getPatchNum();
 				if (loc.x == -1) outIndsOfs << "\t-1";
 				else outIndsOfs << "\t" << patchNum;
@@ -1600,11 +1600,11 @@ void Population::outIndividual(ofstream& outIndsOfs, Landscape* pLandscape, int 
 	}
 }
 
-void Population::outputTraitPatchInfo(ofstream& outtraits, int rep, int yr, int gen, bool patchModel)
+void Population::outputTraitPatchInfo(ofstream& outtraits, int rep, int yr, int gen, bool usesPatches)
 {
 	if (pPatch->isSuitable() && this->getNInds() > 0) {
 		outtraits << rep << "\t" << yr << "\t" << gen;
-		if (patchModel) {
+		if (usesPatches) {
 			outtraits << "\t" << pPatch->getPatchNum();
 		}
 		else {

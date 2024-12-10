@@ -148,7 +148,7 @@ private:
 //---------------------------------------------------------------------------
 
 struct landParams {
-	bool patchModel; bool useSpDist; bool generated;
+	bool usesPatches; bool useSpDist; bool generated;
 	bool dynamic;
 	int landNum; int resol; int spResol; int nHab; int nHabMax;
 	int dimX, dimY, minX, minY, maxX, maxY;
@@ -378,7 +378,7 @@ public:
 
 private:
 	bool generated;				// artificially generated?
-	bool patchModel;			//
+	bool usesPatches;			//
 	bool spDist;					// initial species distribution loaded
 	bool fractal;					//
 	bool continuous;			//
@@ -412,7 +412,7 @@ private:
 
 	// list of dynamic landscape changes
 	std::vector<landChange> landchanges;
-	std::vector<patchChange> patchchanges;
+	std::vector<patchChange> patchChanges;
 	std::vector<costChange> costschanges;
 
 	// list of initial individual species distributions
@@ -432,7 +432,7 @@ private:
 
 	// patch and costs change matrices (temporary - used when reading dynamic landscape)
 	// indexed by [descending y][x][period]
-	// where there are three periods, 0=original 1=previous 2=current
+	// where there are three periods, 0 = original 1 = previous 2 = current
 	int*** patchChgMatrix;
 	int*** costsChgMatrix;
 

@@ -86,7 +86,7 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 					pch = pLandscape->getPatchData(sp, i);
 					patchnum = pch.pPatch->getPatchNum();
 					if (pch.pPatch->withinLimits(limits)) {
-						if (ppLand.patchModel) {
+						if (ppLand.usesPatches) {
 							if (patchnum != 0) {
 								suitablePatches.insert(patchnum);
 							}
@@ -135,7 +135,7 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 			for (auto pchNum : selectedPatches) {
 				Patch* pPatch = pLandscape->findPatch(sp, pchNum);
 				// Determine size of initial population
-				int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
+				int nInds = pPatch->getInitNbInds(ppLand.usesPatches, ppLand.resol);
 				if (nInds > 0) {
 					Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
 					popns.push_back(pPop); // add new population to community list
@@ -184,7 +184,7 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 				for (auto pchNum : selectedPatches) {
 					Patch* pPatch = pLandscape->findPatch(sp, pchNum);
 					// Determine size of initial population
-					int nInds = pPatch->getInitNbInds(ppLand.patchModel, ppLand.resol);
+					int nInds = pPatch->getInitNbInds(ppLand.usesPatches, ppLand.resol);
 					if (nInds > 0) {
 						Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
 						popns.push_back(pPop); // add new population to community list
@@ -208,7 +208,7 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 				while (indIx < ninds && iind.year <= year) {
 					initInd iind = paramsInit->getInitInd(indIx);
 					while (iind.year == year) {
-						if (ppLand.patchModel) {
+						if (ppLand.usesPatches) {
 							if (pLandscape->existsPatch(sp, iind.patchID)) {
 								pPatch = pLandscape->findPatch(sp, iind.patchID);
 								Species* pSpecies = findSpecies(iind.speciesID);
@@ -304,7 +304,7 @@ void Community::reproduction(int yr)
 		Patch* pPatch = pop->getPatch();
 		float localK = pPatch->getK();
 		if (localK > 0.0) {
-			float envval = pPatch->getEnvVal(land.patchModel, eps);
+			float envval = pPatch->getEnvVal(land.usesPatches, eps);
 			pop->reproduction(localK, envval, land.resol);
 			pop->fledge();
 		}
@@ -574,7 +574,7 @@ bool Community::outPopHeaders(Species* pSpecies) {
 	outPopOfs.open(name.c_str());
 
 	outPopOfs << "Rep\tYear\tRepSeason";
-	if (land.patchModel) outPopOfs << "\tPatchID\tNcells";
+	if (land.usesPatches) outPopOfs << "\tPatchID\tNcells";
 	else outPopOfs << "\tx\ty";
 
 	// determine whether environmental data need be written for populations
@@ -625,18 +625,18 @@ void Community::outPop(int rep, int yr, int gen)
 	// generate output for each population (patch x species) in the community
 	for (auto& [spId, mtxPop] : matrixPops) {
 		if (mtxPop->totalPop() > 0) {
-			mtxPop->outPopulation(outPopOfs, rep, yr, gen, env.local, eps, land.patchModel, writeEnv, gradK);
+			mtxPop->outPopulation(outPopOfs, rep, yr, gen, env.local, eps, land.usesPatches, writeEnv, gradK);
 		}
 	}
 	for (auto pop : popns) {
 		if (pop->getPatch()->isSuitable() || pop->totalPop() > 0) {
-			pop->outPopulation(outPopOfs, rep, yr, gen, env.local, eps, land.patchModel, writeEnv, gradK);
+			pop->outPopulation(outPopOfs, rep, yr, gen, env.local, eps, land.usesPatches, writeEnv, gradK);
 		}
 	}
 }
 
 // Open individuals file and write header record
-void Community::outIndsHeaders(int rep, int landNr, bool patchModel, Species* pSpecies)
+void Community::outIndsHeaders(int rep, int landNr, bool usesPatches, Species* pSpecies)
 {
 	string name;
 	demogrParams dem = pSpecies->getDemogrParams();
@@ -652,7 +652,7 @@ void Community::outIndsHeaders(int rep, int landNr, bool patchModel, Species* pS
 
 	outIndsOfs.open(name.c_str());
 	outIndsOfs << "Rep\tYear\tRepSeason\tSpecies\tIndID\tStatus";
-	if (patchModel) outIndsOfs << "\tNatal_patch\tPatchID";
+	if (usesPatches) outIndsOfs << "\tNatal_patch\tPatchID";
 	else outIndsOfs << "\tNatal_X\tNatal_Y\tX\tY";
 	if (dem.repType != 0) outIndsOfs << "\tSex";
 	if (dem.stageStruct) outIndsOfs << "\tAge\tStage";
@@ -747,7 +747,7 @@ bool Community::outRangeHeaders(Species* pSpecies, int landNr)
 		for (int i = 1; i < sstruct.nStages; i++) outRangeOfs << "\tNInd_stage" << i;
 		outRangeOfs << "\tNJuvs";
 	}
-	if (ppLand.patchModel) outRangeOfs << "\tNOccupPatches";
+	if (ppLand.usesPatches) outRangeOfs << "\tNOccupPatches";
 	else outRangeOfs << "\tNOccupCells";
 	outRangeOfs << "\tOccup/Suit\tmin_X\tmax_X\tmin_Y\tmax_Y";
 
@@ -1165,7 +1165,7 @@ bool Community::outOccupancyHeaders()
 		name += "Sim" + to_string(sim.simulation);
 	name += "_Occupancy.txt";
 	outOccupOfs.open(name.c_str());
-	if (ppLand.patchModel) {
+	if (ppLand.usesPatches) {
 		outOccupOfs << "PatchID";
 	}
 	else {
@@ -1187,7 +1187,7 @@ void Community::outOccupancy() {
 	locn loc;
 
 	for (auto pop : popns) {
-		if (ppLand.patchModel) {
+		if (ppLand.usesPatches) {
 			outOccupOfs << pop->getPatch()->getPatchNum();
 		}
 		else {
@@ -1238,7 +1238,7 @@ bool Community::outTraitsHeaders(Landscape* pLandscape, Species* pSpecies, int l
 
 	string DirOut = paramsSim->getDir(2);
 	if (sim.batchMode) {
-		if (land.patchModel) {
+		if (land.usesPatches) {
 			name = DirOut
 				+ "Batch" + to_string(sim.batchNum) + "_"
 				+ "Sim" + to_string(sim.simulation) + "_Land" + to_string(landNr)
@@ -1252,7 +1252,7 @@ bool Community::outTraitsHeaders(Landscape* pLandscape, Species* pSpecies, int l
 		}
 	}
 	else {
-		if (land.patchModel) {
+		if (land.usesPatches) {
 			name = DirOut + "Sim" + to_string(sim.simulation) + "_TraitsXpatch.txt";
 		}
 		else {
@@ -1263,7 +1263,7 @@ bool Community::outTraitsHeaders(Landscape* pLandscape, Species* pSpecies, int l
 	outTraitsOfs.open(name.c_str());
 
 	outTraitsOfs << "Rep\tYear\tRepSeason";
-	if (land.patchModel) outTraitsOfs << "\tPatchID";
+	if (land.usesPatches) outTraitsOfs << "\tPatchID";
 	else outTraitsOfs << "\tx\ty";
 
 	if (emig.indVar) {
@@ -1371,7 +1371,7 @@ void Community::outTraits(Species* pSpecies, int rep, int yr, int gen)
 		// Generate output for each population in the community
 		if (mustOutputTraitCells) {
 			for (auto& [spId, mtxPop] : matrixPops) {
-				mtxPop->outputTraitPatchInfo(outTraitsOfs, rep, yr, gen, land.patchModel);
+				mtxPop->outputTraitPatchInfo(outTraitsOfs, rep, yr, gen, land.usesPatches);
 			}
 		}
 		if (mustOutputTraitRows) {
@@ -1409,7 +1409,7 @@ void Community::outTraits(Species* pSpecies, int rep, int yr, int gen)
 		}
 		for (auto pop : popns) {
 			if (mustOutputTraitCells) {
-				pop->outputTraitPatchInfo(outTraitsOfs, rep, yr, gen, land.patchModel);
+				pop->outputTraitPatchInfo(outTraitsOfs, rep, yr, gen, land.usesPatches);
 			}
 			sctraits = pop->outTraits(outTraitsOfs, mustOutputTraitCells);
 			int y = pop->getPatch()->getCellLocn(0).y;

@@ -190,14 +190,14 @@ public:
 		int gen,
 		bool envLocal,
 		float eps,
-		bool patchModel,
+		bool usesPatches,
 		bool writeEnv,
 		bool gradK
 	);
 
 	// Write records to individuals file
 	void outIndividual(ofstream& outIndsOfs, Landscape* pLandscape, int rep, int yr, int gen);
-	void outputTraitPatchInfo(ofstream& outtraits, int rep, int yr, int gen, bool patchModel);
+	void outputTraitPatchInfo(ofstream& outtraits, int rep, int yr, int gen, bool usesPatches);
 	traitsums outTraits(ofstream& outtraits, const bool& writefile);
 	void outputGeneValues(ofstream& ofsGenes, const int& yr, const int& gen) const;
 	

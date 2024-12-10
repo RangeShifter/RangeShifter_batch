@@ -131,7 +131,7 @@ public:
 	// Write records to population file
 	void outPop(int rep, int year, int gen);
 
-	void outIndsHeaders(int rep, int landNr, bool patchModel, Species* pSpecies);
+	void outIndsHeaders(int rep, int landNr, bool usesPatches, Species* pSpecies);
 	void closeOutIndsOfs();
 
 	// Write records to individuals file
