@@ -180,6 +180,11 @@ struct patchData {
 	int patchNum, nCells; 
 	int x, y;
 };
+
+struct cellChange {
+	short originVal, currentVal, nextVal;
+};
+
 struct landChange {
 	int chgnum, chgyear; 
 	string habfile, pchfile, costfile;
@@ -433,8 +438,8 @@ private:
 	// patch and costs change matrices (temporary - used when reading dynamic landscape)
 	// indexed by [descending y][x][period]
 	// where there are three periods, 0 = original 1 = previous 2 = current
-	int*** patchChgMatrix;
-	int*** costsChgMatrix;
+	cellChange** patchChgMatrix;
+	cellChange** costsChgMatrix;
 
 };
 

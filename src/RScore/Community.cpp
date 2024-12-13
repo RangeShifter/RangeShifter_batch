@@ -867,11 +867,11 @@ void Community::outRange(Species* pSpecies, int rep, int yr, int gen)
 	outRangeOfs << "\t" << s.occupied << "\t" << occsuit;
 	// RANGE MINIMA AND MAXIMA NEED TO BECOME A PROPERTY OF THE SPECIES
 	if (s.ninds > 0) {
-		landOrigin origin = pLandscape->getOrigin();
-		outRangeOfs << "\t" << (float)s.minX * (float)ppLand.resol + origin.minEast
-			<< "\t" << (float)(s.maxX + 1) * (float)ppLand.resol + origin.minEast
-			<< "\t" << (float)s.minY * (float)ppLand.resol + origin.minNorth
-			<< "\t" << (float)(s.maxY + 1) * (float)ppLand.resol + origin.minNorth;
+		landOrigin originVal = pLandscape->getOrigin();
+		outRangeOfs << "\t" << (float)s.minX * (float)ppLand.resol + originVal.minEast
+			<< "\t" << (float)(s.maxX + 1) * (float)ppLand.resol + originVal.minEast
+			<< "\t" << (float)s.minY * (float)ppLand.resol + originVal.minNorth
+			<< "\t" << (float)(s.maxY + 1) * (float)ppLand.resol + originVal.minNorth;
 	}
 	else
 		outRangeOfs << "\t0\t0\t0\t0";

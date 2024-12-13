@@ -506,10 +506,10 @@ void Landscape::resetLandLimits() {
 //---------------------------------------------------------------------------
 
 landOrigin Landscape::getOrigin() {
-	landOrigin origin;
-	origin.minEast = minEast; 
-	origin.minNorth = minNorth;
-	return origin;
+	landOrigin originVal;
+	originVal.minEast = minEast; 
+	originVal.minNorth = minNorth;
+	return originVal;
 }
 
 //---------------------------------------------------------------------------
@@ -1394,7 +1394,7 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 							return 34;
 						}
 						else {
-							patchChgMatrix[y][x][2] = patchCode;
+							patchChgMatrix[y][x].nextVal = patchCode;
 							if (patchCode > 0 && !existsPatch(sp, patchCode)) {
 								patchesList.at(sp).push_back(new Patch(patchSeq, patchCode));
 								patchSeq++;
@@ -1415,7 +1415,7 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 							return 38;
 						}
 						else {
-							costsChgMatrix[y][x][2] = costCode;
+							costsChgMatrix[y][x].nextVal = costCode;
 						}
 					}
 				} // if cell exists
@@ -1545,7 +1545,7 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 							return 34;
 						}
 						else {
-							patchChgMatrix[y][x][2] = patchCode;
+							patchChgMatrix[y][x].nextVal = patchCode;
 							if (patchCode > 0 && !existsPatch(sp, patchCode)) {
 								// Create the patch if it doesn't exist already
 								patchesList.at(sp).push_back(new Patch(patchSeq, patchCode));
@@ -1567,7 +1567,7 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 							return 38;
 						}
 						else {
-							costsChgMatrix[y][x][2] = costCode;
+							costsChgMatrix[y][x].nextVal = costCode;
 						}
 					}
 				}
@@ -1604,31 +1604,31 @@ void Landscape::createPatchChgMatrix() {
 	Cell* pCell;
 
 	if (patchChgMatrix != nullptr) deletePatchChgMatrix();
-	patchChgMatrix = new int** [dimY];
+	patchChgMatrix = new cellChange* [dimY];
 
 	for (int y = dimY - 1; y >= 0; y--) {
 
-		patchChgMatrix[y] = new int* [dimX];
+		patchChgMatrix[y] = new cellChange [dimX];
 
 		for (int x = 0; x < dimX; x++) {
 
-			patchChgMatrix[y][x] = new int[3];
+			patchChgMatrix[y][x] = cellChange();
 			pCell = findCell(x, y);
 
 			if (pCell == nullptr) { // no-data cell
-				patchChgMatrix[y][x][0] = patchChgMatrix[y][x][1] = 0;
+				patchChgMatrix[y][x].originVal = patchChgMatrix[y][x].currentVal = 0;
 			}
 			else {
 				// record initial patch number
 				pPatch = pCell->getPatch();
 				if (pPatch == nullptr) { // matrix cell
-					patchChgMatrix[y][x][0] = patchChgMatrix[y][x][1] = 0;
+					patchChgMatrix[y][x].originVal = patchChgMatrix[y][x].currentVal = 0;
 				}
 				else {
-					patchChgMatrix[y][x][0] = patchChgMatrix[y][x][1] = pPatch->getPatchNum();
+					patchChgMatrix[y][x].originVal = patchChgMatrix[y][x].currentVal = pPatch->getPatchNum();
 				}
 			}
-			patchChgMatrix[y][x][2] = 0;
+			patchChgMatrix[y][x].nextVal = 0;
 		}
 	}
 }
@@ -1641,29 +1641,29 @@ void Landscape::recordPatchChanges(int landIx) {
 		for (int x = 0; x < dimX; x++) {
 
 			if (landIx == 0) { // reset to original landscape
-				if (patchChgMatrix[y][x][0] != patchChgMatrix[y][x][2]) {
+				if (patchChgMatrix[y][x].originVal != patchChgMatrix[y][x].nextVal) {
 					// record change of patch for current cell
 					chg.chgnum = 666666; 
 					chg.x = x; 
 					chg.y = y;
-					chg.oldpatch = patchChgMatrix[y][x][2];
-					chg.newpatch = patchChgMatrix[y][x][0];
+					chg.oldpatch = patchChgMatrix[y][x].nextVal;
+					chg.newpatch = patchChgMatrix[y][x].originVal;
 					patchChanges.push_back(chg);
 				}
 			}
 			else { // any other change
-				if (patchChgMatrix[y][x][2] != patchChgMatrix[y][x][1]) { // current != previous
+				if (patchChgMatrix[y][x].nextVal != patchChgMatrix[y][x].currentVal) {
 					// record change of patch for current cell
 					chg.chgnum = landIx; 
 					chg.x = x; 
 					chg.y = y;
-					chg.oldpatch = patchChgMatrix[y][x][1];
-					chg.newpatch = patchChgMatrix[y][x][2];
+					chg.oldpatch = patchChgMatrix[y][x].currentVal;
+					chg.newpatch = patchChgMatrix[y][x].nextVal;
 					patchChanges.push_back(chg);
 				}
 			}
 			// reset cell for next landscape change
-			patchChgMatrix[y][x][1] = patchChgMatrix[y][x][2]; // previous = current
+			patchChgMatrix[y][x].currentVal = patchChgMatrix[y][x].nextVal;
 		}
 	}
 
@@ -1678,9 +1678,6 @@ patchChange Landscape::getPatchChange(int i) {
 void Landscape::deletePatchChgMatrix() {
 	if (patchChgMatrix != nullptr) {
 		for (int y = dimY - 1; y >= 0; y--) {
-			for (int x = 0; x < dimX; x++) {
-				delete[] patchChgMatrix[y][x];
-			}
 			delete[] patchChgMatrix[y];
 		}
 	}
@@ -1692,53 +1689,53 @@ void Landscape::createCostsChgMatrix()
 {
 	Cell* pCell;
 	if (costsChgMatrix != nullptr) deleteCostsChgMatrix();
-	costsChgMatrix = new int** [dimY];
+	costsChgMatrix = new cellChange* [dimY];
 	for (int y = dimY - 1; y >= 0; y--) {
-		costsChgMatrix[y] = new int* [dimX];
+		costsChgMatrix[y] = new cellChange [dimX];
 		for (int x = 0; x < dimX; x++) {
-			costsChgMatrix[y][x] = new int[3];
+			costsChgMatrix[y][x] = cellChange();
 			pCell = findCell(x, y);
 			if (pCell == nullptr) { // no-data cell
-				costsChgMatrix[y][x][0] = costsChgMatrix[y][x][1] = 0;
+				costsChgMatrix[y][x].originVal = costsChgMatrix[y][x].currentVal = 0;
 			}
 			else {
 				// record initial cost
-				costsChgMatrix[y][x][0] = costsChgMatrix[y][x][1] = pCell->getCost();
+				costsChgMatrix[y][x].originVal = costsChgMatrix[y][x].currentVal = pCell->getCost();
 			}
-			costsChgMatrix[y][x][2] = 0;
+			costsChgMatrix[y][x].nextVal = 0;
 		}
 	}
 }
 
 void Landscape::recordCostChanges(int landIx) {
 
-	if (costsChgMatrix == 0) return; // should not occur
+	if (costsChgMatrix == nullptr) return; // should not occur
 	costChange chg;
 
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
 			if (landIx == 0) { // reset to original landscape
-				if (costsChgMatrix[y][x][0] != costsChgMatrix[y][x][2]) {
+				if (costsChgMatrix[y][x].originVal != costsChgMatrix[y][x].nextVal) {
 					// record change of cost for current cell
 					chg.chgnum = 666666; 
 					chg.x = x; 
 					chg.y = y;
-					chg.oldcost = costsChgMatrix[y][x][2];
-					chg.newcost = costsChgMatrix[y][x][0];
+					chg.oldcost = costsChgMatrix[y][x].nextVal;
+					chg.newcost = costsChgMatrix[y][x].originVal;
 					costschanges.push_back(chg);
 				}
 			}
 			else { // any other change
-				if (costsChgMatrix[y][x][2] != costsChgMatrix[y][x][1]) {
+				if (costsChgMatrix[y][x].nextVal != costsChgMatrix[y][x].currentVal) {
 					// record change of cost for current cell
 					chg.chgnum = landIx; chg.x = x; chg.y = y;
-					chg.oldcost = costsChgMatrix[y][x][1];
-					chg.newcost = costsChgMatrix[y][x][2];
+					chg.oldcost = costsChgMatrix[y][x].currentVal;
+					chg.newcost = costsChgMatrix[y][x].nextVal;
 					costschanges.push_back(chg);
 				}
 			}
 			// reset cell for next landscape change
-			costsChgMatrix[y][x][1] = costsChgMatrix[y][x][2];
+			costsChgMatrix[y][x].currentVal = costsChgMatrix[y][x].nextVal;
 		}
 	}
 
@@ -1753,9 +1750,6 @@ costChange Landscape::getCostChange(int i) {
 void Landscape::deleteCostsChgMatrix() {
 	if (costsChgMatrix != nullptr) {
 		for (int y = dimY - 1; y >= 0; y--) {
-			for (int x = 0; x < dimX; x++) {
-				delete[] costsChgMatrix[y][x];
-			}
 			delete[] costsChgMatrix[y];
 		}
 	}
