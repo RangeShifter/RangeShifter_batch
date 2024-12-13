@@ -198,7 +198,7 @@ struct costChange {
 
 class Landscape {
 public:
-	Landscape();
+	Landscape(const speciesMap_t& allSpecies);
 	~Landscape();
 	void resetLand();
 
@@ -282,12 +282,12 @@ public:
 #endif
 	void createPatchChgMatrix();
 	void recordPatchChanges(int landIx);
-	void deletePatchChgMatrix();
+	void deletePatchChgMatrix(species_id sp);
 	int numPatchChanges();
 	patchChange getPatchChange(int changeIx);
 	void createCostsChgMatrix();
 	void recordCostChanges(int landIx);
-	void deleteCostsChgMatrix();
+	void deleteCostsChgMatrix(species_id sp);
 	int numCostChanges();
 	costChange getCostChange(
 		int	// cost change number
@@ -354,7 +354,7 @@ public:
 
 	// functions to handle connectivity matrix
 
-	void createConnectMatrix(speciesMap_t& allSpecies);
+	void createConnectMatrix();
 	void resetConnectMatrix();
 	void incrConnectMatrix(const species_id& speciesID, int originPatchNb, int settlePatchNb);
 	void deleteConnectMatrix(const species_id& id);
@@ -436,10 +436,9 @@ private:
 	float* epsGlobal;	// pointer to time-series	
 
 	// patch and costs change matrices (temporary - used when reading dynamic landscape)
-	// indexed by [descending y][x][period]
-	// where there are three periods, 0 = original 1 = previous 2 = current
-	cellChange** patchChgMatrix;
-	cellChange** costsChgMatrix;
+	// indexed by [descending y][x]
+	map<species_id, cellChange**> patchChgMatrices;
+	map<species_id, cellChange**> costsChgMatrices;
 
 };
 

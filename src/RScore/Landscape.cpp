@@ -293,7 +293,7 @@ int InitDist::readDistribution(string distfile) {
 
 // Landscape functions
 
-Landscape::Landscape() {
+Landscape::Landscape(const speciesMap_t& allSpecies) {
 	usesPatches = false; 
 	spDist = false; 
 	generated = false;
@@ -313,8 +313,13 @@ Landscape::Landscape() {
 	minEast = minNorth = 0.0;
 	cells = nullptr;
 	epsGlobal = nullptr;
-	patchChgMatrix = nullptr;
-	costsChgMatrix = nullptr;
+
+	// Create maps for species-dependent members (except patchList)
+	for (auto& sp : views::keys(allSpecies)) {
+		patchChgMatrices.emplace(sp, nullptr);
+		costsChgMatrices.emplace(sp, nullptr);
+		connectMatrices.emplace(sp, nullptr);
+	}
 }
 
 Landscape::~Landscape() {
@@ -352,9 +357,10 @@ Landscape::~Landscape() {
 	habCodes.clear();
 	landchanges.clear();
 	patchChanges.clear();
-	for (const species_id& id : views::keys(connectMatrices))
-		deleteConnectMatrix(id);
-	deletePatchChgMatrix();
+	for (const species_id& sp : views::keys(connectMatrices))
+		deleteConnectMatrix(sp);
+	for (const species_id& sp : views::keys(patchChgMatrices))
+		deletePatchChgMatrix(sp);
 	if (epsGlobal != nullptr) delete[] epsGlobal;
 }
 
@@ -600,7 +606,8 @@ void Landscape::generatePatches(const speciesMap_t& allSpecies)
 
 	int patchnum = 1;
 
-	for (auto& [sp, patches] : patchesList) {
+	for (auto& sp : views::keys(allSpecies)) {
+
 		vector<Patch*> patches;
 		// Each species has a matrix patch with index 0
 		Patch* matrixPatch = new Patch(0, 0);
@@ -810,7 +817,7 @@ void Landscape::allocatePatches(const speciesMap_t& allSpecies)
 Patch* Landscape::addNewPatch(species_id id, int num)
 {
 	patchesList.at(id).push_back(new Patch(num, num));
-	return patchesList.at(id)[patchesList.at(id).size()];
+	return patchesList.at(id)[patchesList.at(id).size() - 1];
 }
 
 Patch* Landscape::addNewPatch(species_id id, int seqnum, int num) 
@@ -995,6 +1002,7 @@ void Landscape::resetPatchPopns() {
 }
 
 void Landscape::updateCarryingCapacity(const speciesMap_t& allSpecies, int yr, short landIx) {
+	
 	envGradParams grad = paramsGrad->getGradient();
 	bool gradK = false;
 	if (grad.gradient && grad.gradType == 1) gradK = true; // gradient in carrying capacity
@@ -1394,7 +1402,7 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 							return 34;
 						}
 						else {
-							patchChgMatrix[y][x].nextVal = patchCode;
+							patchChgMatrices.at(sp)[y][x].nextVal = patchCode;
 							if (patchCode > 0 && !existsPatch(sp, patchCode)) {
 								patchesList.at(sp).push_back(new Patch(patchSeq, patchCode));
 								patchSeq++;
@@ -1415,7 +1423,7 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 							return 38;
 						}
 						else {
-							costsChgMatrix[y][x].nextVal = costCode;
+							costsChgMatrices.at(sp)[y][x].nextVal = costCode;
 						}
 					}
 				} // if cell exists
@@ -1545,7 +1553,7 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 							return 34;
 						}
 						else {
-							patchChgMatrix[y][x].nextVal = patchCode;
+							patchChgMatrices.at(sp)[y][x].nextVal = patchCode;
 							if (patchCode > 0 && !existsPatch(sp, patchCode)) {
 								// Create the patch if it doesn't exist already
 								patchesList.at(sp).push_back(new Patch(patchSeq, patchCode));
@@ -1567,7 +1575,7 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 							return 38;
 						}
 						else {
-							costsChgMatrix[y][x].nextVal = costCode;
+							costsChgMatrices.at(sp)[y][x].nextVal = costCode;
 						}
 					}
 				}
@@ -1603,32 +1611,35 @@ void Landscape::createPatchChgMatrix() {
 	Patch* pPatch;
 	Cell* pCell;
 
-	if (patchChgMatrix != nullptr) deletePatchChgMatrix();
-	patchChgMatrix = new cellChange* [dimY];
+	for (auto& [sp, patchChangeMatrix] : patchChgMatrices) {
 
-	for (int y = dimY - 1; y >= 0; y--) {
+		if (patchChangeMatrix != nullptr) deletePatchChgMatrix(sp);
+		patchChangeMatrix = new cellChange* [dimY];
 
-		patchChgMatrix[y] = new cellChange [dimX];
+		for (int y = dimY - 1; y >= 0; y--) {
 
-		for (int x = 0; x < dimX; x++) {
+			patchChangeMatrix[y] = new cellChange[dimX];
 
-			patchChgMatrix[y][x] = cellChange();
-			pCell = findCell(x, y);
+			for (int x = 0; x < dimX; x++) {
 
-			if (pCell == nullptr) { // no-data cell
-				patchChgMatrix[y][x].originVal = patchChgMatrix[y][x].currentVal = 0;
-			}
-			else {
-				// record initial patch number
-				pPatch = pCell->getPatch();
-				if (pPatch == nullptr) { // matrix cell
-					patchChgMatrix[y][x].originVal = patchChgMatrix[y][x].currentVal = 0;
+				patchChangeMatrix[y][x] = cellChange();
+				pCell = findCell(x, y);
+
+				if (pCell == nullptr) { // no-data cell
+					patchChangeMatrix[y][x].originVal = patchChangeMatrix[y][x].currentVal = 0;
 				}
 				else {
-					patchChgMatrix[y][x].originVal = patchChgMatrix[y][x].currentVal = pPatch->getPatchNum();
+					// record initial patch number
+					pPatch = pCell->getPatch(sp);
+					if (pPatch == nullptr) { // matrix cell
+						patchChangeMatrix[y][x].originVal = patchChangeMatrix[y][x].currentVal = 0;
+					}
+					else {
+						patchChangeMatrix[y][x].originVal = patchChangeMatrix[y][x].currentVal = pPatch->getPatchNum();
+					}
 				}
+				patchChangeMatrix[y][x].nextVal = 0;
 			}
-			patchChgMatrix[y][x].nextVal = 0;
 		}
 	}
 }
@@ -1637,36 +1648,38 @@ void Landscape::recordPatchChanges(int landIx) {
 
 	patchChange chg;
 
-	for (int y = dimY - 1; y >= 0; y--) {
-		for (int x = 0; x < dimX; x++) {
+	for (auto& [sp, patchChangeMatrix] : patchChgMatrices) {
 
-			if (landIx == 0) { // reset to original landscape
-				if (patchChgMatrix[y][x].originVal != patchChgMatrix[y][x].nextVal) {
-					// record change of patch for current cell
-					chg.chgnum = 666666; 
-					chg.x = x; 
-					chg.y = y;
-					chg.oldpatch = patchChgMatrix[y][x].nextVal;
-					chg.newpatch = patchChgMatrix[y][x].originVal;
-					patchChanges.push_back(chg);
+		for (int y = dimY - 1; y >= 0; y--) {
+			for (int x = 0; x < dimX; x++) {
+
+				if (landIx == 0) { // reset to original landscape
+					if (patchChangeMatrix[y][x].originVal != patchChangeMatrix[y][x].nextVal) {
+						// record change of patch for current cell
+						chg.chgnum = 666666;
+						chg.x = x;
+						chg.y = y;
+						chg.oldpatch = patchChangeMatrix[y][x].nextVal;
+						chg.newpatch = patchChangeMatrix[y][x].originVal;
+						patchChanges.push_back(chg);
+					}
 				}
-			}
-			else { // any other change
-				if (patchChgMatrix[y][x].nextVal != patchChgMatrix[y][x].currentVal) {
-					// record change of patch for current cell
-					chg.chgnum = landIx; 
-					chg.x = x; 
-					chg.y = y;
-					chg.oldpatch = patchChgMatrix[y][x].currentVal;
-					chg.newpatch = patchChgMatrix[y][x].nextVal;
-					patchChanges.push_back(chg);
+				else { // any other change
+					if (patchChangeMatrix[y][x].nextVal != patchChangeMatrix[y][x].currentVal) {
+						// record change of patch for current cell
+						chg.chgnum = landIx;
+						chg.x = x;
+						chg.y = y;
+						chg.oldpatch = patchChangeMatrix[y][x].currentVal;
+						chg.newpatch = patchChangeMatrix[y][x].nextVal;
+						patchChanges.push_back(chg);
+					}
 				}
+				// reset cell for next landscape change
+				patchChangeMatrix[y][x].currentVal = patchChangeMatrix[y][x].nextVal;
 			}
-			// reset cell for next landscape change
-			patchChgMatrix[y][x].currentVal = patchChgMatrix[y][x].nextVal;
 		}
 	}
-
 }
 
 int Landscape::numPatchChanges() { return static_cast<int>(patchChanges.size()); }
@@ -1675,70 +1688,75 @@ patchChange Landscape::getPatchChange(int i) {
 	return patchChanges[i];
 }
 
-void Landscape::deletePatchChgMatrix() {
-	if (patchChgMatrix != nullptr) {
+void Landscape::deletePatchChgMatrix(species_id sp) {
+	if (patchChgMatrices.at(sp) != nullptr) {
 		for (int y = dimY - 1; y >= 0; y--) {
-			delete[] patchChgMatrix[y];
+			delete[] patchChgMatrices.at(sp)[y];
 		}
 	}
-	patchChgMatrix = nullptr;
+	patchChgMatrices.at(sp) = nullptr;
 }
 
 // Create & initialise costs change matrix
 void Landscape::createCostsChgMatrix()
 {
 	Cell* pCell;
-	if (costsChgMatrix != nullptr) deleteCostsChgMatrix();
-	costsChgMatrix = new cellChange* [dimY];
-	for (int y = dimY - 1; y >= 0; y--) {
-		costsChgMatrix[y] = new cellChange [dimX];
-		for (int x = 0; x < dimX; x++) {
-			costsChgMatrix[y][x] = cellChange();
-			pCell = findCell(x, y);
-			if (pCell == nullptr) { // no-data cell
-				costsChgMatrix[y][x].originVal = costsChgMatrix[y][x].currentVal = 0;
+	for (auto& [sp, costChangeMatrix] : costsChgMatrices) {
+		if (costChangeMatrix != nullptr) deleteCostsChgMatrix();
+		costChangeMatrix = new cellChange * [dimY];
+		for (int y = dimY - 1; y >= 0; y--) {
+			costChangeMatrix[y] = new cellChange[dimX];
+			for (int x = 0; x < dimX; x++) {
+				costChangeMatrix[y][x] = cellChange();
+				pCell = findCell(x, y);
+				if (pCell == nullptr) { // no-data cell
+					costChangeMatrix[y][x].originVal = costChangeMatrix[y][x].currentVal = 0;
+				}
+				else {
+					// record initial cost
+					costChangeMatrix[y][x].originVal = costChangeMatrix[y][x].currentVal = pCell->getCost();
+				}
+				costChangeMatrix[y][x].nextVal = 0;
 			}
-			else {
-				// record initial cost
-				costsChgMatrix[y][x].originVal = costsChgMatrix[y][x].currentVal = pCell->getCost();
-			}
-			costsChgMatrix[y][x].nextVal = 0;
 		}
 	}
 }
 
 void Landscape::recordCostChanges(int landIx) {
 
-	if (costsChgMatrix == nullptr) return; // should not occur
-	costChange chg;
+	for (auto& [sp, costChangeMatrix] : costsChgMatrices) {
 
-	for (int y = dimY - 1; y >= 0; y--) {
-		for (int x = 0; x < dimX; x++) {
-			if (landIx == 0) { // reset to original landscape
-				if (costsChgMatrix[y][x].originVal != costsChgMatrix[y][x].nextVal) {
-					// record change of cost for current cell
-					chg.chgnum = 666666; 
-					chg.x = x; 
-					chg.y = y;
-					chg.oldcost = costsChgMatrix[y][x].nextVal;
-					chg.newcost = costsChgMatrix[y][x].originVal;
-					costschanges.push_back(chg);
+		if (costChangeMatrix == nullptr) return; // should not occur
+		costChange chg;
+
+		for (int y = dimY - 1; y >= 0; y--) {
+			for (int x = 0; x < dimX; x++) {
+
+				if (landIx == 0) { // reset to original landscape
+					if (costChangeMatrix[y][x].originVal != costChangeMatrix[y][x].nextVal) {
+						// record change of cost for current cell
+						chg.chgnum = 666666;
+						chg.x = x;
+						chg.y = y;
+						chg.oldcost = costChangeMatrix[y][x].nextVal;
+						chg.newcost = costChangeMatrix[y][x].originVal;
+						costschanges.push_back(chg);
+					}
 				}
-			}
-			else { // any other change
-				if (costsChgMatrix[y][x].nextVal != costsChgMatrix[y][x].currentVal) {
-					// record change of cost for current cell
-					chg.chgnum = landIx; chg.x = x; chg.y = y;
-					chg.oldcost = costsChgMatrix[y][x].currentVal;
-					chg.newcost = costsChgMatrix[y][x].nextVal;
-					costschanges.push_back(chg);
+				else { // any other change
+					if (costChangeMatrix[y][x].nextVal != costChangeMatrix[y][x].currentVal) {
+						// record change of cost for current cell
+						chg.chgnum = landIx; chg.x = x; chg.y = y;
+						chg.oldcost = costChangeMatrix[y][x].currentVal;
+						chg.newcost = costChangeMatrix[y][x].nextVal;
+						costschanges.push_back(chg);
+					}
 				}
+				// reset cell for next landscape change
+				costChangeMatrix[y][x].currentVal = costChangeMatrix[y][x].nextVal;
 			}
-			// reset cell for next landscape change
-			costsChgMatrix[y][x].currentVal = costsChgMatrix[y][x].nextVal;
 		}
 	}
-
 }
 
 int Landscape::numCostChanges() { return static_cast<int>(costschanges.size()); }
@@ -1747,13 +1765,13 @@ costChange Landscape::getCostChange(int i) {
 	return costschanges[i];
 }
 
-void Landscape::deleteCostsChgMatrix() {
-	if (costsChgMatrix != nullptr) {
+void Landscape::deleteCostsChgMatrix(species_id sp) {
+	if (costsChgMatrices.at(sp) != nullptr) {
 		for (int y = dimY - 1; y >= 0; y--) {
-			delete[] costsChgMatrix[y];
+			delete[] costsChgMatrices.at(sp)[y];
 		}
 	}
-	costsChgMatrix = nullptr;
+	costsChgMatrices.at(sp) = nullptr;
 }
 
 //---------------------------------------------------------------------------
@@ -2542,21 +2560,20 @@ rasterdata CheckRasterFile(string fname)
 // Patch connectivity functions
 
 // Create & initialise connectivity matrix
-void Landscape::createConnectMatrix(speciesMap_t& allSpecies)
+void Landscape::createConnectMatrix()
 {
-	for (const species_id& speciesID : views::keys(allSpecies)) {
+	for (auto& [sp, connectMatrix] : connectMatrices) {
 
-		if (connectMatrices.contains(speciesID)) 
-			deleteConnectMatrix(speciesID);
+		if (connectMatrix != nullptr)
+			deleteConnectMatrix(sp);
 
-		//int npatches = getNbPatches(speciesID);
-		int npatches = static_cast<int>(patchesList.at(speciesID).size());
-		int** connectMatrix = new int* [npatches];
+		int npatches = static_cast<int>(patchesList.at(sp).size());
+		connectMatrix = new int* [npatches];
 		for (int i = 0; i < npatches; i++) {
 			connectMatrix[i] = new int[npatches];
-			for (int j = 0; j < npatches; j++) connectMatrix[i][j] = 0;
+			for (int j = 0; j < npatches; j++) 
+				connectMatrix[i][j] = 0;
 		}
-		connectMatrices.emplace(speciesID, connectMatrix);
 	}
 }
 

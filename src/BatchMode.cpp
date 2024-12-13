@@ -4830,6 +4830,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	string landchangefile, patchchangefile, costchangefile;
 	int change, imported;
 	int nchanges = 0;
+	bool usesCosts = false;
 	landChange chg;
 	landParams ppLand = pLandscape->getLandParams();
 	string fname = paramsSim->getDir(1) + gDynLandFileName;
@@ -4849,17 +4850,18 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	// read data lines
 	change = -98765;
 	ifsDynLandFile >> change; // first change number
+
 	while (change != -98765) {
 		chg.chgnum = change;
 		ifsDynLandFile >> chg.chgyear >> landchangefile >> patchchangefile >> costchangefile;
 		chg.habfile = paramsSim->getDir(1) + landchangefile;
 		chg.pchfile = paramsSim->getDir(1) + patchchangefile;
-		if (costchangefile == "NULL") 
-			chg.costfile = "none";
-		else 
-			chg.costfile = paramsSim->getDir(1) + costchangefile;
+		usesCosts = costchangefile != "NULL";
+		chg.costfile = usesCosts ? paramsSim->getDir(1) + costchangefile : "none";
+
 		nchanges++;
 		pLandscape->addLandChange(chg);
+
 		// read first field on next line
 		change = -98765;
 		ifsDynLandFile >> change;
@@ -4872,33 +4874,32 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	ifsDynLandFile.clear();
 
 	// read landscape change maps
-	if (ppLand.patchModel) {
+	if (ppLand.usesPatches) {
 		pLandscape->createPatchChgMatrix();
 	}
-	if (costchangefile != "NULL") {
+	if (usesCosts) {
 		pLandscape->createCostsChgMatrix();
 	}
 	for (int i = 0; i < nchanges; i++) {
-		if (costchangefile == "NULL") 
-			imported = pLandscape->readLandChange(i, false);
-		else 
-			imported = pLandscape->readLandChange(i, true);
+		
+		imported = pLandscape->readLandChange(i, usesCosts);
 		if (imported != 0) {
 			return imported;
 		}
-		if (ppLand.patchModel) {
+
+		if (ppLand.usesPatches) {
 			pLandscape->recordPatchChanges(i + 1);
 		}
-		if (costchangefile != "NULL") {
+		if (usesCosts) {
 			pLandscape->recordCostChanges(i + 1);
 		}
 	}
-	if (ppLand.patchModel) {
+	if (ppLand.usesPatches) {
 		// record changes back to original landscape for multiple replicates
 		pLandscape->recordPatchChanges(0);
 		pLandscape->deletePatchChgMatrix();
 	}
-	if (costchangefile != "NULL") {
+	if (usesCosts) {
 		pLandscape->recordCostChanges(0);
 		pLandscape->deleteCostsChgMatrix();
 	}
@@ -5335,7 +5336,7 @@ int ReadParameters(Landscape* pLandscape)
 	ifsParamFile >> inEnvStoch;
 	env.stoch = inEnvStoch == "1" || inEnvStoch == "2";
 	env.local = inEnvStoch == "2";
-	if (paramsLand.patchModel && env.local) errorCode = 101;
+	if (paramsLand.usesPatches && env.local) errorCode = 101;
 
 	ifsParamFile >> inEnvStochType;
 	env.inK = (inEnvStochType == "1");
@@ -5352,7 +5353,7 @@ int ReadParameters(Landscape* pLandscape)
 	// Local extinction
 	ifsParamFile >> inLocalExt;
 	env.localExt = (inLocalExt == "1");
-	if (paramsLand.patchModel && env.localExt) errorCode = 102;
+	if (paramsLand.usesPatches && env.localExt) errorCode = 102;
 
 	ifsParamFile >> env.locExtProb;
 	paramsStoch->setStoch(env);
@@ -5407,7 +5408,7 @@ int ReadParameters(Landscape* pLandscape)
 	sim.outConnect = sim.outIntConn > 0;
 
 	if (sim.outOccup && sim.reps < 2) errorCode = 103;
-	if (paramsLand.patchModel) {
+	if (paramsLand.usesPatches) {
 		if (sim.outTraitsRows) errorCode = 104;
 	}
 	else {
@@ -6298,7 +6299,7 @@ int ReadInitialisation(Landscape* pLandscape)
 	if (init.seedType == 1 && !paramsLand.useSpDist) 
 		errorCode = 601;
 
-	if (paramsLand.patchModel) 
+	if (paramsLand.usesPatches) 
 		ifsInitFile >> init.initDens >> init.indsHa;
 	else 
 		ifsInitFile >> init.initDens >> init.indsCell;
@@ -6380,7 +6381,7 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 		ifsInitIndsFile.open(indsfile.c_str());
 		string header;
 		int nheaders = 3;
-		if (paramsLand.patchModel) nheaders++;
+		if (paramsLand.usesPatches) nheaders++;
 		else nheaders += 2;
 		if (dem.repType > 0) nheaders++;
 		if (dem.stageStruct) nheaders += 2;
@@ -6409,7 +6410,7 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 	while (!must_stop) {
 		ifsInitIndsFile >> iind.speciesID;
 
-		if (paramsLand.patchModel) {
+		if (paramsLand.usesPatches) {
 			ifsInitIndsFile >> iind.patchID;
 			iind.x = iind.y = 0;
 		}
@@ -6457,6 +6458,8 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 
 	Landscape* pLandscape = nullptr;  		// pointer to landscape
 
+	speciesMap_t allSpecies{ {0, pSpecies} }; // only one for now
+
 	// Open landscape batch file and read header record
 	ifsLandFile.open(landFile);
 	if (!ifsLandFile.is_open()) {
@@ -6466,9 +6469,10 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 	flushHeaders(ifsLandFile);
 
 	for (int j = 0; j < nLandscapes; j++) {
-		// create new landscape
+
+		// Create new landscape
 		if (pLandscape != nullptr) delete pLandscape;
-		pLandscape = new Landscape;
+		pLandscape = new Landscape(allSpecies);
 		bool landOK = true;
 
 		land_nr = ReadLandFile(pLandscape);
@@ -6481,7 +6485,7 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 			return;
 		}
 		landParams paramsLand = pLandscape->getLandParams();
-		paramsLand.patchModel = gIsPatchModel;
+		paramsLand.usesPatches = gIsPatchModel;
 		paramsLand.resol = gResol;
 		paramsLand.rasterType = gLandType;
 		if (gLandType == 9) {
@@ -6505,13 +6509,13 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 			if (gNameCostFile == "NULL" || gNameCostFile == "none") pathToCostMap = "NULL";
 			else pathToCostMap = paramsSim->getDir(1) + gNameCostFile;
 
-			string pathToPatchMap = paramsLand.patchModel ? 
+			string pathToPatchMap = paramsLand.usesPatches ? 
 				paramsSim->getDir(1) + gPatchMapName : " ";
 			landcode = pLandscape->readLandscape(0, pathToHabMap, pathToPatchMap, pathToCostMap);
 			if (landcode != 0) landOK = false;
 
 			if (paramsLand.dynamic) {
-				landcode = ReadDynLandFile(pLandscape);
+				landcode = ReadDynLandFile(pLandscape, allSpecies);
 				if (landcode != 0) landOK = false;
 			}
 			if (gLandType == 0) pLandscape->updateHabitatIndices();
@@ -6618,8 +6622,6 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 
 					// for batch processing, include landscape number in parameter file name
 					OutParameters(pLandscape);
-
-					speciesMap_t allSpecies{ {0, pSpecies} }; // only one for now
 
 					RunModel(pLandscape, i, allSpecies);
 

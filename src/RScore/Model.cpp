@@ -191,7 +191,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 
 		if (sim.outConnect && ppLand.usesPatches) {
-			pLandscape->createConnectMatrix(allSpecies);
+			pLandscape->createConnectMatrix();
 		}
 
 		// variables to control dynamic landscape
