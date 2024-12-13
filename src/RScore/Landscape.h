@@ -416,9 +416,9 @@ private:
 	std::vector<int> habCodes;
 
 	// list of dynamic landscape changes
-	std::vector<landChange> landchanges;
-	std::vector<patchChange> patchChanges;
-	std::vector<costChange> costschanges;
+	std::vector<landChange> landChanges;
+	map<species_id, vector<patchChange>> patchChanges;
+	map<species_id, vector<costChange>> costsChanges;
 
 	// list of initial individual species distributions
 	std::vector<InitDist*> distns;

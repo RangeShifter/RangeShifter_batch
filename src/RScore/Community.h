@@ -86,7 +86,7 @@ public:
 		int ix
 	);
 	void localExtinction(int option);
-	void patchChanges();
+	void scanUnsuitablePatches();
 	void reproduction(int year);
 	void emigration();
 	void dispersal(short landIx, short nextseason);

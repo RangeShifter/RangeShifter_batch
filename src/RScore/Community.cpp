@@ -271,7 +271,7 @@ void Community::localExtinction(int option) {
 	}
 }
 
-void Community::patchChanges() {
+void Community::scanUnsuitablePatches() {
 	for (auto pop : popns) {
 		float localK = pop->getPatch()->getK();
 		if (localK <= 0.0) { // patch in dynamic landscape has become unsuitable

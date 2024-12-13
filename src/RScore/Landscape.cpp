@@ -355,7 +355,7 @@ Landscape::~Landscape() {
 	initcells.clear();
 
 	habCodes.clear();
-	landchanges.clear();
+	landChanges.clear();
 	patchChanges.clear();
 	for (const species_id& sp : views::keys(connectMatrices))
 		deleteConnectMatrix(sp);
@@ -1071,7 +1071,7 @@ void Landscape::updateHabitatIndices() {
 	nHab = static_cast<int>(habCodes.size());
 	// convert codes in landscape
 	int habIx;
-	int nbLandChanges = static_cast<int>(landchanges.size());
+	int nbLandChanges = static_cast<int>(landChanges.size());
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
 
@@ -1193,22 +1193,22 @@ void Landscape::resetEffCosts(void) {
 void Landscape::setDynamicLand(bool dyn) { dynamic = dyn; }
 
 void Landscape::addLandChange(landChange c) {
-	landchanges.push_back(c);
+	landChanges.push_back(c);
 }
 
-int Landscape::numLandChanges(void) { return (int)landchanges.size(); }
+int Landscape::numLandChanges(void) { return (int)landChanges.size(); }
 
 landChange Landscape::getLandChange(short ix) {
 	landChange c; c.chgnum = c.chgyear = 0;
 	c.habfile = c.pchfile = c.costfile = "none";
-	int nchanges = (int)landchanges.size();
-	if (ix < nchanges) c = landchanges[ix];
+	int nchanges = (int)landChanges.size();
+	if (ix < nchanges) c = landChanges[ix];
 	return c;
 }
 
 void Landscape::deleteLandChanges(void) {
-	while (landchanges.size() > 0) landchanges.pop_back();
-	landchanges.clear();
+	while (landChanges.size() > 0) landChanges.pop_back();
+	landChanges.clear();
 }
 
 #if RS_RCPP && !R_CMD
@@ -1239,10 +1239,10 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 	ifstream ifsDynCostFile; // costs file input stream
 
 	// open habitat file and optionally also patch and costs files
-	ifsDynHabFile.open(landchanges[filenum].habfile.c_str());
+	ifsDynHabFile.open(landChanges[filenum].habfile.c_str());
 	if (!ifsDynHabFile.is_open()) return 30;
 	if (usesPatches) {
-		ifsDynPatchFile.open(landchanges[filenum].pchfile.c_str());
+		ifsDynPatchFile.open(landChanges[filenum].pchfile.c_str());
 		if (!ifsDynPatchFile.is_open()) {
 			ifsDynHabFile.close(); 
 			ifsDynHabFile.clear();
@@ -1250,7 +1250,7 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 		}
 	}
 	if (usesCosts) {
-		ifsDynCostFile.open(landchanges[filenum].costfile.c_str());
+		ifsDynCostFile.open(landChanges[filenum].costfile.c_str());
 		if (!ifsDynCostFile.is_open()) {
 			ifsDynHabFile.close(); ifsDynHabFile.clear();
 			if (ifsDynPatchFile.is_open()) {
@@ -1740,7 +1740,7 @@ void Landscape::recordCostChanges(int landIx) {
 						chg.y = y;
 						chg.oldcost = costChangeMatrix[y][x].nextVal;
 						chg.newcost = costChangeMatrix[y][x].originVal;
-						costschanges.push_back(chg);
+						costsChanges.push_back(chg);
 					}
 				}
 				else { // any other change
@@ -1749,7 +1749,7 @@ void Landscape::recordCostChanges(int landIx) {
 						chg.chgnum = landIx; chg.x = x; chg.y = y;
 						chg.oldcost = costChangeMatrix[y][x].currentVal;
 						chg.newcost = costChangeMatrix[y][x].nextVal;
-						costschanges.push_back(chg);
+						costsChanges.push_back(chg);
 					}
 				}
 				// reset cell for next landscape change
@@ -1759,10 +1759,10 @@ void Landscape::recordCostChanges(int landIx) {
 	}
 }
 
-int Landscape::numCostChanges() { return static_cast<int>(costschanges.size()); }
+int Landscape::numCostChanges() { return static_cast<int>(costsChanges.size()); }
 
 costChange Landscape::getCostChange(int i) {
-	return costschanges[i];
+	return costsChanges[i];
 }
 
 void Landscape::deleteCostsChgMatrix(species_id sp) {

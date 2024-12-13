@@ -363,14 +363,14 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					if (!trfr.costMap) pLandscape->resetCosts(); // in case habitats have changed
 				}
 				// apply effects of landscape change to species present in changed patches
-				pComm->patchChanges();
+				pComm->scanUnsuitablePatches();
 				pComm->dispersal(landIx, yr);
 			}
 			if (init.restrictRange) {
 				// remove any population from region removed from restricted range
 				if (yr > init.initFrzYr && yr < init.finalFrzYr) {
 					if ((yr - init.initFrzYr) % init.restrictFreq == 0) {
-						pComm->patchChanges();
+						pComm->scanUnsuitablePatches();
 					}
 				}
 			}
