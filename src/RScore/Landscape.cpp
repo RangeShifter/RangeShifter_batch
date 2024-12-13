@@ -314,11 +314,15 @@ Landscape::Landscape(const speciesMap_t& allSpecies) {
 	cells = nullptr;
 	epsGlobal = nullptr;
 
-	// Create maps for species-dependent members (except patchList)
+	// Initialise maps for species-dependent members
+	vector<patchChange> emptyPatchChanges;
+	vector<costChange> emptyCostsChanges;
 	for (auto& sp : views::keys(allSpecies)) {
 		patchChgMatrices.emplace(sp, nullptr);
 		costsChgMatrices.emplace(sp, nullptr);
 		connectMatrices.emplace(sp, nullptr);
+		patchChanges.emplace(sp, emptyPatchChanges);
+		costsChanges.emplace(sp, emptyCostsChanges);
 	}
 }
 
@@ -356,7 +360,8 @@ Landscape::~Landscape() {
 
 	habCodes.clear();
 	landChanges.clear();
-	patchChanges.clear();
+	for (const species_id& sp : views::keys(patchChanges))
+		patchChanges.at(sp).clear();
 	for (const species_id& sp : views::keys(connectMatrices))
 		deleteConnectMatrix(sp);
 	for (const species_id& sp : views::keys(patchChgMatrices))
@@ -1661,7 +1666,7 @@ void Landscape::recordPatchChanges(int landIx) {
 						chg.y = y;
 						chg.oldpatch = patchChangeMatrix[y][x].nextVal;
 						chg.newpatch = patchChangeMatrix[y][x].originVal;
-						patchChanges.push_back(chg);
+						patchChanges.at(sp).push_back(chg);
 					}
 				}
 				else { // any other change
@@ -1672,7 +1677,7 @@ void Landscape::recordPatchChanges(int landIx) {
 						chg.y = y;
 						chg.oldpatch = patchChangeMatrix[y][x].currentVal;
 						chg.newpatch = patchChangeMatrix[y][x].nextVal;
-						patchChanges.push_back(chg);
+						patchChanges.at(sp).push_back(chg);
 					}
 				}
 				// reset cell for next landscape change
@@ -1682,10 +1687,10 @@ void Landscape::recordPatchChanges(int landIx) {
 	}
 }
 
-int Landscape::numPatchChanges() { return static_cast<int>(patchChanges.size()); }
+int Landscape::numPatchChanges(species_id sp) { return static_cast<int>(patchChanges.at(sp).size()); }
 
-patchChange Landscape::getPatchChange(int i) {
-	return patchChanges[i];
+patchChange Landscape::getPatchChange(species_id sp, int i) {
+	return patchChanges.at(sp)[i];
 }
 
 void Landscape::deletePatchChgMatrix(species_id sp) {
@@ -1740,7 +1745,7 @@ void Landscape::recordCostChanges(int landIx) {
 						chg.y = y;
 						chg.oldcost = costChangeMatrix[y][x].nextVal;
 						chg.newcost = costChangeMatrix[y][x].originVal;
-						costsChanges.push_back(chg);
+						costsChanges.at(sp).push_back(chg);
 					}
 				}
 				else { // any other change
@@ -1749,20 +1754,21 @@ void Landscape::recordCostChanges(int landIx) {
 						chg.chgnum = landIx; chg.x = x; chg.y = y;
 						chg.oldcost = costChangeMatrix[y][x].currentVal;
 						chg.newcost = costChangeMatrix[y][x].nextVal;
-						costsChanges.push_back(chg);
+						costsChanges.at(sp).push_back(chg);
 					}
 				}
 				// reset cell for next landscape change
 				costChangeMatrix[y][x].currentVal = costChangeMatrix[y][x].nextVal;
-			}
-		}
-	}
+
+			} // for x
+		} // for y 
+	} // for species
 }
 
-int Landscape::numCostChanges() { return static_cast<int>(costsChanges.size()); }
+int Landscape::getNbCostChanges(species_id sp) { return static_cast<int>(costsChanges.at(sp).size()); }
 
-costChange Landscape::getCostChange(int i) {
-	return costsChanges[i];
+costChange Landscape::getCostChange(species_id sp, int i) {
+	return costsChanges.at(sp)[i];
 }
 
 void Landscape::deleteCostsChgMatrix(species_id sp) {

@@ -283,15 +283,13 @@ public:
 	void createPatchChgMatrix();
 	void recordPatchChanges(int landIx);
 	void deletePatchChgMatrix(species_id sp);
-	int numPatchChanges();
-	patchChange getPatchChange(int changeIx);
+	int numPatchChanges(species_id sp);
+	patchChange getPatchChange(species_id sp, int changeIx);
 	void createCostsChgMatrix();
 	void recordCostChanges(int landIx);
 	void deleteCostsChgMatrix(species_id sp);
-	int numCostChanges();
-	costChange getCostChange(
-		int	// cost change number
-	);
+	int getNbCostChanges(species_id sp);
+	costChange getCostChange(species_id sp, int i);
 
 	// functions to handle species distributions
 

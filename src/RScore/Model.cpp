@@ -95,11 +95,9 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 
 		patchChange pchChange;
-		costChange costchange;
-		int nbPatchChanges = pLandscape->numPatchChanges();
-		int ncostchanges = pLandscape->numCostChanges();
+		costChange costChange;
 		int indexPatchChange = 0;
-		int ixcostchg = 0;
+		int indexCostChange = 0;
 
 		if (ppLand.generated) {
 			// delete previous community (if any)
@@ -251,7 +249,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 #if RS_RCPP && !R_CMD
 				Rcpp::Rcout << "Starting year " << yr << "..." << endl;
 #else
-				cout << "Starting year " << yr << endl;
+				std::cout << "Starting year " << yr << endl;
 #endif
 			}
 			if (init.seedType == 0 && init.freeType < 2) {
@@ -299,17 +297,17 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 					if (ppLand.usesPatches) { // apply any patch changes
 						Patch* pPatch;
-						Cell* pCell;
 
 						for (const species_id sp : views::keys(allSpecies)) {
 
+							int nbPatchChanges = pLandscape->numPatchChanges(sp);
 							pchChange = pLandscape->getPatchChange(sp, indexPatchChange++);
 
 							while (pchChange.chgnum <= landIx 
 								&& indexPatchChange <= nbPatchChanges) {
 
 								// Move cell from original patch to new patch
-								pCell = pLandscape->findCell(pchChange.x, pchChange.y);
+								Cell* pCell = pLandscape->findCell(pchChange.x, pchChange.y);
 								if (pchChange.oldpatch != 0) { // not matrix
 									pPatch = pLandscape->findPatch(sp, pchChange.oldpatch);
 									pPatch->removeCell(pCell);
@@ -330,17 +328,20 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					}
 
 					if (landChg.costfile != "NULL") { // apply any SMS cost changes
-						Cell* pCell;
-						costchange = pLandscape->getCostChange(ixcostchg++);
-						while (costchange.chgnum <= landIx && ixcostchg <= ncostchanges) {
-							pCell = pLandscape->findCell(costchange.x, costchange.y);
-							if (pCell != nullptr) {
-								pCell->setCost(costchange.newcost);
+
+						for (const species_id sp : views::keys(allSpecies)) {
+
+							int ncostchanges = pLandscape->getNbCostChanges(sp);
+							costChange = pLandscape->getCostChange(sp, indexCostChange++);
+							
+							while (costChange.chgnum <= landIx && indexCostChange <= ncostchanges) {
+								Cell* pCell = pLandscape->findCell(costChange.x, costChange.y);
+								if (pCell != nullptr) pCell->setCost(costChange.newcost);
+								costChange = pLandscape->getCostChange(sp, indexCostChange++);
 							}
-							costchange = pLandscape->getCostChange(ixcostchg++);
+							indexCostChange--;
+							pLandscape->resetEffCosts();
 						}
-						ixcostchg--;
-						pLandscape->resetEffCosts();
 					}
 					if (landIx < pLandscape->numLandChanges()) { // get next change
 						landChg = pLandscape->getLandChange(landIx);
@@ -380,15 +381,18 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				pComm->initialise(allSpecies, yr);
 			}
 
-			for (int gen = 0; gen < dem.repSeasons; gen++) // generation loop
-			{
+			// Generation loop
+			for (int gen = 0; gen < dem.repSeasons; gen++) {
+				
 				// Output and pop. visualisation before reproduction
 				if (v.viewPop || v.viewTraits || sim.outOccup
 					|| sim.outTraitsCells || sim.outTraitsRows || sim.saveMaps)
 					PreReproductionOutput(pLandscape, pComm, rep, yr, gen);
+
 				// for non-structured population, also produce range and population output now
 				if (!dem.stageStruct && (sim.outRange || sim.outPop))
 					RangePopOutput(pComm, rep, yr, gen);
+
 #if RS_RCPP && !R_CMD
 				if (sim.ReturnPopRaster && sim.outPop && yr >= sim.outStartPop && yr % sim.outIntPop == 0) {
 					list_outPop.push_back(pComm->addYearToPopList(rep, yr), "rep" + std::to_string(rep) + "_year" + std::to_string(yr));
@@ -459,7 +463,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 			totalInds = pComm->totalInds();
 			if (totalInds <= 0) { 
-				cout << "All populations went extinct." << endl;
+				std::cout << "All populations went extinct." << endl;
 				yr++; 
 				break; 
 			}
@@ -500,7 +504,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 		pComm->resetPopns();
 
-		//Reset the gradient optimum
+		// Reset the gradient optimum
 		if (grad.gradient) paramsGrad->resetOptY();
 
 		pLandscape->resetLandLimits();
@@ -508,13 +512,16 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			// apply any patch changes to reset landscape to original configuration
 			// (provided that at least one has already occurred)
 			Patch* pPatch;
-			Cell* pCell;
+
 			for (const species_id sp : views::keys(allSpecies)) {
+
+				int nbPatchChanges = pLandscape->numPatchChanges(sp);
 				patchChange patchchange = pLandscape->getPatchChange(sp, indexPatchChange++);
+				
 				while (patchchange.chgnum <= 666666 
 					&& indexPatchChange <= nbPatchChanges) {
 					// move cell from original patch to new patch
-					pCell = pLandscape->findCell(patchchange.x, patchchange.y);
+					Cell* pCell = pLandscape->findCell(patchchange.x, patchchange.y);
 					if (patchchange.oldpatch != 0) { // not matrix
 						pPatch = pLandscape->findPatch(sp, patchchange.oldpatch);
 						pPatch->removeCell(pCell);
@@ -526,9 +533,9 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 						pPatch = pLandscape->findPatch(sp, patchchange.newpatch);
 						pPatch->addCell(pCell, patchchange.x, patchchange.y);
 					}
-					pCell->setPatch(pPatch);
-					// get next patch change
-					patchchange = pLandscape->getPatchChange(indexPatchChange++);
+					pCell->setPatch(sp, pPatch);
+					// Get next patch change
+					patchchange = pLandscape->getPatchChange(sp, indexPatchChange++);
 				}
 			}
 			indexPatchChange--;
@@ -537,20 +544,25 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		if (ppLand.dynamic) {
 			transferRules trfr = pSpecies->getTransferRules();
 			if (trfr.usesMovtProc && trfr.moveType == 1) { // SMS
-				if (ixcostchg > 0) {
+				if (indexCostChange > 0) {
 					// apply any cost changes to reset landscape to original configuration
 					// (provided that at least one has already occurred)
-					Cell* pCell;
-					costchange = pLandscape->getCostChange(ixcostchg++);
-					while (costchange.chgnum <= 666666 && ixcostchg <= ncostchanges) {
-						pCell = pLandscape->findCell(costchange.x, costchange.y);
-						if (pCell != 0) {
-							pCell->setCost(costchange.newcost);
+					for (const species_id sp : views::keys(allSpecies)) {
+
+						int ncostchanges = pLandscape->getNbCostChanges(sp);
+						costChange = pLandscape->getCostChange(sp, indexCostChange++);
+
+						while (costChange.chgnum <= 666666 
+							&& indexCostChange <= ncostchanges) {
+							Cell* pCell = pLandscape->findCell(costChange.x, costChange.y);
+							if (pCell != nullptr) {
+								pCell->setCost(costChange.newcost);
+							}
+							costChange = pLandscape->getCostChange(sp, indexCostChange++);
 						}
-						costchange = pLandscape->getCostChange(ixcostchg++);
+						indexCostChange--;
+						pLandscape->resetEffCosts();
 					}
-					ixcostchg--;
-					pLandscape->resetEffCosts();
 				}
 				if (!trfr.costMap) pLandscape->resetCosts(); // in case habitats have changed
 			}
