@@ -49,6 +49,7 @@
 using namespace std;
 
 #include "Parameters.h"
+#include "Species.h"
 
 class Patch;
 
