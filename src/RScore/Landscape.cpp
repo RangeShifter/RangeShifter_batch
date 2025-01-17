@@ -1693,6 +1693,13 @@ patchChange Landscape::getPatchChange(species_id sp, int i) {
 	return patchChanges.at(sp)[i];
 }
 
+void Landscape::deletePatchChgMatrices() {
+
+	for (auto& sp : views::keys(patchChgMatrices)) {
+		deletePatchChgMatrix(sp);
+	}
+}
+
 void Landscape::deletePatchChgMatrix(species_id sp) {
 	if (patchChgMatrices.at(sp) != nullptr) {
 		for (int y = dimY - 1; y >= 0; y--) {
@@ -1707,7 +1714,7 @@ void Landscape::createCostsChgMatrix()
 {
 	Cell* pCell;
 	for (auto& [sp, costChangeMatrix] : costsChgMatrices) {
-		if (costChangeMatrix != nullptr) deleteCostsChgMatrix();
+		if (costChangeMatrix != nullptr) deleteCostsChgMatrix(sp);
 		costChangeMatrix = new cellChange * [dimY];
 		for (int y = dimY - 1; y >= 0; y--) {
 			costChangeMatrix[y] = new cellChange[dimX];
@@ -1769,6 +1776,13 @@ int Landscape::getNbCostChanges(species_id sp) { return static_cast<int>(costsCh
 
 costChange Landscape::getCostChange(species_id sp, int i) {
 	return costsChanges.at(sp)[i];
+}
+
+void Landscape::deleteCostsChgMatrices() {
+
+	for (auto& sp : views::keys(costsChgMatrices)) {
+		deleteCostsChgMatrix(sp);
+	}
 }
 
 void Landscape::deleteCostsChgMatrix(species_id sp) {

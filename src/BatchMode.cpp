@@ -4897,11 +4897,11 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	if (ppLand.usesPatches) {
 		// record changes back to original landscape for multiple replicates
 		pLandscape->recordPatchChanges(0);
-		pLandscape->deletePatchChgMatrix();
+		pLandscape->deletePatchChgMatrices();
 	}
 	if (usesCosts) {
 		pLandscape->recordCostChanges(0);
-		pLandscape->deleteCostsChgMatrix();
+		pLandscape->deleteCostsChgMatrices();
 	}
 	return 0;
 }
@@ -6515,7 +6515,7 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 			if (landcode != 0) landOK = false;
 
 			if (paramsLand.dynamic) {
-				landcode = ReadDynLandFile(pLandscape, allSpecies);
+				landcode = ReadDynLandFile(pLandscape);
 				if (landcode != 0) landOK = false;
 			}
 			if (gLandType == 0) pLandscape->updateHabitatIndices();
