@@ -327,7 +327,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 						pLandscape->resetPatchLimits();
 					}
 
-					if (landChg.costfile != "NULL") { // apply any SMS cost changes
+					if (landChg.costfile != "none") { // apply any SMS cost changes
 
 						for (const species_id sp : views::keys(allSpecies)) {
 
@@ -813,7 +813,7 @@ void OutParameters(Landscape* pLandscape)
 			if (ppLand.usesPatches) {
 				outPar << "Patches  : " << chg.pchfile << endl;
 			}
-			if (chg.costfile != "none" && chg.costfile != "NULL") {
+			if (chg.costfile != "none") {
 				outPar << "Costs    : " << chg.costfile << endl;
 			}
 		}
