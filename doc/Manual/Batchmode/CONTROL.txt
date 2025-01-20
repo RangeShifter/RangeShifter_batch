@@ -22,7 +22,8 @@ InitialisationFile	InitialisationFile_name.txt
 
 ANY ADDITIONAL LINES ARE NOT READ, AND CAN THEREFORE BE USED FOR COMMENTS
 
-Example RangeShifter v2.0 Control File for a patch-based model of a stage-structured population dispersing by the kernel transfer option
+Example RangeShifter v3.0 Control File for a patch-based model 
+of a stage-structured population dispersing by the kernel transfer option
 
 DOCUMENTATION
 
@@ -34,7 +35,7 @@ BatchNum		≥ 0			Batch number, appears in all output file names
 
 PatchModel		0 / 1		0 = cell-based model, 1 = patch-based model
 
-Resolution		> 0			Landscape resolution (m)
+Resolution		> 0			Landscape resolution, i.e. cell size (in m)
 
 LandType		0 / 2 / 9	0 = imported raster map with unique habitat codes
 							2 = imported raster map with habitat quality

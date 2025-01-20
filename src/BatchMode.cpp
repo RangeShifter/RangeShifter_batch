@@ -3187,10 +3187,13 @@ int CheckTraitsFile(string indir)
 					nbErrors++;
 				}
 			}
-			else if (inInitDist == "#" && inInitParams != "#") {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If InitialAlleleDist is left blank, InitialAlleleParams must also be blank." << endl;
-				nbErrors++;
+			else if (inInitDist == "#") {
+				if (inInitParams != "#") {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "If InitialAlleleDist is left blank, InitialAlleleParams must also be blank." << endl;
+					nbErrors++;
+				}
+				// otherwise fine!
 			}
 			else {
 				BatchError(whichInputFile, lineNb, 0, " ");
@@ -3252,10 +3255,13 @@ int CheckTraitsFile(string indir)
 					nbErrors++;
 				}
 			}
-			else if (inInitDomDist == "#" && inInitDomParams != "#") {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If InitialDomDist is left blank, InitialDomParams must also be blank." << endl;
-				nbErrors++;
+			else if (inInitDomDist == "#") {
+				if (inInitDomParams != "#") {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "If InitialDomDist is left blank, InitialDomParams must also be blank." << endl;
+					nbErrors++;
+				}
+				// otherwise fine
 			}
 			else {
 				BatchError(whichInputFile, lineNb, 0, " ");
