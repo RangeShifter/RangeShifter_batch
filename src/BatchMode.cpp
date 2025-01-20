@@ -3190,7 +3190,7 @@ int CheckTraitsFile(string indir)
 			else if (inInitDist == "#") {
 				if (inInitParams != "#") {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "If InitialAlleleDist is left blank, InitialAlleleParams must also be blank." << endl;
+					batchLogOfs << "If InitialAlleleDist is left blank, InitialAlleleParams must also be blank." << endl;
 					nbErrors++;
 				}
 				// otherwise fine!
@@ -3258,7 +3258,7 @@ int CheckTraitsFile(string indir)
 			else if (inInitDomDist == "#") {
 				if (inInitDomParams != "#") {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "If InitialDomDist is left blank, InitialDomParams must also be blank." << endl;
+					batchLogOfs << "If InitialDomDist is left blank, InitialDomParams must also be blank." << endl;
 					nbErrors++;
 				}
 				// otherwise fine
