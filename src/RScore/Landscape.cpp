@@ -315,14 +315,13 @@ Landscape::Landscape(const speciesMap_t& allSpecies) {
 	epsGlobal = nullptr;
 
 	// Initialise maps for species-dependent members
-	vector<patchChange> emptyPatchChanges;
-	vector<costChange> emptyCostsChanges;
 	for (auto& sp : views::keys(allSpecies)) {
+		patchesList.emplace(sp, vector<Patch*>());
 		patchChgMatrices.emplace(sp, nullptr);
 		costsChgMatrices.emplace(sp, nullptr);
 		connectMatrices.emplace(sp, nullptr);
-		patchChanges.emplace(sp, emptyPatchChanges);
-		costsChanges.emplace(sp, emptyCostsChanges);
+		patchChanges.emplace(sp, vector<patchChange>());
+		costsChanges.emplace(sp, vector<costChange>());
 	}
 }
 
@@ -700,7 +699,7 @@ void Landscape::generatePatches(const speciesMap_t& allSpecies)
 
 		} // fractal or not
 
-		patchesList.emplace(sp, patches);
+		patchesList.at(sp) = patches;
 
 	} // loop through species
 }
@@ -814,7 +813,7 @@ void Landscape::allocatePatches(const speciesMap_t& allSpecies)
 
 		} // end of switch (rasterType)
 
-		patchesList.emplace(sp, patches);
+		patchesList.at(sp) = patches;
 
 	} // end of loop through species
 }
