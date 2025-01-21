@@ -295,62 +295,36 @@ public:
 
 	// functions to handle species distributions
 
-	int newDistribution(
-		Species*,	// pointer to Species
-		string		// name of initial distribution file
-	);
-	void setDistribution(
-		Species*, // pointer to Species
-		int				// no. of distribution squares to initialise
-	);
-	bool isInInitialDist( // Specified cell matches one of the distn cells to be initialised?
-		Species*, // pointer to Species
-		locn			// structure holding co-ordinates of Cell
-	);
-	void deleteDistribution(
-		Species*  // pointer to Species
-	);
-	int distnCount(void);	// Return no. of initial distributions in the Landscape
-	int distCellCount(    // Return no. of distribution cells in an initial distribution
-		int // index no. of InitDist in distns vector
-	);
-	locn getDistnCell( // Get co-ordinates of a specified cell in a specified initial distn
-		int,	// index no. of InitDist in distns vector
-		int		// index no. of DistCell in cells vector
-	);
-	locn getSelectedDistnCell(	// Get co-ordinates of a specified cell in a specified initial distn
-		// Returns negative co-ordinates if the cell is not selected
-		int,  // index no. of InitDist in distns vector
-		int   // index no. of DistCell in cells vector
-	);
-	locn getDistnDimensions(	// Get the dimensions of a specified initial distribution
-		int   // index no. of InitDist in distns vector
-	);
-	void setDistnCell( // Set a cell in a specified init distn (by posn in cells vector)
-		int,  // index no. of InitDist in distns vector
-		int,  // index no. of DistCell in cells vector
-		bool	// value to be set
-	);
-	void setDistnCell( // Set a cell in a specified init distn (by given co-ordinates)
-		int,  // index no. of InitDist in distns vector
-		locn, // structure holding co-ordinates of DistCell
-		bool  // value to be set
-	);
-	void resetDistribution(
-		Species*	// pointer to Species
-	);
+	int newDistribution(Species* pSpecies, string distFileName);
+	void setDistribution(Species* pSpecies, int nInit);
+	// Specified cell matches one of the distn cells to be initialised?
+	bool isInInitialDist(Species* pSpecies, locn loc);
+	void deleteDistribution(Species* pSpecies);
+	int distnCount();	// Return no. of initial distributions in the Landscape
+	// Return no. of distribution cells in an initial distribution
+	int distCellCount(int dist);
+	// Get co-ordinates of a specified cell in a specified initial distn
+	locn getDistnCell(int dist, int ix);
+
+	// Get co-ordinates of a specified cell in a specified initial distn
+	// Returns negative co-ordinates if the cell is not selected
+	locn getSelectedDistnCell(int dist, int ix);
+	// Get the dimensions of a specified initial distribution
+	locn getDistnDimensions(int initDistIx);
+	// Set a cell in a specified init distn (by posn in cells vector)
+	void setDistnCell(int initDistIx, int cellIx, bool isInitial);
+	// Set a cell in a specified init distn (by given co-ordinates)
+	void setDistnCell(int initDistIx, locn cellLoc, bool isInitial);
+	void resetDistribution(Species*	pSpecies);
 
 	// functions to handle initialisation cells
 
-	int initCellCount(void);
-	void addInitCell( // Create a new DistCell and add to the initcells vector
-		int,	// x co-ordinate
-		int   // y co-ordinate
-	);
-	locn getInitCell(
-		int   // index no. of DistCell in initcells vector
-	);
-	void clearInitCells(void);
+	int initCellCount();
+
+	// Create a new DistCell and add to the initcells vector
+	void addInitCell(int x,	int y);
+	locn getInitCell(int distCellIx);
+	void clearInitCells();
 
 	// functions to handle connectivity matrix
 
@@ -369,17 +343,15 @@ public:
 	// functions to handle input and output
 
 	int readLandscape(
-		int,		// fileNum == 0 for (first) habitat file and optional patch file
-		// fileNum > 0  for subsequent habitat files under the %cover option
-		string,	// habitat file name
-		string,	// patch file name
-		string	// cost file name (may be NULL)
+		int filenum,		// fileNum == 0 for (first) habitat file and optional patch file
+							// fileNum > 0  for subsequent habitat files under the %cover option
+		string habitatFileName,
+		string patchFileName,
+		string costFileName
 	);
-	int readCosts(
-		string	// costs file name
-	);
-	void resetVisits(void);
-	void outVisits(int, int);	// save SMS path visits map to raster text file
+	int readCosts(string costFileName);
+	void resetVisits();
+	void outVisits(int rep, int landNb);	// save SMS path visits map to raster text file
 
 private:
 	bool generated;				// artificially generated?
