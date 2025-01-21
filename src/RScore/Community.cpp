@@ -128,8 +128,6 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 
 				break;
 
-			case 2:	// manually selected patches/cells
-				break;
 			} // end of switch (init.freeType)
 
 			for (auto pchNum : selectedPatches) {
