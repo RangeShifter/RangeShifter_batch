@@ -205,11 +205,10 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 				int ninds = paramsInit->getNbInitInds();
 				while (indIx < ninds && iind.year <= year) {
 					initInd iind = paramsInit->getInitInd(indIx);
-					while (iind.year == year) {
+					while (iind.year == year && iind.speciesID == sp) {
 						if (ppLand.usesPatches) {
 							if (pLandscape->existsPatch(sp, iind.patchID)) {
 								pPatch = pLandscape->findPatch(sp, iind.patchID);
-								Species* pSpecies = findSpecies(iind.speciesID);
 								if (pPatch->isSuitable()) {
 									initialInd(pLandscape, pSpecies, pPatch, pPatch->getRandomCell(), indIx);
 								}
@@ -221,7 +220,6 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 								pPatch = pCell->getPatch(sp);
 								if (pPatch != nullptr) {
 									if (pPatch->isSuitable()) {
-										Species* pSpecies = findSpecies(iind.speciesID);
 										initialInd(pLandscape, pSpecies, pPatch, pCell, indIx);
 									}
 								}
