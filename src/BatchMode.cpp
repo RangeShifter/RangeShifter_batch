@@ -57,6 +57,8 @@ int gFirstSimNb = 0; // not great, globals should not be modified.
 int fileNtraits; // no. of traits defined in genetic architecture file
 bool gHasGenetics = true;
 
+set<int> gSimNbs; // record of simulation numbers to check input file use the same numbers
+
 // Track trait-relevant options to check for coherency across input files, 
 // e.g. if emig file says emigration is indvar, trait file should have d0 entry
 map<int, TraitInputOptions> gTraitOptions;
@@ -740,6 +742,9 @@ int CheckParameterFile()
 		nSimuls++;
 	}
 	while (simNb != -98765) {
+
+		// Record simulation numbers to cross-check other files
+		gSimNbs.insert(simNb);
 
 		// Initialise trait option map with simulation numbers
 		gTraitOptions.emplace(simNb, TraitInputOptions());
@@ -1699,6 +1704,13 @@ int CheckStageFile(string indir)
 	}
 	prevsimul = inint;
 	while (inint != -98765) {
+
+		if (!gSimNbs.contains(inint)) {
+			BatchError(filetype, line, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			errors++;
+		}
+
 		simuls++;
 		bStageStructFile >> inint;
 		if (inint < 0 || inint > 1) { BatchError(filetype, line, 1, "PostDestructn"); errors++; }
@@ -2121,7 +2133,7 @@ int CheckWeightsFile(string filetype)
 }
 
 //---------------------------------------------------------------------------
-int CheckEmigFile(void)
+int CheckEmigFile()
 {
 	string header;
 	int simNb;
@@ -2172,6 +2184,13 @@ int CheckEmigFile(void)
 	}
 
 	while (readNextLine) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+		}
+
 		// read and validate columns relating to stage and sex-dependency and to IIV
 		bEmigrationFile >> inDensDep >> inUseFullKern >> inStgDep >> inSexDep;
 		bEmigrationFile >> inIndVar >> inEmigStg >> inStage >> inSex;
@@ -2438,10 +2457,17 @@ int CheckTransferFile(string indir)
 	bTransferFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
-		BatchError(whichFile, whichLine, 111, "Simulation"); errors++;
+		BatchError(whichFile, whichLine, 111, "Simulation"); 
+		errors++;
 	}
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			errors++;
+		}
 
 		switch (gTransferType) {
 
@@ -2771,7 +2797,7 @@ int CheckTransferFile(string indir)
 }
 
 //---------------------------------------------------------------------------
-int CheckSettleFile(void)
+int CheckSettleFile()
 {
 	string header;
 	int simNb, inStageDep, inSexDep, inStage, inSex, inSettleType;
@@ -2821,6 +2847,13 @@ int CheckSettleFile(void)
 	}
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+		}
+
 		if (gTransferType == 0)
 		{ // dispersal kernel
 			// read and validate columns relating to stage and sex-dependency (NB no IIV here)
@@ -3004,7 +3037,14 @@ int CheckTraitsFile(string indir)
 		nbErrors++;
 	}
 	int nbRowsToRead = 0;
+
 	while (!stopReading) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+		}
 
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 		bTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions 
@@ -3909,6 +3949,13 @@ int CheckGeneticsFile(string inputDirectory) {
 		nbErrors++;
 	}
 	while (simNb != -98765) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+		}
+
 		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutWeirCockerham >>
 			inOutWeirHill >> inOutStartGenetics >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
 			>> inNIndsToSample >> inStages;
@@ -4182,6 +4229,13 @@ int CheckInitFile(string indir)
 	}
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(filetype, line, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			errors++;
+		}
+
 		current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, 0, true, false);
 		if (current.isNewSim) simuls++;
 		errors += current.errors;
@@ -4359,7 +4413,7 @@ int CheckInitFile(string indir)
 }
 
 //---------------------------------------------------------------------------
-int CheckInitIndsFile(void) {
+int CheckInitIndsFile() {
 	string header;
 	int year, species, patchID, x, y, ninds, sex, age, stage, prevyear;
 
@@ -4370,7 +4424,8 @@ int CheckInitIndsFile(void) {
 	bInitIndsFile >> header; if (header != "Year") errors++;
 	bInitIndsFile >> header; if (header != "Species") errors++;
 	if (patchmodel) {
-		bInitIndsFile >> header; if (header != "PatchID") errors++;
+		bInitIndsFile >> header; 
+		if (header != "PatchID") errors++;
 	}
 	else {
 		bInitIndsFile >> header; if (header != "X") errors++;
