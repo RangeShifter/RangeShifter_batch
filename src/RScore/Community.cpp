@@ -419,6 +419,7 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 	if (pPop == nullptr) {
 		pPop = new Population(pSpecies, pPatch, 0, pLandscape->getLandParams().resol);
 		pPatch->setPop(pPop);
+		popns.push_back(pPop);
 	}
 
 	// create new individual
