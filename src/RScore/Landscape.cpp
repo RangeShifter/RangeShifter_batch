@@ -818,16 +818,16 @@ void Landscape::allocatePatches(const speciesMap_t& allSpecies)
 	} // end of loop through species
 }
 
-Patch* Landscape::addNewPatch(species_id id, int num, species_id sp)
+Patch* Landscape::addNewPatch(species_id sp, int num)
 {
-	patchesList.at(id).push_back(new Patch(num, num, sp));
-	return patchesList.at(id)[patchesList.at(id).size() - 1];
+	patchesList.at(sp).push_back(new Patch(num, num, sp));
+	return patchesList.at(sp)[patchesList.at(sp).size() - 1];
 }
 
-Patch* Landscape::addNewPatch(species_id id, int seqnum, int num, species_id sp)
+Patch* Landscape::addNewPatch(species_id sp, int seqnum, int num)
 {
-	patchesList.at(id).push_back(new Patch(seqnum, num, sp));
-	return patchesList.at(id)[patchesList.at(id).size() - 1];
+	patchesList.at(sp).push_back(new Patch(seqnum, num, sp));
+	return patchesList.at(sp)[patchesList.at(sp).size() - 1];
 }
 
 void Landscape::resetPatchLimits() {
@@ -2359,11 +2359,12 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 							cout << "";
 						}
 						
-						pPatch = patchCode == 0 ? nullptr : ( // matrix cell
-							existsPatch(sp, patchCode) ?
-							findPatch(sp, patchCode) :
-							addNewPatch(sp, seq++, patchCode)
-							);
+						pPatch = nullptr;
+						if (patchCode != 0) { // not matrix cell
+							pPatch = findPatch(sp, patchCode);
+							if (pPatch == nullptr) // doesn't exist yet
+								addNewPatch(sp, seq++, patchCode);
+						}
 						addNewCellToPatch(pPatch, x, y, habFloat);
 					}
 					else { // cell-based model
