@@ -204,7 +204,7 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 				iind.year = 0;
 				int ninds = paramsInit->getNbInitInds();
 				while (indIx < ninds && iind.year <= year) {
-					initInd iind = paramsInit->getInitInd(indIx);
+					iind = paramsInit->getInitInd(indIx);
 					while (iind.year == year && iind.speciesID == sp) {
 						if (ppLand.usesPatches) {
 							if (pLandscape->existsPatch(sp, iind.patchID)) {
