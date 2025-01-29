@@ -328,7 +328,7 @@ void testTransferCRW() {
 	ls.allocatePatches(&sp);
 	ls.updateCarryingCapacity(&sp, 0, 0);
 	// Init cell is NOT in natal patch
-	Patch* natalPatch = new Patch(0, 0);
+	Patch* natalPatch = new Patch(0, 0, spID);
 	init_patch = init_cell->getPatch(sp);
 
 	// Step length too short
@@ -692,7 +692,7 @@ void testIndividual() {
 		// 2. 0.65 > freq(C,D have same alleles) > 0.35 despite being adjacent because of chrom. break
 		// (both freq. have p < 0.001 from a binomial with p 0.5 and 100 trials) 
 	{
-		Patch* pPatch = new Patch(0, 0);
+		Patch* pPatch = new Patch(0, 0, spID);
 		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 		const float recombinationRate = 0.01;
@@ -750,7 +750,7 @@ void testIndividual() {
 	/// Set up a sex-dependent emigration probability with male and female loci
 	/// Emigration probability is 1 initially, but female trait mutates.
 	{
-		Patch* pPatch = new Patch(0, 0);
+		Patch* pPatch = new Patch(0, 0, spID);
 		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 		// Species-level paramters
@@ -842,7 +842,7 @@ void testIndividual() {
 		float spEmigProb = 1.0;
 		float indEmigProb = 0.0;
 
-		Patch* pPatch = new Patch(0, 0);
+		Patch* pPatch = new Patch(0, 0, spID);
 		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 		// Species-level paramters
@@ -912,7 +912,7 @@ void testIndividual() {
 	// Individuals with genetic fitness = 1 are always viable
 	// Individuals with genetic fitness = 0 are never viable
 	{
-		Patch* pPatch = new Patch(0, 0);
+		Patch* pPatch = new Patch(0, 0, spID);
 		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 		// Species-level paramters
@@ -965,7 +965,7 @@ void testIndividual() {
 
 	// A largely dominant alleles overrides the expression of its homologue
 	{
-		Patch* pPatch = new Patch(0, 0);
+		Patch* pPatch = new Patch(0, 0, spID);
 		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 		// Species-level paramters
@@ -1028,7 +1028,7 @@ void testIndividual() {
 			const bool isDiploid{ true }; // haploid, simpler check
 			const float mutationRate = 0.0; // no mutations
 
-			Patch* pPatch = new Patch(0, 0);
+			Patch* pPatch = new Patch(0, 0, spID);
 			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 			// Genome-level settings
@@ -1150,7 +1150,7 @@ void testIndividual() {
 			const bool isDiploid{ true }; // haploid, simpler check
 			const float mutationRate = 0.0; // no mutations
 
-			Patch* pPatch = new Patch(0, 0);
+			Patch* pPatch = new Patch(0, 0, spID);
 			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 			// Genome-level settings
@@ -1232,7 +1232,7 @@ void testIndividual() {
 			const bool isDiploid{ true }; // haploid, simpler check
 			const float mutationRate = 0.0; // no mutations
 
-			Patch* pPatch = new Patch(0, 0);
+			Patch* pPatch = new Patch(0, 0, spID);
 			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 			// Genome-level settings

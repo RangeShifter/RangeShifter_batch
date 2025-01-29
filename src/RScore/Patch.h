@@ -84,7 +84,7 @@ struct patchLimits {
 
 class Patch {
 public:
-	Patch(int seqnum, int num);
+	Patch(int seqnum, int num, species_id whichSpecies);
 	~Patch();
 
 	int getSeqNum();
@@ -115,6 +115,8 @@ public:
 	Population* getPop();
 	void resetPop();
 
+	species_id getSpeciesID() const { return sp; };
+
 	// Record the presence of a potential settler within the Patch
 	void incrPossSettler(int sex);
 	// Get number of a potential settlers within the Patch
@@ -143,16 +145,17 @@ public:
 #endif
 
 private:
-	int patchSeqNum;// sequential patch number - patch 0 is reserved for the inter-patch matrix
-	int patchNum; 	// patch number as supplied by the user (not forced to be sequential)
+	int patchSeqNum;	// sequential patch number - patch 0 is reserved for the inter-patch matrix
+	int patchNum; 		// patch number as supplied by the user (not forced to be sequential)
 	int nCells;			// no. of cells in the patch
 	int xMin, xMax, yMin, yMax; 	// min and max cell co-ordinates
-	int x, y;				// centroid co-ordinates (approx.)
-	Population* pPop; // pointer to population associated with the patch
+	int x, y;						// centroid co-ordinates (approx.)
+	Population* pPop;	// pointer to population associated with the patch
+	species_id sp;		// which species the patch belongs to
 	float localK;		// patch carrying capacity (individuals)
 	bool changed;
 	short nTemp[gMaxNbSexes];	// no. of potential settlers in each sex
-	vector<int> occupancy;	// pointer to occupancy array
+	vector<int> occupancy;		// pointer to occupancy array
 
 	std::vector <Cell*> cells;
 };

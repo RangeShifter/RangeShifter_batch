@@ -42,8 +42,7 @@ Cell::Cell(int xx, int yy, Patch* patch, int hab, set<species_id> spLabels)
 		patches.emplace(sp, nullptr);
 	}
 	if (patch != nullptr) {
-		species_id sp = patch->getPop()->getSpecies()->getID();
-		patches.at(sp) = patch;
+		patches.at(patch->getSpeciesID()) = patch;
 	}
 	envVal = 1.0; // default - no effect of any gradient
 	envDev = eps = 0.0;
@@ -62,8 +61,7 @@ Cell::Cell(int xx, int yy, Patch* patch, float hab, set<species_id> spLabels)
 		patches.emplace(sp, nullptr);
 	}
 	if (patch != nullptr) {
-		species_id sp = patch->getPop()->getSpecies()->getID();
-		patches.at(sp) = patch;
+		patches.at(patch->getSpeciesID()) = patch;
 	}
 	envVal = 1.0; // default - no effect of any gradient
 	envDev = eps = 0.0;

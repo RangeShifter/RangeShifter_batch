@@ -29,9 +29,10 @@
 
 //---------------------------------------------------------------------------
 
-Patch::Patch(int seqnum, int num)
+Patch::Patch(int seqnum, int num, species_id whichSpecies)
 {
 	pPop = nullptr;
+	sp = whichSpecies;
 	patchSeqNum = seqnum; 
 	patchNum = num; 
 	nCells = 0;

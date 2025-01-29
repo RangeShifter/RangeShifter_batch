@@ -228,8 +228,8 @@ public:
 	void setCellArray();
 	void generatePatches(const speciesMap_t& allSpecies); 		// create an artificial landscape
 	void allocatePatches(const speciesMap_t& allSpecies);// create patches for a cell-based landscape
-	Patch* addNewPatch(species_id id, int num);
-	Patch* addNewPatch(species_id id, int seqnum, int num);
+	Patch* addNewPatch(species_id id, int num, species_id sp);
+	Patch* addNewPatch(species_id id, int seqnum, int num, species_id sp);
 
 	void resetPatchLimits();
 	void addNewCellToLand(int x, int y, float habQual);
