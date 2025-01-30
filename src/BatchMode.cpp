@@ -41,7 +41,7 @@ ofstream batchLog;
 ifstream parameters;
 ifstream ssfile, tmfile, fdfile, ddfile, sdfile;
 ifstream emigFile, transFile, settFile, initFile, initIndsFile;
-ifstream landfile, dynlandfile;
+ifstream landfile, dynLandIfs;
 ifstream ifsGenetics, ifsTraits;
 
 // global variables passed between parsing functions...
@@ -4891,69 +4891,66 @@ int ReadLandFile(Landscape* pLandscape)
 //---------------------------------------------------------------------------
 int ReadDynLandFile(Landscape* pLandscape) {
 
-	string landchangefile, patchchangefile, costchangefile;
-	int change, imported;
-	int nchanges = 0;
+	string landChangeFile, patchChangeFile, costChangeFile;
+	int changeNb;
+	int nbChanges = 0;
 	landChange chg;
 	landParams ppLand = pLandscape->getLandParams();
-	string fname = paramsSim->getDir(1) + name_dynland;
+	string pathToFile = paramsSim->getDir(1) + name_dynland;
 
-	dynlandfile.open(fname.c_str());
-	if (dynlandfile.is_open()) {
+	dynLandIfs.open(pathToFile.c_str());
+	if (dynLandIfs.is_open()) {
 		string header;
-		int nheaders = 5;
-		for (int i = 0; i < nheaders; i++) 
-			dynlandfile >> header;
+		int nbHeaders = 5;
+		for (int i = 0; i < nbHeaders; i++) 
+			dynLandIfs >> header;
 	}
 	else {
-		dynlandfile.clear();
+		dynLandIfs.clear();
 		return 72727;
 	}
 
-	// read data lines
-	change = -98765;
-	dynlandfile >> change; // first change number
-	while (change != -98765) {
-		chg.chgnum = change;
-		dynlandfile >> chg.chgyear >> landchangefile >> patchchangefile >> costchangefile;
-		chg.habfile = paramsSim->getDir(1) + landchangefile;
-		chg.pchfile = paramsSim->getDir(1) + patchchangefile;
-		if (costchangefile == "NULL") 
-			chg.costfile = "none";
-		else 
-			chg.costfile = paramsSim->getDir(1) + costchangefile;
-		nchanges++;
+	// Read data lines
+	changeNb = -98765;
+	dynLandIfs >> changeNb; // first change number
+	while (changeNb != -98765) {
+		chg.chgNb = changeNb;
+		dynLandIfs >> chg.chgYear >> landChangeFile >> patchChangeFile >> costChangeFile;
+		chg.pathHabFile = paramsSim->getDir(1) + landChangeFile;
+		chg.pathPatchFile = paramsSim->getDir(1) + patchChangeFile;
+		chg.pathCostFile = costChangeFile == "NULL" ? "none" 
+			: paramsSim->getDir(1) + costChangeFile;
+		nbChanges++;
 		pLandscape->addLandChange(chg);
-		// read first field on next line
-		change = -98765;
-		dynlandfile >> change;
-		if (dynlandfile.eof()) {
-			change = -98765;
+
+		// Read first field on next line
+		changeNb = -98765;
+		dynLandIfs >> changeNb;
+		if (dynLandIfs.eof()) {
+			changeNb = -98765;
 		}
 	}
 
-	dynlandfile.close();
-	dynlandfile.clear();
+	dynLandIfs.close();
+	dynLandIfs.clear();
 
 	// read landscape change maps
 	if (ppLand.patchModel) {
 		pLandscape->createPatchChgMatrix();
 	}
-	if (costchangefile != "NULL") {
+	bool usesCosts = costChangeFile != "NULL";
+	if (usesCosts) {
 		pLandscape->createCostsChgMatrix();
 	}
-	for (int i = 0; i < nchanges; i++) {
-		if (costchangefile == "NULL") 
-			imported = pLandscape->readLandChange(i, false);
-		else 
-			imported = pLandscape->readLandChange(i, true);
+	for (int i = 0; i < nbChanges; i++) {
+		int imported = pLandscape->readLandChange(i, usesCosts);
 		if (imported != 0) {
 			return imported;
 		}
 		if (ppLand.patchModel) {
 			pLandscape->recordPatchChanges(i + 1);
 		}
-		if (costchangefile != "NULL") {
+		if (usesCosts) {
 			pLandscape->recordCostChanges(i + 1);
 		}
 	}
@@ -4962,7 +4959,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 		pLandscape->recordPatchChanges(0);
 		pLandscape->deletePatchChgMatrix();
 	}
-	if (costchangefile != "NULL") {
+	if (usesCosts) {
 		pLandscape->recordCostChanges(0);
 		pLandscape->deleteCostsChgMatrix();
 	}
