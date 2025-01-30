@@ -204,7 +204,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		pLandscape->updateCarryingCapacity(allSpecies, 0, 0);
 		pComm->initialise(allSpecies, -1);
 		bool updateland = false;
-		int landIx = 0; // landscape change index
+		int chgNb = 0; // landscape change index
 
 #if BATCH && RS_RCPP && !R_CMD
 		Rcpp::Rcout << "RunModel(): completed initialisation " << endl;
@@ -292,7 +292,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					mustUpdateK = true;
 				}
 				if (ppLand.dynamic && yr == landChg.chgyear) { // apply landscape change
-					landIx = landChg.chgnum;
+					chgNb = landChg.chgnum;
 					updateland = mustUpdateK = true;
 
 					if (ppLand.usesPatches) { // apply any patch changes
@@ -303,20 +303,20 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 							int nbPatchChanges = pLandscape->numPatchChanges(sp);
 							pchChange = pLandscape->getPatchChange(sp, indexPatchChange++);
 
-							while (pchChange.chgnum <= landIx 
+							while (pchChange.chgNb <= chgNb 
 								&& indexPatchChange <= nbPatchChanges) {
 
 								// Move cell from original patch to new patch
 								Cell* pCell = pLandscape->findCell(pchChange.x, pchChange.y);
-								if (pchChange.oldpatch != 0) { // not matrix
-									pPatch = pLandscape->findPatch(sp, pchChange.oldpatch);
+								if (pchChange.oldPatch != 0) { // not matrix
+									pPatch = pLandscape->findPatch(sp, pchChange.oldPatch);
 									pPatch->removeCell(pCell);
 								}
-								if (pchChange.newpatch == 0) { // matrix
+								if (pchChange.newPatch == 0) { // matrix
 									pPatch = nullptr;
 								}
 								else {
-									pPatch = pLandscape->findPatch(sp, pchChange.newpatch);
+									pPatch = pLandscape->findPatch(sp, pchChange.newPatch);
 									pPatch->addCell(pCell, pchChange.x, pchChange.y);
 								}
 								pCell->setPatch(sp, pPatch);
@@ -334,7 +334,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 							int ncostchanges = pLandscape->getNbCostChanges(sp);
 							costChange = pLandscape->getCostChange(sp, indexCostChange++);
 							
-							while (costChange.chgnum <= landIx && indexCostChange <= ncostchanges) {
+							while (costChange.chgnum <= chgNb && indexCostChange <= ncostchanges) {
 								Cell* pCell = pLandscape->findCell(costChange.x, costChange.y);
 								if (pCell != nullptr) pCell->setCost(costChange.newcost);
 								costChange = pLandscape->getCostChange(sp, indexCostChange++);
@@ -343,8 +343,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 							pLandscape->resetEffCosts();
 						}
 					}
-					if (landIx < pLandscape->numLandChanges()) { // get next change
-						landChg = pLandscape->getLandChange(landIx);
+					if (chgNb < pLandscape->numLandChanges()) { // get next change
+						landChg = pLandscape->getLandChange(chgNb);
 					}
 					else {
 						landChg.chgyear = 9999999;
@@ -353,7 +353,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			} // end of environmental gradient, etc.
 
 			if (mustUpdateK) {
-				pLandscape->updateCarryingCapacity(allSpecies, yr, landIx);
+				pLandscape->updateCarryingCapacity(allSpecies, yr, chgNb);
 			}
 
 			if (sim.outConnect && ppLand.usesPatches)
@@ -365,7 +365,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				}
 				// apply effects of landscape change to species present in changed patches
 				pComm->scanUnsuitablePatches();
-				pComm->dispersal(landIx, yr);
+				pComm->dispersal(chgNb, yr);
 			}
 			if (init.restrictRange) {
 				// remove any population from region removed from restricted range
@@ -420,7 +420,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 				// Dispersal
 				pComm->emigration();
-				pComm->dispersal(landIx, yr);
+				pComm->dispersal(chgNb, yr);
 
 				// Draw survival and development
 				bool drawJuvs = true;
@@ -518,19 +518,19 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				int nbPatchChanges = pLandscape->numPatchChanges(sp);
 				patchChange patchchange = pLandscape->getPatchChange(sp, indexPatchChange++);
 				
-				while (patchchange.chgnum <= 666666 
+				while (patchchange.chgNb <= 666666 
 					&& indexPatchChange <= nbPatchChanges) {
 					// move cell from original patch to new patch
 					Cell* pCell = pLandscape->findCell(patchchange.x, patchchange.y);
-					if (patchchange.oldpatch != 0) { // not matrix
-						pPatch = pLandscape->findPatch(sp, patchchange.oldpatch);
+					if (patchchange.oldPatch != 0) { // not matrix
+						pPatch = pLandscape->findPatch(sp, patchchange.oldPatch);
 						pPatch->removeCell(pCell);
 					}
-					if (patchchange.newpatch == 0) { // matrix
+					if (patchchange.newPatch == 0) { // matrix
 						pPatch = nullptr;
 					}
 					else {
-						pPatch = pLandscape->findPatch(sp, patchchange.newpatch);
+						pPatch = pLandscape->findPatch(sp, patchchange.newPatch);
 						pPatch->addCell(pCell, patchchange.x, patchchange.y);
 					}
 					pCell->setPatch(sp, pPatch);

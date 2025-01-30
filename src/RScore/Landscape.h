@@ -190,7 +190,7 @@ struct landChange {
 	string habfile, pchfile, costfile;
 };
 struct patchChange {
-	int chgnum, x, y, oldpatch, newpatch;
+	int chgNb, x, y, oldPatch, newPatch;
 };
 struct costChange {
 	int chgnum, x, y, oldcost, newcost;

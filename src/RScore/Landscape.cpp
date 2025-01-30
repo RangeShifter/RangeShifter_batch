@@ -1452,8 +1452,8 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 	case 2: // habitat quality
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
-				habFloat = badHabFloat;
 
+				habFloat = badHabFloat;
 #if RS_RCPP
 				if (ifsHabMap >> habFloat) {
 					habCode = static_cast<int>(habFloat);
@@ -1658,11 +1658,11 @@ void Landscape::resetPatchChanges() {
 
 				if (patchChangeMatrix[y][x].originVal != patchChangeMatrix[y][x].nextVal) {
 					// record change of patch for current cell
-					chg.chgnum = 666666;
+					chg.chgNb = 666666;
 					chg.x = x;
 					chg.y = y;
-					chg.oldpatch = patchChangeMatrix[y][x].nextVal;
-					chg.newpatch = patchChangeMatrix[y][x].originVal;
+					chg.oldPatch = patchChangeMatrix[y][x].nextVal;
+					chg.newPatch = patchChangeMatrix[y][x].originVal;
 					patchChanges.at(sp).push_back(chg);
 				}
 				// reset cell for next landscape change
@@ -1673,7 +1673,7 @@ void Landscape::resetPatchChanges() {
 	}
 }
 
-void Landscape::recordPatchChanges(int landIx) {
+void Landscape::recordPatchChanges(int chgIndex) {
 	patchChange chg;
 
 	for (auto& [sp, patchChangeMatrix] : patchChgMatrices) {
@@ -1682,11 +1682,11 @@ void Landscape::recordPatchChanges(int landIx) {
 			for (int x = 0; x < dimX; x++) {
 
 				if (patchChangeMatrix[y][x].nextVal != patchChangeMatrix[y][x].currentVal) {
-					chg.chgnum = landIx;
+					chg.chgNb = chgIndex;
 					chg.x = x;
 					chg.y = y;
-					chg.oldpatch = patchChangeMatrix[y][x].currentVal;
-					chg.newpatch = patchChangeMatrix[y][x].nextVal;
+					chg.oldPatch = patchChangeMatrix[y][x].currentVal;
+					chg.newPatch = patchChangeMatrix[y][x].nextVal;
 					patchChanges.at(sp).push_back(chg);
 				}
 				// reset cell for next landscape change

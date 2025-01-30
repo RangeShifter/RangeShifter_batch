@@ -4835,7 +4835,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 
 	string landchangefile, patchchangefile, costchangefile;
 	int change, imported;
-	int nchanges = 0;
+	int nbChanges = 0;
 	bool usesCosts = false;
 	landChange chg;
 	landParams ppLand = pLandscape->getLandParams();
@@ -4865,7 +4865,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 		usesCosts = costchangefile != "NULL";
 		chg.costfile = usesCosts ? paramsSim->getDir(1) + costchangefile : "none";
 
-		nchanges++;
+		nbChanges++;
 		pLandscape->addLandChange(chg);
 
 		// read first field on next line
@@ -4886,18 +4886,18 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	if (usesCosts) {
 		pLandscape->createCostsChgMatrix();
 	}
-	for (int i = 0; i < nchanges; i++) {
+	for (int chgIndex = 0; chgIndex < nbChanges; chgIndex++) {
 		
-		imported = pLandscape->readLandChange(i, usesCosts);
+		imported = pLandscape->readLandChange(chgIndex, usesCosts);
 		if (imported != 0) {
 			return imported;
 		}
 
 		if (ppLand.usesPatches) {
-			pLandscape->recordPatchChanges(i + 1);
+			pLandscape->recordPatchChanges(chgIndex + 1);
 		}
 		if (usesCosts) {
-			pLandscape->recordCostChanges(i + 1);
+			pLandscape->recordCostChanges(chgIndex + 1);
 		}
 	}
 	if (ppLand.usesPatches) {
