@@ -1648,8 +1648,32 @@ void Landscape::createPatchChgMatrix() {
 	}
 }
 
-void Landscape::recordPatchChanges(int landIx) {
+void Landscape::resetPatchChanges() {
 
+	patchChange chg;
+	for (auto& [sp, patchChangeMatrix] : patchChgMatrices) {
+		
+		for (int y = dimY - 1; y >= 0; y--) {
+			for (int x = 0; x < dimX; x++) {
+
+				if (patchChangeMatrix[y][x].originVal != patchChangeMatrix[y][x].nextVal) {
+					// record change of patch for current cell
+					chg.chgnum = 666666;
+					chg.x = x;
+					chg.y = y;
+					chg.oldpatch = patchChangeMatrix[y][x].nextVal;
+					chg.newpatch = patchChangeMatrix[y][x].originVal;
+					patchChanges.at(sp).push_back(chg);
+				}
+				// reset cell for next landscape change
+				patchChangeMatrix[y][x].currentVal = patchChangeMatrix[y][x].nextVal;
+			}
+		}
+
+	}
+}
+
+void Landscape::recordPatchChanges(int landIx) {
 	patchChange chg;
 
 	for (auto& [sp, patchChangeMatrix] : patchChgMatrices) {
@@ -1657,27 +1681,13 @@ void Landscape::recordPatchChanges(int landIx) {
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
 
-				if (landIx == 0) { // reset to original landscape
-					if (patchChangeMatrix[y][x].originVal != patchChangeMatrix[y][x].nextVal) {
-						// record change of patch for current cell
-						chg.chgnum = 666666;
-						chg.x = x;
-						chg.y = y;
-						chg.oldpatch = patchChangeMatrix[y][x].nextVal;
-						chg.newpatch = patchChangeMatrix[y][x].originVal;
-						patchChanges.at(sp).push_back(chg);
-					}
-				}
-				else { // any other change
-					if (patchChangeMatrix[y][x].nextVal != patchChangeMatrix[y][x].currentVal) {
-						// record change of patch for current cell
-						chg.chgnum = landIx;
-						chg.x = x;
-						chg.y = y;
-						chg.oldpatch = patchChangeMatrix[y][x].currentVal;
-						chg.newpatch = patchChangeMatrix[y][x].nextVal;
-						patchChanges.at(sp).push_back(chg);
-					}
+				if (patchChangeMatrix[y][x].nextVal != patchChangeMatrix[y][x].currentVal) {
+					chg.chgnum = landIx;
+					chg.x = x;
+					chg.y = y;
+					chg.oldpatch = patchChangeMatrix[y][x].currentVal;
+					chg.newpatch = patchChangeMatrix[y][x].nextVal;
+					patchChanges.at(sp).push_back(chg);
 				}
 				// reset cell for next landscape change
 				patchChangeMatrix[y][x].currentVal = patchChangeMatrix[y][x].nextVal;
@@ -1733,6 +1743,32 @@ void Landscape::createCostsChgMatrix()
 	}
 }
 
+void Landscape::resetCostChanges() {
+
+	for (auto& [sp, costChangeMatrix] : costsChgMatrices) {
+
+		if (costChangeMatrix == nullptr) return; // should not occur
+		costChange chg;
+
+		for (int y = dimY - 1; y >= 0; y--) {
+			for (int x = 0; x < dimX; x++) {
+
+				if (costChangeMatrix[y][x].originVal != costChangeMatrix[y][x].nextVal) {
+					// record change of cost for current cell
+					chg.chgnum = 666666;
+					chg.x = x;
+					chg.y = y;
+					chg.oldcost = costChangeMatrix[y][x].nextVal;
+					chg.newcost = costChangeMatrix[y][x].originVal;
+					costsChanges.at(sp).push_back(chg);
+				}
+				// reset cell for next landscape change
+				costChangeMatrix[y][x].currentVal = costChangeMatrix[y][x].nextVal;
+			}
+		}
+	}
+}
+
 void Landscape::recordCostChanges(int landIx) {
 
 	for (auto& [sp, costChangeMatrix] : costsChgMatrices) {
@@ -1743,25 +1779,12 @@ void Landscape::recordCostChanges(int landIx) {
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
 
-				if (landIx == 0) { // reset to original landscape
-					if (costChangeMatrix[y][x].originVal != costChangeMatrix[y][x].nextVal) {
-						// record change of cost for current cell
-						chg.chgnum = 666666;
-						chg.x = x;
-						chg.y = y;
-						chg.oldcost = costChangeMatrix[y][x].nextVal;
-						chg.newcost = costChangeMatrix[y][x].originVal;
-						costsChanges.at(sp).push_back(chg);
-					}
-				}
-				else { // any other change
-					if (costChangeMatrix[y][x].nextVal != costChangeMatrix[y][x].currentVal) {
-						// record change of cost for current cell
-						chg.chgnum = landIx; chg.x = x; chg.y = y;
-						chg.oldcost = costChangeMatrix[y][x].currentVal;
-						chg.newcost = costChangeMatrix[y][x].nextVal;
-						costsChanges.at(sp).push_back(chg);
-					}
+				if (costChangeMatrix[y][x].nextVal != costChangeMatrix[y][x].currentVal) {
+					// record change of cost for current cell
+					chg.chgnum = landIx; chg.x = x; chg.y = y;
+					chg.oldcost = costChangeMatrix[y][x].currentVal;
+					chg.newcost = costChangeMatrix[y][x].nextVal;
+					costsChanges.at(sp).push_back(chg);
 				}
 				// reset cell for next landscape change
 				costChangeMatrix[y][x].currentVal = costChangeMatrix[y][x].nextVal;

@@ -281,12 +281,14 @@ public:
 	int readLandChange(int fileNb, bool changeCosts);
 #endif
 	void createPatchChgMatrix();
+	void resetPatchChanges();
 	void recordPatchChanges(int landIx);
 	void deletePatchChgMatrix(species_id sp);
 	void deletePatchChgMatrices();
 	int numPatchChanges(species_id sp);
 	patchChange getPatchChange(species_id sp, int changeIx);
 	void createCostsChgMatrix();
+	void resetCostChanges();
 	void recordCostChanges(int landIx);
 	void deleteCostsChgMatrix(species_id sp);
 	void deleteCostsChgMatrices();

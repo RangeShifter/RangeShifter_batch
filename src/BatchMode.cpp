@@ -4902,11 +4902,11 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	}
 	if (ppLand.usesPatches) {
 		// record changes back to original landscape for multiple replicates
-		pLandscape->recordPatchChanges(0);
+		pLandscape->resetPatchChanges();
 		pLandscape->deletePatchChgMatrices();
 	}
 	if (usesCosts) {
-		pLandscape->recordCostChanges(0);
+		pLandscape->resetCostChanges();
 		pLandscape->deleteCostsChgMatrices();
 	}
 	return 0;
