@@ -2338,10 +2338,6 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 							ifsPatchMap.clear();
 							return 14;
 						}
-
-						if (patchCode != 0) {
-							cout << "";
-						}
 						
 						pPatch = nullptr;
 						if (patchCode != 0) { // not matrix cell
