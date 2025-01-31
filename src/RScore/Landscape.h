@@ -283,15 +283,11 @@ public:
 	void createPatchChgMatrix();
 	void resetPatchChanges();
 	void recordPatchChanges(int landIx);
-	void deletePatchChgMatrix(species_id sp);
-	void deletePatchChgMatrices();
 	int numPatchChanges(species_id sp);
 	patchChange getPatchChange(species_id sp, int changeIx);
 	void createCostsChgMatrix();
 	void resetCostChanges();
 	void recordCostChanges(int landIx);
-	void deleteCostsChgMatrix(species_id sp);
-	void deleteCostsChgMatrices();
 	int getNbCostChanges(species_id sp);
 	costChange getCostChange(species_id sp, int i);
 
@@ -411,8 +407,8 @@ private:
 
 	// patch and costs change matrices (temporary - used when reading dynamic landscape)
 	// indexed by [descending y][x]
-	map<species_id, cellChange**> patchChgMatrices;
-	map<species_id, cellChange**> costsChgMatrices;
+	map<species_id, vector<vector<cellChange>>> patchChgMatrices;
+	map<species_id, vector<vector<cellChange>>> costsChgMatrices;
 
 };
 
