@@ -301,10 +301,11 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 						for (const species_id sp : views::keys(allSpecies)) {
 
 							int nbPatchChanges = pLandscape->numPatchChanges(sp);
-							pchChange = pLandscape->getPatchChange(sp, indexPatchChange++);
 
-							while (pchChange.chgNb <= chgNb 
-								&& indexPatchChange <= nbPatchChanges) {
+							for (int i = 0; indexPatchChange < nbPatchChanges; i++) {
+
+								pchChange = pLandscape->getPatchChange(sp, i);
+								if (pchChange.chgNb <= chgNb) break;
 
 								// Move cell from original patch to new patch
 								Cell* pCell = pLandscape->findCell(pchChange.x, pchChange.y);
@@ -320,10 +321,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 									pPatch->addCell(pCell, pchChange.x, pchChange.y);
 								}
 								pCell->setPatch(sp, pPatch);
-								pchChange = pLandscape->getPatchChange(sp, indexPatchChange++);
 							}
 						}
-						indexPatchChange--;
 						pLandscape->resetPatchLimits();
 					}
 
@@ -331,15 +330,13 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 						for (const species_id sp : views::keys(allSpecies)) {
 
-							int ncostchanges = pLandscape->getNbCostChanges(sp);
-							costChange = pLandscape->getCostChange(sp, indexCostChange++);
-							
-							while (costChange.chgnum <= chgNb && indexCostChange <= ncostchanges) {
+							int ncostchanges = pLandscape->getNbCostChanges(sp);							
+							for (int i = 0; i < ncostchanges; i++) {
+								costChange = pLandscape->getCostChange(sp, i);
+								if (costChange.chgnum > chgNb) break;
 								Cell* pCell = pLandscape->findCell(costChange.x, costChange.y);
 								if (pCell != nullptr) pCell->setCost(costChange.newcost);
-								costChange = pLandscape->getCostChange(sp, indexCostChange++);
 							}
-							indexCostChange--;
 							pLandscape->resetEffCosts();
 						}
 					}
@@ -516,10 +513,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			for (const species_id sp : views::keys(allSpecies)) {
 
 				int nbPatchChanges = pLandscape->numPatchChanges(sp);
-				patchChange patchchange = pLandscape->getPatchChange(sp, indexPatchChange++);
 				
-				while (patchchange.chgNb <= 666666 
-					&& indexPatchChange <= nbPatchChanges) {
+				while (indexPatchChange < nbPatchChanges) {
+
+					patchChange patchchange = pLandscape->getPatchChange(sp, indexPatchChange++);
+					if (patchchange.chgNb > 666666) break;
+
 					// move cell from original patch to new patch
 					Cell* pCell = pLandscape->findCell(patchchange.x, patchchange.y);
 					if (patchchange.oldPatch != 0) { // not matrix
@@ -534,11 +533,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 						pPatch->addCell(pCell, patchchange.x, patchchange.y);
 					}
 					pCell->setPatch(sp, pPatch);
-					// Get next patch change
-					patchchange = pLandscape->getPatchChange(sp, indexPatchChange++);
 				}
 			}
-			indexPatchChange--;
 			pLandscape->resetPatchLimits();
 		}
 		if (ppLand.dynamic) {
@@ -550,17 +546,16 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					for (const species_id sp : views::keys(allSpecies)) {
 
 						int ncostchanges = pLandscape->getNbCostChanges(sp);
-						costChange = pLandscape->getCostChange(sp, indexCostChange++);
+						while (indexCostChange < ncostchanges) {
 
-						while (costChange.chgnum <= 666666 
-							&& indexCostChange <= ncostchanges) {
+							costChange = pLandscape->getCostChange(sp, indexCostChange++);
+							if (costChange.chgnum <= 666666) break;
+
 							Cell* pCell = pLandscape->findCell(costChange.x, costChange.y);
 							if (pCell != nullptr) {
 								pCell->setCost(costChange.newcost);
 							}
-							costChange = pLandscape->getCostChange(sp, indexCostChange++);
 						}
-						indexCostChange--;
 						pLandscape->resetEffCosts();
 					}
 				}
