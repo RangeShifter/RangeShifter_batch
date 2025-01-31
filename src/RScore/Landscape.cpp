@@ -2101,11 +2101,12 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 							return 14;
 						}
 						// Does the patch already exists?
-						pPatch = patchCode == 0 ? nullptr : ( // matrix cell
-							existsPatch(sp, patchCode) ?
-							findPatch(sp, patchCode) :
-							addNewPatch(sp, seq++, patchCode) // doesn't exist yet: create it
-							);
+						pPatch = nullptr;
+						if (patchCode != 0) { // not matrix cell
+							pPatch = findPatch(sp, patchCode);
+							if (pPatch == nullptr) // doesn't exist yet
+								pPatch = addNewPatch(sp, seq++, patchCode);
+						}
 						addNewCellToPatch(pPatch, x, y, habCode);
 					}
 					else { // cell-based model
@@ -2193,12 +2194,12 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 								ifsPatchMap.clear();
 								return 14;
 							}
-							
-							pPatch = patchCode == 0 ? nullptr : ( // matrix cell
-								existsPatch(sp, patchCode) ?
-								findPatch(sp, patchCode) :
-								addNewPatch(sp, seq++, patchCode)
-								);
+							pPatch = nullptr;
+							if (patchCode != 0) { // not matrix cell
+								pPatch = findPatch(sp, patchCode);
+								if (pPatch == nullptr) // doesn't exist yet
+									pPatch = addNewPatch(sp, seq++, patchCode);
+							}
 							addNewCellToPatch(pPatch, x, y, habFloat);
 						}
 						else { // cell-based model
@@ -2343,7 +2344,7 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 						if (patchCode != 0) { // not matrix cell
 							pPatch = findPatch(sp, patchCode);
 							if (pPatch == nullptr) // doesn't exist yet
-								addNewPatch(sp, seq++, patchCode);
+								pPatch = addNewPatch(sp, seq++, patchCode);
 						}
 						addNewCellToPatch(pPatch, x, y, habFloat);
 					}
