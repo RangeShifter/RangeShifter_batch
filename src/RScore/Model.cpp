@@ -94,11 +94,9 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			pRandom->fixNewSeed(rep);
 		}
 
-		patchChange pchChange;
-		costChange costChange;
-		int indexPatchChange = 0;
-		int indexCostChange = 0;
-
+		int iPatchChg = 0; // track outside year loop to reset between replicates
+		int iCostChg = 0;
+		
 		if (ppLand.generated) {
 			// delete previous community (if any)
 			// Note: this must be BEFORE the landscape is reset (as a sub-community accesses
@@ -301,11 +299,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 						for (const species_id sp : views::keys(allSpecies)) {
 
 							int nbPatchChanges = pLandscape->numPatchChanges(sp);
+							for (; iPatchChg < nbPatchChanges; iPatchChg++) {
 
-							for (int i = 0; indexPatchChange < nbPatchChanges; i++) {
-
-								pchChange = pLandscape->getPatchChange(sp, i);
-								if (pchChange.chgNb <= chgNb) break;
+								patchChange pchChange = pLandscape->getPatchChange(sp, iPatchChg);
+								if (pchChange.chgNb > chgNb) break;
 
 								// Move cell from original patch to new patch
 								Cell* pCell = pLandscape->findCell(pchChange.x, pchChange.y);
@@ -330,9 +327,9 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 						for (const species_id sp : views::keys(allSpecies)) {
 
-							int ncostchanges = pLandscape->getNbCostChanges(sp);							
-							for (int i = 0; i < ncostchanges; i++) {
-								costChange = pLandscape->getCostChange(sp, i);
+							int ncostchanges = pLandscape->getNbCostChanges(sp);
+							for (; iCostChg < ncostchanges; iCostChg++) {
+								costChange costChange = pLandscape->getCostChange(sp, iCostChg);
 								if (costChange.chgnum > chgNb) break;
 								Cell* pCell = pLandscape->findCell(costChange.x, costChange.y);
 								if (pCell != nullptr) pCell->setCost(costChange.newcost);
@@ -505,7 +502,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		if (grad.gradient) paramsGrad->resetOptY();
 
 		pLandscape->resetLandLimits();
-		if (ppLand.usesPatches && ppLand.dynamic && indexPatchChange > 0) {
+		if (ppLand.usesPatches && ppLand.dynamic && iPatchChg > 0) {
 			// apply any patch changes to reset landscape to original configuration
 			// (provided that at least one has already occurred)
 			Patch* pPatch;
@@ -513,10 +510,9 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			for (const species_id sp : views::keys(allSpecies)) {
 
 				int nbPatchChanges = pLandscape->numPatchChanges(sp);
-				
-				while (indexPatchChange < nbPatchChanges) {
+				for (; iPatchChg < nbPatchChanges; iPatchChg++) {
 
-					patchChange patchchange = pLandscape->getPatchChange(sp, indexPatchChange++);
+					patchChange patchchange = pLandscape->getPatchChange(sp, iPatchChg);
 					if (patchchange.chgNb > 666666) break;
 
 					// move cell from original patch to new patch
@@ -540,15 +536,15 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		if (ppLand.dynamic) {
 			transferRules trfr = pSpecies->getTransferRules();
 			if (trfr.usesMovtProc && trfr.moveType == 1) { // SMS
-				if (indexCostChange > 0) {
+				if (iCostChg > 0) {
 					// apply any cost changes to reset landscape to original configuration
 					// (provided that at least one has already occurred)
 					for (const species_id sp : views::keys(allSpecies)) {
 
 						int ncostchanges = pLandscape->getNbCostChanges(sp);
-						while (indexCostChange < ncostchanges) {
+						for (; iCostChg < ncostchanges; iCostChg++) {
 
-							costChange = pLandscape->getCostChange(sp, indexCostChange++);
+							costChange costChange = pLandscape->getCostChange(sp, iCostChg);
 							if (costChange.chgnum <= 666666) break;
 
 							Cell* pCell = pLandscape->findCell(costChange.x, costChange.y);
