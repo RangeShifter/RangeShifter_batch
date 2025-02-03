@@ -6566,11 +6566,13 @@ void RunBatch(int nSimuls, int nLandscapes)
 				landcode = pLandscape->readLandscape(0, hname, " ", cname);
 			}
 			if (landcode != 0) {
+				cout << "Error reading landscape" << endl;
 				landOK = false;
 			}
 			if (paramsLand.dynamic) {
 				landcode = ReadDynLandFile(pLandscape);
 				if (landcode != 0) {
+					cout << "Error reading dynamic landscape" << endl;
 					landOK = false;
 				}
 			}
