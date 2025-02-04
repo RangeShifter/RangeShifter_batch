@@ -110,6 +110,8 @@ public:
 	void createOccupancy(int nbOutputRows, int nbReps);
 	void updateOccupancy(int whichRow, int replicate);
 
+	bool openOutputFiles(const simParams& sim, const int landNum); // open all output files, close all if any fails
+
 	// Open occupancy file, write header record and set up occupancy array
 	bool outOccupancyHeaders();
 	void outOccupancy();
@@ -166,7 +168,7 @@ public:
 
 	// control neutral stat output
 	void outNeutralGenetics(int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill);
-	bool openNeutralOutputFile(Species* pSpecies, const int landNr);
+	bool openNeutralOutputFile(const int landNr);
 	void writeNeutralOutputFile(const species_id& sp, int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill);
 	bool closeNeutralOutputOfs();
 

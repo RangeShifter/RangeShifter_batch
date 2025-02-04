@@ -95,20 +95,16 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		
 		// Create and select sampled patches for artifical landscapes
 		if (ppLand.generated) {
-
 			if (pComm != nullptr) delete pComm;
-			
 			// generate new cell-based landscape
 			pLandscape->resetLand();
 			pLandscape->generatePatches(allSpecies);
 			pComm = new Community(pLandscape, allSpecies);
-			
-			if (sim.patchSamplingOption == "random") {
-				// Then patches must be resampled for new landscape
-				int nbToSample = pSpecies->getNbPatchesToSample();
+			if (sim.patchSamplingOption == "random") { // Then patches must be resampled for new landscape
 				pLandscape->samplePatches(allSpecies, sim.patchSamplingOption);
 			}
 		}
+
 		if (init.seedType == 0 && init.freeType < 2 && init.initFrzYr > 0) {
 			// restrict available landscape to initialised region
 			pLandscape->setLandLimits(init.minSeedX, init.minSeedY,
@@ -118,60 +114,17 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			pLandscape->resetLandLimits();
 		}
 
-		filesOK = true;
 		if (rep == 0) {
-			// open output files
-			if (sim.outRange) { // open Range file
-				if (!pComm->outRangeHeaders(ppLand.landNum)) {
-					filesOK = false;
-				}
-			}
-			if (sim.outOccup && sim.reps > 1)
-				if (!pComm->outOccupancyHeaders()) {
-					filesOK = false;
-				}
-			if (sim.outPop) {
-				// open Population file
-				if (!pComm->outPopHeaders()) {
-					filesOK = false;
-				}
-			}
-			if (sim.outTraitsCells)
-				if (!pComm->outTraitsHeaders(pLandscape, ppLand.landNum)) {
-					filesOK = false;
-				}
-			if (sim.outTraitsRows)
-				if (!pComm->outTraitsRowsHeaders(ppLand.landNum)) {
-					filesOK = false;
-				}
-			if (sim.outConnect && ppLand.usesPatches) // open Connectivity file
-				if (!pLandscape->outConnectHeaders()) {
-					filesOK = false;
-				}
-			if (sim.outputWeirCockerham || sim.outputWeirHill) { // open neutral genetics file
-				if (!pComm->openNeutralOutputFile(pSpecies, ppLand.landNum)) {
-					filesOK = false;
-				}
-			}
-		}
-		if (!filesOK) {
-
-			// Close any files which may be open
-			if (sim.outRange) pComm->closeRangeOfs();
-			if (sim.outOccup && sim.reps > 1) pComm->closeOccupancyOfs();
-			if (sim.outPop) pComm->closePopOfs();
-			if (sim.outTraitsCells) pComm->closeOutTraitOfs();
-			if (sim.outTraitsRows) pComm->closeTraitRows();
-			if (sim.outConnect && ppLand.usesPatches) pLandscape->closeConnectOfs();
-			if (sim.outputWeirCockerham || sim.outputWeirHill) pComm->closeNeutralOutputOfs();
-
+			if (!pComm->openOutputFiles(sim, ppLand.landNum)) {
+				// abort if any file fails to open
 #if RS_RCPP && !R_CMD
-			return Rcpp::List::create(Rcpp::Named("Errors") = 666);
+				return Rcpp::List::create(Rcpp::Named("Errors") = 666);
 #else
-			return 666;
+				return 666;
 #endif
+			}
 		}
-
+		
 		if (env.stoch && !env.local) {
 			// create time series in case of global environmental stochasticity
 			pLandscape->setGlobalStoch(sim.years + 1);
@@ -182,6 +135,14 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 
 		if (sim.outConnect && ppLand.usesPatches) {
+			if (!pLandscape->outConnectHeaders()) {
+				pLandscape->closeConnectOfs();
+#if RS_RCPP && !R_CMD
+				return Rcpp::List::create(Rcpp::Named("Errors") = 666);
+#else
+				return 666;
+#endif
+			}
 			pLandscape->createConnectMatrix();
 		}
 

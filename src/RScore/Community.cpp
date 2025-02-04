@@ -1848,7 +1848,7 @@ bool Community::closeNeutralOutputOfs() {
 	return true;
 }
 
-bool Community::openNeutralOutputFile(Species* pSpecies, int landNr)
+bool Community::openNeutralOutputFile(int landNr)
 {
 	string name;
 	simParams sim = paramsSim->getSim();
@@ -2108,6 +2108,52 @@ void Community::outNeutralGenetics(int rep, int yr, int gen, bool outWeirCockerh
 			writePairwiseFstFile(pSpecies, yr, gen, maxNbNeutralAlleles, nLoci, patchList);
 		}
 	}
+}
+
+bool Community::openOutputFiles(const simParams& sim, const int landNum) {
+
+	bool filesOK = true;
+	// open output files
+	if (sim.outRange) { // open Range file
+		if (!outRangeHeaders(landNum)) {
+			filesOK = false;
+		}
+	}
+	if (sim.outOccup && sim.reps > 1)
+		if (!outOccupancyHeaders()) {
+			filesOK = false;
+		}
+	if (sim.outPop) {
+		// open Population file
+		if (!outPopHeaders()) {
+			filesOK = false;
+		}
+	}
+	if (sim.outTraitsCells)
+		if (!outTraitsHeaders(pLandscape, landNum)) {
+			filesOK = false;
+		}
+	if (sim.outTraitsRows)
+		if (!outTraitsRowsHeaders(landNum)) {
+			filesOK = false;
+		}
+	if (sim.outputWeirCockerham || sim.outputWeirHill) { // open neutral genetics file
+		if (!openNeutralOutputFile(landNum)) {
+			filesOK = false;
+		}
+	}
+
+	if (!filesOK) {
+		// Close any files which may be open
+		if (sim.outRange) closeRangeOfs();
+		if (sim.outOccup && sim.reps > 1) closeOccupancyOfs();
+		if (sim.outPop) closePopOfs();
+		if (sim.outTraitsCells) closeOutTraitOfs();
+		if (sim.outTraitsRows) closeTraitRows();
+		if (sim.outputWeirCockerham || sim.outputWeirHill) closeNeutralOutputOfs();
+	}
+
+	return filesOK;
 }
 
 //---------------------------------------------------------------------------
