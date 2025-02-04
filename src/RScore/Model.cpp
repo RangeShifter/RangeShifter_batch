@@ -334,26 +334,23 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				
 				// Output and pop. visualisation before reproduction
 				if (sim.outOccup || sim.outTraitsCells || sim.outTraitsRows || sim.saveMaps)
-					PreReproductionOutput(pLandscape, pComm, rep, yr, gen);
+					PreReproductionOutput(sim, pComm, rep, yr, gen);
 
-				// for non-structured population, also produce range and population output now
-				if (!dem.stageStruct && (sim.outRange || sim.outPop))
-					RangePopOutput(pComm, rep, yr, gen);
+				// Non-structured pops: range and population output *before* reproductrion
+				if (!dem.stageStruct) popAndRangeOutput(sim, pComm, rep, yr, gen);
 
 #if RS_RCPP && !R_CMD
 				if (sim.ReturnPopRaster && sim.outPop && yr >= sim.outStartPop && yr % sim.outIntPop == 0) {
 					list_outPop.push_back(pComm->addYearToPopList(rep, yr), "rep" + std::to_string(rep) + "_year" + std::to_string(yr));
 				}
 #endif
-				// apply local extinction for generation 0 only
-				// CHANGED TO *BEFORE* RANGE & POPN OUTPUT PRODUCTION IN v1.1,
-				// SO THAT NOS. OF JUVENILES BORN CAN BE REPORTED
-				if (!ppLand.usesPatches && gen == 0) {
+				if (gen == 0 && !ppLand.usesPatches) {
+					// Local extinction applied now so nb juveniles can be reported
 					if (env.localExt) pComm->localExtinction(0);
 					if (grad.gradient && grad.gradType == 3) pComm->localExtinction(1);
 				}
 
-				// reproduction
+				// Reproduction
 				pComm->reproduction(yr);
 
 				if (dem.stageStruct && sstruct.survival == 0) { // at reproduction
@@ -361,9 +358,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					pComm->drawSurvivalDevlpt(false, true, true, true);
 				}
 
-				// Output and pop. visualisation AFTER reproduction
-				if (dem.stageStruct && (sim.outRange || sim.outPop))
-					RangePopOutput(pComm, rep, yr, gen);
+				// Stage-structured pops: range + pop output *after* reproductrion
+				if (dem.stageStruct) popAndRangeOutput(sim, pComm, rep, yr, gen);
 
 				// Dispersal
 				pComm->emigration();
@@ -382,17 +378,15 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				if (sim.outInds && yr >= sim.outStartInd && yr % sim.outIntInd == 0)
 					pComm->outInds(rep, yr, gen);
 
+				// output Genetics
 				if ((sim.outputGeneValues || sim.outputWeirCockerham || sim.outputWeirHill)
 					&& yr >= sim.outStartGenetics
 					&& yr % sim.outputGeneticInterval == 0) {
 
-					simParams sim = paramsSim->getSim();
 					if (sim.patchSamplingOption != "list" 
-						&& sim.patchSamplingOption != "random") {
-						// then patches must be re-sampled every gen
+						&& sim.patchSamplingOption != "random") { // then patches must be re-sampled every gen
 						pLandscape->samplePatches(allSpecies, sim.patchSamplingOption);
-					}
-					// otherwise always use the user-specified list (even if patches are empty)
+					} // otherwise always use the user-specified list (even if patches are empty)
 					pComm->sampleIndividuals();
 
 					if (sim.outputGeneValues) {
@@ -403,13 +397,25 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					}
 				}
 
-				// Resolve survival and developement
 				pComm->applySurvivalDevlpt();
 
 			} // end of the generation loop
 
-			totalInds = pComm->totalInds();
-			if (totalInds <= 0) { 
+			if (dem.stageStruct) {
+				if (sstruct.survival == 2) {
+					// Draw survival for all stages
+					pComm->drawSurvivalDevlpt(true, true, false, true);
+					pComm->applySurvivalDevlpt();
+				}
+				// Apply age
+				pComm->ageIncrement();
+				if (sim.outInds && yr >= sim.outStartInd && yr % sim.outIntInd == 0)
+					pComm->outInds(rep, yr, -1); // list any individuals dying having reached maximum age
+				pComm->applySurvivalDevlpt(); // delete any such individuals
+			}
+
+			// Stop if community has gone extinct
+			if (pComm->totalInds() <= 0) {
 				std::cout << "All populations went extinct." << endl;
 				yr++; 
 				break; 
@@ -420,33 +426,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				&& yr >= sim.outStartConn && yr % sim.outIntConn == 0)
 				pLandscape->outConnect(rep, yr);
 
-			if (dem.stageStruct && sstruct.survival == 2) { 
-				// Draw survival for all stages
-				pComm->drawSurvivalDevlpt(true, true, false, true);
-				pComm->applySurvivalDevlpt();
-			}
-
-			if (dem.stageStruct) {
-				pComm->ageIncrement(); // increment age of all individuals
-				if (sim.outInds && yr >= sim.outStartInd && yr % sim.outIntInd == 0)
-					pComm->outInds(rep, yr, -1); // list any individuals dying having reached maximum age
-				pComm->applySurvivalDevlpt(); // delete any such individuals
-				totalInds = pComm->totalInds();
-				if (totalInds <= 0) { 
-					cout << "All populations went extinct." << endl;
-					yr++; 
-					break;
-				}
-			}
-
 		} // end of the years loop
 
-		// Final output
-		// produce final summary output
+		// Final summary output
 		if (sim.outOccup || sim.outTraitsCells || sim.outTraitsRows || sim.saveMaps)
-			PreReproductionOutput(pLandscape, pComm, rep, yr, 0);
-		if (sim.outRange || sim.outPop)
-			RangePopOutput(pComm, rep, yr, 0);
+			PreReproductionOutput(sim, pComm, rep, yr, 0);
+		popAndRangeOutput(sim, pComm, rep, yr, 0);
 
 		pComm->resetPopns();
 
@@ -512,7 +497,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 
 		if (sim.outConnect && ppLand.usesPatches)
-			pLandscape->resetConnectMatrix(); // set connectivity matrix to zeroes
+			pLandscape->resetConnectMatrix();
 
 		pComm->closeYearlyOutputFiles(sim);
 		
@@ -595,10 +580,8 @@ bool CheckDirectory(const string& pathToProjDir)
 
 //---------------------------------------------------------------------------
 //For outputs and population visualisations pre-reproduction
-void PreReproductionOutput(Landscape* pLand, Community* pComm, int rep, int yr, int gen)
+void PreReproductionOutput(const simParams& sim, Community* pComm, int rep, int yr, int gen)
 {
-	simParams sim = paramsSim->getSim();
-
 	// trait outputs and visualisation
 	if ((sim.outTraitsCells && yr >= sim.outStartTraitCell && yr % sim.outIntTraitCell == 0) 
 		|| (sim.outTraitsRows && yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0))
@@ -610,16 +593,13 @@ void PreReproductionOutput(Landscape* pLand, Community* pComm, int rep, int yr, 
 }
 
 //For outputs and population visualisations pre-reproduction
-void RangePopOutput(Community* pComm, int rep, int yr, int gen)
+void popAndRangeOutput(const simParams& sim, Community* pComm, int rep, int yr, int gen)
 {
-	simParams sim = paramsSim->getSim();
-
 	if (sim.outRange && (yr % sim.outIntRange == 0 || pComm->totalInds() <= 0))
 		pComm->outRange(rep, yr, gen);
 
 	if (sim.outPop && yr >= sim.outStartPop && yr % sim.outIntPop == 0)
 		pComm->outPop(rep, yr, gen);
-
 }
 
 //---------------------------------------------------------------------------
