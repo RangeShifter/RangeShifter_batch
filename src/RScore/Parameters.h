@@ -338,31 +338,23 @@ struct simParams {
 	int outputGeneticInterval, outStartGenetics;
 };
 
-struct simView {
-	bool viewLand; bool viewPatch; bool viewGrad; bool viewCosts;
-	bool viewPop; bool viewTraits; bool viewPaths; bool viewGraph;
-	int slowFactor;
-};
-
 class paramSim {
 
 public:
 	paramSim(const string& pathToProjDir = "");
-	~paramSim(void);
-	void setSim(simParams);
+	~paramSim();
+	void setSim(simParams sim);
 	void setGeneticSim(string patchSamplingOption, bool outputGeneticValues, bool outputWeirCockerham, bool outputWeirHill, int outputStartGenetics, int outputGeneticInterval);
-	simParams getSim(void);
-	int getSimNum(void);
-	void setViews(simView);
-	simView getViews(void);
-	string getDir(int);
+	simParams getSim();
+	int getSimNum();
+	string getDir(int option);
 	void setBatchNum(const int& batchNb) {
 		batchNum = batchNb;
 		batchMode = true;
 	}
 #if RS_RCPP
-	bool getReturnPopRaster(void);
-	bool getCreatePopFile(void);
+	bool getReturnPopRaster();
+	bool getCreatePopFile();
 #endif
 
 private:
@@ -384,7 +376,6 @@ private:
 	int outIntConn;					// output interval for connectivity matrix
 	int mapInt;							// output interval for maps
 	int traitInt;						// output interval for evolving traits maps
-	int slowFactor;					// to reduce speed of movement paths on screen
 	bool batchMode;					//
 	bool absorbing; 				// landscape boundary and no-data regions are absorbing boundaries
 	bool outRange;					// produce output range file?
@@ -404,16 +395,7 @@ private:
 	bool CreatePopFile;
 #endif
 	bool saveTraitMaps;			// save summary traits maps?
-	bool viewLand;					// view landscape map on screen?
-	bool viewPatch;					// view map of landscape patches on screen?
-	bool viewGrad;					// view gradient map on screen?
-	bool viewCosts;					// view costs map on screen?
-	bool viewPop;						// view population density on landscape map on screen?
-	bool viewTraits;				// view summary traits map(s) on screen?
-	bool viewPaths;					// view individual movement paths on screen?
-	bool viewGraph;					// view population/occupancy graph on screen?
 	string dir;							// full name of working directory
-
 	bool fixReplicateSeed;
 	string patchSamplingOption;
 	bool outputGenes;

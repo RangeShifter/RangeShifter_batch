@@ -246,7 +246,6 @@ paramSim::paramSim(const string& pathToProjDir) :
 	outIntOcc = outIntPop = outIntInd = outputGeneticInterval = 10;
 	outIntTraitCell = outIntTraitRow = outIntConn = 10;
 	mapInt = traitInt = 10;
-	slowFactor = 1;
 	batchMode = absorbing = false;
 	outRange = outOccup = outPop = outInds = false;
 	outTraitsCells = outTraitsRows = outConnect = false;
@@ -257,8 +256,6 @@ paramSim::paramSim(const string& pathToProjDir) :
 	outStartPaths = 0; outIntPaths = 0;
 	outPaths = false; ReturnPopRaster = false; CreatePopFile = true;
 #endif
-	viewLand = false; viewPatch = false; viewGrad = false; viewCosts = false;
-	viewPop = false; viewTraits = false; viewPaths = false; viewGraph = false;
 }
 
 paramSim::~paramSim(void) { }
@@ -345,25 +342,7 @@ simParams paramSim::getSim(void) {
 	return s;
 }
 
-int paramSim::getSimNum(void) { return simulation; }
-
-void paramSim::setViews(simView v) {
-	viewLand = v.viewLand; viewPatch = v.viewPatch;
-	viewGrad = v.viewGrad; viewCosts = v.viewCosts;
-	viewPop = v.viewPop; viewTraits = v.viewTraits;
-	viewPaths = v.viewPaths; viewGraph = v.viewGraph;
-	if (v.slowFactor > 0) slowFactor = v.slowFactor;
-}
-
-simView paramSim::getViews(void) {
-	simView v;
-	v.viewLand = viewLand; v.viewPatch = viewPatch;
-	v.viewGrad = viewGrad; v.viewCosts = viewCosts;
-	v.viewPop = viewPop; v.viewTraits = viewTraits;
-	v.viewPaths = viewPaths; v.viewGraph = viewGraph;
-	v.slowFactor = slowFactor;
-	return v;
-}
+int paramSim::getSimNum() { return simulation; }
 
 // return directory name depending on option specified
 string paramSim::getDir(int option) {

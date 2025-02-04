@@ -45,7 +45,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	transferRules trfr = pSpecies->getTransferRules();
 	initParams init = paramsInit->getInit();
 	simParams sim = paramsSim->getSim();
-	simView v = paramsSim->getViews();
 
 	// Create and select sampled patches for imported landscapes
 	if (!ppLand.generated) {
@@ -334,8 +333,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			for (int gen = 0; gen < dem.repSeasons; gen++) {
 				
 				// Output and pop. visualisation before reproduction
-				if (v.viewPop || v.viewTraits || sim.outOccup
-					|| sim.outTraitsCells || sim.outTraitsRows || sim.saveMaps)
+				if (sim.outOccup || sim.outTraitsCells || sim.outTraitsRows || sim.saveMaps)
 					PreReproductionOutput(pLandscape, pComm, rep, yr, gen);
 
 				// for non-structured population, also produce range and population output now
@@ -445,8 +443,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 		// Final output
 		// produce final summary output
-		if (v.viewPop || v.viewTraits || sim.outOccup
-			|| sim.outTraitsCells || sim.outTraitsRows || sim.saveMaps)
+		if (sim.outOccup || sim.outTraitsCells || sim.outTraitsRows || sim.saveMaps)
 			PreReproductionOutput(pLandscape, pComm, rep, yr, 0);
 		if (sim.outRange || sim.outPop)
 			RangePopOutput(pComm, rep, yr, 0);
@@ -543,7 +540,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	// Occupancy outputs
 	if (sim.outOccup && sim.reps > 1) {
 		pComm->outOccupancy();
-		pComm->outOccSuit(v.viewGraph);
+		pComm->outOccSuit();
 		pComm->closeOccupancyOfs();
 	}
 
@@ -616,12 +613,10 @@ bool CheckDirectory(const string& pathToProjDir)
 void PreReproductionOutput(Landscape* pLand, Community* pComm, int rep, int yr, int gen)
 {
 	simParams sim = paramsSim->getSim();
-	simView v = paramsSim->getViews();
 
 	// trait outputs and visualisation
-	if (v.viewTraits
-		|| ((sim.outTraitsCells && yr >= sim.outStartTraitCell && yr % sim.outIntTraitCell == 0) ||
-			(sim.outTraitsRows && yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0)))
+	if ((sim.outTraitsCells && yr >= sim.outStartTraitCell && yr % sim.outIntTraitCell == 0) 
+		|| (sim.outTraitsRows && yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0))
 	{
 		pComm->outTraits(rep, yr, gen);
 	}

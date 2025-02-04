@@ -2417,9 +2417,6 @@ int Landscape::readCosts(string fname)
 	string header;
 #endif
 	Cell* pCell;
-#if !RS_RCPP
-	simView v = paramsSim->getViews();
-#endif
 
 	int maxcost = 0;
 

@@ -116,7 +116,7 @@ public:
 	bool outOccupancyHeaders();
 	void outOccupancy();
 	bool closeOccupancyOfs();
-	void outOccSuit(bool view);
+	void outOccSuit();
 
 	// Open range file and write header record
 	bool outRangeHeaders(int landnr);

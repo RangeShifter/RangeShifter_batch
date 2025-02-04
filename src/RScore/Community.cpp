@@ -1199,7 +1199,7 @@ void Community::outOccupancy() {
 	}
 }
 
-void Community::outOccSuit(bool view) {
+void Community::outOccSuit() {
 	double sum, ss, mean, sd, se;
 	simParams sim = paramsSim->getSim();
 
@@ -1348,7 +1348,6 @@ order of y
 void Community::outTraits(int rep, int yr, int gen)
 {
 	simParams sim = paramsSim->getSim();
-	simView v = paramsSim->getViews();
 	landParams land = pLandscape->getLandParams();
 	traitsums* ts = 0;
 	traitsums sctraits;
@@ -1365,9 +1364,8 @@ void Community::outTraits(int rep, int yr, int gen)
 		ts = new traitsums[land.dimY];
 	}
 
-	if (v.viewTraits
-		|| ((mustOutputTraitCells && yr >= sim.outStartTraitCell) 
-			|| mustOutputTraitRows)){
+	if ((mustOutputTraitCells && yr >= sim.outStartTraitCell) 
+			|| mustOutputTraitRows) {
 
 		// Generate output for each population in the community
 		if (mustOutputTraitCells) {
