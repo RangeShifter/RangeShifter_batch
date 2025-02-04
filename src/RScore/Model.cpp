@@ -186,6 +186,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 
 		// variables to control dynamic landscape
+		bool updateland = false;
+		int chgNb = 0; // landscape change index
 		landChange landChg; 
 		landChg.chgnum = 0; 
 		landChg.chgyear = 999999;
@@ -196,8 +198,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		// set up populations in the community
 		pLandscape->updateCarryingCapacity(allSpecies, 0, 0);
 		pComm->initialise(allSpecies, -1);
-		bool updateland = false;
-		int chgNb = 0; // landscape change index
 
 #if BATCH && RS_RCPP && !R_CMD
 		Rcpp::Rcout << "RunModel(): completed initialisation " << endl;
@@ -225,20 +225,19 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			pLandscape->outPathsHeaders(rep, 0);
 #endif
 
-		// years loop
+		int coutYrFreq = sim.years < 30 ? 1 :
+			sim.years < 300 ? 10 :
+			sim.years < 3000 ? 100 : 
+			sim.years < 30000 ? 1000 : 10000;
+
+		// Years loop
 		for (yr = 0; yr < sim.years; yr++) {
+
 #if RS_RCPP && !R_CMD
 			Rcpp::checkUserInterrupt();
 #endif
 			bool mustUpdateK = false;
-			if (yr < 4
-				|| (yr < 31 && yr % 10 == 0)
-				|| (yr < 301 && yr % 100 == 0)
-				|| (yr < 3001 && yr % 1000 == 0)
-				|| (yr < 30001 && yr % 10000 == 0)
-				|| (yr < 300001 && yr % 100000 == 0)
-				|| (yr < 3000001 && yr % 1000000 == 0)
-				) {
+			if (yr % coutYrFreq == 0) {
 #if RS_RCPP && !R_CMD
 				Rcpp::Rcout << "Starting year " << yr << "..." << endl;
 #else
