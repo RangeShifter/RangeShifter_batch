@@ -514,11 +514,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		if (sim.outConnect && ppLand.usesPatches)
 			pLandscape->resetConnectMatrix(); // set connectivity matrix to zeroes
 
-		if (sim.outInds) pComm->closeOutIndsOfs();
-		if (sim.outputGeneValues) pComm->closeOutGenesOfs();
-		if (sim.outputWeirCockerham) pComm->closePerLocusFstFile();
-		if (sim.outputWeirHill) pComm->closePairwiseFstFile();
-
+		pComm->closeYearlyOutputFiles(sim);
+		
 		if (sim.saveVisits) {
 			pLandscape->outVisits(rep, ppLand.landNum);
 			pLandscape->resetVisits();
@@ -537,25 +534,13 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		pLandscape->closeConnectOfs();
 	}
 
-	// Occupancy outputs
 	if (sim.outOccup && sim.reps > 1) {
 		pComm->outOccupancy();
 		pComm->outOccSuit();
-		pComm->closeOccupancyOfs();
 	}
 
-	if (sim.outRange) pComm->closeRangeOfs();
-	if (sim.outPop) pComm->closePopOfs();
-	if (sim.outTraitsCells) pComm->closeOutTraitOfs();
-	if (sim.outTraitsRows) pComm->closeTraitRows();
-
-	// close Individuals & Genetics output files if open
-	// they can still be open if the simulation was stopped by the user
-	if (sim.outInds) pComm->closeOutIndsOfs();
-	if (sim.outputGeneValues) pComm->closeOutGenesOfs();
-	if (sim.outputWeirCockerham || sim.outputWeirHill) pComm->closeNeutralOutputOfs();
-	if (sim.outputWeirCockerham) pComm->closePerLocusFstFile();
-	if (sim.outputWeirHill) pComm->closePairwiseFstFile();
+	pComm->closeGlobalOutputFiles(sim);
+	pComm->closeYearlyOutputFiles(sim); // might still be open if the simulation was stopped by the user
 
 	delete pComm; 
 	pComm = nullptr;

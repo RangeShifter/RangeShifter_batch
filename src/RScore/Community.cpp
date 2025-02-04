@@ -2142,16 +2142,29 @@ bool Community::openOutputFiles(const simParams& sim, const int landNum) {
 	}
 
 	if (!filesOK) {
-		// Close any files which may be open
-		if (sim.outRange) closeRangeOfs();
-		if (sim.outOccup && sim.reps > 1) closeOccupancyOfs();
-		if (sim.outPop) closePopOfs();
-		if (sim.outTraitsCells) closeOutTraitOfs();
-		if (sim.outTraitsRows) closeTraitRows();
-		if (sim.outputWeirCockerham || sim.outputWeirHill) closeNeutralOutputOfs();
+		closeGlobalOutputFiles(sim);
 	}
 
 	return filesOK;
+}
+
+void Community::closeGlobalOutputFiles(const simParams& sim) {
+
+	if (sim.outRange) closeRangeOfs();
+	if (sim.outPop) closePopOfs();
+	if (sim.outTraitsCells) closeOutTraitOfs();
+	if (sim.outTraitsRows) closeTraitRows();
+	if (sim.outputWeirCockerham || sim.outputWeirHill) closeNeutralOutputOfs();
+	if (sim.outOccup && sim.reps > 1) closeOccupancyOfs();
+
+}
+
+void Community::closeYearlyOutputFiles(const simParams& sim) {
+
+	if (sim.outInds) closeOutIndsOfs();
+	if (sim.outputGeneValues) closeOutGenesOfs();
+	if (sim.outputWeirCockerham) closePerLocusFstFile();
+	if (sim.outputWeirHill) closePairwiseFstFile();
 }
 
 //---------------------------------------------------------------------------

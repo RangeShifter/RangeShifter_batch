@@ -111,6 +111,8 @@ public:
 	void updateOccupancy(int whichRow, int replicate);
 
 	bool openOutputFiles(const simParams& sim, const int landNum); // open all output files, close all if any fails
+	void closeGlobalOutputFiles(const simParams& sim);
+	void closeYearlyOutputFiles(const simParams& sim);
 
 	// Open occupancy file, write header record and set up occupancy array
 	bool outOccupancyHeaders();
