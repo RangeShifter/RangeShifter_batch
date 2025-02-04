@@ -226,8 +226,8 @@ public:
 	// functions to handle patches and cells
 
 	void setCellArray();
-	void generatePatches(const speciesMap_t& allSpecies); 		// create an artificial landscape
-	void allocatePatches(const speciesMap_t& allSpecies);// create patches for a cell-based landscape
+	void generatePatches(const speciesMap_t& allSpecies); // create patches for an artificial landscape
+	void allocatePatches(const speciesMap_t& allSpecies); // create patches for a cell-based landscape
 	Patch* addNewPatch(species_id id, int num);
 	Patch* addNewPatch(species_id id, int seqnum, int num);
 

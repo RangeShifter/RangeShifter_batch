@@ -709,6 +709,7 @@ void Landscape::generatePatches(const speciesMap_t& allSpecies)
 //---------------------------------------------------------------------------
 /* Create a patch for each suitable cell of a cell-based landscape (all other
 habitat cells are added to the matrix patch) */
+// If using neutral markers, set up patches to sample from
 void Landscape::allocatePatches(const speciesMap_t& allSpecies)
 {
 	float habK;

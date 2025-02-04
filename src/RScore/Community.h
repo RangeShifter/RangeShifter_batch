@@ -116,37 +116,35 @@ public:
 	bool closeOccupancyOfs();
 	void outOccSuit(bool view);
 
-	bool outRangeHeaders( // Open range file and write header record
-		Species* pSpecies,
-		int	landnr // (-999 to close the file)
-	);
+	// Open range file and write header record
+	bool outRangeHeaders(int landnr);
+
 	// Write record to range file
-	void outRange(Species* pSpecies, int rep, int yr, int gen);
+	void outRange(int rep, int yr, int gen);
 	bool closeRangeOfs();
 
 	// Open population file and write header record
-	bool outPopHeaders(Species* pSpecies);
+	bool outPopHeaders();
 	bool closePopOfs();
 
 	// Write records to population file
 	void outPop(int rep, int year, int gen);
 
-	void outIndsHeaders(int rep, int landNr, bool usesPatches, Species* pSpecies);
+	void outIndsHeaders(int rep, int landNr, bool usesPatches);
 	void closeOutIndsOfs();
 
 	// Write records to individuals file
 	void outInds(int rep, int year,	int gen);
 	
 	// Write records to traits file
-	void outTraits(Species* pSpecies, int rep, int year, int gen);
-	bool outTraitsHeaders(Landscape* pLandscape, Species* pSpecies, int landnb);
+	void outTraits(int rep, int year, int gen);
+	bool outTraitsHeaders(Landscape* pLandscape, int landnb);
 	bool closeOutTraitOfs();
 
 	// Open trait rows file and write header record
-	bool outTraitsRowsHeaders(Species* pSpecies, int landnr);
+	bool outTraitsRowsHeaders(int landnr);
 	// Write records to trait rows file
 	void writeTraitsRows(
-		Species* pSpecies, 
 		int rep, 
 		int year,
 		int gen, 

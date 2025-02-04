@@ -555,13 +555,13 @@ commStats Community::getStats()
 // Functions to control production of output files
 
 // Open population file and write header record
-bool Community::outPopHeaders(Species* pSpecies) {
+bool Community::outPopHeaders() {
 	
 	landParams land = pLandscape->getLandParams();
 	simParams sim = paramsSim->getSim();
 	envGradParams grad = paramsGrad->getGradient();
-	demogrParams dem = pSpecies->getDemogrParams();
-	stageParams sstruct = pSpecies->getStageParams();
+	demogrParams dem = speciesMap.at(gSingleSpeciesID)->getDemogrParams();
+	stageParams sstruct = speciesMap.at(gSingleSpeciesID)->getStageParams();
 
 	string name = paramsSim->getDir(2)
 		+ (sim.batchMode ? "Batch" + to_string(sim.batchNum) + "_" : "")
@@ -633,14 +633,15 @@ void Community::outPop(int rep, int yr, int gen)
 }
 
 // Open individuals file and write header record
-void Community::outIndsHeaders(int rep, int landNr, bool usesPatches, Species* pSpecies)
+void Community::outIndsHeaders(int rep, int landNr, bool usesPatches)
 {
 	string name;
-	demogrParams dem = pSpecies->getDemogrParams();
-	emigRules emig = pSpecies->getEmigRules();
-	transferRules trfr = pSpecies->getTransferRules();
-	settleType sett = pSpecies->getSettle();
+	demogrParams dem = speciesMap.at(gSingleSpeciesID)->getDemogrParams();
+	emigRules emig = speciesMap.at(gSingleSpeciesID)->getEmigRules();
+	transferRules trfr = speciesMap.at(gSingleSpeciesID)->getTransferRules();
+	settleType sett = speciesMap.at(gSingleSpeciesID)->getSettle();
 	simParams sim = paramsSim->getSim();
+	bool hasGenLoad = speciesMap.at(gSingleSpeciesID)->getNbGenLoadTraits() > 0;
 
 	name = paramsSim->getDir(2)
 		+ (sim.batchMode ? "Batch" + to_string(sim.batchNum) + "_" : "")
@@ -653,7 +654,7 @@ void Community::outIndsHeaders(int rep, int landNr, bool usesPatches, Species* p
 	else outIndsOfs << "\tNatal_X\tNatal_Y\tX\tY";
 	if (dem.repType != 0) outIndsOfs << "\tSex";
 	if (dem.stageStruct) outIndsOfs << "\tAge\tStage";
-	if (pSpecies->getNbGenLoadTraits() > 0) outIndsOfs << "\tProbViable";
+	if (hasGenLoad) outIndsOfs << "\tProbViable";
 	if (emig.indVar) {
 		if (emig.densDep) outIndsOfs << "\tD0\tAlpha\tBeta";
 		else outIndsOfs << "\tEP";
@@ -710,7 +711,7 @@ bool Community::closeRangeOfs() {
 }
 
 // Open range file and write header record
-bool Community::outRangeHeaders(Species* pSpecies, int landNr)
+bool Community::outRangeHeaders(int landNr)
 {
 	string name;
 	landParams ppLand = pLandscape->getLandParams();
@@ -719,11 +720,11 @@ bool Community::outRangeHeaders(Species* pSpecies, int landNr)
 
 	// NEED TO REPLACE CONDITIONAL COLUMNS BASED ON ATTRIBUTES OF ONE SPECIES TO COVER
 	// ATTRIBUTES OF *ALL* SPECIES AS DETECTED AT MODEL LEVEL
-	demogrParams dem = pSpecies->getDemogrParams();
-	stageParams sstruct = pSpecies->getStageParams();
-	emigRules emig = pSpecies->getEmigRules();
-	transferRules trfr = pSpecies->getTransferRules();
-	settleType sett = pSpecies->getSettle();
+	demogrParams dem = speciesMap.at(gSingleSpeciesID)->getDemogrParams();
+	stageParams sstruct = speciesMap.at(gSingleSpeciesID)->getStageParams();
+	emigRules emig = speciesMap.at(gSingleSpeciesID)->getEmigRules();
+	transferRules trfr = speciesMap.at(gSingleSpeciesID)->getTransferRules();
+	settleType sett = speciesMap.at(gSingleSpeciesID)->getSettle();
 
 	if (sim.batchMode) {
 		name = paramsSim->getDir(2)
@@ -812,18 +813,18 @@ bool Community::outRangeHeaders(Species* pSpecies, int landNr)
 }
 
 // Write record to range file
-void Community::outRange(Species* pSpecies, int rep, int yr, int gen)
+void Community::outRange(int rep, int yr, int gen)
 {
 	landParams ppLand = pLandscape->getLandParams();
 	envStochParams env = paramsStoch->getStoch();
 
 	// NEED TO REPLACE CONDITIONAL COLUMNS BASED ON ATTRIBUTES OF ONE SPECIES TO COVER
 	// ATTRIBUTES OF *ALL* SPECIES AS DETECTED AT MODEL LEVEL
-	demogrParams dem = pSpecies->getDemogrParams();
-	stageParams sstruct = pSpecies->getStageParams();
-	emigRules emig = pSpecies->getEmigRules();
-	transferRules trfr = pSpecies->getTransferRules();
-	settleType sett = pSpecies->getSettle();
+	demogrParams dem = speciesMap.at(gSingleSpeciesID)->getDemogrParams();
+	stageParams sstruct = speciesMap.at(gSingleSpeciesID)->getStageParams();
+	emigRules emig = speciesMap.at(gSingleSpeciesID)->getEmigRules();
+	transferRules trfr = speciesMap.at(gSingleSpeciesID)->getTransferRules();
+	settleType sett = speciesMap.at(gSingleSpeciesID)->getSettle();
 
 	outRangeOfs << rep << "\t" << yr << "\t" << gen;
 	if (env.stoch && !env.local) // write global environmental stochasticity
@@ -1225,13 +1226,16 @@ bool Community::closeOutTraitOfs() {
 }
 
 // Open traits file and write header record
-bool Community::outTraitsHeaders(Landscape* pLandscape, Species* pSpecies, int landNr)
+bool Community::outTraitsHeaders(Landscape* pLandscape, int landNr)
 {
-	landParams land = pLandscape->getLandParams();string name;
-	emigRules emig = pSpecies->getEmigRules();
-	transferRules trfr = pSpecies->getTransferRules();
-	settleType sett = pSpecies->getSettle();
+	landParams land = pLandscape->getLandParams();
+	string name;
+	emigRules emig = speciesMap.at(gSingleSpeciesID)->getEmigRules();
+	transferRules trfr = speciesMap.at(gSingleSpeciesID)->getTransferRules();
+	settleType sett = speciesMap.at(gSingleSpeciesID)->getSettle();
 	simParams sim = paramsSim->getSim();
+	demogrParams dem = speciesMap.at(gSingleSpeciesID)->getDemogrParams();
+	bool hasGenLoad = speciesMap.at(gSingleSpeciesID)->getNbGenLoadTraits() > 0;
 
 	string DirOut = paramsSim->getDir(2);
 	if (sim.batchMode) {
@@ -1321,8 +1325,8 @@ bool Community::outTraitsHeaders(Landscape* pLandscape, Species* pSpecies, int l
 			outTraitsOfs << "\tmeanBetaS\tstdBetaS";
 		}
 	}
-	if (pSpecies->getNbGenLoadTraits() > 0) {
-		if (pSpecies->getDemogrParams().repType > 0) {
+	if (hasGenLoad) {
+		if (dem.repType > 0) {
 			outTraitsOfs << "\tF_meanGenFitness\tF_stdGenFitness\tM_meanGenFitness\tM_stdGenFitness";
 		}
 		else {
@@ -1341,7 +1345,7 @@ only, this function relies on the fact that subcommunities are created in the sa
 sequence as patches, which is in asecending order of x nested within descending
 order of y
 */
-void Community::outTraits(Species* pSpecies, int rep, int yr, int gen)
+void Community::outTraits(int rep, int yr, int gen)
 {
 	simParams sim = paramsSim->getSim();
 	simView v = paramsSim->getViews();
@@ -1444,7 +1448,7 @@ void Community::outTraits(Species* pSpecies, int rep, int yr, int gen)
 		if (popns.size() > 0 && mustOutputTraitRows) {
 			for (int y = 0; y < land.dimY; y++) {
 				if ((ts[y].ninds[0] + ts[y].ninds[1]) > 0) {
-					writeTraitsRows(pSpecies, rep, yr, gen, y, ts[y]);
+					writeTraitsRows(rep, yr, gen, y, ts[y]);
 				}
 			}
 		}
@@ -1456,12 +1460,13 @@ void Community::outTraits(Species* pSpecies, int rep, int yr, int gen)
 }
 
 // Write records to trait rows file
-void Community::writeTraitsRows(Species* pSpecies, int rep, int yr, int gen, int y,
+void Community::writeTraitsRows(int rep, int yr, int gen, int y,
 	traitsums ts)
 {
-	emigRules emig = pSpecies->getEmigRules();
-	transferRules trfr = pSpecies->getTransferRules();
-	settleType sett = pSpecies->getSettle();
+	emigRules emig = speciesMap.at(gSingleSpeciesID)->getEmigRules();
+	transferRules trfr = speciesMap.at(gSingleSpeciesID)->getTransferRules();
+	settleType sett = speciesMap.at(gSingleSpeciesID)->getSettle();
+	bool hasGenLoad = speciesMap.at(gSingleSpeciesID)->getNbGenLoadTraits() > 0;
 	double mn, sd;
 
 	// calculate population size in case one phase is sex-dependent and the other is not
@@ -1600,7 +1605,7 @@ void Community::writeTraitsRows(Species* pSpecies, int rep, int yr, int gen, int
 		outTraitsRows << "\t" << mn << "\t" << sd;
 	}
 
-	if (pSpecies->getNbGenLoadTraits() > 0) {
+	if (hasGenLoad) {
 		if (gMaxNbSexes > 1) {
 			if (ts.ninds[0] > 0) mn = ts.sumGeneticFitness[0] / (double)ts.ninds[0]; else mn = 0.0;
 			if (ts.ninds[0] > 1) sd = ts.ssqGeneticFitness[0] / (double)ts.ninds[0] - mn * mn; else sd = 0.0;
@@ -1628,13 +1633,14 @@ bool Community::closeTraitRows() {
 }
 
 // Open trait rows file and write header record
-bool Community::outTraitsRowsHeaders(Species* pSpecies, int landNr) {
+bool Community::outTraitsRowsHeaders(int landNr) {
 
 	string name;
-	emigRules emig = pSpecies->getEmigRules();
-	transferRules trfr = pSpecies->getTransferRules();
-	settleType sett = pSpecies->getSettle();
+	emigRules emig = speciesMap.at(gSingleSpeciesID)->getEmigRules();
+	transferRules trfr = speciesMap.at(gSingleSpeciesID)->getTransferRules();
+	settleType sett = speciesMap.at(gSingleSpeciesID)->getSettle();
 	simParams sim = paramsSim->getSim();
+	bool hasGenLoad = speciesMap.at(gSingleSpeciesID)->getNbGenLoadTraits() > 0;
 
 	string DirOut = paramsSim->getDir(2);
 	if (sim.batchMode) {
@@ -1702,7 +1708,7 @@ bool Community::outTraitsRowsHeaders(Species* pSpecies, int landNr) {
 		outTraitsRows << "\tmeanBetaS\tstdBetaS";
 	}
 
-	if (pSpecies->getNbGenLoadTraits() > 0) {
+	if (hasGenLoad) {
 		if (gMaxNbSexes > 1) {
 			outTraitsRows << "\tF_meanProbViable\tF_stdProbViable\tM_meanProbViable\tM_stdProbViable";
 		}

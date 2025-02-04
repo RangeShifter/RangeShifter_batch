@@ -47,20 +47,16 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	simParams sim = paramsSim->getSim();
 	simView v = paramsSim->getViews();
 
+	// Create and select sampled patches for imported landscapes
 	if (!ppLand.generated) {
-		if (!ppLand.usesPatches) { // cell-based landscape
-			// create patches for suitable cells, adding unsuitable cells to the matrix
-			// NB this is an overhead here, but is necessary in case the identity of
-			// suitable habitats has been changed from one simulation to another (GUI or batch)
-			// substantial time savings may result during simulation in certain landscapes
-			// if using neutral markers, set up patches to sample from 
+
+		if (!ppLand.usesPatches) { // cell-based landscape 
 			pLandscape->allocatePatches(allSpecies);
 		}
 
-		pComm = new Community(pLandscape, allSpecies); // set up community
+		pComm = new Community(pLandscape, allSpecies);
 		
 		if (init.seedType == 0 && init.freeType < 2 && init.initFrzYr > 0) {
-			// restrict available landscape to initialised region
 			pLandscape->setLandLimits(init.minSeedX, init.minSeedY,
 				init.maxSeedX, init.maxSeedY);
 		}
@@ -68,7 +64,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			pLandscape->resetLandLimits();
 		}
 
-		// Random patches are sampled only once per landscape
+		// Random patches are sampled once per landscape
 		if (sim.patchSamplingOption == "random") {
 				pLandscape->samplePatches(allSpecies, sim.patchSamplingOption);
 		}
@@ -81,7 +77,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	// Loop through replicates
 	for (int rep = 0; rep < sim.reps; rep++) {
 
-		cout << "Running replicate " << rep + 1 << " / " << sim.reps << endl;
+		cout << "Running replicate " << rep << " / " << sim.reps - 1 << endl;
 
 #if RS_RCPP && !R_CMD
 		Rcpp::Rcout << endl << "starting replicate " << rep << endl;
@@ -97,16 +93,15 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		int iPatchChg = 0; // track outside year loop to reset between replicates
 		int iCostChg = 0;
 		
+		// Create and select sampled patches for artifical landscapes
 		if (ppLand.generated) {
-			// delete previous community (if any)
-			// Note: this must be BEFORE the landscape is reset (as a sub-community accesses
-			// its corresponding patch upon deletion)
+
 			if (pComm != nullptr) delete pComm;
 			
 			// generate new cell-based landscape
 			pLandscape->resetLand();
 			pLandscape->generatePatches(allSpecies);
-			pComm = new Community(pLandscape, allSpecies); // set up community
+			pComm = new Community(pLandscape, allSpecies);
 			
 			if (sim.patchSamplingOption == "random") {
 				// Then patches must be resampled for new landscape
@@ -127,7 +122,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		if (rep == 0) {
 			// open output files
 			if (sim.outRange) { // open Range file
-				if (!pComm->outRangeHeaders(pSpecies, ppLand.landNum)) {
+				if (!pComm->outRangeHeaders(ppLand.landNum)) {
 					filesOK = false;
 				}
 			}
@@ -137,16 +132,16 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				}
 			if (sim.outPop) {
 				// open Population file
-				if (!pComm->outPopHeaders(pSpecies)) {
+				if (!pComm->outPopHeaders()) {
 					filesOK = false;
 				}
 			}
 			if (sim.outTraitsCells)
-				if (!pComm->outTraitsHeaders(pLandscape, pSpecies, ppLand.landNum)) {
+				if (!pComm->outTraitsHeaders(pLandscape, ppLand.landNum)) {
 					filesOK = false;
 				}
 			if (sim.outTraitsRows)
-				if (!pComm->outTraitsRowsHeaders(pSpecies, ppLand.landNum)) {
+				if (!pComm->outTraitsRowsHeaders(ppLand.landNum)) {
 					filesOK = false;
 				}
 			if (sim.outConnect && ppLand.usesPatches) // open Connectivity file
@@ -210,7 +205,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 		// open a new individuals file for each replicate
 		if (sim.outInds)
-			pComm->outIndsHeaders(rep, ppLand.landNum, ppLand.usesPatches, pSpecies);
+			pComm->outIndsHeaders(rep, ppLand.landNum, ppLand.usesPatches);
 
 		if (sim.outputGeneValues) {
 			bool geneOutFileHasOpened = pComm->openOutGenesFile(pSpecies->isDiploid(), ppLand.landNum, rep);
@@ -668,7 +663,7 @@ void PreReproductionOutput(Landscape* pLand, Community* pComm, int rep, int yr, 
 		|| ((sim.outTraitsCells && yr >= sim.outStartTraitCell && yr % sim.outIntTraitCell == 0) ||
 			(sim.outTraitsRows && yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0)))
 	{
-		pComm->outTraits(pSpecies, rep, yr, gen);
+		pComm->outTraits(rep, yr, gen);
 	}
 	if (sim.outOccup && yr % sim.outIntOcc == 0 && gen == 0)
 		pComm->updateOccupancy(yr / sim.outIntOcc, rep);
@@ -680,7 +675,7 @@ void RangePopOutput(Community* pComm, int rep, int yr, int gen)
 	simParams sim = paramsSim->getSim();
 
 	if (sim.outRange && (yr % sim.outIntRange == 0 || pComm->totalInds() <= 0))
-		pComm->outRange(pSpecies, rep, yr, gen);
+		pComm->outRange(rep, yr, gen);
 
 	if (sim.outPop && yr >= sim.outStartPop && yr % sim.outIntPop == 0)
 		pComm->outPop(rep, yr, gen);
