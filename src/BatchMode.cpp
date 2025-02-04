@@ -708,10 +708,7 @@ int CheckParameterFile()
 	bParamFile >> header; if (header != "OutIntTraitCell") nbErrors++;
 	bParamFile >> header; if (header != "OutIntTraitRow") nbErrors++;
 	bParamFile >> header; if (header != "OutIntConn") nbErrors++;
-	bParamFile >> header; if (header != "SaveMaps") nbErrors++;
-	bParamFile >> header; if (header != "MapsInterval") nbErrors++;
 	bParamFile >> header; if (header != "SMSHeatMap") nbErrors++;
-	bParamFile >> header; if (header != "DrawLoadedSp") nbErrors++;
 	bParamFile >> header; if (header != "FixReplicateSeed") nbErrors++;
 
 	if (nbErrors > 0 || nbKerrors > 0) {
@@ -1042,25 +1039,10 @@ int CheckParameterFile()
 				nbErrors++;
 			}
 		}
-		bParamFile >> inSaveMaps; 
-		if (inSaveMaps != 0 && inSaveMaps != 1)
-		{
-			BatchError(whichFile, whichLine, 1, "SaveMaps"); 
-			nbErrors++;
-		}
-		bParamFile >> inMapsInterval; 
-		if (inSaveMaps == 1 && inMapsInterval < 1) {
-			BatchError(whichFile, whichLine, 11, "MapsInterval");
-			nbErrors++;
-		}
+		
 		bParamFile >> inSMSHeatMap; 
 		if (inSMSHeatMap != 0 && inSMSHeatMap != 1) {
 			BatchError(whichFile, whichLine, 1, "SMSHeatMap");
-			nbErrors++;
-		}
-		bParamFile >> inDrawLoadedSp; 
-		if (inSaveMaps == 1 && (inDrawLoadedSp != 0 && inDrawLoadedSp != 1)) {
-			BatchError(whichFile, whichLine, 1, "DrawLoadedSp");
 			nbErrors++;
 		}
 		bParamFile >> inFixReplicateSeed; 
@@ -5475,14 +5457,8 @@ int ReadParameters(Landscape* pLandscape)
 		if (sim.outConnect) errorCode = 105;
 	}
 
-	// Output maps
-	parameters >> inSaveMaps >> sim.mapInt;
-	sim.saveMaps = inSaveMaps == "1";
 	parameters >> inHeatMaps;
 	sim.saveVisits = inHeatMaps == "1";
-	parameters >> inDrawLoaded;
-	sim.drawLoaded = inDrawLoaded == "1";
-
 	parameters >> inFixRepSeed;
 	sim.fixReplicateSeed = inFixRepSeed == "1";
 
