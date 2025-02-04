@@ -49,6 +49,8 @@ int gNbSexesDisp;	// no. of explicit sexes for dispersal model
 int gFirstSimNb = 0; // not great, globals should not be modified.
 bool gHasGenetics = true;
 
+set<int> gSimNbs; // record of simulation numbers to check input file use the same numbers
+
 // Track trait-relevant options to check for coherency across input files, 
 // e.g. if emig file says emigration is indvar, trait file should have d0 entry
 map<int, TraitInputOptions> gTraitOptions;
@@ -696,10 +698,7 @@ int CheckParameterFile()
 	ifsParamFile >> header; if (header != "OutIntTraitCell") nbErrors++;
 	ifsParamFile >> header; if (header != "OutIntTraitRow") nbErrors++;
 	ifsParamFile >> header; if (header != "OutIntConn") nbErrors++;
-	ifsParamFile >> header; if (header != "SaveMaps") nbErrors++;
-	ifsParamFile >> header; if (header != "MapsInterval") nbErrors++;
 	ifsParamFile >> header; if (header != "SMSHeatMap") nbErrors++;
-	ifsParamFile >> header; if (header != "DrawLoadedSp") nbErrors++;
 	ifsParamFile >> header; if (header != "FixReplicateSeed") nbErrors++;
 
 	if (nbErrors > 0 || nbKerrors > 0) {
@@ -730,6 +729,9 @@ int CheckParameterFile()
 		nSimuls++;
 	}
 	while (simNb != -98765) {
+
+		// Record simulation numbers to cross-check other files
+		gSimNbs.insert(simNb);
 
 		// Initialise trait option map with simulation numbers
 		gTraitOptions.emplace(simNb, TraitInputOptions());
@@ -1027,28 +1029,13 @@ int CheckParameterFile()
 				nbErrors++;
 			}
 		}
-		ifsParamFile >> inSaveMaps; 
-		if (inSaveMaps != 0 && inSaveMaps != 1)
-		{
-			BatchError(whichFile, whichLine, 1, "SaveMaps"); 
-			nbErrors++;
-		}
-		ifsParamFile >> inMapsInterval; 
-		if (inSaveMaps == 1 && inMapsInterval < 1) {
-			BatchError(whichFile, whichLine, 11, "MapsInterval");
-			nbErrors++;
-		}
-		ifsParamFile >> inSMSHeatMap; 
+		
+		ifsParamFile >> inSMSHeatMap;
 		if (inSMSHeatMap != 0 && inSMSHeatMap != 1) {
 			BatchError(whichFile, whichLine, 1, "SMSHeatMap");
 			nbErrors++;
 		}
-		ifsParamFile >> inDrawLoadedSp; 
-		if (inSaveMaps == 1 && (inDrawLoadedSp != 0 && inDrawLoadedSp != 1)) {
-			BatchError(whichFile, whichLine, 1, "DrawLoadedSp");
-			nbErrors++;
-		}
-		ifsParamFile >> inFixReplicateSeed; 
+		ifsParamFile >> inFixReplicateSeed;
 		if (inFixReplicateSeed != 0 && inFixReplicateSeed != 1) {
 			BatchError(whichFile, whichLine, 1, "FixReplicateSeed");
 			nbErrors++;
@@ -1689,6 +1676,13 @@ int CheckStageFile(string indir)
 	}
 	prevsimul = inint;
 	while (inint != -98765) {
+
+		if (!gSimNbs.contains(inint)) {
+			BatchError(filetype, line, 0, " ");
+			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
+			errors++;
+		}
+
 		simuls++;
 		ifsStageStructFile >> inint;
 		if (inint < 0 || inint > 1) { BatchError(filetype, line, 1, "PostDestructn"); errors++; }
@@ -2162,6 +2156,13 @@ int CheckEmigFile()
 	}
 
 	while (readNextLine) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+		}
+
 		// read and validate columns relating to stage and sex-dependency and to IIV
 		ifsEmigrationFile >> inDensDep >> inUseFullKern >> inStgDep >> inSexDep;
 		ifsEmigrationFile >> inIndVar >> inEmigStg >> inStage >> inSex;
@@ -2428,10 +2429,17 @@ int CheckTransferFile(string indir)
 	ifsTransferFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
-		BatchError(whichFile, whichLine, 111, "Simulation"); errors++;
+		BatchError(whichFile, whichLine, 111, "Simulation"); 
+		errors++;
 	}
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
+			errors++;
+		}
 
 		switch (gTransferType) {
 
@@ -2811,7 +2819,15 @@ int CheckSettleFile()
 	}
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
-		if (gTransferType == 0) { // dispersal kernel
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+		}
+
+		if (gTransferType == 0)
+		{ // dispersal kernel
 			// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 			ifsSettlementFile >> inStageDep >> inSexDep >> inStage >> inSex >> inSettleType >> inFindMate;
 			current = CheckStageSex(whichFile, whichLine, simNb, prev, inStageDep, inSexDep, inStage, inSex, 0, true, false);
@@ -2993,7 +3009,14 @@ int CheckTraitsFile(string indir)
 		nbErrors++;
 	}
 	int nbRowsToRead = 0;
+
 	while (!stopReading) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+		}
 
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 		ifsTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions 
@@ -3898,6 +3921,13 @@ int CheckGeneticsFile(string inputDirectory) {
 		nbErrors++;
 	}
 	while (simNb != -98765) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+		}
+
 		ifsGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutWeirCockerham >>
 			inOutWeirHill >> inOutStartGenetics >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
 			>> inNIndsToSample >> inStages;
@@ -4171,6 +4201,13 @@ int CheckInitFile(string indir)
 	}
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(filetype, line, 0, " ");
+			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
+			errors++;
+		}
+
 		current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, 0, true, false);
 		if (current.isNewSim) simuls++;
 		errors += current.errors;
@@ -5419,14 +5456,8 @@ int ReadParameters(Landscape* pLandscape)
 		if (sim.outConnect) errorCode = 105;
 	}
 
-	// Output maps
-	ifsParamFile >> inSaveMaps >> sim.mapInt;
-	sim.saveMaps = inSaveMaps == "1";
 	ifsParamFile >> inHeatMaps;
 	sim.saveVisits = inHeatMaps == "1";
-	ifsParamFile >> inDrawLoaded;
-	sim.drawLoaded = inDrawLoaded == "1";
-
 	ifsParamFile >> inFixRepSeed;
 	sim.fixReplicateSeed = inFixRepSeed == "1";
 
@@ -6516,11 +6547,17 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 			string pathToPatchMap = paramsLand.usesPatches ? 
 				paramsSim->getDir(1) + gPatchMapName : " ";
 			landcode = pLandscape->readLandscape(0, pathToHabMap, pathToPatchMap, pathToCostMap);
-			if (landcode != 0) landOK = false;
+			if (landcode != 0) {
+				cout << "Error reading landscape" << endl;
+				landOK = false;
+			}
 
 			if (paramsLand.dynamic) {
 				landcode = ReadDynLandFile(pLandscape);
-				if (landcode != 0) landOK = false;
+				if (landcode != 0) {
+					cout << "Error reading dynamic landscape" << endl;
+					landOK = false;
+				}
 			}
 			if (gLandType == 0) pLandscape->updateHabitatIndices();
 

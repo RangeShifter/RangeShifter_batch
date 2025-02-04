@@ -245,12 +245,11 @@ paramSim::paramSim(const string& pathToProjDir) :
 	outStartTraitCell = outStartTraitRow = outStartConn = 0;
 	outIntOcc = outIntPop = outIntInd = outputGeneticInterval = 10;
 	outIntTraitCell = outIntTraitRow = outIntConn = 10;
-	mapInt = traitInt = 10;
+	traitInt = 10;
 	batchMode = absorbing = false;
 	outRange = outOccup = outPop = outInds = false;
 	outTraitsCells = outTraitsRows = outConnect = false;
 	outputGenes = outputWeirCockerham = outputWeirHill = false;
-	saveMaps = false; saveTraitMaps = false;
 	saveVisits = false;
 #if RS_RCPP
 	outStartPaths = 0; outIntPaths = 0;
@@ -265,7 +264,6 @@ void paramSim::setSim(simParams s) {
 	if (s.simulation >= 0) simulation = s.simulation;
 	if (s.reps >= 1) reps = s.reps;
 	if (s.years >= 1) years = s.years;
-	if (s.mapInt >= 1) mapInt = s.mapInt;
 	if (s.traitInt >= 1) traitInt = s.traitInt;
 	batchMode = s.batchMode; absorbing = s.absorbing;
 	outRange = s.outRange; outOccup = s.outOccup;
@@ -284,7 +282,6 @@ void paramSim::setSim(simParams s) {
 	if (s.outIntTraitCell >= 1) outIntTraitCell = s.outIntTraitCell;
 	if (s.outIntTraitRow >= 1) outIntTraitRow = s.outIntTraitRow;
 	if (s.outIntConn >= 1) outIntConn = s.outIntConn;
-	saveMaps = s.saveMaps; saveTraitMaps = s.saveTraitMaps;
 	saveVisits = s.saveVisits;
 #if RS_RCPP
 	outStartPaths = s.outStartPaths;
@@ -305,7 +302,7 @@ void paramSim::setGeneticSim(string patchSamplingOption, bool outputGeneticValue
 	this->outputGeneticInterval = outputGeneticInterval;
 }
 
-simParams paramSim::getSim(void) {
+simParams paramSim::getSim() {
 	simParams s;
 	s.batchNum = batchNum;
 	s.simulation = simulation; s.reps = reps; s.years = years;
@@ -322,9 +319,7 @@ simParams paramSim::getSim(void) {
 	s.outIntConn = outIntConn;
 	s.batchMode = batchMode;
 	s.absorbing = absorbing;
-	s.saveMaps = saveMaps; s.saveTraitMaps = saveTraitMaps;
-	s.saveVisits = saveVisits;
-	s.mapInt = mapInt; s.traitInt = traitInt;
+	s.traitInt = traitInt;
 #if RS_RCPP
 	s.outStartPaths = outStartPaths;
 	s.outIntPaths = outIntPaths;

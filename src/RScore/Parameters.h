@@ -358,35 +358,33 @@ public:
 #endif
 
 private:
-	int batchNum;						// batch number
-	int simulation;					// simulation no.
-	int reps;								// no. of replicates
-	int years;							// no. of years
-	int outStartPop;				// output start year for population file
-	int outStartInd;				// output start year for individuals file
-	int outStartTraitCell;	// output start year for traits by cell file
+	int batchNum;				// batch number
+	int simulation;				// simulation no.
+	int reps;					// no. of replicates
+	int years;					// no. of years
+	int outStartPop;			// output start year for population file
+	int outStartInd;			// output start year for individuals file
+	int outStartTraitCell;		// output start year for traits by cell file
 	int outStartTraitRow;		// output start year for traits by row file
-	int outStartConn;				// output start year for connectivity matrix
-	int outIntRange;				// output interval for range file
-	int outIntOcc;					// output interval for occupancy file
-	int outIntPop;					// output interval for population file
-	int outIntInd;					// output interval for individuals file
+	int outStartConn;			// output start year for connectivity matrix
+	int outIntRange;			// output interval for range file
+	int outIntOcc;				// output interval for occupancy file
+	int outIntPop;				// output interval for population file
+	int outIntInd;				// output interval for individuals file
 	int outIntTraitCell;		// output interval for traits by cell file
 	int outIntTraitRow;			// output interval for traits by row file
-	int outIntConn;					// output interval for connectivity matrix
-	int mapInt;							// output interval for maps
-	int traitInt;						// output interval for evolving traits maps
-	bool batchMode;					//
-	bool absorbing; 				// landscape boundary and no-data regions are absorbing boundaries
-	bool outRange;					// produce output range file?
-	bool outOccup;					// produce output occupancy file?
-	bool outPop;						// produce output population file?
-	bool outInds;						// produce output individuals file?
+	int outIntConn;				// output interval for connectivity matrix
+	int traitInt;				// output interval for evolving traits maps
+	bool batchMode;				
+	bool absorbing; 			// landscape boundary and no-data regions are absorbing boundaries
+	bool outRange;				// produce output range file?
+	bool outOccup;				// produce output occupancy file?
+	bool outPop;				// produce output population file?
+	bool outInds;				// produce output individuals file?
 	bool outTraitsCells;		// produce output summary traits by cell file?
 	bool outTraitsRows;			// produce output summary traits by row (y) file?
-	bool outConnect;				// produce output connectivity file?
-	bool saveMaps;					// save landscape/population maps?
-	bool saveVisits;        // save dispersal visits heat maps?
+	bool outConnect;			// produce output connectivity file?
+	bool saveVisits;			// save dispersal visits heat maps?
 #if RS_RCPP
 	int outStartPaths;
 	int outIntPaths;
@@ -394,8 +392,7 @@ private:
 	bool ReturnPopRaster;
 	bool CreatePopFile;
 #endif
-	bool saveTraitMaps;			// save summary traits maps?
-	string dir;							// full name of working directory
+	string dir;					// full name of working directory
 	bool fixReplicateSeed;
 	string patchSamplingOption;
 	bool outputGenes;

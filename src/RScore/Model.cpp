@@ -1581,20 +1581,7 @@ void OutParameters(Landscape* pLandscape)
 		outPar << endl;
 	}
 #endif
-	outPar << "SAVE MAPS: ";
-	if (sim.saveMaps) {
-		outPar << "yes - every " << sim.mapInt << " year";
-		if (sim.mapInt > 1) outPar << "s";
-		outPar << endl;
-	}
-	else outPar << "no" << endl;
-	outPar << "SAVE TRAITS MAPS: ";
-	if (sim.saveTraitMaps) {
-		outPar << "yes - every " << sim.traitInt << " year";
-		if (sim.traitInt > 1) outPar << "s";
-		outPar << endl;
-	}
-	else outPar << "no" << endl;
+	
 	if (trfr.usesMovtProc && trfr.moveType == 1) {
 		outPar << "SMS HEAT MAPS: ";
 		if (sim.saveVisits) outPar << "yes" << endl;
