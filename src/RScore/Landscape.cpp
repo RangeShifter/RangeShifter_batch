@@ -1092,46 +1092,26 @@ void Landscape::updateHabitatIndices() {
 	habsAreIndexed = true;
 }
 
-void Landscape::setEnvGradient(Species* pSpecies, bool initial)
+void Landscape::setEnvGradient(bool isInitial)
 {
-	float dist_from_opt, dev;
-	float habK;
-	//int hab;
-	double envval;
+	float distFromOpt, dev;
+	double envVal;
 	// gradient parameters
 	envGradParams grad = paramsGrad->getGradient();
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
 			// NB: gradient lies in range 0-1 for all types, and is applied when necessary...
 			// ... implies gradient increment will be dimensionless in range 0-1 (but << 1)
-			if (cells[y][x] != 0) { // not no-data cell
-				habK = 0.0;
-				int nhab = cells[y][x]->nHabitats();
-				for (int i = 0; i < nhab; i++) {
-					switch (rasterType) {
-					case 0:
-						habK += pSpecies->getHabK(cells[y][x]->getHabIndex(i));
-						break;
-					case 1:
-						habK += pSpecies->getHabK(i) * cells[y][x]->getHabitat(i) / 100.0f;
-						break;
-					case 2:
-						habK += pSpecies->getHabK(0) * cells[y][x]->getHabitat(i) / 100.0f;
-						break;
-					}
+			if (cells[y][x] != nullptr) { // not no-data cell
+				if (isInitial) { // set local environmental deviation
+					dev = pRandom->Random() * 2.0f - 1.0f;
+					cells[y][x]->setEnvDev(dev);
 				}
-				if (habK > 0.0) { // suitable cell
-					if (initial) { // set local environmental deviation
-						cells[y][x]->setEnvDev((float)pRandom->Random() * (2.0f) - 1.0f);
-					}
-					dist_from_opt = (float)(fabs((double)grad.opt_y - (double)y));
-					dev = cells[y][x]->getEnvDev();
-					envval = 1.0 - dist_from_opt * grad.grad_inc + dev * grad.factor;
-					if (envval < 0.000001) envval = 0.0;
-					if (envval > 1.0) envval = 1.0;
-				}
-				else envval = 0.0;
-				cells[y][x]->setEnvVal((float)envval);
+				else dev = cells[y][x]->getEnvDev();
+				distFromOpt = fabs(grad.opt_y - y);
+				envVal = min(1.0, 1.0 - distFromOpt * grad.gradIncr + dev * grad.factor);
+				if (envVal < 0.000001) envVal = 0.0;
+				cells[y][x]->setEnvVal(envVal);
 			}
 		}
 	}
@@ -1155,12 +1135,12 @@ float Landscape::getGlobalStoch(int yr) {
 	else return 0.0;
 }
 
-void Landscape::updateLocalStoch(void) {
+void Landscape::updateLocalStoch() {
 	envStochParams env = paramsStoch->getStoch();
 	float randpart;
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
-			if (cells[y][x] != 0) { // not a no-data cell
+			if (cells[y][x] != nullptr) {
 				randpart = (float)(pRandom->Normal(0.0, env.std) * sqrt(1.0 - (env.ac * env.ac)));
 				cells[y][x]->updateEps((float)env.ac, randpart);
 			}
@@ -1169,7 +1149,7 @@ void Landscape::updateLocalStoch(void) {
 
 }
 
-void Landscape::resetCosts(void) {
+void Landscape::resetCosts() {
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
 			if (cells[y][x] != 0) { // not a no-data cell

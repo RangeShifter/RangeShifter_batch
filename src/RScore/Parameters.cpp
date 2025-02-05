@@ -73,7 +73,7 @@ envGradParams paramGrad::getGradient() {
 	envGradParams g;
 	g.gradient = gradient; 
 	g.gradType = gradType; 
-	g.grad_inc = grad_inc;
+	g.gradIncr = grad_inc;
 	g.opt_y = opt_y; 
 	g.factor = factor; 
 	g.extProbOpt = extProbOpt;
@@ -109,8 +109,8 @@ paramStoch::~paramStoch() {}
 
 void paramStoch::setStoch(envStochParams e)
 {
-	stoch = e.stoch; 
-	local = e.local; 
+	stoch = e.usesStoch; 
+	local = e.stochIsLocal; 
 	inK = e.inK; 
 	localExt = e.localExt;
 	if (e.ac >= 0.0 && e.ac < 1.0) ac = e.ac;
@@ -123,8 +123,8 @@ bool paramStoch::envStoch() { return stoch; }
 envStochParams paramStoch::getStoch()
 {
 	envStochParams e;
-	e.stoch = stoch; 
-	e.local = local; 
+	e.usesStoch = stoch; 
+	e.stochIsLocal = local; 
 	e.inK = inK; 
 	e.localExt = localExt;
 	e.ac = ac; 

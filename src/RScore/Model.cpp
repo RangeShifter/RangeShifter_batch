@@ -124,13 +124,13 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			}
 		}
 		
-		if (env.stoch && !env.local) {
+		if (env.usesStoch && !env.stochIsLocal) {
 			// create time series in case of global environmental stochasticity
 			pLandscape->setGlobalStoch(sim.years + 1);
 		}
 
 		if (grad.gradient) { // set up environmental gradient
-			pLandscape->setEnvGradient(pSpecies, true);
+			pLandscape->setEnvGradient(true);
 		}
 
 		if (sim.outConnect && ppLand.usesPatches) {
@@ -209,8 +209,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					pLandscape->resetLandLimits();
 					mustUpdateK = true;
 				}
-				if (init.restrictRange) {
-					if (yr > init.initFrzYr && yr < init.finalFrzYr) {
+				else if (init.restrictRange && yr > init.initFrzYr) {
+					if (yr < init.finalFrzYr) {
 						if ((yr - init.initFrzYr) % init.restrictFreq == 0) {
 							// apply dynamic range restriction
 							commStats s = pComm->getStats();
@@ -220,7 +220,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 							mustUpdateK = true;
 						}
 					}
-					if (yr == init.finalFrzYr) {
+					else if (yr == init.finalFrzYr) {
 						// apply final range restriction
 						commStats s = pComm->getStats();
 						pLandscape->setLandLimits(ppLand.minX, s.minY, ppLand.maxX, s.maxY);
@@ -235,13 +235,13 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			// Environmental gradient
 			if (grad.shifting && yr > grad.shift_begin && yr < grad.shift_stop) {
 				paramsGrad->incrOptY();
-				pLandscape->setEnvGradient(pSpecies, false);
+				pLandscape->setEnvGradient(false);
 				mustUpdateK = true;
 			}
 			
 			// Environmental stochasticity
-			if (env.stoch) {
-				if (env.local) pLandscape->updateLocalStoch();
+			if (env.usesStoch) {
+				if (env.stochIsLocal) pLandscape->updateLocalStoch();
 				mustUpdateK = true;
 			}
 			
@@ -681,7 +681,7 @@ void OutParameters(Landscape* pLandscape)
 			outPar << "ERROR ERROR ERROR" << endl;
 			;
 		}
-		outPar << "G:\t\t " << grad.grad_inc << endl;
+		outPar << "G:\t\t " << grad.gradIncr << endl;
 		outPar << "optimum Y:\t " << grad.opt_y << endl;
 		outPar << "f:\t\t " << grad.factor << endl;
 		if (grad.gradType == 3) outPar << "Local extinction prob. at optimum:\t "
@@ -699,7 +699,7 @@ void OutParameters(Landscape* pLandscape)
 	else outPar << "no";
 	outPar << endl;
 	outPar << "ENVIRONMENTAL STOCHASTICITY:\t";
-	if (env.stoch) {
+	if (env.usesStoch) {
 		outPar << "yes" << endl;
 		outPar << "TYPE\t in ";
 		if (dem.stageStruct) {
@@ -711,7 +711,7 @@ void OutParameters(Landscape* pLandscape)
 			else outPar << "R" << endl;
 		}
 		outPar << "SPATIAL AUTOCORRELATION\t ";
-		if (env.local) outPar << "local" << endl;
+		if (env.stochIsLocal) outPar << "local" << endl;
 		else outPar << "global" << endl;
 		outPar << "TEMPORAL AUTOCORRELATION (ac)\t" << env.ac << endl;
 		outPar << "AMPLITUDE (std)\t" << env.std << endl;

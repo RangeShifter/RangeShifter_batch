@@ -252,7 +252,7 @@ public:
 	int patchCount(species_id id) const;
 	int allPatchCount() const;
 	void updateHabitatIndices();
-	void setEnvGradient(Species* pSpecies, bool isInitial);
+	void setEnvGradient(bool isInitial);
 	void setGlobalStoch(int	nbYears);
 	float getGlobalStoch(int year);
 	void updateLocalStoch();

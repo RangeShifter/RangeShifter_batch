@@ -489,8 +489,7 @@ void Population::localExtinction(int option) {
 	else {
 		Cell* pCell = pPatch->getRandomCell(); // get only cell in the patch
 		// extinction prob is complement of cell gradient value plus any non-zero prob at the optimum
-		pExtinct = 1.0 - pCell->getEnvVal() + paramsGrad->getGradient().extProbOpt;
-		if (pExtinct > 1.0) pExtinct = 1.0;
+		pExtinct = min(1.0, 1.0 - pCell->getEnvVal() + paramsGrad->getGradient().extProbOpt);
 	}
 
 	if (pRandom->Bernoulli(pExtinct)) {
@@ -570,7 +569,7 @@ void Population::reproduction(const float localK, const float envval, const int 
 			if (fec[stg][0] > 0.0) {
 				// apply any effect of environmental gradient and/or stochasticty
 				fec[stg][0] *= envval;
-				if (env.stoch && !env.inK) {
+				if (env.usesStoch && !env.inK) {
 					// fecundity (at low density) is constrained to lie between limits specified
 					// for the species
 					float limit;
@@ -608,7 +607,7 @@ void Population::reproduction(const float localK, const float envval, const int 
 	else { // non-structured - set fecundity for adult females only
 		// apply any effect of environmental gradient and/or stochasticty
 		fec[1][0] *= envval;
-		if (env.stoch && !env.inK) {
+		if (env.usesStoch && !env.inK) {
 			// fecundity (at low density) is constrained to lie between limits specified
 			// for the species
 			float limit;

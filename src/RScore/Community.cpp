@@ -290,8 +290,8 @@ void Community::reproduction(int yr)
 	landParams land = pLandscape->getLandParams();
 	envStochParams env = paramsStoch->getStoch();
 
-	if (env.stoch) {
-		if (!env.local) { // global stochasticty
+	if (env.usesStoch) {
+		if (!env.stochIsLocal) { // global stochasticty
 			eps = pLandscape->getGlobalStoch(yr);
 		}
 	}
@@ -611,23 +611,23 @@ void Community::outPop(int rep, int yr, int gen)
 	landParams land = pLandscape->getLandParams();
 	envGradParams grad = paramsGrad->getGradient();
 	envStochParams env = paramsStoch->getStoch();
-	bool writeEnv = grad.gradient || env.stoch;
+	bool writeEnv = grad.gradient || env.usesStoch;
 	bool gradK = grad.gradient && grad.gradType == 1;
 
 	float eps = 0.0;
-	if (env.stoch && !env.local) {
+	if (env.usesStoch && !env.stochIsLocal) {
 		eps = pLandscape->getGlobalStoch(yr);
 	}
 
 	// generate output for each population (patch x species) in the community
 	for (auto& [spId, mtxPop] : matrixPops) {
 		if (mtxPop->totalPop() > 0) {
-			mtxPop->outPopulation(outPopOfs, rep, yr, gen, env.local, eps, land.usesPatches, writeEnv, gradK);
+			mtxPop->outPopulation(outPopOfs, rep, yr, gen, env.stochIsLocal, eps, land.usesPatches, writeEnv, gradK);
 		}
 	}
 	for (auto pop : popns) {
 		if (pop->getPatch()->isSuitable() || pop->totalPop() > 0) {
-			pop->outPopulation(outPopOfs, rep, yr, gen, env.local, eps, land.usesPatches, writeEnv, gradK);
+			pop->outPopulation(outPopOfs, rep, yr, gen, env.stochIsLocal, eps, land.usesPatches, writeEnv, gradK);
 		}
 	}
 }
@@ -738,7 +738,7 @@ bool Community::outRangeHeaders(int landNr)
 	}
 	outRangeOfs.open(name.c_str());
 	outRangeOfs << "Rep\tYear\tRepSeason";
-	if (env.stoch && !env.local) outRangeOfs << "\tEpsilon";
+	if (env.usesStoch && !env.stochIsLocal) outRangeOfs << "\tEpsilon";
 
 	outRangeOfs << "\tNInds";
 	if (dem.stageStruct) {
@@ -827,7 +827,7 @@ void Community::outRange(int rep, int yr, int gen)
 	settleType sett = speciesMap.at(gSingleSpeciesID)->getSettle();
 
 	outRangeOfs << rep << "\t" << yr << "\t" << gen;
-	if (env.stoch && !env.local) // write global environmental stochasticity
+	if (env.usesStoch && !env.stochIsLocal) // write global environmental stochasticity
 		outRangeOfs << "\t" << pLandscape->getGlobalStoch(yr);
 
 	commStats s = getStats();

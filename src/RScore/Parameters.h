@@ -139,7 +139,7 @@ typedef enum {
 
 struct envGradParams {
 	bool gradient; bool shifting;
-	int gradType; float grad_inc; float opt_y; float factor; float extProbOpt;
+	int gradType; float gradIncr; float opt_y; float factor; float extProbOpt;
 	float shift_rate; int shift_begin; int shift_stop;
 };
 
@@ -188,7 +188,7 @@ private:
 // SHOULD THIS BE PART OF LANDSCAPE OBJECT OR A SEPARATE OBJECT?????????????
 
 struct envStochParams {
-	bool stoch; bool local; bool inK; bool localExt;
+	bool usesStoch; bool stochIsLocal; bool inK; bool localExt;
 	float ac; float std;
 	float locExtProb;
 };

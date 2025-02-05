@@ -5375,9 +5375,9 @@ int ReadParameters(Landscape* pLandscape)
 
 	// Environmental Stochasticity
 	ifsParamFile >> inEnvStoch;
-	env.stoch = inEnvStoch == "1" || inEnvStoch == "2";
-	env.local = inEnvStoch == "2";
-	if (paramsLand.usesPatches && env.local) errorCode = 101;
+	env.usesStoch = inEnvStoch == "1" || inEnvStoch == "2";
+	env.stochIsLocal = inEnvStoch == "2";
+	if (paramsLand.usesPatches && env.stochIsLocal) errorCode = 101;
 
 	ifsParamFile >> inEnvStochType;
 	env.inK = (inEnvStochType == "1");

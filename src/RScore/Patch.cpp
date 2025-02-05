@@ -138,9 +138,8 @@ void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float
 	
 	envStochParams env = paramsStoch->getStoch();
 	locn loc;
-	int xsum, ysum;
 	short hx;
-	float k, q, envval;
+	float k, q, envVal;
 
 	localK = 0.0; // no. of suitable cells (unadjusted K > 0) in the patch
 	int nsuitable = 0;
@@ -154,18 +153,22 @@ void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float
 		localK = 0.0;
 		return;
 	}
+
 	int ncells = static_cast<int>(cells.size());
-	xsum = ysum = 0;
+	int xsum = 0, ysum = 0;
+
 	for (int i = 0; i < ncells; i++) {
+
 		if (gradK) // gradient in carrying capacity
-			envval = cells[i]->getEnvVal(); // environmental gradient value
-		else envval = 1.0; // no gradient effect
-		if (env.stoch && env.inK) { // environmental stochasticity in K
-			if (env.local) {
-				envval += cells[i]->getEps();
+			envVal = cells[i]->getEnvVal(); // environmental gradient value
+		else envVal = 1.0; // no gradient effect
+
+		if (env.usesStoch && env.inK) { // environmental stochasticity in K
+			if (env.stochIsLocal) {
+				envVal += cells[i]->getEps();
 			}
 			else { // global stochasticity
-				envval += epsGlobal;
+				envVal += epsGlobal;
 			}
 		}
 		switch (rasterType) {
@@ -174,7 +177,7 @@ void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float
 			k = pSpecies->getHabK(hx);
 			if (k > 0.0) {
 				nsuitable++;
-				localK += envval * k;
+				localK += envVal * k;
 			}
 			break;
 		case 1: // cover %
@@ -185,19 +188,20 @@ void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float
 			}
 			if (k > 0.0) {
 				nsuitable++;
-				localK += envval * k;
+				localK += envVal * k;
 			}
 			break;
 		case 2: // habitat quality
 			q = cells[i]->getHabitat(landIx);
 			if (q > 0.0) {
 				nsuitable++;
-				localK += envval * pSpecies->getHabK(0) * q / 100.0f;
+				localK += envVal * pSpecies->getHabK(0) * q / 100.0f;
 			}
 			break;
 		}
 		loc = cells[i]->getLocn();
-		xsum += loc.x; ysum += loc.y;
+		xsum += loc.x; 
+		ysum += loc.y;
 	}
 // calculate centroid co-ordinates
 	if (ncells > 0) {
@@ -206,7 +210,7 @@ void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float
 		mean = static_cast<double>(ysum) / ncells;
 		y = static_cast<int>(mean + 0.5);
 	}
-	if (env.stoch && env.inK) { // environmental stochasticity in K
+	if (env.usesStoch && env.inK) { // environmental stochasticity in K
 		// apply min and max limits to K over the whole patch
 		// NB limits have been stored as N/cell rather than N/ha
 		float limit;
@@ -249,34 +253,31 @@ int Patch::getInitNbInds(const bool& isPatchModel, const int& landResol) const {
 
 float Patch::getEnvVal(const bool& isPatchModel, const float& epsGlobal) {
 
-	float envval = 0.0;
+	float envVal = 0.0;
 	envGradParams grad = paramsGrad->getGradient();
 	envStochParams env = paramsStoch->getStoch();
 
 	if (localK > 0.0) {
 		if (isPatchModel) {
-			envval = 1.0; // environmental gradient is currently not applied for patch-based model
+			envVal = 1.0; // environmental gradient is currently not applied for patch-based model
 		}
 		else { // cell-based model
-			if (grad.gradient && grad.gradType == 2)
-			{ // gradient in fecundity
-				envval = getRandomCell()->getEnvVal();  // locate the only cell in the patch
+			if (grad.gradient && grad.gradType == 2) { // gradient in fecundity
+				envVal = getRandomCell()->getEnvVal();  // locate the only cell in the patch
 			}
-			else envval = 1.0;
+			else envVal = 1.0;
 		}
-		if (env.stoch && !env.inK) { // stochasticity in fecundity
-			if (env.local) {
-				if (!isPatchModel) { // only permitted for cell-based model
-					Cell* pCell = getRandomCell();
-					if (pCell != nullptr) envval += pCell->getEps();
-				}
+		if (env.usesStoch && !env.inK) { // stochasticity in fecundity
+			if (env.stochIsLocal &&!isPatchModel) { // only permitted for cell-based model
+				Cell* pCell = getRandomCell();
+				if (pCell != nullptr) envVal += pCell->getEps();
 			}
 			else { // global stochasticity
-				envval += epsGlobal;
+				envVal += epsGlobal;
 			}
 		}
 	}
-	return envval;
+	return envVal;
 }
 
 
