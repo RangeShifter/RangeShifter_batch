@@ -145,13 +145,11 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			pLandscape->createConnectMatrix();
 		}
 
-		// variables to control dynamic landscape
+		// Dynamic landscape control
 		bool updateland = false;
 		int chgNb = 0; // landscape change index
 		landChange landChg; 
-		landChg.chgnum = 0; 
-		landChg.chgyear = 999999;
-		if (!ppLand.generated && ppLand.dynamic) {
+		if (ppLand.dynamic) {
 			landChg = pLandscape->getLandChange(0); // get first change year
 		}
 
@@ -233,72 +231,39 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			// environmental gradient, stochasticity & local extinction
 			// or dynamic landscape
 			updateland = false;
-			if (env.stoch || grad.gradient || ppLand.dynamic) {
-				if (grad.shifting && yr > grad.shift_begin && yr < grad.shift_stop) {
-					paramsGrad->incrOptY();
-					pLandscape->setEnvGradient(pSpecies, false);
-					mustUpdateK = true;
+			
+			// Environmental gradient
+			if (grad.shifting && yr > grad.shift_begin && yr < grad.shift_stop) {
+				paramsGrad->incrOptY();
+				pLandscape->setEnvGradient(pSpecies, false);
+				mustUpdateK = true;
+			}
+			
+			// Environmental stochasticity
+			if (env.stoch) {
+				if (env.local) pLandscape->updateLocalStoch();
+				mustUpdateK = true;
+			}
+			
+			// Dynamic landscape
+			if (ppLand.dynamic && yr == landChg.chgyear) {
+				chgNb = landChg.chgnum;
+				updateland = mustUpdateK = true;
+
+				if (ppLand.usesPatches) {
+					iPatchChg = pLandscape->applyPatchChanges(chgNb, iPatchChg);
+					// index used after years loop to reset between replicates
 				}
-				if (env.stoch) {
-					if (env.local) pLandscape->updateLocalStoch();
-					mustUpdateK = true;
+				if (landChg.costfile != "none") {
+					pLandscape->applyCostChanges(chgNb, iCostChg);
 				}
-				if (ppLand.dynamic && yr == landChg.chgyear) { // apply landscape change
-					chgNb = landChg.chgnum;
-					updateland = mustUpdateK = true;
-
-					if (ppLand.usesPatches) { // apply any patch changes
-						Patch* pPatch;
-
-						for (const species_id sp : views::keys(allSpecies)) {
-
-							int nbPatchChanges = pLandscape->numPatchChanges(sp);
-							for (; iPatchChg < nbPatchChanges; iPatchChg++) {
-
-								patchChange pchChange = pLandscape->getPatchChange(sp, iPatchChg);
-								if (pchChange.chgNb > chgNb) break;
-
-								// Move cell from original patch to new patch
-								Cell* pCell = pLandscape->findCell(pchChange.x, pchChange.y);
-								if (pchChange.oldPatch != 0) { // not matrix
-									pPatch = pLandscape->findPatch(sp, pchChange.oldPatch);
-									pPatch->removeCell(pCell);
-								}
-								if (pchChange.newPatch == 0) { // matrix
-									pPatch = nullptr;
-								}
-								else {
-									pPatch = pLandscape->findPatch(sp, pchChange.newPatch);
-									pPatch->addCell(pCell, pchChange.x, pchChange.y);
-								}
-								pCell->setPatch(sp, pPatch);
-							}
-						}
-						pLandscape->resetPatchLimits();
-					}
-
-					if (landChg.costfile != "none") { // apply any SMS cost changes
-
-						for (const species_id sp : views::keys(allSpecies)) {
-
-							int ncostchanges = pLandscape->getNbCostChanges(sp);
-							for (; iCostChg < ncostchanges; iCostChg++) {
-								costChange costChange = pLandscape->getCostChange(sp, iCostChg);
-								if (costChange.chgnum > chgNb) break;
-								Cell* pCell = pLandscape->findCell(costChange.x, costChange.y);
-								if (pCell != nullptr) pCell->setCost(costChange.newcost);
-							}
-							pLandscape->resetEffCosts();
-						}
-					}
-					if (chgNb < pLandscape->numLandChanges()) { // get next change
-						landChg = pLandscape->getLandChange(chgNb);
-					}
-					else {
-						landChg.chgyear = 9999999;
-					}
+				if (chgNb < pLandscape->numLandChanges()) { // get next change
+					landChg = pLandscape->getLandChange(chgNb);
 				}
-			} // end of environmental gradient, etc.
+				else {
+					landChg.chgyear = 9999999;
+				}
+			}
 
 			if (mustUpdateK) {
 				pLandscape->updateCarryingCapacity(allSpecies, yr, chgNb);
@@ -315,6 +280,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				pComm->scanUnsuitablePatches();
 				pComm->dispersal(chgNb, yr);
 			}
+
 			if (init.restrictRange) {
 				// remove any population from region removed from restricted range
 				if (yr > init.initFrzYr && yr < init.finalFrzYr) {
@@ -333,8 +299,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			for (int gen = 0; gen < dem.repSeasons; gen++) {
 				
 				// Output and pop. visualisation before reproduction
-				if (sim.outOccup || sim.outTraitsCells || sim.outTraitsRows || sim.saveMaps)
-					PreReproductionOutput(sim, pComm, rep, yr, gen);
+				traitAndOccOutput(sim, pComm, rep, yr, gen);
 
 				// Non-structured pops: range and population output *before* reproductrion
 				if (!dem.stageStruct) popAndRangeOutput(sim, pComm, rep, yr, gen);
@@ -429,46 +394,19 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		} // end of the years loop
 
 		// Final summary output
-		if (sim.outOccup || sim.outTraitsCells || sim.outTraitsRows || sim.saveMaps)
-			PreReproductionOutput(sim, pComm, rep, yr, 0);
+		traitAndOccOutput(sim, pComm, rep, yr, 0);
 		popAndRangeOutput(sim, pComm, rep, yr, 0);
 
 		pComm->resetPopns();
 
 		// Reset the gradient optimum
 		if (grad.gradient) paramsGrad->resetOptY();
-
 		pLandscape->resetLandLimits();
+		const int lastChange = 666666;
 		if (ppLand.usesPatches && ppLand.dynamic && iPatchChg > 0) {
 			// apply any patch changes to reset landscape to original configuration
 			// (provided that at least one has already occurred)
-			Patch* pPatch;
-
-			for (const species_id sp : views::keys(allSpecies)) {
-
-				int nbPatchChanges = pLandscape->numPatchChanges(sp);
-				for (; iPatchChg < nbPatchChanges; iPatchChg++) {
-
-					patchChange patchchange = pLandscape->getPatchChange(sp, iPatchChg);
-					if (patchchange.chgNb > 666666) break;
-
-					// move cell from original patch to new patch
-					Cell* pCell = pLandscape->findCell(patchchange.x, patchchange.y);
-					if (patchchange.oldPatch != 0) { // not matrix
-						pPatch = pLandscape->findPatch(sp, patchchange.oldPatch);
-						pPatch->removeCell(pCell);
-					}
-					if (patchchange.newPatch == 0) { // matrix
-						pPatch = nullptr;
-					}
-					else {
-						pPatch = pLandscape->findPatch(sp, patchchange.newPatch);
-						pPatch->addCell(pCell, patchchange.x, patchchange.y);
-					}
-					pCell->setPatch(sp, pPatch);
-				}
-			}
-			pLandscape->resetPatchLimits();
+			pLandscape->applyPatchChanges(lastChange, iPatchChg);
 		}
 		if (ppLand.dynamic) {
 			transferRules trfr = pSpecies->getTransferRules();
@@ -476,21 +414,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				if (iCostChg > 0) {
 					// apply any cost changes to reset landscape to original configuration
 					// (provided that at least one has already occurred)
-					for (const species_id sp : views::keys(allSpecies)) {
-
-						int ncostchanges = pLandscape->getNbCostChanges(sp);
-						for (; iCostChg < ncostchanges; iCostChg++) {
-
-							costChange costChange = pLandscape->getCostChange(sp, iCostChg);
-							if (costChange.chgnum <= 666666) break;
-
-							Cell* pCell = pLandscape->findCell(costChange.x, costChange.y);
-							if (pCell != nullptr) {
-								pCell->setCost(costChange.newcost);
-							}
-						}
-						pLandscape->resetEffCosts();
-					}
+					pLandscape->applyCostChanges(lastChange, iCostChg);
 				}
 				if (!trfr.costMap) pLandscape->resetCosts(); // in case habitats have changed
 			}
@@ -580,7 +504,7 @@ bool CheckDirectory(const string& pathToProjDir)
 
 //---------------------------------------------------------------------------
 //For outputs and population visualisations pre-reproduction
-void PreReproductionOutput(const simParams& sim, Community* pComm, int rep, int yr, int gen)
+void traitAndOccOutput(const simParams& sim, Community* pComm, int rep, int yr, int gen)
 {
 	// trait outputs and visualisation
 	if ((sim.outTraitsCells && yr >= sim.outStartTraitCell && yr % sim.outIntTraitCell == 0) 

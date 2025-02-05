@@ -320,9 +320,6 @@ struct simParams {
 	bool outTraitsCells; 
 	bool outTraitsRows; 
 	bool outConnect;
-	bool saveMaps;
-	bool drawLoaded; 
-	bool saveTraitMaps;
 	bool saveVisits;
 #if RS_RCPP
 	int outStartPaths; 

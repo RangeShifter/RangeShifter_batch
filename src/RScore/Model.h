@@ -67,7 +67,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies);
 #endif // RS_RCPP && !R_CMD
 
 bool CheckDirectory(const string& pathToProjDir);
-void PreReproductionOutput(const simParams& sim, Community* pComm, int rep, int yr, int gen);
+void traitAndOccOutput(const simParams& sim, Community* pComm, int rep, int yr, int gen);
 void popAndRangeOutput(const simParams& sim, Community* pComm, int rep, int yr, int gen);
 void OutParameters(Landscape* pLandscape);
 

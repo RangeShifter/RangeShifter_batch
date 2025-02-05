@@ -186,7 +186,7 @@ struct cellChange {
 };
 
 struct landChange {
-	int chgnum, chgyear; 
+	int chgnum = 0, chgyear = 999999;
 	string habfile, pchfile, costfile;
 };
 struct patchChange {
@@ -285,11 +285,13 @@ public:
 	void recordPatchChanges(int landIx);
 	int numPatchChanges(species_id sp);
 	patchChange getPatchChange(species_id sp, int changeIx);
+	int applyPatchChanges(const int& landChgNb, int iPatchChg);
 	void createCostsChgMatrix();
 	void resetCostChanges();
 	void recordCostChanges(int landIx);
 	int getNbCostChanges(species_id sp);
 	costChange getCostChange(species_id sp, int i);
+	int applyCostChanges(const int& landChgNb, int iCostChg);
 
 	// functions to handle species distributions
 

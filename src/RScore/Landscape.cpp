@@ -1698,6 +1698,37 @@ patchChange Landscape::getPatchChange(species_id sp, int i) {
 	return patchChanges.at(sp)[i];
 }
 
+int Landscape::applyPatchChanges(const int& landChgNb, int iPatchChg) {
+	Patch* pPatch;
+	for (const species_id sp : views::keys(patchesList)) {
+
+		int nbPatchChanges = numPatchChanges(sp);
+
+		for (; iPatchChg < nbPatchChanges; iPatchChg++) {
+
+			patchChange pchChange = getPatchChange(sp, iPatchChg);
+			if (pchChange.chgNb > landChgNb) break;
+
+			// Move cell from original patch to new patch
+			Cell* pCell = findCell(pchChange.x, pchChange.y);
+			if (pchChange.oldPatch != 0) { // not matrix
+				pPatch = findPatch(sp, pchChange.oldPatch);
+				pPatch->removeCell(pCell);
+			}
+			if (pchChange.newPatch == 0) { // matrix
+				pPatch = nullptr;
+			}
+			else {
+				pPatch = findPatch(sp, pchChange.newPatch);
+				pPatch->addCell(pCell, pchChange.x, pchChange.y);
+			}
+			pCell->setPatch(sp, pPatch);
+		}
+	}
+	resetPatchLimits();
+	return iPatchChg;
+}
+
 // Create & initialise costs change matrix
 void Landscape::createCostsChgMatrix()
 {
@@ -1776,6 +1807,22 @@ int Landscape::getNbCostChanges(species_id sp) { return static_cast<int>(costsCh
 
 costChange Landscape::getCostChange(species_id sp, int i) {
 	return costsChanges.at(sp)[i];
+}
+
+int Landscape::applyCostChanges(const int& landChgNb, int iCostChg) {
+
+	for (const species_id sp : views::keys(patchesList)) {
+
+		int ncostchanges = getNbCostChanges(sp);
+		for (; iCostChg < ncostchanges; iCostChg++) {
+			costChange costChange = getCostChange(sp, iCostChg);
+			if (costChange.chgnum > landChgNb) break;
+			Cell* pCell = findCell(costChange.x, costChange.y);
+			if (pCell != nullptr) pCell->setCost(costChange.newcost);
+		}
+		resetEffCosts();
+		return iCostChg;
+	}
 }
 
 //---------------------------------------------------------------------------
