@@ -82,8 +82,6 @@ public:
 		float	// local environmental deviation
 	);
 	float getEnvDev();
-	void setEnvVal(float e);
-	float getEnvVal();
 	void updateEps(float ac, float randpart); // Update local environmental stochasticity (epsilon)
 	float getEps();
 	void setCost(
@@ -105,8 +103,6 @@ private:
 
 	map<species_id, Patch*> patches; // which patch the cell belongs to for each species
 
-	float envVal;	// environmental value, representing one of:
-					// gradient in K, r or extinction probability
 	float envDev;	// local environmental deviation (static, in range -1.0 to +1.0)
 	float eps;		// local environmental stochasticity (epsilon) (dynamic, from N(0,std))
 	unsigned long int visits; // no. of times square is visited by dispersers

@@ -56,7 +56,6 @@ void run_unit_tests() {
 
 // Global vars
 string landFile;
-paramGrad* paramsGrad;
 paramStoch* paramsStoch;
 paramInit* paramsInit;
 paramSim* paramsSim;
@@ -76,7 +75,6 @@ int _tmain(int argc, _TCHAR* argv[])
 #else
 
 	// Initialise globals
-	paramsGrad = new paramGrad;
 	paramsStoch = new paramStoch;
 	paramsInit = new paramInit;
 	paramsSim = new paramSim;

@@ -136,7 +136,6 @@ public:
 	void extirpate(); // Remove all individuals
 	void reproduction(
 		const float localK,	// local carrying capacity
-		const float envVal,	// effect of environmental gradient and/or stochasticty
 		const int landResol	// landscape resolution
 	);
 
@@ -234,7 +233,6 @@ private:
 
 //---------------------------------------------------------------------------
 
-extern paramGrad* paramsGrad;
 extern paramStoch* paramsStoch;
 extern paramInit* paramsInit;
 extern paramSim* paramsSim;

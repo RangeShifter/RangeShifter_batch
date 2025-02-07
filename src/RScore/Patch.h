@@ -131,7 +131,8 @@ public:
 
 	int getInitNbInds(const bool& isPatchModel, const int& landResol) const;
 	
-	float getEnvVal(const bool& isPatchModel, const float& epsGlobal);
+	void calcGradVal();
+	double getGradVal() const;
 
 	bool speciesIsPresent();
 
@@ -153,6 +154,7 @@ private:
 	Population* pPop;	// pointer to population associated with the patch
 	species_id sp;		// which species the patch belongs to
 	float localK;		// patch carrying capacity (individuals)
+	double gradVal;		// gradient value for cell-based landscapes
 	bool changed;
 	short nTemp[gMaxNbSexes];	// no. of potential settlers in each sex
 	vector<int> occupancy;		// pointer to occupancy array

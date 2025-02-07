@@ -300,8 +300,7 @@ void Community::reproduction(int yr)
 		Patch* pPatch = pop->getPatch();
 		float localK = pPatch->getK();
 		if (localK > 0.0) {
-			float envval = pPatch->getEnvVal(land.usesPatches, eps);
-			pop->reproduction(localK, envval, land.resol);
+			pop->reproduction(localK, land.resol);
 			pop->fledge();
 		}
 	}
@@ -555,11 +554,10 @@ commStats Community::getStats()
 // Functions to control production of output files
 
 // Open population file and write header record
-bool Community::outPopHeaders() {
+bool Community::outPopHeaders(Species* pSpecies) {
 	
 	landParams land = pLandscape->getLandParams();
 	simParams sim = paramsSim->getSim();
-	envGradParams grad = paramsGrad->getGradient();
 	demogrParams dem = speciesMap.at(gSingleSpeciesID)->getDemogrParams();
 	stageParams sstruct = speciesMap.at(gSingleSpeciesID)->getStageParams();
 
@@ -575,9 +573,7 @@ bool Community::outPopHeaders() {
 	else outPopOfs << "\tx\ty";
 
 	// determine whether environmental data need be written for populations
-	bool writeEnv = false;
-	if (grad.gradient) writeEnv = true;
-	if (paramsStoch->envStoch()) writeEnv = true;
+	bool writeEnv = pSpecies->usesGradient() || paramsStoch->envStoch();
 	if (writeEnv) outPopOfs << "\tEpsilon\tGradient\tLocal_K";
 
 	outPopOfs << "\tSpecies\tNInd";
@@ -606,13 +602,12 @@ bool Community::closePopOfs() {
 }
 
 // Write records to population file
-void Community::outPop(int rep, int yr, int gen)
+void Community::outPop(Species* pSpecies, int rep, int yr, int gen)
 {
 	landParams land = pLandscape->getLandParams();
-	envGradParams grad = paramsGrad->getGradient();
 	envStochParams env = paramsStoch->getStoch();
-	bool writeEnv = grad.gradient || env.usesStoch;
-	bool gradK = grad.gradient && grad.gradType == 1;
+	bool writeEnv = pSpecies->usesGradient() || env.usesStoch;
+	bool gradK = pSpecies->usesGradient() && pSpecies->getEnvGradient().gradType == 1;
 
 	float eps = 0.0;
 	if (env.usesStoch && !env.stochIsLocal) {
@@ -2123,7 +2118,7 @@ bool Community::openOutputFiles(const simParams& sim, const int landNum) {
 		}
 	if (sim.outPop) {
 		// open Population file
-		if (!outPopHeaders()) {
+		if (!outPopHeaders(speciesMap.at(gSingleSpeciesID))) {
 			filesOK = false;
 		}
 	}

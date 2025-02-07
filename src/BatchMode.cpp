@@ -5353,9 +5353,8 @@ int ReadParameters(Landscape* pLandscape)
 		return 4086534;
 	}
 
-	int gradType, shift_begin, shift_stop;
-	float k, grad_inc, opt_y, f, optEXT, shift_rate;
-	bool shifting;
+	int gradType, shiftBegin, shiftStop;
+	float k, grad_inc, opt_y, f, optExt, shift_rate;
 	string inAbsorbing, inShifting, inEnvStoch, inEnvStochType, inLocalExt,
 		inSaveMaps, inHeatMaps, inDrawLoaded, inFixRepSeed;
 
@@ -5365,15 +5364,18 @@ int ReadParameters(Landscape* pLandscape)
 
 	// Environmental gradient
 	ifsParamFile >> gradType;
-	ifsParamFile >> grad_inc >> opt_y >> f >> optEXT >> inShifting >> shift_rate;
+	ifsParamFile >> grad_inc >> opt_y >> f >> optExt >> inShifting >> shift_rate;
 
-	shifting = (inShifting == "1" && gradType != 0);
-	ifsParamFile >> shift_begin >> shift_stop;
-	paramsGrad->setGradient(gradType, grad_inc, opt_y, f, optEXT);
-	if (shifting) paramsGrad->setShifting(shift_rate, shift_begin, shift_stop);
-	else paramsGrad->noShifting();
+	bool isShifting = (inShifting == "1" && gradType != 0);
+	ifsParamFile >> shiftBegin >> shiftStop;
+	paramGrad paramsGrad;
+	paramsGrad.setGradient(gradType, grad_inc, opt_y, f, optExt);
+	if (isShifting) paramsGrad.setShifting(shift_rate, shiftBegin, shiftStop);
+	else paramsGrad.noShifting();
+	pSpecies->setGrad(paramsGrad);
 
 	// Environmental Stochasticity
+	envStochParams env;
 	ifsParamFile >> inEnvStoch;
 	env.usesStoch = inEnvStoch == "1" || inEnvStoch == "2";
 	env.stochIsLocal = inEnvStoch == "2";
@@ -5397,7 +5399,7 @@ int ReadParameters(Landscape* pLandscape)
 	if (paramsLand.usesPatches && env.localExt) errorCode = 102;
 
 	ifsParamFile >> env.locExtProb;
-	paramsStoch->setStoch(env);
+	pSpecies->setStoch(env);
 
 	// Demographic parameters
 	ifsParamFile >> dem.propMales >> dem.harem >> dem.bc >> dem.lambda;
@@ -5433,34 +5435,35 @@ int ReadParameters(Landscape* pLandscape)
 	}
 
 	// Output parameters
-	ifsParamFile	>> sim.outStartPop	>> sim.outStartInd
-				>> sim.outStartTraitCell >> sim.outStartTraitRow 
-				>> sim.outStartConn >> sim.outIntRange 
-				>> sim.outIntOcc >> sim.outIntPop 
-				>> sim.outIntInd >> sim.outIntTraitCell 
-				>> sim.outIntTraitRow >> sim.outIntConn;
+	speciesParams spParams;
+	ifsParamFile	>> spParams.outStartPop	>> spParams.outStartInd
+				>> spParams.outStartTraitCell >> spParams.outStartTraitRow 
+				>> spParams.outStartConn >> spParams.outIntRange 
+				>> spParams.outIntOcc >> spParams.outIntPop 
+				>> spParams.outIntInd >> spParams.outIntTraitCell 
+				>> spParams.outIntTraitRow >> spParams.outIntConn;
 
-	sim.outRange = sim.outIntRange > 0;
-	sim.outOccup = sim.outIntOcc > 0;
-	sim.outPop = sim.outIntPop > 0;
-	sim.outInds = sim.outIntInd > 0;
-	sim.outTraitsCells = sim.outIntTraitCell > 0;
-	sim.outTraitsRows = sim.outIntTraitRow > 0;
-	sim.outConnect = sim.outIntConn > 0;
+	spParams.outRange = spParams.outIntRange > 0;
+	spParams.outOccup = spParams.outIntOcc > 0;
+	spParams.outPop = spParams.outIntPop > 0;
+	spParams.outInds = spParams.outIntInd > 0;
+	spParams.outTraitsCells = spParams.outIntTraitCell > 0;
+	spParams.outTraitsRows = spParams.outIntTraitRow > 0;
+	spParams.outConnect = spParams.outIntConn > 0;
 
-	if (sim.outOccup && sim.reps < 2) errorCode = 103;
+	if (spParams.outOccup && sim.reps < 2) errorCode = 103;
 	if (paramsLand.usesPatches) {
-		if (sim.outTraitsRows) errorCode = 104;
+		if (spParams.outTraitsRows) errorCode = 104;
 	}
 	else {
-		if (sim.outConnect) errorCode = 105;
+		if (spParams.outConnect) errorCode = 105;
 	}
-
 	ifsParamFile >> inHeatMaps;
-	sim.saveVisits = inHeatMaps == "1";
+	spParams.saveVisits = inHeatMaps == "1";
+	pSpecies->setSpeciesParams(spParams);
+
 	ifsParamFile >> inFixRepSeed;
 	sim.fixReplicateSeed = inFixRepSeed == "1";
-
 	paramsSim->setSim(sim);
 	return errorCode;
 }

@@ -30,14 +30,14 @@
 // Environmental gradient parameters
 
 paramGrad::paramGrad() {
-	gradient = false; 
+	usesGradient = false; 
 	gradType = 0; 
 	grad_inc = 0.05f;
 	opt_y0 = opt_y = factor = extProbOpt = 0.0;
-	shifting = false;
+	doesShift = false;
 	shift_rate = 0.5; 
-	shift_begin = 0;
-	shift_stop = 100;
+	shiftBegin = 0;
+	shiftStop = 100;
 }
 
 paramGrad::~paramGrad() { }
@@ -46,50 +46,50 @@ void paramGrad::setGradient(int gtype, float inc, float y, float f, float p)
 {
 	if (gtype > 0 && gtype < 4)
 	{ // valid gradient type
-		gradient = true; gradType = gtype;
+		usesGradient = true; gradType = gtype;
 		if (inc >= 0.0 && inc <= 1.0) grad_inc = inc;
 		if (y >= 0.0) opt_y0 = opt_y = y;
 		if (f >= 0.0) factor = f;
 		if (p > 0.0 && p < 1.0) extProbOpt = p;
 	}
 	else {
-		gradient = false; gradType = 0;
+		usesGradient = false; gradType = 0;
 	}
 }
 
 void paramGrad::setShifting(float r, int begin, int end)
 {
-	shifting = true;
+	doesShift = true;
 	if (r > 0.0) shift_rate = r;
-	if (begin >= 0) shift_begin = begin;
-	if (end > 0) shift_stop = end;
+	if (begin >= 0) shiftBegin = begin;
+	if (end > 0) shiftStop = end;
 }
 
-void paramGrad::noGradient() { gradient = false; gradType = 0; }
+void paramGrad::noGradient() { usesGradient = false; gradType = 0; }
 
-void paramGrad::noShifting() { shifting = false; }
+void paramGrad::noShifting() { doesShift = false; }
 
 envGradParams paramGrad::getGradient() {
 	envGradParams g;
-	g.gradient = gradient; 
+	g.usesGradient = usesGradient; 
 	g.gradType = gradType; 
 	g.gradIncr = grad_inc;
-	g.opt_y = opt_y; 
+	g.optY = opt_y; 
 	g.factor = factor; 
 	g.extProbOpt = extProbOpt;
-	g.shifting = shifting; 
+	g.doesShift = doesShift; 
 	g.shift_rate = shift_rate;
-	g.shift_begin = shift_begin; 
-	g.shift_stop = shift_stop;
+	g.shiftBegin = shiftBegin; 
+	g.shiftStop = shiftStop;
 	return g;
 }
 
-void paramGrad::incrOptY(void)
+void paramGrad::incrementOptY()
 {
-	if (gradient && shifting) opt_y += shift_rate;
+	if (usesGradient && doesShift) opt_y += shift_rate;
 }
 
-void paramGrad::resetOptY(void) { opt_y = opt_y0; }
+void paramGrad::resetOptY() { opt_y = opt_y0; }
 
 //---------------------------------------------------------------------------
 
@@ -240,56 +240,18 @@ paramSim::paramSim(const string& pathToProjDir) :
 {
 	simulation = 0;
 	reps = years = 1;
-	outIntRange = 1;
-	outStartPop = outStartInd = 0;
-	outStartTraitCell = outStartTraitRow = outStartConn = 0;
-	outIntOcc = outIntPop = outIntInd = outputGeneticInterval = 10;
-	outIntTraitCell = outIntTraitRow = outIntConn = 10;
-	traitInt = 10;
 	batchMode = absorbing = false;
-	outRange = outOccup = outPop = outInds = false;
-	outTraitsCells = outTraitsRows = outConnect = false;
-	outputGenes = outputWeirCockerham = outputWeirHill = false;
-	saveVisits = false;
-#if RS_RCPP
-	outStartPaths = 0; outIntPaths = 0;
-	outPaths = false; ReturnPopRaster = false; CreatePopFile = true;
-#endif
 }
 
-paramSim::~paramSim(void) { }
+paramSim::~paramSim() { }
 
 void paramSim::setSim(simParams s) {
 	if (s.batchNum >= 0) batchNum = s.batchNum;
 	if (s.simulation >= 0) simulation = s.simulation;
 	if (s.reps >= 1) reps = s.reps;
 	if (s.years >= 1) years = s.years;
-	if (s.traitInt >= 1) traitInt = s.traitInt;
-	batchMode = s.batchMode; absorbing = s.absorbing;
-	outRange = s.outRange; outOccup = s.outOccup;
-	outPop = s.outPop; outInds = s.outInds;
-	outTraitsCells = s.outTraitsCells; outTraitsRows = s.outTraitsRows;
-	outConnect = s.outConnect;
-	if (s.outStartPop >= 0) outStartPop = s.outStartPop;
-	if (s.outStartInd >= 0) outStartInd = s.outStartInd;
-	if (s.outStartTraitCell >= 0) outStartTraitCell = s.outStartTraitCell;
-	if (s.outStartTraitRow >= 0) outStartTraitRow = s.outStartTraitRow;
-	if (s.outStartConn >= 0) outStartConn = s.outStartConn;
-	if (s.outIntRange >= 1) outIntRange = s.outIntRange;
-	if (s.outIntOcc >= 1) outIntOcc = s.outIntOcc;
-	if (s.outIntPop >= 1) outIntPop = s.outIntPop;
-	if (s.outIntInd >= 1) outIntInd = s.outIntInd;
-	if (s.outIntTraitCell >= 1) outIntTraitCell = s.outIntTraitCell;
-	if (s.outIntTraitRow >= 1) outIntTraitRow = s.outIntTraitRow;
-	if (s.outIntConn >= 1) outIntConn = s.outIntConn;
-	saveVisits = s.saveVisits;
-#if RS_RCPP
-	outStartPaths = s.outStartPaths;
-	outIntPaths = s.outIntPaths;
-	outPaths = s.outPaths;
-	ReturnPopRaster = s.ReturnPopRaster;
-	CreatePopFile = s.CreatePopFile;
-#endif
+	batchMode = s.batchMode;
+	absorbing = s.absorbing;
 	fixReplicateSeed = s.fixReplicateSeed;
 }
 

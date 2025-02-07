@@ -357,9 +357,19 @@ public:
 		return nPatchesToSample;
 	}
 
+	envGradParams getEnvGradient() const { return grad; }
+
+	bool usesGradient() const { return grad.usesGradient; }
+
+	bool isGradientShifting(int year) {
+		return grad.doesShift && year > grad.shiftBegin && year < grad.shiftStop;
+	}
+
+	void incrementGradOptY() { grad.optY++; }
+
 	// Genetic functions
 	void resetGeneticParameters();
-	bool areMutationsOn(void);
+	bool areMutationsOn();
 	bool isDiploid() const;
 	int incrNbGenLoadTraits();
 	int getNbGenLoadTraits() const;
@@ -369,7 +379,7 @@ public:
 	void setEmigRules( // Set emigration rules
 		const emigRules	// structure holding emigration rules
 	);
-	emigRules getEmigRules(void); // Get emigration rules
+	emigRules getEmigRules(); // Get emigration rules
 	void setSpEmigTraits( // Set emigration trait parameters
 		const short,			// stage
 		const short,			// sex
@@ -389,11 +399,11 @@ public:
 	void setTrfrRules( // Set transfer rules
 		const transferRules	// structure holding transfer rules
 	);
-	transferRules getTransferRules(void); // Get transfer rules
+	transferRules getTransferRules(); // Get transfer rules
 	void setFullKernel( // Set fullKernel condition
 		bool						// fullKernel value
 	);
-	bool useFullKernel(void);
+	bool useFullKernel();
 	void setSpKernTraits( // Set transfer by kernel parameters
 		const short,					// stage
 		const short,					// sex
@@ -533,6 +543,7 @@ private:
 	short ddwtSurvDim;	// dimension of density-dependent weights matrix for fecundity
 	float minRK; 				// minimum ) growth rate OR carrying capacity
 	float maxRK; 				// maximum ) (under environmental stochasticity)
+	envGradParams grad;
 
 	// genome parameters
 

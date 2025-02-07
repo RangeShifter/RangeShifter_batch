@@ -128,11 +128,11 @@ public:
 	bool closeRangeOfs();
 
 	// Open population file and write header record
-	bool outPopHeaders();
+	bool outPopHeaders(Species* pSpecies);
 	bool closePopOfs();
 
 	// Write records to population file
-	void outPop(int rep, int year, int gen);
+	void outPop(Species* pSpecies, int rep, int year, int gen);
 
 	void outIndsHeaders(int rep, int landNr, bool usesPatches);
 	void closeOutIndsOfs();

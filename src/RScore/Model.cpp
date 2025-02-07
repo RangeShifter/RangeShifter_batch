@@ -38,7 +38,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	bool filesOK;
 
 	landParams ppLand = pLandscape->getLandParams();
-	envGradParams grad = paramsGrad->getGradient();
 	envStochParams env = paramsStoch->getStoch();
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
@@ -129,9 +128,11 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			pLandscape->setGlobalStoch(sim.years + 1);
 		}
 
-		if (grad.gradient) { // set up environmental gradient
-			pLandscape->setEnvGradient(true);
+		bool anyUsesGradient = false;
+		for (auto& [sp, pSpecies] : allSpecies) {
+			if (pSpecies->usesGradient()) anyUsesGradient = true;
 		}
+		if (anyUsesGradient) pLandscape->drawGradientDev();
 
 		if (sim.outConnect && ppLand.usesPatches) {
 			if (!pLandscape->outConnectHeaders()) {
@@ -232,17 +233,21 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			// or dynamic landscape
 			updateland = false;
 			
-			// Environmental gradient
-			if (grad.shifting && yr > grad.shift_begin && yr < grad.shift_stop) {
-				paramsGrad->incrOptY();
-				pLandscape->setEnvGradient(false);
+			// Environmental stochasticity
+			if (env.usesStoch && env.stochIsLocal) {
+				pLandscape->updateLocalStoch();
 				mustUpdateK = true;
 			}
-			
-			// Environmental stochasticity
-			if (env.usesStoch) {
-				if (env.stochIsLocal) pLandscape->updateLocalStoch();
-				mustUpdateK = true;
+
+			// Environmental gradient
+			for (auto& [sp, pSpecies] : allSpecies) {
+				if (pSpecies->usesGradient()) {
+					if (pSpecies->isGradientShifting(yr)) {
+						pSpecies->incrementGradOptY();
+					}
+					mustUpdateK = true;
+					pLandscape->updateEnvGradient(sp);
+				}
 			}
 			
 			// Dynamic landscape
@@ -302,7 +307,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				traitAndOccOutput(sim, pComm, rep, yr, gen);
 
 				// Non-structured pops: range and population output *before* reproductrion
-				if (!dem.stageStruct) popAndRangeOutput(sim, pComm, rep, yr, gen);
+				if (!dem.stageStruct) popAndRangeOutput(allSpecies.at(gSingleSpeciesID), sim, pComm, rep, yr, gen);
 
 #if RS_RCPP && !R_CMD
 				if (sim.ReturnPopRaster && sim.outPop && yr >= sim.outStartPop && yr % sim.outIntPop == 0) {
@@ -312,7 +317,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				if (gen == 0 && !ppLand.usesPatches) {
 					// Local extinction applied now so nb juveniles can be reported
 					if (env.localExt) pComm->localExtinction(0);
-					if (grad.gradient && grad.gradType == 3) pComm->localExtinction(1);
+					if (anyUsesGradient && grad.gradType == 3) pComm->localExtinction(1);
 				}
 
 				// Reproduction
@@ -324,7 +329,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				}
 
 				// Stage-structured pops: range + pop output *after* reproductrion
-				if (dem.stageStruct) popAndRangeOutput(sim, pComm, rep, yr, gen);
+				if (dem.stageStruct) popAndRangeOutput(allSpecies.at(gSingleSpeciesID), sim, pComm, rep, yr, gen);
 
 				// Dispersal
 				pComm->emigration();
@@ -395,12 +400,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 		// Final summary output
 		traitAndOccOutput(sim, pComm, rep, yr, 0);
-		popAndRangeOutput(sim, pComm, rep, yr, 0);
+		popAndRangeOutput(allSpecies.at(gSingleSpeciesID), sim, pComm, rep, yr, 0);
 
 		pComm->resetPopns();
 
 		// Reset the gradient optimum
-		if (grad.gradient) paramsGrad->resetOptY();
+		if (grad.usesGradient) paramsGrad->resetOptY();
 		pLandscape->resetLandLimits();
 		const int lastChange = 666666;
 		if (ppLand.usesPatches && ppLand.dynamic && iPatchChg > 0) {
@@ -517,13 +522,13 @@ void traitAndOccOutput(const simParams& sim, Community* pComm, int rep, int yr, 
 }
 
 //For outputs and population visualisations pre-reproduction
-void popAndRangeOutput(const simParams& sim, Community* pComm, int rep, int yr, int gen)
+void popAndRangeOutput(Species* pSpecies, const simParams& sim, Community* pComm, int rep, int yr, int gen)
 {
 	if (sim.outRange && (yr % sim.outIntRange == 0 || pComm->totalInds() <= 0))
 		pComm->outRange(rep, yr, gen);
 
 	if (sim.outPop && yr >= sim.outStartPop && yr % sim.outIntPop == 0)
-		pComm->outPop(rep, yr, gen);
+		pComm->outPop(pSpecies, rep, yr, gen);
 }
 
 //---------------------------------------------------------------------------
@@ -535,7 +540,6 @@ void OutParameters(Landscape* pLandscape)
 
 	landParams ppLand = pLandscape->getLandParams();
 	genLandParams ppGenLand = pLandscape->getGenLandParams();
-	envGradParams grad = paramsGrad->getGradient();
 	envStochParams env = paramsStoch->getStoch();
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
@@ -663,7 +667,7 @@ void OutParameters(Landscape* pLandscape)
 	else outPar << "no" << endl;
 
 	outPar << endl << "ENVIRONMENTAL GRADIENT:\t ";
-	if (grad.gradient)
+	if (grad.usesGradient)
 	{
 		switch (grad.gradType) {
 		case 1:
@@ -682,17 +686,17 @@ void OutParameters(Landscape* pLandscape)
 			;
 		}
 		outPar << "G:\t\t " << grad.gradIncr << endl;
-		outPar << "optimum Y:\t " << grad.opt_y << endl;
+		outPar << "optimum Y:\t " << grad.optY << endl;
 		outPar << "f:\t\t " << grad.factor << endl;
 		if (grad.gradType == 3) outPar << "Local extinction prob. at optimum:\t "
 			<< grad.extProbOpt << endl;
 		outPar << "GRADIENT SHIFTING:\t ";
-		if (grad.shifting)
+		if (grad.doesShift)
 		{
 			outPar << "yes" << endl;
 			outPar << "SHIFTING RATE  (rows/year):\t " << grad.shift_rate << endl;
-			outPar << "SHIFTING START (year):\t\t " << grad.shift_begin << endl;
-			outPar << "SHIFTING STOP  (year):\t\t " << grad.shift_stop << endl;
+			outPar << "SHIFTING START (year):\t\t " << grad.shiftBegin << endl;
+			outPar << "SHIFTING STOP  (year):\t\t " << grad.shiftStop << endl;
 		}
 		else   outPar << "no" << endl;
 	}

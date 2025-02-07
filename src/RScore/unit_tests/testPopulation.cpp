@@ -60,7 +60,7 @@ void testPopulation()
 			pSpecies->addTrait(TraitType::GENETIC_LOAD, *spTr);
 
 			Population pop = Population(pSpecies, pPatch, initialNbInds, 1);
-			pop.reproduction(localK, 1, 1); // juveniles are checked for viability at birth
+			pop.reproduction(localK, 1); // juveniles are checked for viability at birth
 			pop.fledge(); // non-overlapping: adults are replaced with juveniles
 			survivingInds.push_back(pop.getNInds());
 		}
@@ -128,7 +128,7 @@ void testPopulation()
 			pSpecies->addTrait(TraitType::E_D0, *spTr);
 
 			Population pop = Population(pSpecies, pPatch, initialNbInds, 1);
-			pop.reproduction(localK, 1, 1);
+			pop.reproduction(localK, 1);
 			pop.fledge(); // replace initial pop with juveniles
 			pop.emigration(localK); // select and flag emigrants
 			int popSize = pop.totalPop();
@@ -202,7 +202,7 @@ void testPopulation()
 
 		// Check allele frequencies conform to HW through generations
 		for (int yr = 0; yr < nbGens; yr++) {
-			pop.reproduction(localK, 1, 1);
+			pop.reproduction(localK, 1);
 			pop.fledge(); // replace initial pop with juveniles
 			pop.drawSurvivalDevlpt(0, 0); // flag juveniles for development
 			pop.applySurvivalDevlpt(); // develop to stage 1 (breeders)
@@ -275,7 +275,7 @@ void testPopulation()
 		}
 
 		// Check allele frequencies conform to HW
-		pop.reproduction(localK, 1, 1);
+		pop.reproduction(localK, 1);
 		pop.fledge(); // replace initial pop with juveniles
 		double obsFreqUnviable = 1 - pop.getNInds() / localK;
 		assert(abs(obsFreqUnviable - expectedFreqAA) < tolerance);

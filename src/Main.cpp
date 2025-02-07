@@ -79,9 +79,6 @@ string getProjectDir(const vector<string>& mainArgs) {
 	return pathToProjectDir;
 }
 
-paramGrad* paramsGrad;		// pointer to environmental gradient parameters
-paramStoch* paramsStoch;	// pointer to environmental stochasticity parameters
-paramInit* paramsInit;		// pointer to initialisation parameters
 paramSim* paramsSim;		// pointer to simulation parameters
 
 Species* pSpecies;		// pointer to species
@@ -105,10 +102,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	int t0, t1;
 	t0 = static_cast<int>(time(0));
 
-	// set up parameter objects
-	paramsGrad = new paramGrad;
 	paramsStoch = new paramStoch;
-	paramsInit = new paramInit;
 
 	// set up working directory and control file name
 	vector<string> args(argc);
@@ -170,9 +164,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	delete pRandom;
-	delete paramsGrad;
 	delete paramsStoch;
-	delete paramsInit;
+
 	delete paramsSim;
 	delete pSpecies;
 

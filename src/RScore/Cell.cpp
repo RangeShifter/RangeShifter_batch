@@ -44,7 +44,6 @@ Cell::Cell(int xx, int yy, Patch* patch, int hab, set<species_id> spLabels)
 	if (patch != nullptr) {
 		patches.at(patch->getSpeciesID()) = patch;
 	}
-	envVal = 1.0; // default - no effect of any gradient
 	envDev = eps = 0.0;
 	habIxx.push_back(hab);
 	visits = 0;
@@ -63,7 +62,6 @@ Cell::Cell(int xx, int yy, Patch* patch, float hab, set<species_id> spLabels)
 	if (patch != nullptr) {
 		patches.at(patch->getSpeciesID()) = patch;
 	}
-	envVal = 1.0; // default - no effect of any gradient
 	envDev = eps = 0.0;
 	habitats.push_back(hab);
 	visits = 0;
@@ -128,12 +126,6 @@ locn Cell::getLocn() {
 void Cell::setEnvDev(float d) { envDev = d; }
 
 float Cell::getEnvDev() { return envDev; }
-
-void Cell::setEnvVal(float e) {
-	if (e >= 0.0) envVal = e;
-}
-
-float Cell::getEnvVal() { return envVal; }
 
 void Cell::updateEps(float ac, float randpart) {
 	eps = eps * ac + randpart;

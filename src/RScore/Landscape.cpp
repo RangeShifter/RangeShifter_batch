@@ -32,7 +32,8 @@ ofstream outMovePaths;
 
 //---------------------------------------------------------------------------
 
-bool isInLandscape(const int& x, const int& y, const landData& land) {
+bool isInLandBounds(const int& x, const int& y, const landData& land) {
+	// including limits set by the freeze feature
 	return (x >= land.minX
 		&& x <= land.maxX
 		&& y >= land.minY
@@ -1008,7 +1009,7 @@ void Landscape::updateCarryingCapacity(const speciesMap_t& allSpecies, int yr, s
 	
 	envGradParams grad = paramsGrad->getGradient();
 	bool gradK = false;
-	if (grad.gradient && grad.gradType == 1) gradK = true; // gradient in carrying capacity
+	if (grad.usesGradient && grad.gradType == 1) gradK = true; // gradient in carrying capacity
 	patchLimits landlimits;
 	landlimits.xMin = minX; 
 	landlimits.xMax = maxX;
@@ -1092,30 +1093,21 @@ void Landscape::updateHabitatIndices() {
 	habsAreIndexed = true;
 }
 
-void Landscape::setEnvGradient(bool isInitial)
-{
-	float distFromOpt, dev;
-	double envVal;
-	// gradient parameters
-	envGradParams grad = paramsGrad->getGradient();
+void Landscape::drawGradientDev() {
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
-			// NB: gradient lies in range 0-1 for all types, and is applied when necessary...
-			// ... implies gradient increment will be dimensionless in range 0-1 (but << 1)
 			if (cells[y][x] != nullptr) { // not no-data cell
-				if (isInitial) { // set local environmental deviation
-					dev = pRandom->Random() * 2.0f - 1.0f;
-					cells[y][x]->setEnvDev(dev);
-				}
-				else dev = cells[y][x]->getEnvDev();
-				distFromOpt = fabs(grad.opt_y - y);
-				envVal = min(1.0, 1.0 - distFromOpt * grad.gradIncr + dev * grad.factor);
-				if (envVal < 0.000001) envVal = 0.0;
-				cells[y][x]->setEnvVal(envVal);
+				cells[y][x]->setEnvDev(pRandom->Random() * 2.0f - 1.0f);
 			}
 		}
 	}
+}
 
+void Landscape::updateEnvGradient(species_id sp)
+{
+	for (auto& pPatch : patchesList.at(sp)) {
+		pPatch->calcGradVal();
+	}
 }
 
 void Landscape::setGlobalStoch(int nyears) {
@@ -1129,7 +1121,7 @@ void Landscape::setGlobalStoch(int nyears) {
 }
 
 float Landscape::getGlobalStoch(int yr) {
-	if (epsGlobal != 0 && yr >= 0) {
+	if (epsGlobal != nullptr && yr >= 0) {
 		return epsGlobal[yr];
 	}
 	else return 0.0;

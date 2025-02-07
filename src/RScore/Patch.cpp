@@ -44,6 +44,7 @@ Patch::Patch(int seqnum, int num, species_id whichSpecies)
 		nTemp[sex] = 0;
 	}
 	changed = false;
+	gradVal = 1.0; // i.e. no effect
 }
 
 Patch::~Patch() {
@@ -139,7 +140,7 @@ void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float
 	envStochParams env = paramsStoch->getStoch();
 	locn loc;
 	short hx;
-	float k, q, envVal;
+	float k, q;
 
 	localK = 0.0; // no. of suitable cells (unadjusted K > 0) in the patch
 	int nsuitable = 0;
@@ -157,20 +158,16 @@ void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float
 	int ncells = static_cast<int>(cells.size());
 	int xsum = 0, ysum = 0;
 
+	// Calculate environmental contribution 
+	double envVal = gradVal; // 0 if no gradient
+	if (env.usesStoch && env.inK) {
+		envVal += env.stochIsLocal ?
+			cells[0]->getEps() : // cell-based if stoch is local so only one cell
+			epsGlobal;
+	}
+
 	for (int i = 0; i < ncells; i++) {
 
-		if (gradK) // gradient in carrying capacity
-			envVal = cells[i]->getEnvVal(); // environmental gradient value
-		else envVal = 1.0; // no gradient effect
-
-		if (env.usesStoch && env.inK) { // environmental stochasticity in K
-			if (env.stochIsLocal) {
-				envVal += cells[i]->getEps();
-			}
-			else { // global stochasticity
-				envVal += epsGlobal;
-			}
-		}
 		switch (rasterType) {
 		case 0: // habitat codes
 			hx = cells[i]->getHabIndex(landIx);
@@ -251,33 +248,17 @@ int Patch::getInitNbInds(const bool& isPatchModel, const int& landResol) const {
 	return nInds;
 }
 
-float Patch::getEnvVal(const bool& isPatchModel, const float& epsGlobal) {
+void Patch::calcGradVal() {
+	Cell* pCell = getCell(0); // only one cell/patch since cell-based landscape
+	envGradParams grad = getPop()->getSpecies()->getEnvGradient();
+	float dev = pCell->getEnvDev();
+	float distFromOpt = fabs(grad.optY - y);
+	gradVal = min(1.0, 1.0 - distFromOpt * grad.gradIncr + dev * grad.factor);
+	if (gradVal < 0.000001) gradVal = 0.0;
+}
 
-	float envVal = 0.0;
-	envGradParams grad = paramsGrad->getGradient();
-	envStochParams env = paramsStoch->getStoch();
-
-	if (localK > 0.0) {
-		if (isPatchModel) {
-			envVal = 1.0; // environmental gradient is currently not applied for patch-based model
-		}
-		else { // cell-based model
-			if (grad.gradient && grad.gradType == 2) { // gradient in fecundity
-				envVal = getRandomCell()->getEnvVal();  // locate the only cell in the patch
-			}
-			else envVal = 1.0;
-		}
-		if (env.usesStoch && !env.inK) { // stochasticity in fecundity
-			if (env.stochIsLocal &&!isPatchModel) { // only permitted for cell-based model
-				Cell* pCell = getRandomCell();
-				if (pCell != nullptr) envVal += pCell->getEps();
-			}
-			else { // global stochasticity
-				envVal += epsGlobal;
-			}
-		}
-	}
-	return envVal;
+double Patch::getGradVal() const {
+	return gradVal;
 }
 
 
@@ -294,7 +275,7 @@ locn Patch::getCellLocn(int ix) {
 // Return pointer to a specified cell
 Cell* Patch::getCell(int ix) {
 	if (ix >= 0 && ix < cells.size()) return cells[ix];
-	else return 0;
+	else return nullptr;
 }
 // Return co-ordinates of patch centroid
 locn Patch::getCentroid() {
@@ -307,7 +288,7 @@ locn Patch::getCentroid() {
 // Select a Cell within the Patch at random, and return pointer to it
 // For a cell-based model, this will be the only Cell
 Cell* Patch::getRandomCell() {
-	Cell* pCell = 0;
+	Cell* pCell = nullptr;
 	int ix;
 	int ncells = static_cast<int>(cells.size());
 	if (ncells > 0) {

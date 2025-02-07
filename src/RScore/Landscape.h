@@ -158,7 +158,7 @@ struct landData {
 	int resol; int dimX, dimY, minX, minY, maxX, maxY;
 };
 
-bool isInLandscape(const int& x, const int& y, const landData& land);
+bool isInLandBounds(const int& x, const int& y, const landData& land);
 
 struct genLandParams {
 	bool fractal; bool continuous;
@@ -252,7 +252,8 @@ public:
 	int patchCount(species_id id) const;
 	int allPatchCount() const;
 	void updateHabitatIndices();
-	void setEnvGradient(bool isInitial);
+	void drawGradientDev();
+	void updateEnvGradient(species_id sp);
 	void setGlobalStoch(int	nbYears);
 	float getGlobalStoch(int year);
 	void updateLocalStoch();
@@ -418,7 +419,6 @@ private:
 // batch routine to check raster files before any Landscape has been initiated
 rasterdata CheckRasterFile(string);
 
-extern paramGrad* paramsGrad;
 extern paramStoch* paramsStoch;
 extern paramInit* paramsInit;
 extern paramSim* paramsSim;

@@ -487,9 +487,8 @@ void Population::localExtinction(int option) {
 		if (env.localExt) pExtinct = env.locExtProb;
 	}
 	else {
-		Cell* pCell = pPatch->getRandomCell(); // get only cell in the patch
 		// extinction prob is complement of cell gradient value plus any non-zero prob at the optimum
-		pExtinct = min(1.0, 1.0 - pCell->getEnvVal() + paramsGrad->getGradient().extProbOpt);
+		pExtinct = min(1.0, 1.0 - pPatch->getGradVal() + pSpecies->getEnvGradient().extProbOpt);
 	}
 
 	if (pRandom->Bernoulli(pExtinct)) {
@@ -518,7 +517,7 @@ void Population::extirpate(void) {
 
 //---------------------------------------------------------------------------
 // Produce juveniles and hold them in the juvs vector
-void Population::reproduction(const float localK, const float envval, const int resol)
+void Population::reproduction(const float localK, const int resol)
 {
 
 	// get population size at start of reproduction
@@ -568,7 +567,7 @@ void Population::reproduction(const float localK, const float envval, const int 
 		for (int stg = 1; stg < nStages; stg++) {
 			if (fec[stg][0] > 0.0) {
 				// apply any effect of environmental gradient and/or stochasticty
-				fec[stg][0] *= envval;
+				fec[stg][0] *= pPatch->getGradVal();
 				if (env.usesStoch && !env.inK) {
 					// fecundity (at low density) is constrained to lie between limits specified
 					// for the species
@@ -606,7 +605,7 @@ void Population::reproduction(const float localK, const float envval, const int 
 	}
 	else { // non-structured - set fecundity for adult females only
 		// apply any effect of environmental gradient and/or stochasticty
-		fec[1][0] *= envval;
+		fec[1][0] *= pPatch->getGradVal();
 		if (env.usesStoch && !env.inK) {
 			// fecundity (at low density) is constrained to lie between limits specified
 			// for the species
@@ -1446,10 +1445,7 @@ void Population::outPopulation(ofstream& outPopOfs, int rep, int yr, int gen, bo
 		}
 		else {
 			float k = pPatch->getK();
-			float envval = 0.0;
-			pCell = pPatch->getRandomCell();
-			if (pCell != nullptr) envval = pCell->getEnvVal();
-			outPopOfs << "\t" << eps << "\t" << envval << "\t" << k;
+			outPopOfs << "\t" << eps << "\t" << pPatch->getGradVal() << "\t" << k;
 		}
 	}
 	outPopOfs << "\t" << pSpecies->getID();

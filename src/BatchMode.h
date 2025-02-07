@@ -223,7 +223,6 @@ set<int> stringToChromosomeEnds(string, const int&);
 GenParamType strToGenParamType(const string& str);
 
 // external pointers to parameter sets
-extern paramGrad* paramsGrad;
 extern paramStoch* paramsStoch;
 extern paramInit* paramsInit;
 extern paramSim* paramsSim;

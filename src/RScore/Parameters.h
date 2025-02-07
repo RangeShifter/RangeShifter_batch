@@ -138,47 +138,54 @@ typedef enum {
 // Environmental gradient parameters
 
 struct envGradParams {
-	bool gradient; bool shifting;
-	int gradType; float gradIncr; float opt_y; float factor; float extProbOpt;
-	float shift_rate; int shift_begin; int shift_stop;
+	bool usesGradient; 
+	bool doesShift;
+	int gradType;
+	float gradIncr; 
+	float optY; 
+	float factor; 
+	float extProbOpt;
+	float shift_rate;
+	int shiftBegin; 
+	int shiftStop;
 };
 
 class paramGrad {
 
 public:
-	paramGrad(void);
-	~paramGrad(void);
+	paramGrad();
+	~paramGrad();
 	void setGradient(
 		int,		// gradient type
-		float,	// gradient steepness
+		float,		// gradient steepness
 		float,	// optimum row (Y dimension)
 		float,	// local scaling factor
 		float		// local extinction probability at optimum
 	);
 	void setShifting(
-		float,	// shifting rate (rows/year)
+		float,		// shifting rate (rows/year)
 		int,		// first year of shifting
 		int			// last year of shifting
 	);
-	void noGradient(void);
-	void noShifting(void);
-	envGradParams getGradient(void);
-	void incrOptY(void);
-	void resetOptY(void);
+	void noGradient();
+	void noShifting();
+	envGradParams getGradient();
+	void incrementOptY();
+	void resetOptY();
 
 private:
-	bool gradient;		// there a gradient
-	bool shifting;		// the gradient is shifting
-	int gradType;			// 0 = none, 1  = carrying capacity,
-	// 2 = growth rate, 3 = local extinction probability
+	bool usesGradient;		// there a gradient
+	bool doesShift;		// the gradient is shifting
+	int gradType;		// 0 = none, 1  = carrying capacity,
+						// 2 = growth rate, 3 = local extinction probability
 	float grad_inc;		// gradient steepness
-	float opt_y;			// optimum row (Y dimension)
-	float opt_y0;			// optimum row at year 0 (internal use only)
-	float factor;			// local scaling factor
+	float opt_y;		// optimum row (Y dimension)
+	float opt_y0;		// optimum row at year 0 (internal use only)
+	float factor;		// local scaling factor
 	float extProbOpt;	// local extinction probability at optimum (if gradient = 4, otherwise 0)
 	float shift_rate;	// rows/year
-	int shift_begin;	// first year of shifting
-	int shift_stop;		// last year of shifting
+	int shiftBegin;	// first year of shifting
+	int shiftStop;		// last year of shifting
 };
 
 //---------------------------------------------------------------------------
@@ -217,12 +224,24 @@ private:
 // Initialisation (seeding) parameters
 
 struct initParams {
-	short seedType; short freeType; short spDistType; short initDens;
-	short initAge; int initFrzYr; bool restrictRange;
-	int restrictRows; int restrictFreq; int finalFrzYr;
-	int indsCell; float indsHa;
-	int minSeedX; int maxSeedX; int minSeedY; int maxSeedY;
-	int nSeedPatches; int nSpDistPatches;
+	short seedType; 
+	short freeType; 
+	short spDistType; 
+	short initDens;
+	short initAge; 
+	int initFrzYr; 
+	bool restrictRange;
+	int restrictRows; 
+	int restrictFreq; 
+	int finalFrzYr;
+	int indsCell; 
+	float indsHa;
+	int minSeedX; 
+	int maxSeedX; 
+	int minSeedY; 
+	int maxSeedY;
+	int nSeedPatches; 
+	int nSpDistPatches;
 	string indsFile;
 };
 
@@ -359,6 +378,31 @@ private:
 	int simulation;				// simulation no.
 	int reps;					// no. of replicates
 	int years;					// no. of years
+	bool batchMode;				
+	bool absorbing; 			// landscape boundary and no-data regions are absorbing boundaries
+	string dir;					// full name of working directory
+	bool fixReplicateSeed;
+};
+
+
+/* c'tor?
+outIntRange = 1;
+	outStartPop = outStartInd = 0;
+	outStartTraitCell = outStartTraitRow = outStartConn = 0;
+	outIntOcc = outIntPop = outIntInd = outputGeneticInterval = 10;
+	outIntTraitCell = outIntTraitRow = outIntConn = 10;
+	traitInt = 10;
+	outRange = outOccup = outPop = outInds = false;
+	outTraitsCells = outTraitsRows = outConnect = false;
+	outputGenes = outputWeirCockerham = outputWeirHill = false;
+	saveVisits = false;
+#if RS_RCPP
+	outStartPaths = 0; outIntPaths = 0;
+	outPaths = false; ReturnPopRaster = false; CreatePopFile = true;
+#endif
+*/
+
+struct speciesParams {
 	int outStartPop;			// output start year for population file
 	int outStartInd;			// output start year for individuals file
 	int outStartTraitCell;		// output start year for traits by cell file
@@ -372,8 +416,6 @@ private:
 	int outIntTraitRow;			// output interval for traits by row file
 	int outIntConn;				// output interval for connectivity matrix
 	int traitInt;				// output interval for evolving traits maps
-	bool batchMode;				
-	bool absorbing; 			// landscape boundary and no-data regions are absorbing boundaries
 	bool outRange;				// produce output range file?
 	bool outOccup;				// produce output occupancy file?
 	bool outPop;				// produce output population file?
@@ -382,6 +424,12 @@ private:
 	bool outTraitsRows;			// produce output summary traits by row (y) file?
 	bool outConnect;			// produce output connectivity file?
 	bool saveVisits;			// save dispersal visits heat maps?
+	string patchSamplingOption;
+	bool outputGenes;
+	bool outputWeirCockerham;
+	bool outputWeirHill;
+	int outputStartGenetics;
+	int outputGeneticInterval;
 #if RS_RCPP
 	int outStartPaths;
 	int outIntPaths;
@@ -389,14 +437,6 @@ private:
 	bool ReturnPopRaster;
 	bool CreatePopFile;
 #endif
-	string dir;					// full name of working directory
-	bool fixReplicateSeed;
-	string patchSamplingOption;
-	bool outputGenes;
-	bool outputWeirCockerham;
-	bool outputWeirHill;
-	int outputStartGenetics;
-	int outputGeneticInterval;
 };
 
 extern RSrandom* pRandom;
