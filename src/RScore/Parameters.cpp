@@ -99,7 +99,7 @@ paramStoch::paramStoch() {
 	stoch = false; 
 	local = false; 
 	inK = false; 
-	localExt = false;
+	usesLocalExt = false;
 	ac = 0.0; std = 0.25;
 	locExtProb = 0.1;
 }
@@ -112,7 +112,7 @@ void paramStoch::setStoch(envStochParams e)
 	stoch = e.usesStoch; 
 	local = e.stochIsLocal; 
 	inK = e.inK; 
-	localExt = e.localExt;
+	usesLocalExt = e.usesLocalExt;
 	if (e.ac >= 0.0 && e.ac < 1.0) ac = e.ac;
 	if (e.std > 0.0 && e.std <= 1.0) std = e.std;
 	locExtProb = e.locExtProb;
@@ -126,7 +126,7 @@ envStochParams paramStoch::getStoch()
 	e.usesStoch = stoch; 
 	e.stochIsLocal = local; 
 	e.inK = inK; 
-	e.localExt = localExt;
+	e.usesLocalExt = usesLocalExt;
 	e.ac = ac; 
 	e.std = std;
 	e.locExtProb = locExtProb;

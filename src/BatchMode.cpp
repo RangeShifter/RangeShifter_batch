@@ -5369,6 +5369,7 @@ int ReadParameters(Landscape* pLandscape)
 	bool isShifting = (inShifting == "1" && gradType != 0);
 	ifsParamFile >> shiftBegin >> shiftStop;
 	paramGrad paramsGrad;
+	// also set grad.optY0 for species
 	paramsGrad.setGradient(gradType, grad_inc, opt_y, f, optExt);
 	if (isShifting) paramsGrad.setShifting(shift_rate, shiftBegin, shiftStop);
 	else paramsGrad.noShifting();
@@ -5395,8 +5396,8 @@ int ReadParameters(Landscape* pLandscape)
 
 	// Local extinction
 	ifsParamFile >> inLocalExt;
-	env.localExt = (inLocalExt == "1");
-	if (paramsLand.usesPatches && env.localExt) errorCode = 102;
+	env.usesLocalExt = (inLocalExt == "1");
+	if (paramsLand.usesPatches && env.usesLocalExt) errorCode = 102;
 
 	ifsParamFile >> env.locExtProb;
 	pSpecies->setStoch(env);

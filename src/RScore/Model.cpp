@@ -315,9 +315,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				}
 #endif
 				if (gen == 0 && !ppLand.usesPatches) {
-					// Local extinction applied now so nb juveniles can be reported
-					if (env.localExt) pComm->localExtinction(0);
-					if (anyUsesGradient && grad.gradType == 3) pComm->localExtinction(1);
+					// Local extinction applied before reproduction 
+					// so nb juveniles can be reported
+					if (env.usesLocalExt) pComm->applyRandLocExt(env.locExtProb);
+					if (anyUsesGradient) pComm->applyLocalExtGrad();
 				}
 
 				// Reproduction
@@ -405,7 +406,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		pComm->resetPopns();
 
 		// Reset the gradient optimum
-		if (grad.usesGradient) paramsGrad->resetOptY();
+		for (auto& [sp, pSpecies] : allSpecies) {
+			if (pSpecies->usesGradient())
+				pSpecies->resetOptY();
+		}
 		pLandscape->resetLandLimits();
 		const int lastChange = 666666;
 		if (ppLand.usesPatches && ppLand.dynamic && iPatchChg > 0) {
@@ -550,6 +554,7 @@ void OutParameters(Landscape* pLandscape)
 	settleSteps ssteps;
 	settleTraits settleDD;
 	simParams sim = paramsSim->getSim();
+	envGradParams grad = pSpecies->getEnvGradient();
 
 	string name;
 	if (sim.batchMode)
@@ -667,8 +672,7 @@ void OutParameters(Landscape* pLandscape)
 	else outPar << "no" << endl;
 
 	outPar << endl << "ENVIRONMENTAL GRADIENT:\t ";
-	if (grad.usesGradient)
-	{
+	if (grad.usesGradient) {
 		switch (grad.gradType) {
 		case 1:
 			if (dem.stageStruct) outPar << "Density dependence strength (1/b)" << endl;
@@ -746,7 +750,7 @@ void OutParameters(Landscape* pLandscape)
 	}
 	else outPar << "no" << endl;
 	outPar << "LOCAL EXTINCTION PROBABILITY:\t";
-	if (env.localExt) outPar << env.locExtProb << endl;
+	if (env.usesLocalExt) outPar << env.locExtProb << endl;
 	else outPar << "0.0" << endl;
 
 	outPar << endl << "SPECIES' PARAMETERS." << endl;

@@ -261,9 +261,16 @@ void Community::resetPopns() {
 	Individual::indCounter = 0;
 }
 
-void Community::localExtinction(int option) {
+void Community::applyRandLocExt(const float& probExt) {
 	for (auto pop : popns) {
-		pop->localExtinction(option);
+		if (pRandom->Bernoulli(probExt)) 
+			pop->extirpate();
+	}
+}
+
+void Community::applyLocalExtGrad() {
+	for (auto pop : popns) {
+		pop->applyLocalExtGrad();
 	}
 }
 

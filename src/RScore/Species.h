@@ -318,7 +318,7 @@ public:
 		short,	// row
 		short		// column
 	);
-	void deleteDDwtDev(void); // Delete development weights matrix
+	void deleteDDwtDev(); // Delete development weights matrix
 	void createDDwtSurv( // Create survival weights matrix
 		short		// matrix dimension - no. of stages * no. of sexes
 	);
@@ -331,7 +331,7 @@ public:
 		short,	// row
 		short		// column
 	);
-	void deleteDDwtSurv(void); // Delete survival weights matrix
+	void deleteDDwtSurv(); // Delete survival weights matrix
 	// Functions to handle min/max R or K (under environmental stochasticity)
 	void setMinMax( // Set min and max values
 		float,	// min
@@ -366,6 +366,7 @@ public:
 	}
 
 	void incrementGradOptY() { grad.optY++; }
+	void resetOptY() { grad.optY = grad.optY0; }
 
 	// Genetic functions
 	void resetGeneticParameters();

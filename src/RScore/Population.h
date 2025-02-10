@@ -129,10 +129,7 @@ public:
 	int totalPop();
 	// return no. of Individuals in a specified stage
 	int stagePop(int stg);
-	void localExtinction(int option);
-		// option: 	0 - random local extinction probability
-		//			1 - local extinction probability gradient
-
+	void applyLocalExtGrad();
 	void extirpate(); // Remove all individuals
 	void reproduction(
 		const float localK,	// local carrying capacity

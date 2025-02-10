@@ -85,7 +85,8 @@ public:
 		Cell* pCell, 
 		int ix
 	);
-	void localExtinction(int option);
+	void applyLocalExtGrad();
+	void applyRandLocExt(const float& probExt);
 	void scanUnsuitablePatches();
 	void reproduction(int year);
 	void emigration();

@@ -474,38 +474,39 @@ int Population::stagePop(int stg) {
 	return t;
 }
 
+void Population::applyRandLocalExtinction(const float& locExtProb) {
+	if (pRandom->Bernoulli(locExt)) {
+		extirpate();
+	}
+}
+
 //---------------------------------------------------------------------------
 // Extirpate all populations according to
-// option 0 - random local extinction probability
-// option 1 - local extinction probability gradient
+// local extinction probability gradient
 // NB only applied for cell-based model
-void Population::localExtinction(int option) {
-	double pExtinct = 0.0;
+void Population::applyLocalExtGrad() {
 
-	if (option == 0) {
-		envStochParams env = paramsStoch->getStoch();
-		if (env.localExt) pExtinct = env.locExtProb;
-	}
-	else {
-		// extinction prob is complement of cell gradient value plus any non-zero prob at the optimum
-		pExtinct = min(1.0, 1.0 - pPatch->getGradVal() + pSpecies->getEnvGradient().extProbOpt);
-	}
+	envGradParams grad = pSpecies->getEnvGradient();
+	if (grad.gradType != 3) return;
 
+	// extinction prob is complement of cell gradient value plus any non-zero prob at the optimum
+	double pExtinct = min(1.0, 1.0 - pPatch->getGradVal() + grad.extProbOpt);
+	
 	if (pRandom->Bernoulli(pExtinct)) {
 		extirpate();
 	}
 }
 
 // Remove all Individuals
-void Population::extirpate(void) {
+void Population::extirpate() {
 	int ninds = (int)inds.size();
 	for (int i = 0; i < ninds; i++) {
-		if (inds[i] != NULL) delete inds[i];
+		if (inds[i] != nullptr) delete inds[i];
 	}
 	inds.clear();
 	int njuvs = (int)juvs.size();
 	for (int i = 0; i < njuvs; i++) {
-		if (juvs[i] != NULL) delete juvs[i];
+		if (juvs[i] != nullptr) delete juvs[i];
 	}
 	juvs.clear();
 	for (int sex = 0; sex < nSexes; sex++) {

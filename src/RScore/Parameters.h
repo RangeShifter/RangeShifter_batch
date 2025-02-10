@@ -143,6 +143,7 @@ struct envGradParams {
 	int gradType;
 	float gradIncr; 
 	float optY; 
+	float optY0;
 	float factor; 
 	float extProbOpt;
 	float shift_rate;
@@ -195,7 +196,7 @@ private:
 // SHOULD THIS BE PART OF LANDSCAPE OBJECT OR A SEPARATE OBJECT?????????????
 
 struct envStochParams {
-	bool usesStoch; bool stochIsLocal; bool inK; bool localExt;
+	bool usesStoch; bool stochIsLocal; bool inK; bool usesLocalExt;
 	float ac; float std;
 	float locExtProb;
 };
@@ -213,7 +214,7 @@ private:
 	bool stoch;				// stochasticity applied
 	bool local;				// applied locally (if not, application is global)
 	bool inK;					// in carrying capacity (if not, in growth rate)
-	bool localExt;		// local extinction applied
+	bool usesLocalExt;		// local extinction applied
 	float ac;					// temporal autocorrelation coefficient		
 	float std;				// amplitude of fluctuations: sampled from N(0,std)
 	float locExtProb;	// local extinction probability
