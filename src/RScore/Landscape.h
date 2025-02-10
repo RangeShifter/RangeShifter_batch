@@ -202,6 +202,9 @@ public:
 	~Landscape();
 	void resetLand();
 
+	// Generate patches, sample patches and set landscape limits
+	void initialise(speciesMap_t& allSpecies, landParams land, initParams init);
+
 	// functions to set and return parameter values
 
 	void setLandParams(landParams ppp, bool batchmode);

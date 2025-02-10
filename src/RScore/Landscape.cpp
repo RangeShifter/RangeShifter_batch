@@ -393,6 +393,28 @@ void Landscape::resetLand() {
 	}
 }
 
+void Landscape::initialise(speciesMap_t& allSpecies, landParams land, initParams init) {
+
+	// Create patches if not done in ReadLandscape
+	if (land.generated) generatePatches(allSpecies); // artificial landscape
+	else if (!land.usesPatches) allocatePatches(allSpecies); // cell-based import landscape
+
+	// Random patch sampling is done once per landscape
+	for (auto& [sp, pSpecies] : allSpecies) {
+		if (pSpecies->getSamplingOption() == "random")
+			samplePatches(pSpecies);
+	}
+
+	// Restrict available landscape to initialised region
+	if (init.seedType == 0 && init.freeType < 2 && init.initFrzYr > 0) {
+		setLandLimits(init.minSeedX, init.minSeedY,
+			init.maxSeedX, init.maxSeedY);
+	}
+	else {
+		resetLandLimits();
+	}
+}
+
 void Landscape::setLandParams(landParams ppp, bool batchMode)
 {
 	generated = ppp.generated; 

@@ -45,26 +45,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	initParams init = paramsInit->getInit();
 	simParams sim = paramsSim->getSim();
 
-	// Create and select sampled patches for imported landscapes
 	if (!ppLand.generated) {
-
-		if (!ppLand.usesPatches) { // cell-based landscape 
-			pLandscape->allocatePatches(allSpecies);
-		}
-
 		pComm = new Community(pLandscape, allSpecies);
-		
-		if (init.seedType == 0 && init.freeType < 2 && init.initFrzYr > 0) {
-			pLandscape->setLandLimits(init.minSeedX, init.minSeedY,
-				init.maxSeedX, init.maxSeedY);
-		}
-		else {
-			pLandscape->resetLandLimits();
-		}
-
-		if (pSpecies->getSamplingOption() == "random")
-			// then sample once per landscape
-			pLandscape->samplePatches(pSpecies);
+		// Allocate patches, sample patches and set landscape limits
+		pLandscape->initialise(allSpecies, ppLand, init);
 	}
 
 #if RS_RCPP && !R_CMD
@@ -91,27 +75,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		int iCostChg = 0;
 		
 		// Create and select sampled patches for artifical landscapes
-		if (ppLand.generated) {
+		if (ppLand.generated) { // then need to initialise for every replicate
 			if (pComm != nullptr) delete pComm;
-			// generate new cell-based landscape
-			pLandscape->resetLand();
-			pLandscape->generatePatches(allSpecies);
 			pComm = new Community(pLandscape, allSpecies);
-
-			for (auto& [sp, pSpecies] : allSpecies) {
-				if (pSpecies->getSamplingOption() == "random")
-					// then sample once per landscape
-					pLandscape->samplePatches(pSpecies);
-			}
-		}
-
-		if (init.seedType == 0 && init.freeType < 2 && init.initFrzYr > 0) {
-			// restrict available landscape to initialised region
-			pLandscape->setLandLimits(init.minSeedX, init.minSeedY,
-				init.maxSeedX, init.maxSeedY);
-		}
-		else {
-			pLandscape->resetLandLimits();
+			pLandscape->resetLand();
+			// Generate patches, sample patches and set landscape limits
+			pLandscape->initialise(allSpecies, ppLand, init);
 		}
 
 		if (rep == 0) {
