@@ -25,7 +25,15 @@
 #include "Species.h"
 //---------------------------------------------------------------------------
 
-Species::Species(const short& repro, const short& nbRepSeasons, const bool& hasStgStruct, const short& nStg, const bool& usesMovtProc, const short& movementType) :
+Species::Species(
+	const short& repro, 
+	const short& nbRepSeasons, 
+	const bool& hasStgStruct, 
+	const short& nStg, 
+	const bool& usesMovtProc, 
+	const short& movementType,
+	const outputParams& out
+) :
 	repType{repro},
 	repSeasons{nbRepSeasons},
 	stageStruct{hasStgStruct},
@@ -802,12 +810,21 @@ settleTraits Species::getSpSettTraits(short stg, short sex) {
 	return dd;
 }
 
-void Species::setGeneticParameters(const std::set<int>& chromosomeEnds, const int genomeSize, const float recombinationRate,
-	const std::set<int>& samplePatchList, const string nIndsToSample, const std::set<int>& stagesToSampleFrom, int nPatchesToSampleFrom)
+void Species::setGeneticParameters(
+	const std::set<int>& chromosomeEnds, 
+	const int genomeSize, 
+	const float recombinationRate,
+	string patchSamplingOpt,
+	const std::set<int>& samplePatchList, 
+	const string nIndsToSample, 
+	const std::set<int>& stagesToSampleFrom, 
+	int nPatchesToSampleFrom
+)
 {
 	this->genomeSize = genomeSize;
 	this->chromosomeEnds = chromosomeEnds;
 	this->recombinationRate = recombinationRate;
+	this->patchSamplingOption = patchSamplingOpt;
 	this->samplePatchList = samplePatchList;
 	this->nPatchesToSample = nPatchesToSampleFrom;
 	this->nIndsToSample = nIndsToSample;

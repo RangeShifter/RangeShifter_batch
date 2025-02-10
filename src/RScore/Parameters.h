@@ -317,42 +317,7 @@ struct simParams {
 	int simulation; 
 	int reps; 
 	int years;
-	int outStartPop; 
-	int outStartInd;
-	int outStartTraitCell; 
-	int outStartTraitRow; 
-	int outStartConn;
-	int outIntRange; 
-	int outIntOcc; 
-	int outIntPop; 
-	int outIntInd;
-	int outIntTraitCell; 
-	int outIntTraitRow; 
-	int outIntConn;
-	int mapInt; 
-	int traitInt;
-	bool batchMode;
-	bool absorbing;
-	bool outRange; 
-	bool outOccup; 
-	bool outPop; 
-	bool outInds;
-	bool outTraitsCells; 
-	bool outTraitsRows; 
-	bool outConnect;
-	bool saveVisits;
-#if RS_RCPP
-	int outStartPaths; 
-	int outIntPaths;
-	bool outPaths;	
-	bool ReturnPopRaster; 
-	bool CreatePopFile;
-#endif
 	bool fixReplicateSeed;
-	string patchSamplingOption;
-	bool outputGeneValues;
-	bool outputWeirCockerham, outputWeirHill;
-	int outputGeneticInterval, outStartGenetics;
 };
 
 class paramSim {
@@ -403,7 +368,7 @@ outIntRange = 1;
 #endif
 */
 
-struct speciesParams {
+struct outputParams {
 	int outStartPop;			// output start year for population file
 	int outStartInd;			// output start year for individuals file
 	int outStartTraitCell;		// output start year for traits by cell file
@@ -425,7 +390,6 @@ struct speciesParams {
 	bool outTraitsRows;			// produce output summary traits by row (y) file?
 	bool outConnect;			// produce output connectivity file?
 	bool saveVisits;			// save dispersal visits heat maps?
-	string patchSamplingOption;
 	bool outputGenes;
 	bool outputWeirCockerham;
 	bool outputWeirHill;

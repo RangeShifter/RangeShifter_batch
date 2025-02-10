@@ -220,151 +220,71 @@ public:
 		const bool& hasStgStruct = false, 
 		const short& nStg = 2, 
 		const bool& usesMovtProc = false, 
-		const short& movementType = 1
+		const short& movementType = 1,
+		const outputParams& out
 	);
 	~Species();
 	species_id getID();
 
-	// demographic parameter functions
+	// Demographic parameter functions
 
-	void createHabK( // Create habitat carrying capacity table
-		short	// no. of habitats
-	);
+	// Create habitat carrying capacity table
+	void createHabK(short nbHab);
 	void setHabK(
-		short,	// habitat index no. (NB may differ from habitat no. supplied by user)
-		float		// carrying capacity (inds/cell)
+		short habIx,	// may differ from habitat no. supplied by user
+		float habK		// carrying capacity (inds/cell)
 	);
-	float getHabK(
-		short		// habitat index no. (NB may differ from habitat no. supplied by user)
-	);
-	float getMaxK(void); // return highest carrying capacity over all habitats
-	void deleteHabK(void); // Delete habitat carrying capacity table
-	void setStage( // Set stage structure parameters
-		const stageParams	// structure holding stage structure parameters
-	);
-	stageParams getStageParams(void); // Get stage structure parameters
-	void setDemogr( // Set general demographic parameters
-		const demogrParams	// structure holding general demographic parameters
-	);
-	demogrParams getDemogrParams(void); // Get general demographic parameters
-	short getRepType(void);
-	bool stageStructured(void);
-	void setDensDep( // Set demographic density dependence coefficients
-		float,	// development coefficient
-		float		// survival coefficient
-	);
-	densDepParams getDensDep(void); // Get development and survival coefficients
+	float getHabK(short habIx);
+	float getMaxK(); // return highest carrying capacity over all habitats
+	void deleteHabK();
 
-	void setFec( // Set fecundity
-		short,	// stage (must be > 0)
-		short,	// sex
-		float		// fecundity
-	);
-	float getFec( // Get fecundity
-		short,	// stage
-		short		// sex
-	);
-	void setDev( // Set development probability
-		short,	// stage
-		short,	// sex
-		float		// development probability
-	);
-	float getDev( // Get development probability
-		short,	// stage
-		short		// sex
-	);
-	void setSurv( // Set survival probability
-		short,	// stage
-		short,	// sex
-		float		// survival probability
-	);
-	float getSurv( // Get survival probability
-		short,	// stage
-		short		// sex
-	);
+	void setStage(const stageParams stgPar);
+	stageParams getStageParams();
+	void setDemogr(const demogrParams dem);
+	demogrParams getDemogrParams();
+	short getRepType();
+	bool stageStructured();
+	void setDensDep(float devCoeff, float survCoeff);
+	densDepParams getDensDep(); // Get development and survival coefficients
 
-	float getMaxFec(void); // Get highest fecundity of any stage
-	void setMinAge( // Set minimum age
-		short,	// stage
-		short,	// sex
-		int			// minimum age (years) (must be zero for stages 0 and 1)
-	);
-	short getMinAge( // Get minimum age
-		short,	// stage
-		short		// sex
-	);
-	void createDDwtFec( // Create fecundity weights matrix
-		short		// matrix dimension - no. of stages * no. of sexes
-	);
-	void setDDwtFec( // Set fecundity weights matrix element
-		short,	// row
-		short,	// column
-		float		// weight
-	);
-	float getDDwtFec( // Get fecundity weights matrix element
-		short,	// row
-		short		// column
-	);
-	void deleteDDwtFec(void); // Delete fecundity weights matrix
-	void createDDwtDev( // Create development weights matrix
-		short		// matrix dimension - no. of stages * no. of sexes
-	);
-	void setDDwtDev( // Set development weights matrix element
-		short,	// row
-		short,	// column
-		float		// weight
-	);
-	float getDDwtDev( // Get development weights matrix element
-		short,	// row
-		short		// column
-	);
-	void deleteDDwtDev(); // Delete development weights matrix
-	void createDDwtSurv( // Create survival weights matrix
-		short		// matrix dimension - no. of stages * no. of sexes
-	);
-	void setDDwtSurv( // Set survival weights matrix element
-		short,	// row
-		short,	// column
-		float		// weight
-	);
-	float getDDwtSurv( // Get survival weights matrix element
-		short,	// row
-		short		// column
-	);
+	void setFec(short stg, short sex, float fec); // stg must be > 0
+	float getFec(short stg, short sex);
+	void setDev(short stg, short sex, float devProb);
+	float getDev(short stg, short sex);
+	void setSurv(short stg, short sex, float survProb);
+	float getSurv(short stg, short sex);
+	float getMaxFec(); // Get highest fecundity of any stage
+	void setMinAge(short stg, short sex, int minAge); // must be 0 for stages 0,1
+	short getMinAge(short stg, short sex);
+	void createDDwtFec(short dim);	// no. of stages * no. of sexes
+	void setDDwtFec(short row, short col, float weight);
+	float getDDwtFec(short row, short col);
+	void deleteDDwtFec(); // Delete fecundity weights matrix
+	void createDDwtDev(short dim);	// no. of stages * no. of sexes
+	void setDDwtDev(short row, short col, float weight);
+	float getDDwtDev(short row, short col);
+	void deleteDDwtDev();
+	void createDDwtSurv(short dim);	// no. of stages * no. of sexes
+	void setDDwtSurv(short row, short col, float weight);
+	float getDDwtSurv(short row, short col);
 	void deleteDDwtSurv(); // Delete survival weights matrix
-	// Functions to handle min/max R or K (under environmental stochasticity)
-	void setMinMax( // Set min and max values
-		float,	// min
-		float		// max
-	);
-	float getMinMax( // Get min/max value
-		short		// option: 0 = return minimum, otherwise = return maximum
-	);
 
-	std::set<int>& getSamplePatches() {
-		return samplePatchList;
-	};
+	// Environmental stochasticity
+	void setMinMax(float min, float max);
+	float getMinMax(short option); //0 = return minimum, otherwise = return maximum
 
-	string getNIndsToSample() {
-		return nIndsToSample;
-	};
+	// Patch sampling for genetics output
+	std::set<int>& getSamplePatches() { return samplePatchList; };
+	string getNIndsToSample() { return nIndsToSample; };
+	std::set<int>& getStagesToSample() { return stagesToSampleFrom; }
+	int getNbPatchesToSample() { return nPatchesToSample; }
 
-	std::set<int>& getStagesToSample() {
-		return stagesToSampleFrom;
-	}
-
-	int getNbPatchesToSample() {
-		return nPatchesToSample;
-	}
-
+	// Environmmental gradient
 	envGradParams getEnvGradient() const { return grad; }
-
 	bool usesGradient() const { return grad.usesGradient; }
-
 	bool isGradientShifting(int year) {
 		return grad.doesShift && year > grad.shiftBegin && year < grad.shiftStop;
 	}
-
 	void incrementGradOptY() { grad.optY++; }
 	void resetOptY() { grad.optY = grad.optY0; }
 
@@ -375,146 +295,82 @@ public:
 	int incrNbGenLoadTraits();
 	int getNbGenLoadTraits() const;
 
-	// emigration parameter functions
-
-	void setEmigRules( // Set emigration rules
-		const emigRules	// structure holding emigration rules
-	);
+	// Emigration parameter functions
+	void setEmigRules(const emigRules emig);
 	emigRules getEmigRules(); // Get emigration rules
-	void setSpEmigTraits( // Set emigration trait parameters
-		const short,			// stage
-		const short,			// sex
-		const emigTraits	// structure holding emigration trait parameters
-	);
-	emigTraits getSpEmigTraits( // Get emigration trait parameters
-		short,	// stage
-		short		// sex
-	);
-	float getSpEmigD0( // Get (maximum) emigration probability
-		short,	// stage
-		short		// sex
-	);
+	void setSpEmigTraits(short stg, short sex, const emigTraits emig);
+	emigTraits getSpEmigTraits(short stg, short sex);
+	float getSpEmigD0(short stg, short sex);
 
-	// transfer parameter functions
-
-	void setTrfrRules( // Set transfer rules
-		const transferRules	// structure holding transfer rules
-	);
-	transferRules getTransferRules(); // Get transfer rules
-	void setFullKernel( // Set fullKernel condition
-		bool						// fullKernel value
-	);
+	// Transfer parameter functions
+	void setTrfrRules(const transferRules trfr);
+	transferRules getTransferRules();
+	void setFullKernel(bool	usesFullKernel);
 	bool useFullKernel();
-	void setSpKernTraits( // Set transfer by kernel parameters
-		const short,					// stage
-		const short,					// sex
-		const trfrKernelParams,	// structure holding transfer by kernel parameters
-		const int							// Landscape resolution
-	);
-	trfrKernelParams getSpKernTraits( // Get transfer by kernel parameters
-		short,	// stage
-		short		// sex
-	);
-	void setMortParams( // Set transfer mortality parameters
-		const trfrMortParams	// structure holding transfer mortality parameters
-	);
-	trfrMortParams getMortParams(void); // Get transfer mortality parameters
-	void setSpMovtTraits( // Set transfer movement model parameters
-		const trfrMovtParams	// structure holding transfer movement model parameters
-	);
-	trfrMovtParams getSpMovtTraits(void); // Get transfer movement model traits
-	trfrCRWTraits getSpCRWTraits(void);		// Get CRW traits
-	trfrSMSTraits getSpSMSTraits(void);		// Get SMS traits
-	// Return dimension of habitat-dependent step mortality and costs matrices
-	short getMovtHabDim(void);
-	void createHabCostMort( // Create habitat-dependent costs and mortality matrices
-		short	// no. of habitats
-	);
-	void setHabCost( // Set habitat-dependent cost
-		short,	// habitat index no.
-		int			// cost value
-	);
-	void setHabMort( // Set habitat-dependent per-step mortality
-		short,	// habitat index no.
-		double	// mortality rate
-	);
-	int getHabCost( // Get habitat-dependent cost
-		short		// habitat index no.
-	);
-	double getHabMort( // Get habitat-dependent per-step mortality
-		short		// habitat index no.
-	);
-	void deleteHabCostMort(void); // Delete habitat-dependent costs and mortality matrices
+	void setSpKernTraits(short stg, short sex, const trfrKernelParams trfr,	const int landResol);
+	trfrKernelParams getSpKernTraits(short stg, short sex);
+	void setMortParams(const trfrMortParams	trfrMort);
+	trfrMortParams getMortParams();
+	void setSpMovtTraits(const trfrMovtParams trfrMovement);
+	trfrMovtParams getSpMovtTraits();
+	trfrCRWTraits getSpCRWTraits();	
+	trfrSMSTraits getSpSMSTraits();
+	short getMovtHabDim(); 	// dimension of habitat-dependent step mortality and costs matrices
+	void createHabCostMort(short nbHab);
+	void setHabCost(short habIx, int cost);
+	void setHabMort(short habIx, double habMortProb);
+	int getHabCost(short habIx);
+	double getHabMort(short habIx);
+	void deleteHabCostMort();
 
-	// settlement parameter functions
+	// Settlement parameter functions
+	void setSettle(const settleType sett);
+	settleType getSettle(); // Get settlement type
+	void setSettRules(short stg, short sex, const settleRules sett);
+	settleRules getSettRules(short stg, short sex);
+	void setSteps(short stg, short sex, const settleSteps stepLimits);
+	settleSteps getSteps(short stg, short sex);
+	// Set settlement density dependence traits
+	void setSpSettTraits(const short stg, const short sex, const settleTraits);
+	// Get settlement density dependence traits
+	settleTraits getSpSettTraits(short stg, short sex);
 
-	void setSettle( // Set settlement type
-		const settleType	// structure holding settlement type (stage- and/or sex-dependent)
-	);
-	settleType getSettle(void); // Get settlement type
-	void setSettRules( // Set settlement rules
-		const short,			// stage
-		const short,			// sex
-		const settleRules	// structure holding settlement rules
-	);
-	settleRules getSettRules( // Get settlement rules
-		short,	// stage
-		short		// sex
-	);
-	void setSteps( // Set path step limit parameters
-		const short,			// stage
-		const short,			// sex
-		const settleSteps	// structure holding path step limit parameters
-	);
-	settleSteps getSteps( // Set path step limit parameters
-		short,	// stage
-		short		// sex
-	);
-	void setSpSettTraits( // Set settlement density dependence traits
-		const short,					// stage
-		const short,					// sex
-		const settleTraits	// structure holding density dependence traits
-	);
-	settleTraits getSpSettTraits( // Get settlement density dependence traits
-		short,	// stage
-		short		// sex
-	);
-
+	// Genome management functions
 	void addTrait(TraitType traitType, const SpeciesTrait& trait);
-
 	void clearTraitTable();
-
 	SpeciesTrait* getSpTrait(TraitType trait) const;
-
 	std::set<TraitType> getTraitTypes();
-
 	int getNTraits() const;
 	int getNPositionsForTrait(const TraitType trait) const;
 	int getGenomeSize() const;
 	float getRecombinationRate() const;
 	std::set<int> getChromosomeEnds() const;
-	void setGeneticParameters(const std::set<int>& chromosomeEnds, const int genomeSize, const float recombinationRate,
-		const std::set<int>& samplePatchList, const string nIndsToSample, const std::set<int>& stagesToSampleFrom, int nPatchesToSampleFrom);
+	void setGeneticParameters(
+		const std::set<int>& chromosomeEnds,
+		const int genomeSize, 
+		const float recombinationRate,
+		string patchSamplingOption,
+		const std::set<int>& samplePatchList, 
+		const string nIndsToSample, 
+		const std::set<int>& stagesToSampleFrom, 
+		int nPatchesToSampleFrom
+	);
 	void setSamplePatchList(const std::set<int>& samplePatchList);
 
 private:
 
-	// NOTE: SEQUENCE OF PARAMETER VARIABLES MAY NEED TO BE ALTERED FOR EFFICIENTCY ...
-	// ... but that is of low importance, as there will only be one (or a few) instance(s)
-
-	// demographic parameters
-
-	short repType;			// 0 = asexual, 1 = simple two sex, 2 = complex two sex
+	// Demographic parameters
+	short repType;		// 0 = asexual, 1 = simple two sex, 2 = complex two sex
 	short nStages;      // no. of stages (incl. juveniles) in structured population
 	float propMales;    // proportion of males at birth in sexual model
 	float harem;        // max harem size in complex sexual model
-	float bc;						// competition coefficient for non-structured population
+	float bc;			// competition coefficient for non-structured population
 	float lambda;       // max intrinsic growth rate for non-structured population
-	float probRep; 			// probability of reproducing in subsequent seasons
-	short repSeasons;		// no. of reproductive seasons per year
+	float probRep; 		// probability of reproducing in subsequent seasons
+	short repSeasons;	// no. of reproductive seasons per year
 	short repInterval;	// no. of reproductive seasons between subsequent reproductions
 	short maxAge;       // max age in structured population
-	short survival;			// survival timing: 0 = at reprodn, 1 = between reprodns, 2 = anually
+	short survival;		// survival timing: 0 = at reprodn, 1 = between reprodns, 2 = anually
 	bool stageStruct;
 	bool fecDens;
 	bool fecStageDens;
@@ -523,31 +379,27 @@ private:
 	bool survDens;
 	bool survStageDens;
 	bool disperseOnLoss;	// individuals disperse on complete loss of patch
-	// (otherwise they die)
-	short habDimK;			// dimension of carrying capacities matrix
-	float* habK;				// habitat-specific carrying capacities (inds/cell)
-	float devCoeff; 		// density-dependent development coefficient
-	float survCoeff; 		// density-dependent survival coefficient
+							// (otherwise they die)
+	short habDimK;		// dimension of carrying capacities matrix
+	float* habK;		// habitat-specific carrying capacities (inds/cell)
+	float devCoeff; 	// density-dependent development coefficient
+	float survCoeff; 	// density-dependent survival coefficient
 	float** ddwtFec;    // density-dependent weights matrix for fecundity
 	float** ddwtDev;    // density-dependent weights matrix for development
 	float** ddwtSurv;   // density-dependent weights matrix for survival
 	// NB for the following arrays, sex 0 is females, sex 1 is males
-	float fec[gMaxNbStages][gMaxNbSexes];			// fecundities
-	float dev[gMaxNbStages][gMaxNbSexes];			// development probabilities
+	float fec[gMaxNbStages][gMaxNbSexes];		// fecundities
+	float dev[gMaxNbStages][gMaxNbSexes];		// development probabilities
 	float surv[gMaxNbStages][gMaxNbSexes];		// survival probabilities
 	short minAge[gMaxNbStages][gMaxNbSexes];	// minimum age to enter stage
-	// NOTE - IN THEORY, NEXT 3 VARIABLES COULD BE COMMON, BUT WE WOULD NEED TO ENSURE THAT
-	// ALL MATRICES ARE DELETED IF THERE IS A CHANGE IN NO. OF STAGES OR REPRODUCTION TYPE
-	// ***** TO BE RECONSIDERED LATER *****
-	short ddwtFecDim;		// dimension of density-dependent weights matrix for fecundity
-	short ddwtDevDim;		// dimension of density-dependent weights matrix for fecundity
+	short ddwtFecDim;	// dimension of density-dependent weights matrix for fecundity
+	short ddwtDevDim;	// dimension of density-dependent weights matrix for fecundity
 	short ddwtSurvDim;	// dimension of density-dependent weights matrix for fecundity
-	float minRK; 				// minimum ) growth rate OR carrying capacity
-	float maxRK; 				// maximum ) (under environmental stochasticity)
+	float minRK; 		// minimum ) growth rate OR carrying capacity
+	float maxRK; 		// maximum ) (under environmental stochasticity)
 	envGradParams grad;
 
-	// genome parameters
-
+	// Genome parameters
 	/**The traits table.*/
 	std::map<TraitType, std::unique_ptr<SpeciesTrait>> spTraitTable;
 	std::set<int> chromosomeEnds;
@@ -556,28 +408,25 @@ private:
 	bool mutationsOn;
 	int nbGeneticFitnessTraits;
 	float recombinationRate;
+	string patchSamplingOption;
 	std::set<int> samplePatchList;
-	int nPatchesToSample; //for cell based landscape
+	int nPatchesToSample; // for cell-based landscape
 	std::set<int> stagesToSampleFrom;
-	string nIndsToSample; //could be integer or 'all', all means in in selected patches not necessarily all in population
+	string nIndsToSample; // could be integer or 'all', all means in in selected patches not necessarily all in population
 
-	// emigration parameters
-
-	bool	densDepEmig;	// density-dependent emigration
-	bool	stgDepEmig;   // stage-dependent emigration
-	bool	sexDepEmig;   // sex-dependent emigration
-	bool	indVarEmig;   // individual variation in emigration
-	short emigStage;		// stage which emigrates (used for stage-strucutred population
-	// having individual variability in emigration probability)
-// NB for the following arrays, sex 0 is females, sex 1 is males
-	float	d0[gMaxNbStages][gMaxNbSexes];				 // maximum emigration probability
+	// Emigration parameters
+	bool densDepEmig;	// density-dependent emigration
+	bool stgDepEmig;	// stage-dependent emigration
+	bool sexDepEmig;	// sex-dependent emigration
+	bool indVarEmig;	// individual variation in emigration
+	short emigStage;	// stage which emigrates (used for stage-strucutred population
+						// having individual variability in emigration probability)
+	// sex 0 is females, sex 1 is males
+	float	d0[gMaxNbStages][gMaxNbSexes];			 // maximum emigration probability
 	float	alphaEmig[gMaxNbStages][gMaxNbSexes];	 // slope of density-dependent reaction norm
 	float	betaEmig[gMaxNbStages][gMaxNbSexes];	 // inflection point of reaction norm (in terms of N/K)
-	// NB Initialisation parameters are made double to avoid conversion errors (reason unclear)
-	// on traits maps using FloatToStr()
-
-	// transfer parameters
-
+	
+	// Transfer parameters
 	bool usesMovtProcess;
 	bool stgDepTrfr;
 	bool sexDepTrfr;
@@ -586,58 +435,58 @@ private:
 	bool twinKern;
 	bool habMort;		// habitat-dependent mortality
 	float	meanDist1[gMaxNbStages][gMaxNbSexes];	// mean of 1st dispersal kernel (m)
-	float	meanDist2[gMaxNbStages][gMaxNbSexes]; // mean of 2nd dispersal kernel (m)
-	float	probKern1[gMaxNbStages][gMaxNbSexes]; // probability of dispersing with the 1st kernel
-	// NB INITIAL limits are made double to avoid conversion errors (reason unclear)
-	// on traits maps using FloatToStr()
+	float	meanDist2[gMaxNbStages][gMaxNbSexes];	// mean of 2nd dispersal kernel (m)
+	float	probKern1[gMaxNbStages][gMaxNbSexes];	// probability of dispersing with the 1st kernel
 	// As evolving traits are are not stage-dependent, no. of rows can be 1
+
 	float fixedMort;		// constant mortality probability
 	float mortAlpha;		// slope for mortality distance dependence function
 	float mortBeta;			// inflection point for mortality distance dependence function
 	short moveType; 		// 1 = SMS, 2 = CRW
-	short pr;						// SMS perceptual range (cells)
+	short pr;				// SMS perceptual range (cells)
 	short prMethod;			// SMS perceptual range evaluation method:
-	// 1 = arith. mean, 2 = harmonic mean, 3 = inverse weighted arith. mean
+							// 1 = arith. mean, 2 = harmonic mean, 3 = inverse weighted arith. mean
 	short memSize;			// SMS memory size (1-14 steps)
 	short goalType;			// SMS goal bias type: 0 = none, 1 = towards goal, 2 = dispersal bias
-	float dp;						// SMS directional persistence
-	float gb;						// SMS goal bias
+	float dp;				// SMS directional persistence
+	float gb;				// SMS goal bias
 	float alphaDB; 			// SMS dispersal bias decay rate
-	int betaDB; 				// SMS dispersal bias decay inflection point (no. of steps)
+	int betaDB; 			// SMS dispersal bias decay inflection point (no. of steps)
 	float stepMort;			// constant per-step mortality probability for movement models
 	double* habStepMort;	// habitat-dependent per-step mortality probability
 	float stepLength;		// CRW step length (m)
-	float rho;					// CRW correlation coefficient
+	float rho;				// CRW correlation coefficient
 	short habDimTrfr;		// dimension of habitat-dependent step mortality and costs matrices
-	int* habCost;				// habitat costs
-	bool costMap;				// import cost map from file?
+	int* habCost;			// habitat costs
+	bool costMap;			// import cost map from file?
 	bool straightenPath;	// straighten path after decision not to settle
 	bool fullKernel;		// used to indicate special case when density-independent emigration
 	// is 1.0, and kernel-based movement within the natal cell is used
 	// to determine philopatry
 
-// settlement parameters
-
+	// Settlement parameters
 	bool stgDepSett;
 	bool sexDepSett;
-	bool indVarSett;   								// individual variation in settlement
+	bool indVarSett;   									// individual variation in settlement
 	bool densDepSett[gMaxNbStages][gMaxNbSexes];
 	bool wait[gMaxNbStages][gMaxNbSexes];				// wait to continue moving next season (stage-structured model only)
 	bool goToNeighbourLocn[gMaxNbStages][gMaxNbSexes];	// settle in neighbouring cell/patch if available (ditto)
 	bool findMate[gMaxNbStages][gMaxNbSexes];
-	int minSteps[gMaxNbStages][gMaxNbSexes];     								// minimum no. of steps
-	int maxSteps[gMaxNbStages][gMaxNbSexes];											// maximum total no. of steps
-	int maxStepsYr[gMaxNbStages][gMaxNbSexes]; 	// maximum no. of steps in any one dispersal period
+	int minSteps[gMaxNbStages][gMaxNbSexes];     		// minimum no. of steps
+	int maxSteps[gMaxNbStages][gMaxNbSexes];			// maximum total no. of steps
+	int maxStepsYr[gMaxNbStages][gMaxNbSexes]; 			// maximum no. of steps in any one dispersal period
 	float s0[gMaxNbStages][gMaxNbSexes];				// maximum settlement probability
-	float alphaS[gMaxNbStages][gMaxNbSexes];		// slope of the settlement reaction norm to density
-	float betaS[gMaxNbStages][gMaxNbSexes];			// inflection point of the settlement reaction norm to density
+	float alphaS[gMaxNbStages][gMaxNbSexes];			// slope of the settlement reaction norm to density
+	float betaS[gMaxNbStages][gMaxNbSexes];				// inflection point of the settlement reaction norm to density
+
+	// Output controls
+	outputParams output;
 
 	// other attributes
 	species_id ID;
-
 };
 
-// Map to record and track all the species
+// Map to record and track all species
 typedef map<species_id, Species*> speciesMap_t;
 
 //---------------------------------------------------------------------------
