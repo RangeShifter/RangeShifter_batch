@@ -5436,7 +5436,7 @@ int ReadParameters(Landscape* pLandscape)
 	}
 
 	// Output parameters
-	speciesParams spParams;
+	outputParams spParams;
 	ifsParamFile	>> spParams.outStartPop	>> spParams.outStartInd
 				>> spParams.outStartTraitCell >> spParams.outStartTraitRow 
 				>> spParams.outStartConn >> spParams.outIntRange 

@@ -244,7 +244,7 @@ public:
 	patchData getPatchData(species_id id, int patchIx);
 	bool existsPatch(species_id whichSpecies, int patchIx);
 	Patch* findPatch(species_id whichSpecies, int patchIx);
-	void samplePatches(speciesMap_t& allSpecies, const string& samplingOption);
+	void samplePatches(Species* pSpecies);
 	int checkTotalCover();
 	void resetPatchPopns();
 	void updateCarryingCapacity(const speciesMap_t& allSpecies, int year, short landIx);

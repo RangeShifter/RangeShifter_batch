@@ -274,8 +274,17 @@ public:
 	float getMinMax(short option); //0 = return minimum, otherwise = return maximum
 
 	// Patch sampling for genetics output
-	std::set<int>& getSamplePatches() { return samplePatchList; };
-	string getNIndsToSample() { return nIndsToSample; };
+	string getSamplingOption() const { return patchSamplingOption; }
+	bool doesOutputGeneValues() const { return output.outputGenes; }
+	bool doesOutputWeirCockerham() const { return output.outputWeirCockerham; }
+	bool doesOutputWeirHill() const { return output.outputWeirHill; }
+	bool isGeneticOutputYear(int yr) const {
+		return (output.outputGenes || output.outputWeirCockerham || output.outputWeirHill)
+			&& yr >= output.outputStartGenetics
+			&& yr % output.outputGeneticInterval == 0;
+	}
+	std::set<int>& getSamplePatches() { return samplePatchList; }
+	string getNIndsToSample() { return nIndsToSample; }
 	std::set<int>& getStagesToSample() { return stagesToSampleFrom; }
 	int getNbPatchesToSample() { return nPatchesToSample; }
 
@@ -356,6 +365,12 @@ public:
 		int nPatchesToSampleFrom
 	);
 	void setSamplePatchList(const std::set<int>& samplePatchList);
+
+	bool isIndOutputYear(int yr) const {
+		return output.outInds 
+			&& yr >= output.outStartInd 
+			&& yr % output.outIntInd == 0;
+	}
 
 private:
 

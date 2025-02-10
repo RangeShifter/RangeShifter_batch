@@ -62,10 +62,9 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			pLandscape->resetLandLimits();
 		}
 
-		// Random patches are sampled once per landscape
-		if (sim.patchSamplingOption == "random") {
-				pLandscape->samplePatches(allSpecies, sim.patchSamplingOption);
-		}
+		if (pSpecies->getSamplingOption() == "random")
+			// then sample once per landscape
+			pLandscape->samplePatches(pSpecies);
 	}
 
 #if RS_RCPP && !R_CMD
@@ -98,8 +97,11 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			pLandscape->resetLand();
 			pLandscape->generatePatches(allSpecies);
 			pComm = new Community(pLandscape, allSpecies);
-			if (sim.patchSamplingOption == "random") { // Then patches must be resampled for new landscape
-				pLandscape->samplePatches(allSpecies, sim.patchSamplingOption);
+
+			for (auto& [sp, pSpecies] : allSpecies) {
+				if (pSpecies->getSamplingOption() == "random")
+					// then sample once per landscape
+					pLandscape->samplePatches(pSpecies);
 			}
 		}
 
@@ -345,26 +347,24 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					|| sstruct.survival != 2; // else resolved at end of year
 				pComm->drawSurvivalDevlpt(drawJuvs, drawAdults, drawDevlpt, drawSurvival);
 
-				// output Individuals
-				if (sim.outInds && yr >= sim.outStartInd && yr % sim.outIntInd == 0)
-					pComm->outInds(rep, yr, gen);
+				for (auto& [sp, pSpecies] : allSpecies) { // could subset ahead
 
-				// output Genetics
-				if ((sim.outputGeneValues || sim.outputWeirCockerham || sim.outputWeirHill)
-					&& yr >= sim.outStartGenetics
-					&& yr % sim.outputGeneticInterval == 0) {
-
-					if (sim.patchSamplingOption != "list" 
-						&& sim.patchSamplingOption != "random") { // then patches must be re-sampled every gen
-						pLandscape->samplePatches(allSpecies, sim.patchSamplingOption);
-					} // otherwise always use the user-specified list (even if patches are empty)
-					pComm->sampleIndividuals();
-
-					if (sim.outputGeneValues) {
-						pComm->outputGeneValues(yr, gen, pSpecies);
+					// Output Individuals
+					if (pSpecies->isIndOutputYear(yr)) {
+						pComm->outInds(sp, rep, yr, gen);
 					}
-					if (sim.outputWeirCockerham || sim.outputWeirHill) {
-						pComm->outNeutralGenetics(rep, yr, gen, sim.outputWeirCockerham, sim.outputWeirHill);
+
+					// Output Genetics
+					if (pSpecies->isGeneticOutputYear(yr)) {
+						if (pSpecies->getSamplingOption() == "random_occupied" 
+							|| pSpecies->getSamplingOption() == "all")
+							// then must re-sample every year
+							pLandscape->samplePatches(pSpecies);
+						pComm->sampleIndividuals(sp);
+						if (pSpecies->doesOutputGeneValues())
+							pComm->outputGeneValues(sp, yr, gen);
+						if (pSpecies->doesOutputWeirCockerham() || pSpecies->doesOutputWeirHill())
+							pComm->outNeutralGenetics(sp, rep, yr, gen);
 					}
 				}
 

@@ -696,12 +696,13 @@ void Community::closeOutIndsOfs() {
 }
 
 // Write records to individuals file
-void Community::outInds(int rep, int yr, int gen) {
+void Community::outInds(species_id sp, int rep, int yr, int gen) {
 	// generate output for each sub-community (patch) in the community
 	for (auto& [spId, mtxPop] : matrixPops) {
-		mtxPop->outIndividual(outIndsOfs, pLandscape, rep, yr, gen);
+		matrixPops.at(sp)->outIndividual(outIndsOfs, pLandscape, rep, yr, gen);
 	}
 	for (Population* pop : popns) { // all sub-communities
+		if (pop->getSpecies()->getID() == sp)
 		pop->outIndividual(outIndsOfs, pLandscape, rep, yr, gen);
 	}
 }
@@ -1793,22 +1794,20 @@ bool Community::openOutGenesFile(const bool& isDiploid, const int landNr, const 
 	return ofsGenes.is_open();
 }
 
-void Community::outputGeneValues(const int& year, const int& gen, Species* pSpecies) {
+void Community::outputGeneValues(species_id sp, const int& year, const int& gen) {
+
 	if (!ofsGenes.is_open())
 		throw runtime_error("Could not open output gene values file.");
 
-	for (auto& [sp, pSpecies] : speciesMap) {
-
-		const set<int> patchList = pSpecies->getSamplePatches();
-		for (int patchId : patchList) {
-			const auto patch = pLandscape->findPatch(sp, patchId);
-			if (patch == nullptr) {
-				throw runtime_error("Sampled patch does not exist");
-			}
-			const auto pPop = patch->getPop();
-			if (pPop != nullptr) {
-				pPop->outputGeneValues(ofsGenes, year, gen);
-			}
+	const set<int> patchList = speciesMap.at(sp)->getSamplePatches();
+	for (int patchId : patchList) {
+		const auto patch = pLandscape->findPatch(sp, patchId);
+		if (patch == nullptr) {
+			throw runtime_error("Sampled patch does not exist");
+		}
+		const auto pPop = patch->getPop();
+		if (pPop != nullptr) {
+			pPop->outputGeneValues(ofsGenes, year, gen);
 		}
 	}
 }
@@ -1817,23 +1816,21 @@ void Community::outputGeneValues(const int& year, const int& gen, Species* pSpec
 // Sample individuals from sample patches
 // ----------------------------------------------------------------------------------------
 
-void Community::sampleIndividuals() {
+void Community::sampleIndividuals(species_id sp) {
 
-	for (auto& [sp, pSpecies] : speciesMap) {
+	Species* pSpecies = speciesMap.at(sp);
+	const set<int> patchList = pSpecies->getSamplePatches();
+	string nbIndsToSample = pSpecies->getNIndsToSample();
+	const set<int> stagesToSampleFrom = pSpecies->getStagesToSample();
 
-		const set<int> patchList = pSpecies->getSamplePatches();
-		string nbIndsToSample = pSpecies->getNIndsToSample();
-		const set<int> stagesToSampleFrom = pSpecies->getStagesToSample();
-
-		for (int patchId : patchList) {
-			const auto patch = pLandscape->findPatch(sp, patchId);
-			if (patch == nullptr) {
-				throw runtime_error("Can't sample individuals: patch" + to_string(patchId) + "doesn't exist.");
-			}
-			auto pPop = patch->getPop();
-			if (pPop != nullptr) {
-				pPop->sampleIndsWithoutReplacement(nbIndsToSample, stagesToSampleFrom);
-			}
+	for (int patchId : patchList) {
+		const auto patch = pLandscape->findPatch(sp, patchId);
+		if (patch == nullptr) {
+			throw runtime_error("Can't sample individuals: patch" + to_string(patchId) + "doesn't exist.");
+		}
+		auto pPop = patch->getPop();
+		if (pPop != nullptr) {
+			pPop->sampleIndsWithoutReplacement(nbIndsToSample, stagesToSampleFrom);
 		}
 	}
 }
@@ -2063,50 +2060,50 @@ void Community::writePairwiseFstFile(Species* pSpecies, const int yr, const int 
 // ----------------------------------------------------------------------------------------
 // Output and calculate neutral statistics
 // ----------------------------------------------------------------------------------------
-void Community::outNeutralGenetics(int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill) {
+void Community::outNeutralGenetics(species_id sp, int rep, int yr, int gen) {
 
-	for (auto& [sp, pSpecies] : speciesMap) {
+	Species* pSpecies = speciesMap.at(sp);
+	const int maxNbNeutralAlleles = pSpecies->getSpTrait(NEUTRAL)->getNbNeutralAlleles();
+	const int nLoci = (int)pSpecies->getNPositionsForTrait(NEUTRAL);
+	const set<int> patchList = pSpecies->getSamplePatches();
+	int nInds = 0, nbPops = 0;
 
-		const int maxNbNeutralAlleles = pSpecies->getSpTrait(NEUTRAL)->getNbNeutralAlleles();
-		const int nLoci = (int)pSpecies->getNPositionsForTrait(NEUTRAL);
-		const set<int> patchList = pSpecies->getSamplePatches();
-		int nInds = 0, nbPops = 0;
-
-		for (int patchId : patchList) {
-			const auto pPatch = pLandscape->findPatch(sp, patchId);
-			if (pPatch == nullptr) {
-				throw runtime_error("Sampled patch does not exist");
-			}
-			const auto pPop = pPatch->getPop();
-			if (pPop != nullptr) { // empty patches do not contribute
-				nInds += pPop->sampleSize();
-				nbPops++;
-			}
+	for (int patchId : patchList) {
+		const auto pPatch = pLandscape->findPatch(sp, patchId);
+		if (pPatch == nullptr) {
+			throw runtime_error("Sampled patch does not exist");
 		}
-
-		if (neutralStatsMaps.at(sp) == nullptr)
-			neutralStatsMaps.at(sp) = make_unique<NeutralStatsManager>(patchList.size(), nLoci);
-
-		neutralStatsMaps.at(sp)->updateAllNeutralTables(pSpecies, pLandscape, patchList);
-		neutralStatsMaps.at(sp)->calculateHo(patchList, nInds, nLoci, pSpecies, pLandscape);
-		neutralStatsMaps.at(sp)->calculatePerLocusHo(patchList, nInds, nLoci, pSpecies, pLandscape);
-		neutralStatsMaps.at(sp)->calcAllelicDiversityMetrics(patchList, nInds, pSpecies, pLandscape);
-
-		if (outWeirCockerham) {
-			neutralStatsMaps.at(sp)->calculateFstatWC(patchList, nInds, nLoci, maxNbNeutralAlleles, pSpecies, pLandscape);
+		const auto pPop = pPatch->getPop();
+		if (pPop != nullptr) { // empty patches do not contribute
+			nInds += pPop->sampleSize();
+			nbPops++;
 		}
-		if (outWeirHill) {
-			neutralStatsMaps.at(sp)->calcPairwiseWeightedFst(patchList, nInds, nLoci, pSpecies, pLandscape);
-		}
+	}
 
-		writeNeutralOutputFile(sp, rep, yr, gen, outWeirCockerham, outWeirHill);
+	if (neutralStatsMaps.at(sp) == nullptr)
+		neutralStatsMaps.at(sp) = make_unique<NeutralStatsManager>(patchList.size(), nLoci);
 
-		if (outWeirCockerham) {
-			writePerLocusFstatFile(pSpecies, yr, gen, maxNbNeutralAlleles, nLoci, patchList);
-		}
-		if (outWeirHill) {
-			writePairwiseFstFile(pSpecies, yr, gen, maxNbNeutralAlleles, nLoci, patchList);
-		}
+	neutralStatsMaps.at(sp)->updateAllNeutralTables(pSpecies, pLandscape, patchList);
+	neutralStatsMaps.at(sp)->calculateHo(patchList, nInds, nLoci, pSpecies, pLandscape);
+	neutralStatsMaps.at(sp)->calculatePerLocusHo(patchList, nInds, nLoci, pSpecies, pLandscape);
+	neutralStatsMaps.at(sp)->calcAllelicDiversityMetrics(patchList, nInds, pSpecies, pLandscape);
+
+	bool outWeirCockerham = pSpecies->doesOutputWeirCockerham();
+	if (outWeirCockerham) {
+		neutralStatsMaps.at(sp)->calculateFstatWC(patchList, nInds, nLoci, maxNbNeutralAlleles, pSpecies, pLandscape);
+	}
+	bool outWeirHill = pSpecies->doesOutputWeirHill();
+	if (outWeirHill) {
+		neutralStatsMaps.at(sp)->calcPairwiseWeightedFst(patchList, nInds, nLoci, pSpecies, pLandscape);
+	}
+
+	writeNeutralOutputFile(sp, rep, yr, gen, outWeirCockerham, outWeirHill);
+
+	if (outWeirCockerham) {
+		writePerLocusFstatFile(pSpecies, yr, gen, maxNbNeutralAlleles, nLoci, patchList);
+	}
+	if (outWeirHill) {
+		writePairwiseFstFile(pSpecies, yr, gen, maxNbNeutralAlleles, nLoci, patchList);
 	}
 }
 

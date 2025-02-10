@@ -500,8 +500,10 @@ genLandParams Landscape::getGenLandParams()
 }
 
 void Landscape::setLandLimits(int x0, int y0, int x1, int y1) {
-	if (x0 >= 0 && x1 >= 0 && x0 <= x1 && x1 < dimX
-		&& y0 >= 0 && y1 >= 0 && y0 <= y1 && y1 < dimY) {
+	if (x0 >= 0 && x1 >= 0 
+		&& x0 <= x1 && x1 < dimX
+		&& y0 >= 0 && y1 >= 0 
+		&& y0 <= y1 && y1 < dimY) {
 		minX = x0; maxX = x1; minY = y0; maxY = y1;
 	}
 }
@@ -955,45 +957,43 @@ bool Landscape::existsPatch(species_id whichSpecies, int patchID) {
 	return findPatch(whichSpecies, patchID) != nullptr;
 }
 
-void Landscape::samplePatches(speciesMap_t& allSpecies, const string& samplingOption) {
+void Landscape::samplePatches(Species* pSpecies) {
 
-	for (auto& [sp, pSpecies] : allSpecies) {
+	const string samplingOption = pSpecies->getSamplingOption();
+	vector<int> sampledPatches;
+	vector<int> eligiblePatches;
+	int nbToSample = pSpecies->getNbPatchesToSample();
 
-		vector<int> sampledPatches;
-		vector<int> eligiblePatches;
-		int nbToSample = pSpecies->getNbPatchesToSample();
-
-		// Get list of viable patches where the species is present
-		for (auto p : patchesList.at(sp)) {
-			if (p->isMatrix()) continue; // skip
-			if (samplingOption == "random") { // then all patches are eligible
-				eligiblePatches.push_back(p->getPatchNum());
-			}
-			else if (p->speciesIsPresent()) {
-				// only patches with at least 1 ind can be sampled
-				eligiblePatches.push_back(p->getPatchNum());
-			}
+	// Get list of viable patches where the species is present
+	for (auto p : patchesList.at(pSpecies->getID())) {
+		if (p->isMatrix()) continue; // skip
+		if (samplingOption == "random") { // then all patches are eligible
+			eligiblePatches.push_back(p->getPatchNum());
 		}
-
-		if (samplingOption == "all") {
-			sampledPatches = eligiblePatches;
+		else if (p->speciesIsPresent()) {
+			// only patches with at least 1 ind can be sampled
+			eligiblePatches.push_back(p->getPatchNum());
 		}
-		else if (samplingOption == "random_occupied" || samplingOption == "random") {
-			if (nbToSample > eligiblePatches.size())
-				nbToSample = eligiblePatches.size();
-			auto rng = pRandom->getRNG();
-			sample(eligiblePatches.begin(), eligiblePatches.end(), std::back_inserter(sampledPatches),
-				nbToSample, rng);
-		}
-		else {
-			throw logic_error("Sampling option should be random, rnadom_occupied or all when sampling patches.");
-		}
+	}
 
-		set<int> patchIds;
-		copy(sampledPatches.begin(), sampledPatches.end(), inserter(patchIds, patchIds.end()));
-		pSpecies->setSamplePatchList(patchIds);
+	// Sample among eligible patches
+	if (samplingOption == "all") {
+		sampledPatches = eligiblePatches;
+	}
+	else if (samplingOption == "random_occupied" || samplingOption == "random") {
+		if (nbToSample > eligiblePatches.size())
+			nbToSample = eligiblePatches.size();
+		auto rng = pRandom->getRNG();
+		sample(eligiblePatches.begin(), eligiblePatches.end(), std::back_inserter(sampledPatches),
+			nbToSample, rng);
+	}
+	else {
+		throw logic_error("Sampling option should be random, rnadom_occupied or all when sampling patches.");
+	}
 
-	} // end loop through species
+	set<int> patchIds;
+	copy(sampledPatches.begin(), sampledPatches.end(), inserter(patchIds, patchIds.end()));
+	pSpecies->setSamplePatchList(patchIds);
 }
 
 void Landscape::resetPatchPopns() {

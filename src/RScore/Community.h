@@ -139,7 +139,7 @@ public:
 	void closeOutIndsOfs();
 
 	// Write records to individuals file
-	void outInds(int rep, int year,	int gen);
+	void outInds(species_id sp, int rep, int year,	int gen);
 	
 	// Write records to traits file
 	void outTraits(int rep, int year, int gen);
@@ -163,14 +163,14 @@ public:
 #endif
 
 	// sample individuals for genetics (or could be used for anything)
-	void sampleIndividuals();
+	void sampleIndividuals(species_id sp);
 
 	bool openOutGenesFile(const bool& isDiploid, const int landNr, const int rep);
-	void outputGeneValues(const int& year, const int& gen, Species* pSpecies);
+	void outputGeneValues(species_id sp, const int& year, const int& gen);
 	bool closeOutGenesOfs();
 
 	// control neutral stat output
-	void outNeutralGenetics(int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill);
+	void outNeutralGenetics(species_id sp, int rep, int yr, int gen);
 	bool openNeutralOutputFile(const int landNr);
 	void writeNeutralOutputFile(const species_id& sp, int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill);
 	bool closeNeutralOutputOfs();
