@@ -45,6 +45,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	initParams init = paramsInit->getInit();
 	simParams sim = paramsSim->getSim();
 
+	bool anyUsesGradient = false, anySavesVisits = false;
+	for (auto& [sp, pSpecies] : allSpecies) {
+		if (pSpecies->usesGradient()) anyUsesGradient = true;
+		if (pSpecies->savesVisits()) anySavesVisits = true;
+	}
+
 	if (!ppLand.generated) {
 		pComm = new Community(pLandscape, allSpecies);
 		// Allocate patches, sample patches and set landscape limits
@@ -58,13 +64,13 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	// Loop through replicates
 	for (int rep = 0; rep < sim.reps; rep++) {
 
-		cout << "Running replicate " << rep << " / " << sim.reps - 1 << endl;
+		std::cout << "Running replicate " << rep << " / " << sim.reps - 1 << endl;
 
 #if RS_RCPP && !R_CMD
 		Rcpp::Rcout << endl << "starting replicate " << rep << endl;
 #endif
 
-		if (sim.saveVisits && !ppLand.generated) {
+		if (anySavesVisits && !ppLand.generated) {
 			pLandscape->resetVisits();
 		}
 		if (sim.fixReplicateSeed) {
@@ -99,10 +105,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			pLandscape->setGlobalStoch(sim.years + 1);
 		}
 
-		bool anyUsesGradient = false;
-		for (auto& [sp, pSpecies] : allSpecies) {
-			if (pSpecies->usesGradient()) anyUsesGradient = true;
-		}
 		if (anyUsesGradient) pLandscape->drawGradientDev();
 
 		if (sim.outConnect && ppLand.usesPatches) {
@@ -403,10 +405,11 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 		pComm->closeYearlyOutputFiles(sim);
 		
-		if (sim.saveVisits) {
-			pLandscape->outVisits(rep, ppLand.landNum);
-			pLandscape->resetVisits();
+		for (auto& [sp, pSpecies] : allSpecies) {
+			if (pSpecies->savesVisits())
+				pLandscape->outVisits(sp, rep, ppLand.landNum);
 		}
+		if (anySavesVisits) pLandscape->resetVisits();
 
 #if RS_RCPP
 		if (sim.outPaths)

@@ -355,7 +355,7 @@ public:
 	);
 	int readCosts(string costFileName);
 	void resetVisits();
-	void outVisits(int rep, int landNb);	// save SMS path visits map to raster text file
+	void outVisits(species_id sp, int rep, int landNb);	// save SMS path visits map to raster text file
 
 private:
 	bool generated;				// artificially generated?

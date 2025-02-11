@@ -317,7 +317,6 @@ Landscape::Landscape(const speciesMap_t& allSpecies) {
 
 	// Initialise maps for species-dependent members
 	for (auto& sp : views::keys(allSpecies)) {
-		patchesList.emplace(sp, vector<Patch*>());
 		patchChgMatrices.emplace(sp, vector<vector<cellChange>>());
 		costsChgMatrices.emplace(sp, vector<vector<cellChange>>());
 		connectMatrices.emplace(sp, nullptr);
@@ -1029,9 +1028,6 @@ void Landscape::resetPatchPopns() {
 
 void Landscape::updateCarryingCapacity(const speciesMap_t& allSpecies, int yr, short landIx) {
 	
-	envGradParams grad = paramsGrad->getGradient();
-	bool gradK = false;
-	if (grad.usesGradient && grad.gradType == 1) gradK = true; // gradient in carrying capacity
 	patchLimits landlimits;
 	landlimits.xMin = minX; 
 	landlimits.xMax = maxX;
@@ -1039,11 +1035,16 @@ void Landscape::updateCarryingCapacity(const speciesMap_t& allSpecies, int yr, s
 	landlimits.yMax = maxY;
 
 	for (auto& [sp, patches] : patchesList) {
+
+		Species* pSpecies = allSpecies.at(sp);
+		envGradParams grad = pSpecies->getEnvGradient();
+		bool gradientInK = grad.usesGradient && grad.gradType == 1;
+
 		int npatches = static_cast<int>(patches.size());
 		for (int i = 0; i < npatches; i++) {
 			if (!patches[i]->isMatrix()) {
-				patches[i]->setCarryingCapacity(allSpecies.at(sp), landlimits, getGlobalStoch(yr),
-					nHab, rasterType, landIx, gradK);
+				patches[i]->setCarryingCapacity(pSpecies, landlimits, getGlobalStoch(yr),
+					nHab, rasterType, landIx, gradientInK);
 			}
 		}
 	}
@@ -2782,31 +2783,23 @@ void Landscape::resetVisits() {
 }
 
 // Save SMS path visits map to raster text file
-void Landscape::outVisits(int rep, int landNr) {
+void Landscape::outVisits(species_id sp, int rep, int landNr) {
 
 	ofstream outvisits;
 	string name;
 	simParams sim = paramsSim->getSim();
 
-	if (sim.batchMode) {
-		name = paramsSim->getDir(3)
+	name = paramsSim->getDir(3)
+		+ (sim.batchMode ? "Batch" + to_string(sim.batchNum) + "_" : "")
+		+ "Sim" + to_string(sim.simulation)
 #if RS_RCPP
-			+ "Batch" + to_string(sim.batchNum) + "_"
-			+ "Sim" + to_string(sim.simulation)
-			+ "_Land" + to_string(landNr) + "_Rep" + to_string(rep)
+		+ "_Land" + to_string(landNr) + "_Rep" + to_string(rep)
 #else
-			+ "Batch" + to_string(sim.batchNum) + "_"
-			+ "Sim" + to_string(sim.simulation)
-			+ "_land" + to_string(landNr) + "_rep" + to_string(rep)
+		+ "_land" + to_string(landNr) + "_rep" + to_string(rep)
 #endif
-			+ "_Visits.txt";
-	}
-	else {
-		name = paramsSim->getDir(3)
-			+ "Sim" + to_string(sim.simulation)
-			+ "_land" + to_string(landNr) + "_rep" + to_string(rep)
-			+ "_Visits.txt";
-	}
+		+ "_Species" + to_string(sp) +
+		+"_Visits.txt";
+
 	outvisits.open(name.c_str());
 
 	outvisits << "ncols " << dimX << endl;
@@ -2822,12 +2815,12 @@ void Landscape::outVisits(int rep, int landNr) {
 				outvisits << "-9 ";
 			}
 			else {
-				outvisits << cells[y][x]->getVisits() << " ";
+				outvisits << cells[y][x]->getVisits(sp) << " ";
 			}
 		}
 		outvisits << endl;
 	}
-	outvisits.close(); 
+	outvisits.close();
 	outvisits.clear();
 }
 

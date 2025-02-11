@@ -948,8 +948,8 @@ bool Individual::moveStep(Landscape* pLandscape,
 			}
 			else {
 				pPatch = pCurrCell->getPatch(pSpecies->getID());
-				if (sim.saveVisits && pPatch != pNatalPatch) {
-					pCurrCell->incrVisits();
+				if (pSpecies->savesVisits() && pPatch != pNatalPatch) {
+					pCurrCell->incrVisits(pSpecies->getID());
 				}
 			}
 			break;

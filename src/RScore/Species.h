@@ -366,11 +366,14 @@ public:
 	);
 	void setSamplePatchList(const std::set<int>& samplePatchList);
 
+	// Output control functions
 	bool isIndOutputYear(int yr) const {
 		return output.outInds 
 			&& yr >= output.outStartInd 
 			&& yr % output.outIntInd == 0;
 	}
+
+	bool savesVisits() const { return output.saveVisits;  }
 
 private:
 

@@ -40,13 +40,13 @@ Cell::Cell(int xx, int yy, Patch* patch, int hab, set<species_id> spLabels)
 	// Initialise patch map
 	for (auto& sp : spLabels) {
 		patches.emplace(sp, nullptr);
+		visits.emplace(sp, 0);
 	}
 	if (patch != nullptr) {
 		patches.at(patch->getSpeciesID()) = patch;
 	}
 	envDev = eps = 0.0;
 	habIxx.push_back(hab);
-	visits = 0;
 	smsData = nullptr;
 }
 
@@ -58,13 +58,13 @@ Cell::Cell(int xx, int yy, Patch* patch, float hab, set<species_id> spLabels)
 	// Initialise patch map
 	for (auto& sp : spLabels) {
 		patches.emplace(sp, nullptr);
+		visits.emplace(sp, 0);
 	}
 	if (patch != nullptr) {
 		patches.at(patch->getSpeciesID()) = patch;
 	}
 	envDev = eps = 0.0;
 	habitats.push_back(hab);
-	visits = 0;
 	smsData = nullptr;
 }
 
@@ -189,9 +189,9 @@ void Cell::resetEffCosts() {
 	}
 }
 
-void Cell::resetVisits() { visits = 0; }
-void Cell::incrVisits() { visits++; }
-unsigned long int Cell::getVisits() { return visits; }
+void Cell::resetVisits() { for (auto& [sp, vis] : visits) vis = 0; }
+void Cell::incrVisits(species_id sp) { visits.at(sp)++; }
+unsigned long int Cell::getVisits(species_id sp) { return visits.at(sp); }
 
 //---------------------------------------------------------------------------
 

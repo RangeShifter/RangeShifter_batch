@@ -72,31 +72,25 @@ public:
 	void addHabIndex(short hx);
 	void changeHabIndex(short ix, short hx);
 	int getHabIndex(int ix);
-	int nHabitats(void);
+	int nHabitats();
 	void addHabitat(float q); // habitat prop or cell quality score
 	float getHabitat(int ix); // Get habitat proportion / quality score
 	void setPatch(species_id whichSpecies, Patch* p);
 	Patch* getPatch(species_id whichSpecies);
 	locn getLocn();
-	void setEnvDev(
-		float	// local environmental deviation
-	);
+	void setEnvDev(float devVal);
 	float getEnvDev();
 	void updateEps(float ac, float randpart); // Update local environmental stochasticity (epsilon)
 	float getEps();
-	void setCost(
-		int		// cost value for SMS
-	);
+	void setCost(int costVal);
 	int getCost();
 	void resetCost();
 	array3x3f getEffCosts();
-	void setEffCosts(
-		array3x3f	// 3 x 3 array of effective costs for neighbouring cells
-	);
+	void setEffCosts(array3x3f effCostsNeighbours);
 	void resetEffCosts(); // Reset the effective cost, but not the cost, of the cell
 	void resetVisits();
-	void incrVisits();
-	unsigned long int getVisits();
+	void incrVisits(species_id sp);
+	unsigned long int getVisits(species_id sp);
 
 private:
 	int x, y;		// cell co-ordinates
@@ -105,7 +99,7 @@ private:
 
 	float envDev;	// local environmental deviation (static, in range -1.0 to +1.0)
 	float eps;		// local environmental stochasticity (epsilon) (dynamic, from N(0,std))
-	unsigned long int visits; // no. of times square is visited by dispersers
+	map<species_id, unsigned long int> visits; // no. of times the cell is visited by each species
 	smscosts* smsData;
 
 	vector <short> habIxx; 	// habitat indices (rasterType=0)
