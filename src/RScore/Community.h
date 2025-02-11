@@ -116,10 +116,10 @@ public:
 	void closeYearlyOutputFiles(const simParams& sim);
 
 	// Open occupancy file, write header record and set up occupancy array
-	bool outOccupancyHeaders();
-	void outOccupancy();
-	bool closeOccupancyOfs();
-	void outOccSuit();
+	bool outOccupancyHeaders(Species* pSpecies);
+	void outOccupancy(Species* pSpecies);
+	void closeOccupancyOfs(species_id sp);
+	void outOccSuit(Species* pSpecies);
 
 	// Open range file and write header record
 	bool outRangeHeaders(int landnr);
@@ -196,8 +196,8 @@ private:
 
 	ofstream outPopOfs;
 	map<species_id, ofstream> outIndsOfs;
-	ofstream outOccupOfs;
-	ofstream outSuitOfs;
+	map<species_id, ofstream> outOccupOfs;
+	map<species_id, ofstream> outSuitOfs;
 	ofstream outTraitsOfs;
 	ofstream outRangeOfs;
 	ofstream outTraitsRows;

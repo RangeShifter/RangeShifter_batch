@@ -1510,7 +1510,7 @@ void Population::outIndividual(ofstream& outIndsOfs, Landscape* pLandscape, int 
 			}
 		}
 		if (writeInd) {
-			outIndsOfs << "\t" << speciesID << "\t" << inds[i]->getId();
+			outIndsOfs << "\t" << inds[i]->getId();
 			if (dem.stageStruct) outIndsOfs << "\t" << to_string(ind.status);
 			else { // non-structured population
 				outIndsOfs << "\t" << to_string(ind.status);

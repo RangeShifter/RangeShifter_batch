@@ -131,24 +131,24 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		Rcpp::Rcout << "RunModel(): completed initialisation " << endl;
 #endif
 
-		// open a new individuals file for each replicate
 		for (auto& [sp, pSpecies] : allSpecies) {
+
+			// open a new individuals file for each replicate
 			if (pSpecies->doesOutputInds())
 				pComm->outIndsHeaders(sp, rep, ppLand.landNum, ppLand.usesPatches);
-		}
 
-		if (sim.outputGeneValues) {
-			bool geneOutFileHasOpened = pComm->openOutGenesFile(pSpecies->isDiploid(), ppLand.landNum, rep);
-			if (!geneOutFileHasOpened) throw logic_error("Output gene value file could not be initialised.");
-		}
+			if (pSpecies->doesOutputGeneValues()) {
+				bool geneOutFileHasOpened = pComm->openOutGenesFile(pSpecies->isDiploid(), ppLand.landNum, rep);
+				if (!geneOutFileHasOpened) throw logic_error("Output gene value file could not be initialised.");
+			}
 
-		// open a new genetics file for each replicate for per locus and pairwise stats
-		if (sim.outputWeirCockerham) {
-			pComm->openPerLocusFstFile(pSpecies, pLandscape, ppLand.landNum, rep);
+			// open a new genetics file for each replicate for per locus and pairwise stats
+			if (pSpecies->doesOutputWeirCockerham())
+				pComm->openPerLocusFstFile(pSpecies, pLandscape, ppLand.landNum, rep);
+			if (pSpecies->doesOutputWeirHill())
+				pComm->openPairwiseFstFile(pSpecies, pLandscape, ppLand.landNum, rep);
 		}
-		if (sim.outputWeirHill) {
-			pComm->openPairwiseFstFile(pSpecies, pLandscape, ppLand.landNum, rep);
-		}
+		
 #if RS_RCPP
 		// open a new movement paths file for each replicate
 		if (sim.outPaths)
@@ -425,7 +425,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	} // end of the replicates loop
 
 	if (ppLand.usesPatches) {
-		for (const species_id& sp : views::keys(allSpecies)) {
+		for (auto& [sp, pSpecies] : allSpecies) {
 			if (pSpecies->doesOutputConnect()) {
 				pLandscape->deleteConnectMatrix(sp);
 				pLandscape->closeConnectOfs(sp);
@@ -433,9 +433,13 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 	}
 
-	if (sim.outOccup && sim.reps > 1) {
-		pComm->outOccupancy();
-		pComm->outOccSuit();
+	if (sim.reps > 1) {
+		for (auto& [sp, pSpecies] : allSpecies) {
+			if (pSpecies->doesOutputOccup()) {
+				pComm->outOccupancy(pSpecies);
+				pComm->outOccSuit(pSpecies);
+			}
+		}
 	}
 
 	pComm->closeGlobalOutputFiles(sim);

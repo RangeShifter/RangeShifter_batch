@@ -380,6 +380,8 @@ public:
 			&& yr % output.outIntConn == 0;
 	}
 	bool savesVisits() const { return output.saveVisits;  }
+	bool doesOutputOccup() const { return output.outOccup; }
+	int getOutOccInt() const { return output.outIntOcc; }
 
 private:
 
