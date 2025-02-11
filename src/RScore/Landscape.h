@@ -337,12 +337,12 @@ public:
 	void incrConnectMatrix(const species_id& speciesID, int originPatchNb, int settlePatchNb);
 	void deleteConnectMatrix(const species_id& id);
 
-	bool outConnectHeaders();
-	bool closeConnectOfs();
+	void outConnectHeaders(species_id sp);
+	bool closeConnectOfs(species_id sp);
 #if RS_RCPP
 	void outPathsHeaders(int, int);
 #endif
-	void outConnect(int rep, int year);
+	void outConnect(species_id sp, int rep, int year);
 
 	// functions to handle input and output
 
@@ -406,7 +406,7 @@ private:
 	// indexed by [start patch seq num][end patch seq num]
 	map<species_id, int**> connectMatrices;
 
-	ofstream outConnMat;
+	map<species_id, ofstream> outConnMatrices;
 
 	// global environmental stochasticity (epsilon)
 	float* epsGlobal;	// pointer to time-series	

@@ -2660,17 +2660,16 @@ void Landscape::deleteConnectMatrix(const species_id& speciesID) {
 	}
 }
 
-bool Landscape::closeConnectOfs() {
-	if (outConnMat.is_open()) outConnMat.close();
-	outConnMat.clear();
+bool Landscape::closeConnectOfs(species_id sp) {
+	if (outConnMatrices.at(sp).is_open()) outConnMatrices.at(sp).close();
+	outConnMatrices.at(sp).clear();
 	return true;
 }
 
 // Write connectivity file headers
-bool Landscape::outConnectHeaders()
+void Landscape::outConnectHeaders(species_id sp)
 {
 	simParams sim = paramsSim->getSim();
-
 	string name = paramsSim->getDir(2);
 	if (sim.batchMode) {
 		name += "Batch" + to_string(sim.batchNum) + "_";
@@ -2678,12 +2677,15 @@ bool Landscape::outConnectHeaders()
 	}
 	else
 		name += "Sim" + to_string(sim.simulation);
-	name += "_Connect.txt";
-	outConnMat.open(name.c_str());
+	name += "Species_" + to_string(sp) + "_Connect.txt";
+	outConnMatrices.at(sp).open(name.c_str());
 
-	outConnMat << "Rep\tYear\tSpecies\tStartPatch\tEndPatch\tNinds" << endl;
+	if (!outConnMatrices.at(sp).is_open()) {
+		closeConnectOfs(sp);
+		throw runtime_error("Failed to open connectivity output file.");
+	}
 
-	return outConnMat.is_open();
+	outConnMatrices.at(sp) << "Rep\tYear\tStartPatch\tEndPatch\tNinds" << endl;
 }
 
 #if RS_RCPP
@@ -2721,53 +2723,50 @@ void Landscape::outPathsHeaders(int rep, int option)
 }
 #endif
 
-void Landscape::outConnect(int rep, int yr) {
+void Landscape::outConnect(species_id sp, int rep, int yr) {
 	
 	int patchnum0, patchnum1;
+	int** connectMatrix = connectMatrices.at(sp); // copy pointer
 
-	for (auto& [speciesID, connectMatrix] : connectMatrices) {
+	int npatches = static_cast<int>(patchesList.at(sp).size());
+	int* emigrants = new int[npatches]; // 1D array to hold emigrants from each patch
+	int* immigrants = new int[npatches]; // 1D array to hold immigrants to  each patch
 
-		int npatches = static_cast<int>(patchesList.at(speciesID).size());
-		int* emigrants = new int[npatches]; // 1D array to hold emigrants from each patch
-		int* immigrants = new int[npatches]; // 1D array to hold immigrants to  each patch
+	for (int i = 0; i < npatches; i++) {
+		emigrants[i] = immigrants[i] = 0;
+	}
 
-		for (int i = 0; i < npatches; i++) {
-			emigrants[i] = immigrants[i] = 0;
-		}
-
-		for (int i = 0; i < npatches; i++) {
-			patchnum0 = patchesList.at(speciesID)[i]->getPatchNum();
-			if (patchnum0 != 0) {
-				for (int j = 0; j < npatches; j++) {
-					patchnum1 = patchesList.at(speciesID)[j]->getPatchNum();
-					if (patchnum1 != 0) {
-						emigrants[i] += connectMatrix[i][j];
-						immigrants[j] += connectMatrix[i][j];
-						if (connectMatrix[i][j] > 0) {
-							outConnMat << rep << "\t" << yr
-								<< "\t" << patchnum0 << "\t" << patchnum1
-								<< "\t" << connectMatrix[i][j] << endl;
-						}
+	for (int i = 0; i < npatches; i++) {
+		patchnum0 = patchesList.at(sp)[i]->getPatchNum();
+		if (patchnum0 != 0) {
+			for (int j = 0; j < npatches; j++) {
+				patchnum1 = patchesList.at(sp)[j]->getPatchNum();
+				if (patchnum1 != 0) {
+					emigrants[i] += connectMatrix[i][j];
+					immigrants[j] += connectMatrix[i][j];
+					if (connectMatrix[i][j] > 0) {
+						outConnMatrices.at(sp) << rep << "\t" << yr
+							<< "\t" << patchnum0 << "\t" << patchnum1
+							<< "\t" << connectMatrix[i][j] << endl;
 					}
 				}
 			}
 		}
-
-		for (int i = 0; i < npatches; i++) {
-			patchnum0 = patchesList.at(speciesID)[i]->getPatchNum();
-			if (patchnum0 != 0) {
-				if (patchesList.at(speciesID)[i]->isSuitable()) {
-					outConnMat << rep << "\t" << yr
-						<< "\t" << patchnum0 << "\t-999\t" << emigrants[i] << endl;
-					outConnMat << rep << "\t" << yr
-						<< "\t-999\t" << patchnum0 << "\t" << immigrants[i] << endl;
-				}
-			}
-		}
-		delete[] emigrants;
-		delete[] immigrants;
 	}
 
+	for (int i = 0; i < npatches; i++) {
+		patchnum0 = patchesList.at(sp)[i]->getPatchNum();
+		if (patchnum0 != 0) {
+			if (patchesList.at(sp)[i]->isSuitable()) {
+				outConnMatrices.at(sp) << rep << "\t" << yr
+					<< "\t" << patchnum0 << "\t-999\t" << emigrants[i] << endl;
+				outConnMatrices.at(sp) << rep << "\t" << yr
+					<< "\t-999\t" << patchnum0 << "\t" << immigrants[i] << endl;
+			}
+		}
+	}
+	delete[] emigrants;
+	delete[] immigrants;
 }
 
 //---------------------------------------------------------------------------

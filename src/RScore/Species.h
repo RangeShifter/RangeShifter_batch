@@ -372,7 +372,12 @@ public:
 			&& yr >= output.outStartInd 
 			&& yr % output.outIntInd == 0;
 	}
-
+	bool doesOutputConnect() const { return output.outConnect; }
+	bool isConnectOutputYear(int yr) const {
+		return output.outConnect
+			&& yr >= output.outStartConn 
+			&& yr % output.outIntConn == 0;
+	}
 	bool savesVisits() const { return output.saveVisits;  }
 
 private:

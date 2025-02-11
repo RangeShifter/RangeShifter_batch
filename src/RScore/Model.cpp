@@ -107,16 +107,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 		if (anyUsesGradient) pLandscape->drawGradientDev();
 
-		if (sim.outConnect && ppLand.usesPatches) {
-			if (!pLandscape->outConnectHeaders()) {
-				pLandscape->closeConnectOfs();
-#if RS_RCPP && !R_CMD
-				return Rcpp::List::create(Rcpp::Named("Errors") = 666);
-#else
-				return 666;
-#endif
-			}
-			pLandscape->createConnectMatrix();
+		if (ppLand.usesPatches) {
+			for (auto& [sp, pSpecies] : allSpecies) 
+				if (pSpecies->doesOutputConnect()) 
+					pLandscape->outConnectHeaders(sp);
 		}
 
 		// Dynamic landscape control
@@ -247,8 +241,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				pLandscape->updateCarryingCapacity(allSpecies, yr, chgNb);
 			}
 
-			if (sim.outConnect && ppLand.usesPatches)
-				pLandscape->resetConnectMatrix();
+			if (ppLand.usesPatches) pLandscape->resetConnectMatrix();
 
 			if (ppLand.dynamic && updateland) {
 				if (trfr.usesMovtProc && trfr.moveType == 1) { // SMS
@@ -364,10 +357,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			}
 
 			// Connectivity Matrix
-			if (sim.outConnect && ppLand.usesPatches
-				&& yr >= sim.outStartConn && yr % sim.outIntConn == 0)
-				pLandscape->outConnect(rep, yr);
-
+			if (ppLand.usesPatches) {
+				for (auto& [sp, pSpecies] : allSpecies) {
+					if (pSpecies->isConnectOutputYear(yr))
+						pLandscape->outConnect(sp, rep, yr);
+				}
+			}
 		} // end of the years loop
 
 		// Final summary output
@@ -400,9 +395,13 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			}
 		}
 
-		if (sim.outConnect && ppLand.usesPatches)
-			pLandscape->resetConnectMatrix();
-
+		if (ppLand.usesPatches) {
+			for (auto& [sp, pSpecies] : allSpecies) {
+				if (pSpecies->doesOutputConnect())
+					pLandscape->resetConnectMatrix();
+			}
+		}
+		
 		pComm->closeYearlyOutputFiles(sim);
 		
 		for (auto& [sp, pSpecies] : allSpecies) {
@@ -418,10 +417,13 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 	} // end of the replicates loop
 
-	if (sim.outConnect && ppLand.usesPatches) {
-		for (const species_id& speciesID : views::keys(allSpecies))
-			pLandscape->deleteConnectMatrix(speciesID);
-		pLandscape->closeConnectOfs();
+	if (ppLand.usesPatches) {
+		for (const species_id& sp : views::keys(allSpecies)) {
+			if (pSpecies->doesOutputConnect()) {
+				pLandscape->deleteConnectMatrix(sp);
+				pLandscape->closeConnectOfs(sp);
+			}
+		}
 	}
 
 	if (sim.outOccup && sim.reps > 1) {
