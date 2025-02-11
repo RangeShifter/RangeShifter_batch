@@ -109,8 +109,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 		if (ppLand.usesPatches) {
 			for (auto& [sp, pSpecies] : allSpecies) 
-				if (pSpecies->doesOutputConnect()) 
+				if (pSpecies->doesOutputConnect()) {
+					pLandscape->createConnectMatrix(sp);
 					pLandscape->outConnectHeaders(sp);
+				}
 		}
 
 		// Dynamic landscape control

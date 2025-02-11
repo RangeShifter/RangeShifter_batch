@@ -205,8 +205,7 @@ public:
 	// Generate patches, sample patches and set landscape limits
 	void initialise(speciesMap_t& allSpecies, landParams land, initParams init);
 
-	// functions to set and return parameter values
-
+	// Landscape parameters
 	void setLandParams(landParams ppp, bool batchmode);
 	landParams getLandParams();
 	landData getLandData();
@@ -214,11 +213,9 @@ public:
 	genLandParams getGenLandParams();
 	void setLandLimits(int minX, int minY, int maxX, int maxY);
 	void resetLandLimits();
-
 	landOrigin getOrigin();
 
-	// functions to handle habitat codes
-
+	// Habitat codes
 	bool habitatsIndexed();
 	void listHabCodes();
 	void addHabCode(int hab);
@@ -226,14 +223,12 @@ public:
 	int getHabCode(int xhab);
 	void clearHabitats();
 
-	// functions to handle patches and cells
-
+	// Patches and cells
 	void setCellArray();
 	void generatePatches(const speciesMap_t& allSpecies); // create patches for an artificial landscape
 	void allocatePatches(const speciesMap_t& allSpecies); // create patches for a cell-based landscape
 	Patch* addNewPatch(species_id id, int num);
 	Patch* addNewPatch(species_id id, int seqnum, int num);
-
 	void resetPatchLimits();
 	void addNewCellToLand(int x, int y, float habQual);
 	void addNewCellToLand(int x, int y, int habType);
@@ -241,7 +236,6 @@ public:
 	void addCellToPatch(species_id whichSpecies, Cell* pCell, Patch* pPatch);
 	void addCellToPatch(species_id whichSpecies, Cell* pCell, Patch* pPatch, float habQual);
 	void addCellToPatch(species_id whichSpecies, Cell* pCell, Patch* pPatch, int habType);
-
 	void addNewCellToPatch(Patch* pPatch, int x, int y, int habType);
 	void addNewCellToPatch(Patch* pPatch, int x, int y, float habQual);
 	patchData getPatchData(species_id id, int patchIx);
@@ -255,16 +249,21 @@ public:
 	int patchCount(species_id id) const;
 	int allPatchCount() const;
 	void updateHabitatIndices();
+
+	// Environmental gradient
 	void drawGradientDev();
 	void updateEnvGradient(species_id sp);
+
+	// Environmental stochasticity
 	void setGlobalStoch(int	nbYears);
 	float getGlobalStoch(int year);
 	void updateLocalStoch();
+
+	// SMS costs
 	void resetCosts();
 	void resetEffCosts();
 
-	// functions to handle dynamic changes
-
+	// Dynamic changes
 	void setDynamicLand(bool isDynamic);
 	void addLandChange(landChange c);
 	int numLandChanges();
@@ -297,8 +296,7 @@ public:
 	costChange getCostChange(species_id sp, int i);
 	int applyCostChanges(const int& landChgNb, int iCostChg);
 
-	// functions to handle species distributions
-
+	// Species distributions
 	int newDistribution(Species* pSpecies, string distFileName);
 	void setDistribution(Species* pSpecies, int nInit);
 	// Specified cell matches one of the distn cells to be initialised?
@@ -309,7 +307,6 @@ public:
 	int distCellCount(int dist);
 	// Get co-ordinates of a specified cell in a specified initial distn
 	locn getDistnCell(int dist, int ix);
-
 	// Get co-ordinates of a specified cell in a specified initial distn
 	// Returns negative co-ordinates if the cell is not selected
 	locn getSelectedDistnCell(int dist, int ix);
@@ -321,8 +318,6 @@ public:
 	void setDistnCell(int initDistIx, locn cellLoc, bool isInitial);
 	void resetDistribution(Species*	pSpecies);
 
-	// functions to handle initialisation cells
-
 	int initCellCount();
 
 	// Create a new DistCell and add to the initcells vector
@@ -330,22 +325,16 @@ public:
 	locn getInitCell(int distCellIx);
 	void clearInitCells();
 
-	// functions to handle connectivity matrix
-
-	void createConnectMatrix();
+	// Functions to handle connectivity matrix
+	void createConnectMatrix(species_id sp);
 	void resetConnectMatrix();
 	void incrConnectMatrix(const species_id& speciesID, int originPatchNb, int settlePatchNb);
 	void deleteConnectMatrix(const species_id& id);
-
 	void outConnectHeaders(species_id sp);
 	bool closeConnectOfs(species_id sp);
-#if RS_RCPP
-	void outPathsHeaders(int, int);
-#endif
 	void outConnect(species_id sp, int rep, int year);
 
-	// functions to handle input and output
-
+	// Functions to handle input and output
 	int readLandscape(
 		int filenum,		// fileNum == 0 for (first) habitat file and optional patch file
 							// fileNum > 0  for subsequent habitat files under the %cover option
@@ -356,6 +345,9 @@ public:
 	int readCosts(string costFileName);
 	void resetVisits();
 	void outVisits(species_id sp, int rep, int landNb);	// save SMS path visits map to raster text file
+#if RS_RCPP
+	void outPathsHeaders(int, int);
+#endif
 
 private:
 	bool generated;				// artificially generated?

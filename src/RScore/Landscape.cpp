@@ -2605,20 +2605,16 @@ rasterdata CheckRasterFile(string fname)
 // Patch connectivity functions
 
 // Create & initialise connectivity matrix
-void Landscape::createConnectMatrix()
+void Landscape::createConnectMatrix(species_id sp)
 {
-	for (auto& [sp, connectMatrix] : connectMatrices) {
-
-		if (connectMatrix != nullptr)
-			deleteConnectMatrix(sp);
-
-		int npatches = static_cast<int>(patchesList.at(sp).size());
-		connectMatrix = new int* [npatches];
-		for (int i = 0; i < npatches; i++) {
-			connectMatrix[i] = new int[npatches];
-			for (int j = 0; j < npatches; j++) 
-				connectMatrix[i][j] = 0;
-		}
+	if (connectMatrices.at(sp) != nullptr)
+		deleteConnectMatrix(sp);
+	int npatches = static_cast<int>(patchesList.at(sp).size());
+	connectMatrices.at(sp) = new int* [npatches];
+	for (int i = 0; i < npatches; i++) {
+		connectMatrices.at(sp)[i] = new int[npatches];
+		for (int j = 0; j < npatches; j++)
+			connectMatrices.at(sp)[i][j] = 0;
 	}
 }
 
