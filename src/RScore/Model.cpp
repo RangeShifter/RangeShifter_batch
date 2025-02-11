@@ -132,8 +132,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 #endif
 
 		// open a new individuals file for each replicate
-		if (sim.outInds)
-			pComm->outIndsHeaders(rep, ppLand.landNum, ppLand.usesPatches);
+		for (auto& [sp, pSpecies] : allSpecies) {
+			if (pSpecies->doesOutputInds())
+				pComm->outIndsHeaders(sp, rep, ppLand.landNum, ppLand.usesPatches);
+		}
 
 		if (sim.outputGeneValues) {
 			bool geneOutFileHasOpened = pComm->openOutGenesFile(pSpecies->isDiploid(), ppLand.landNum, rep);
@@ -346,8 +348,11 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				}
 				// Apply age
 				pComm->ageIncrement();
-				if (sim.outInds && yr >= sim.outStartInd && yr % sim.outIntInd == 0)
-					pComm->outInds(rep, yr, -1); // list any individuals dying having reached maximum age
+				for (auto& [sp, pSpecies] : allSpecies) {
+					if (pSpecies->isIndOutputYear(yr))
+						// list any individuals dying having reached maximum age
+						pComm->outInds(sp, rep, yr, -1);
+				}
 				pComm->applySurvivalDevlpt(); // delete any such individuals
 			}
 

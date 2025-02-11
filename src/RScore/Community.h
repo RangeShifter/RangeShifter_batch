@@ -135,8 +135,8 @@ public:
 	// Write records to population file
 	void outPop(Species* pSpecies, int rep, int year, int gen);
 
-	void outIndsHeaders(int rep, int landNr, bool usesPatches);
-	void closeOutIndsOfs();
+	void outIndsHeaders(species_id sp, int rep, int landNr, bool usesPatches);
+	void closeOutIndsOfs(species_id sp);
 
 	// Write records to individuals file
 	void outInds(species_id sp, int rep, int year,	int gen);
@@ -195,7 +195,7 @@ private:
 	map<species_id, unique_ptr<NeutralStatsManager>> neutralStatsMaps;
 
 	ofstream outPopOfs;
-	ofstream outIndsOfs;
+	map<species_id, ofstream> outIndsOfs;
 	ofstream outOccupOfs;
 	ofstream outSuitOfs;
 	ofstream outTraitsOfs;

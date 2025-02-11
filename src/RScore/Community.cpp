@@ -635,62 +635,65 @@ void Community::outPop(Species* pSpecies, int rep, int yr, int gen)
 }
 
 // Open individuals file and write header record
-void Community::outIndsHeaders(int rep, int landNr, bool usesPatches)
+void Community::outIndsHeaders(species_id sp, int rep, int landNr, bool usesPatches)
 {
 	string name;
-	demogrParams dem = speciesMap.at(gSingleSpeciesID)->getDemogrParams();
-	emigRules emig = speciesMap.at(gSingleSpeciesID)->getEmigRules();
-	transferRules trfr = speciesMap.at(gSingleSpeciesID)->getTransferRules();
-	settleType sett = speciesMap.at(gSingleSpeciesID)->getSettle();
+	Species* pSpecies = speciesMap.at(sp);
+	demogrParams dem = pSpecies->getDemogrParams();
+	emigRules emig = pSpecies->getEmigRules();
+	transferRules trfr = pSpecies->getTransferRules();
+	settleType sett = pSpecies->getSettle();
 	simParams sim = paramsSim->getSim();
-	bool hasGenLoad = speciesMap.at(gSingleSpeciesID)->getNbGenLoadTraits() > 0;
+	bool hasGenLoad = pSpecies->getNbGenLoadTraits() > 0;
 
 	name = paramsSim->getDir(2)
 		+ (sim.batchMode ? "Batch" + to_string(sim.batchNum) + "_" : "")
 		+ "Sim" + to_string(sim.simulation)
 		+ "_Land" + to_string(landNr) + "_Rep" + to_string(rep) + "_Inds.txt";
 
-	outIndsOfs.open(name.c_str());
-	outIndsOfs << "Rep\tYear\tRepSeason\tSpecies\tIndID\tStatus";
-	if (usesPatches) outIndsOfs << "\tNatal_patch\tPatchID";
-	else outIndsOfs << "\tNatal_X\tNatal_Y\tX\tY";
-	if (dem.repType != 0) outIndsOfs << "\tSex";
-	if (dem.stageStruct) outIndsOfs << "\tAge\tStage";
-	if (hasGenLoad) outIndsOfs << "\tProbViable";
+	ofstream& indsOfs = outIndsOfs.at(sp);
+
+	indsOfs.open(name.c_str());
+	indsOfs << "Rep\tYear\tRepSeason\tSpecies\tIndID\tStatus";
+	if (usesPatches) indsOfs << "\tNatal_patch\tPatchID";
+	else indsOfs << "\tNatal_X\tNatal_Y\tX\tY";
+	if (dem.repType != 0) indsOfs << "\tSex";
+	if (dem.stageStruct) indsOfs << "\tAge\tStage";
+	if (hasGenLoad) indsOfs << "\tProbViable";
 	if (emig.indVar) {
-		if (emig.densDep) outIndsOfs << "\tD0\tAlpha\tBeta";
-		else outIndsOfs << "\tEP";
+		if (emig.densDep) indsOfs << "\tD0\tAlpha\tBeta";
+		else indsOfs << "\tEP";
 	}
 	if (trfr.indVar) {
 		if (trfr.usesMovtProc) {
 			if (trfr.moveType == 1) { // SMS
-				outIndsOfs << "\tDP\tGB\tAlphaDB\tBetaDB";
+				indsOfs << "\tDP\tGB\tAlphaDB\tBetaDB";
 			}
 			if (trfr.moveType == 2) { // CRW
-				outIndsOfs << "\tStepLength\tRho";
+				indsOfs << "\tStepLength\tRho";
 			}
 		}
 		else { // kernel
-			outIndsOfs << "\tMeanDistI";
-			if (trfr.twinKern) outIndsOfs << "\tMeanDistII\tPKernelI";
+			indsOfs << "\tMeanDistI";
+			if (trfr.twinKern) indsOfs << "\tMeanDistII\tPKernelI";
 		}
 	}
 	if (sett.indVar) {
-		outIndsOfs << "\tS0\tAlphaS\tBetaS";
+		indsOfs << "\tS0\tAlphaS\tBetaS";
 	}
-	outIndsOfs << "\tDistMoved";
+	indsOfs << "\tDistMoved";
 #ifndef NDEBUG
-	outIndsOfs << "\tNsteps";
+	indsOfs << "\tNsteps";
 #else
-	if (trfr.usesMovtProc) outIndsOfs << "\tNsteps";
+	if (trfr.usesMovtProc) indsOfs << "\tNsteps";
 #endif
-	outIndsOfs << endl;
+	indsOfs << endl;
 }
 
-void Community::closeOutIndsOfs() {
-	if (outIndsOfs.is_open()) {
-		outIndsOfs.close(); 
-		outIndsOfs.clear();
+void Community::closeOutIndsOfs(species_id sp) {
+	if (outIndsOfs.at(sp).is_open()) {
+		outIndsOfs.at(sp).close();
+		outIndsOfs.at(sp).clear();
 	}
 	return;
 }
@@ -698,12 +701,10 @@ void Community::closeOutIndsOfs() {
 // Write records to individuals file
 void Community::outInds(species_id sp, int rep, int yr, int gen) {
 	// generate output for each sub-community (patch) in the community
-	for (auto& [spId, mtxPop] : matrixPops) {
-		matrixPops.at(sp)->outIndividual(outIndsOfs, pLandscape, rep, yr, gen);
-	}
+	matrixPops.at(sp)->outIndividual(outIndsOfs.at(sp), pLandscape, rep, yr, gen);
 	for (Population* pop : popns) { // all sub-communities
 		if (pop->getSpecies()->getID() == sp)
-		pop->outIndividual(outIndsOfs, pLandscape, rep, yr, gen);
+			pop->outIndividual(outIndsOfs.at(sp), pLandscape, rep, yr, gen);
 	}
 }
 

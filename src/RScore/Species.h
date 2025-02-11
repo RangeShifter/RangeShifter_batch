@@ -367,6 +367,7 @@ public:
 	void setSamplePatchList(const std::set<int>& samplePatchList);
 
 	// Output control functions
+	bool doesOutputInds() const { return output.outInds; }
 	bool isIndOutputYear(int yr) const {
 		return output.outInds 
 			&& yr >= output.outStartInd 
