@@ -106,9 +106,9 @@ public:
 
 	void ageIncrement();
 	int totalInds();
-	commStats getStats();
+	commStats getStats(species_id sp);
 
-	void createOccupancy(int nbOutputRows, int nbReps);
+	void createOccupancy(species_id sp, int nbOutputRows, int nbReps);
 	void updateOccupancy(int whichRow, int replicate);
 
 	bool openOutputFiles(const simParams& sim, const int landNum); // open all output files, close all if any fails
@@ -187,10 +187,10 @@ private:
 	speciesMap_t speciesMap;
 	Landscape* pLandscape;
 	int indIx;				// index used to apply initial individuals
-	vector<vector <int>> occSuit;	// occupancy of suitable cells / patches
+	map<species_id, vector<vector<int>>> occupancyMaps;	// track which suitable cells / patches are occupied
 
 	map<int, Population*> matrixPops;
-	std::vector <Population*> popns;
+	std::vector<Population*> popns;
 
 	map<species_id, unique_ptr<NeutralStatsManager>> neutralStatsMaps;
 

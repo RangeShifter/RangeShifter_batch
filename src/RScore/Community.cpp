@@ -488,41 +488,48 @@ int Community::totalInds() {
 }
 
 //---------------------------------------------------------------------------
-void Community::createOccupancy(int nbOutputRows, int nbReps) {
-	for (auto& [spId, mtxPop] : matrixPops) {
-		mtxPop->getPatch()->createOccupancy(nbOutputRows);
-	}
+void Community::createOccupancy(species_id sp, int nbOutputRows, int nbReps) {
+	
+	matrixPops.at(sp)->getPatch()->createOccupancy(nbOutputRows);
 	for (auto pop : popns) {
+		if (pop->getSpecies()->getID() != sp) continue;
 		pop->getPatch()->createOccupancy(nbOutputRows);
 	}
 	// Initialise array for occupancy of suitable cells/patches
-	occSuit.resize(nbOutputRows);
+	vector<vector<int>> occupancyMap;
 	for (int i = 0; i < nbOutputRows; i++) {
-		occSuit[i] = vector<int>(nbReps, 0);
+		occupancyMap.push_back(vector<int>(nbReps, 0));
 	}
+	occupancyMaps.emplace(sp, occupancyMap);
 }
 
 void Community::updateOccupancy(int whichRow, int rep)
 {
-	for (auto& [spId, mtxPop] : matrixPops) {
-		mtxPop->getPatch()->updateOccupancy(whichRow);
+	for (auto& [sp, pSpecies] : speciesMap) {
+
+		if (!pSpecies->doesOutputOccup()) continue;
+
+		matrixPops.at(sp)->getPatch()->updateOccupancy(whichRow);
+		for (auto pop : popns) {
+			if (pop->getSpecies()->getID() != sp) continue;
+			pop->getPatch()->updateOccupancy(whichRow);
+		}
+		commStats s = getStats();
+		occupancyMaps.at(sp)[whichRow][rep] = trunc(s.occupied / static_cast<double>(s.suitable));
 	}
-	for (auto pop : popns) {
-		pop->getPatch()->updateOccupancy(whichRow);
-	}
-	commStats s = getStats();
-	occSuit[whichRow][rep] = trunc(s.occupied / static_cast<double>(s.suitable));
 }
 
 //---------------------------------------------------------------------------
 // Count no. of sub-communities (suitable patches) and those occupied (non-zero populations)
 // Determine range margins
-commStats Community::getStats()
+commStats Community::getStats(species_id sp)
 {
 	commStats s = commStats();
 	landParams ppLand = pLandscape->getLandParams();
 	s.suitable = s.occupied = 0;
-	s.minX = ppLand.maxX; s.minY = ppLand.maxY; s.maxX = s.maxY = 0;
+	s.minX = ppLand.maxX; 
+	s.minY = ppLand.maxY; 
+	s.maxX = s.maxY = 0;
 	float localK;
 	popStats patchPop;
 
@@ -1184,7 +1191,7 @@ bool Community::outOccupancyHeaders(Species* pSpecies)
 	occOfs << endl;
 
 	// Initialise cells/patches occupancy array
-	createOccupancy(nbOutputRows, sim.reps);
+	createOccupancy(sp, nbOutputRows, sim.reps);
 
 	return suitOfs.is_open() && occOfs.is_open();
 }
@@ -1222,8 +1229,8 @@ void Community::outOccSuit(Species* pSpecies) {
 	for (int i = 0; i < (sim.years / occInt) + 1; i++) {
 		sum = ss = 0.0;
 		for (int rep = 0; rep < sim.reps; rep++) {
-			sum += occSuit[i][rep];
-			ss += occSuit[i][rep] * occSuit[i][rep];
+			sum += occupancyMaps[i][rep];
+			ss += occupancyMaps[i][rep] * occupancyMaps[i][rep];
 		}
 		mean = sum / (double)sim.reps;
 		sd = (ss - (sum * sum / (double)sim.reps)) / (double)(sim.reps - 1);
