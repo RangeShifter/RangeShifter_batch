@@ -277,7 +277,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				traitAndOccOutput(sim, pComm, rep, yr, gen);
 
 				// Non-structured pops: range and population output *before* reproductrion
-				if (!dem.stageStruct) popAndRangeOutput(allSpecies.at(gSingleSpeciesID), sim, pComm, rep, yr, gen);
+				if (!dem.stageStruct) pComm->popAndRangeOutput(rep, yr, gen);
 
 #if RS_RCPP && !R_CMD
 				if (sim.ReturnPopRaster && sim.outPop && yr >= sim.outStartPop && yr % sim.outIntPop == 0) {
@@ -509,21 +509,10 @@ void traitAndOccOutput(const simParams& sim, Community* pComm, int rep, int yr, 
 	if (gen == 0) pComm->updateOccupancy(yr, rep);
 }
 
-//For outputs and population visualisations pre-reproduction
-void popAndRangeOutput(Species* pSpecies, const simParams& sim, Community* pComm, int rep, int yr, int gen)
-{
-	if (sim.outRange && (yr % sim.outIntRange == 0 || pComm->totalInds() <= 0))
-		pComm->outRange(rep, yr, gen);
-
-	if (sim.outPop && yr >= sim.outStartPop && yr % sim.outIntPop == 0)
-		pComm->outPop(pSpecies, rep, yr, gen);
-}
-
 //---------------------------------------------------------------------------
 void OutParameters(Landscape* pLandscape)
 {
 	double k;
-	//int nrows,ncols,nsexes,nstages;
 	int nsexes, nstages;
 
 	landParams ppLand = pLandscape->getLandParams();

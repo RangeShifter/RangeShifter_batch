@@ -382,6 +382,12 @@ public:
 	bool savesVisits() const { return output.saveVisits;  }
 	bool doesOutputOccup() const { return output.outOccup; }
 	int getOutOccInt() const { return output.outIntOcc; }
+	bool doesOutputPop() const { return output.outPop; }
+	bool isPopOutputYear(int yr) const { 
+		return output.outPop 
+			&& yr >= output.outStartPop 
+			&& yr % output.outIntPop == 0;
+	}
 
 private:
 

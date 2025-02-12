@@ -1443,7 +1443,6 @@ void Population::outPopulation(ofstream& outPopOfs, int rep, int yr, int gen, bo
 			outPopOfs << "\t" << eps << "\t" << pPatch->getGradVal() << "\t" << k;
 		}
 	}
-	outPopOfs << "\t" << pSpecies->getID();
 	if (dem.stageStruct) {
 		p = getStats();
 		outPopOfs << "\t" << p.nNonJuvs;

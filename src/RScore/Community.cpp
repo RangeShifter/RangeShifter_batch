@@ -596,57 +596,77 @@ commStats Community::getStats(species_id sp)
 
 // Functions to control production of output files
 
+// For outputs and population visualisations pre-reproduction
+void Community::popAndRangeOutput(int rep, int yr, int gen) {
+
+	for (auto& [sp, pSpecies] : speciesMap) {
+		if (sim.outRange && (yr % sim.outIntRange == 0 || totalInds() <= 0))
+			outRange(rep, yr, gen);
+
+		if (pSpecies->isIndOutputYear(yr))
+			outPop(sp, rep, yr, gen);
+	}
+}
+
 // Open population file and write header record
 bool Community::outPopHeaders(Species* pSpecies) {
 	
 	landParams land = pLandscape->getLandParams();
 	simParams sim = paramsSim->getSim();
-	demogrParams dem = speciesMap.at(gSingleSpeciesID)->getDemogrParams();
-	stageParams sstruct = speciesMap.at(gSingleSpeciesID)->getStageParams();
+	demogrParams dem = pSpecies->getDemogrParams();
+	stageParams sstruct = pSpecies->getStageParams();
 
 	string name = paramsSim->getDir(2)
 		+ (sim.batchMode ? "Batch" + to_string(sim.batchNum) + "_" : "")
 		+ "Batch" + to_string(sim.batchNum) + "_"
 		+ "Sim" + to_string(sim.simulation) + "_Land" + to_string(land.landNum) + "_Pop.txt";
 
-	outPopOfs.open(name.c_str());
+	outPopOfs.emplace(pSpecies->getID(), ofstream());
+	ofstream& popOfs = outPopOfs.at(pSpecies->getID());
 
-	outPopOfs << "Rep\tYear\tRepSeason";
-	if (land.usesPatches) outPopOfs << "\tPatchID\tNcells";
-	else outPopOfs << "\tx\ty";
+	popOfs.open(name.c_str());
+
+	popOfs << "Rep\tYear\tRepSeason";
+	if (land.usesPatches) popOfs << "\tPatchID\tNcells";
+	else popOfs << "\tx\ty";
 
 	// determine whether environmental data need be written for populations
 	bool writeEnv = pSpecies->usesGradient() || paramsStoch->envStoch();
-	if (writeEnv) outPopOfs << "\tEpsilon\tGradient\tLocal_K";
+	if (writeEnv) popOfs << "\tEpsilon\tGradient\tLocal_K";
 
-	outPopOfs << "\tSpecies\tNInd";
+	popOfs << "\tNInd";
 	if (dem.stageStruct) {
 		if (dem.repType == 0) {
-			for (int i = 1; i < sstruct.nStages; i++) outPopOfs << "\tNInd_stage" << i;
-			outPopOfs << "\tNJuvs";
+			for (int i = 1; i < sstruct.nStages; i++) popOfs << "\tNInd_stage" << i;
+			popOfs << "\tNJuvs";
 		}
 		else {
 			for (int i = 1; i < sstruct.nStages; i++)
-				outPopOfs << "\tNfemales_stage" << i << "\tNmales_stage" << i;
-			outPopOfs << "\tNJuvFemales\tNJuvMales";
+				popOfs << "\tNfemales_stage" << i << "\tNmales_stage" << i;
+			popOfs << "\tNJuvFemales\tNJuvMales";
 		}
 	}
 	else {
-		if (dem.repType != 0) outPopOfs << "\tNfemales\tNmales";
+		if (dem.repType != 0) popOfs << "\tNfemales\tNmales";
 	}
-	outPopOfs << endl;
-	return outPopOfs.is_open();
+	popOfs << endl;
+	return popOfs.is_open();
 }
 
 bool Community::closePopOfs() {
-	if (outPopOfs.is_open()) outPopOfs.close();
-	outPopOfs.clear();
+	for (auto& [sp, pSpecies] : speciesMap) {
+		if (!pSpecies->doesOutputPop())
+			continue;
+		if (outPopOfs.at(sp).is_open())
+			outPopOfs.at(sp).close();
+		outPopOfs.at(sp).clear();
+	}
 	return true;
 }
 
 // Write records to population file
-void Community::outPop(Species* pSpecies, int rep, int yr, int gen)
-{
+void Community::outPop(species_id sp, int rep, int yr, int gen) {
+	Species* pSpecies = speciesMap.at(sp);
 	landParams land = pLandscape->getLandParams();
 	envStochParams env = paramsStoch->getStoch();
 	bool writeEnv = pSpecies->usesGradient() || env.usesStoch;
@@ -658,14 +678,12 @@ void Community::outPop(Species* pSpecies, int rep, int yr, int gen)
 	}
 
 	// generate output for each population (patch x species) in the community
-	for (auto& [spId, mtxPop] : matrixPops) {
-		if (mtxPop->totalPop() > 0) {
-			mtxPop->outPopulation(outPopOfs, rep, yr, gen, env.stochIsLocal, eps, land.usesPatches, writeEnv, gradK);
-		}
+	if (matrixPops.at(sp)->totalPop() > 0) {
+		matrixPops.at(sp)->outPopulation(outPopOfs.at(sp), rep, yr, gen, env.stochIsLocal, eps, land.usesPatches, writeEnv, gradK);
 	}
-	for (auto pop : popns) {
+	for (auto pop : allPopns.at(sp)) {
 		if (pop->getPatch()->isSuitable() || pop->totalPop() > 0) {
-			pop->outPopulation(outPopOfs, rep, yr, gen, env.stochIsLocal, eps, land.usesPatches, writeEnv, gradK);
+			pop->outPopulation(outPopOfs.at(sp), rep, yr, gen, env.stochIsLocal, eps, land.usesPatches, writeEnv, gradK);
 		}
 	}
 }
@@ -689,6 +707,7 @@ void Community::outIndsHeaders(species_id sp, int rep, int landNr, bool usesPatc
 		"_Rep" + to_string(rep) +
 		"_Species" + to_string(sp) +
 		"_Inds.txt";
+
 
 	ofstream& indsOfs = outIndsOfs.at(sp);
 
@@ -739,12 +758,9 @@ void Community::closeOutIndsOfs(species_id sp) {
 
 // Write records to individuals file
 void Community::outInds(species_id sp, int rep, int yr, int gen) {
-	// generate output for each sub-community (patch) in the community
 	matrixPops.at(sp)->outIndividual(outIndsOfs.at(sp), pLandscape, rep, yr, gen);
-	for (Population* pop : popns) { // all sub-communities
-		if (pop->getSpecies()->getID() == sp)
-			pop->outIndividual(outIndsOfs.at(sp), pLandscape, rep, yr, gen);
-	}
+	for (Population* pop : allPopns.at(sp)) // all sub-communities
+		pop->outIndividual(outIndsOfs.at(sp), pLandscape, rep, yr, gen);
 }
 
 bool Community::closeRangeOfs() {
@@ -2157,33 +2173,34 @@ void Community::outNeutralGenetics(species_id sp, int rep, int yr, int gen) {
 bool Community::openOutputFiles(const simParams& sim, const int landNum) {
 
 	bool filesOK = true;
-	// open output files
-	if (sim.outRange) { // open Range file
-		if (!outRangeHeaders(landNum)) {
-			filesOK = false;
+
+	// Open output files
+	for (auto& [sp, pSpecies] : speciesMap) {
+		if (sim.outRange) { // open Range file
+			if (!outRangeHeaders(landNum)) {
+				filesOK = false;
+			}
 		}
-	}
-	if (sim.outOccup && sim.reps > 1)
-		if (!outOccupancyHeaders(pSpecies)) {
-			filesOK = false;
-		}
-	if (sim.outPop) {
-		// open Population file
-		if (!outPopHeaders(speciesMap.at(gSingleSpeciesID))) {
-			filesOK = false;
-		}
-	}
-	if (sim.outTraitsCells)
-		if (!outTraitsHeaders(pLandscape, landNum)) {
-			filesOK = false;
-		}
-	if (sim.outTraitsRows)
-		if (!outTraitsRowsHeaders(landNum)) {
-			filesOK = false;
-		}
-	if (sim.outputWeirCockerham || sim.outputWeirHill) { // open neutral genetics file
-		if (!openNeutralOutputFile(landNum)) {
-			filesOK = false;
+		if (pSpecies->doesOutputOccup() && sim.reps > 1)
+			if (!outOccupancyHeaders(pSpecies))
+				filesOK = false;
+
+		if (pSpecies->doesOutputPop())
+			if (!outPopHeaders(sp)
+				filesOK = false;
+
+		if (sim.outTraitsCells)
+			if (!outTraitsHeaders(pLandscape, landNum)) {
+				filesOK = false;
+			}
+		if (sim.outTraitsRows)
+			if (!outTraitsRowsHeaders(landNum)) {
+				filesOK = false;
+			}
+		if (sim.outputWeirCockerham || sim.outputWeirHill) { // open neutral genetics file
+			if (!openNeutralOutputFile(landNum)) {
+				filesOK = false;
+			}
 		}
 	}
 

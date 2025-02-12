@@ -121,6 +121,8 @@ public:
 	void closeOccupancyOfs(species_id sp);
 	void outOccSuit(Species* pSpecies);
 
+	void popAndRangeOutput(int rep, int yr, int gen);
+
 	// Open range file and write header record
 	bool outRangeHeaders(int landnr);
 
@@ -133,7 +135,7 @@ public:
 	bool closePopOfs();
 
 	// Write records to population file
-	void outPop(Species* pSpecies, int rep, int year, int gen);
+	void outPop(species_id sp, int rep, int year, int gen);
 
 	void outIndsHeaders(species_id sp, int rep, int landNr, bool usesPatches);
 	void closeOutIndsOfs(species_id sp);
@@ -194,17 +196,17 @@ private:
 
 	map<species_id, unique_ptr<NeutralStatsManager>> neutralStatsMaps;
 
-	ofstream outPopOfs;
+	map<species_id, ofstream> outPopOfs;
 	map<species_id, ofstream> outIndsOfs;
 	map<species_id, ofstream> outOccupOfs;
 	map<species_id, ofstream> outSuitOfs;
-	ofstream outTraitsOfs;
-	ofstream outRangeOfs;
-	ofstream outTraitsRows;
-	ofstream ofsGenes;
-	ofstream outPairwiseFstOfs;
-	ofstream outWCFstatOfs;
-	ofstream outPerLocusFstat;
+	map<species_id, ofstream> outTraitsOfs;
+	map<species_id, ofstream> outRangeOfs;
+	map<species_id, ofstream> outTraitsRows;
+	map<species_id, ofstream> ofsGenes;
+	map<species_id, ofstream> outPairwiseFstOfs;
+	map<species_id, ofstream> outWCFstatOfs;
+	map<species_id, ofstream> outPerLocusFstat;
 };
 
 extern paramSim* paramsSim;

@@ -68,7 +68,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies);
 
 bool CheckDirectory(const string& pathToProjDir);
 void traitAndOccOutput(const simParams& sim, Community* pComm, int rep, int yr, int gen);
-void popAndRangeOutput(Species* pSpecies, const simParams& sim, Community* pComm, int rep, int yr, int gen);
 void OutParameters(Landscape* pLandscape);
 
 extern paramStoch* paramsStoch;
