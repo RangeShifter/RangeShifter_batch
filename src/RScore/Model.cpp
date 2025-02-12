@@ -506,8 +506,7 @@ void traitAndOccOutput(const simParams& sim, Community* pComm, int rep, int yr, 
 	{
 		pComm->outTraits(rep, yr, gen);
 	}
-	if (sim.outOccup && yr % sim.outIntOcc == 0 && gen == 0)
-		pComm->updateOccupancy(yr / sim.outIntOcc, rep);
+	if (gen == 0) pComm->updateOccupancy(yr, rep);
 }
 
 //For outputs and population visualisations pre-reproduction

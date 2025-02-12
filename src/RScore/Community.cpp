@@ -531,20 +531,21 @@ void Community::createOccupancy(species_id sp, int nbOutputRows, int nbReps) {
 	occupancyMaps.emplace(sp, occupancyMap);
 }
 
-void Community::updateOccupancy(int whichRow, int rep)
+void Community::updateOccupancy(int yr, int rep)
 {
 	for (auto& [sp, pSpecies] : speciesMap) {
 
-		if (!pSpecies->doesOutputOccup()) continue;
+		const int outputInterval = pSpecies->getOutOccInt();
 
+		if (!pSpecies->doesOutputOccup() 
+			|| yr % outputInterval != 0) continue;
+
+		int whichRow = yr / outputInterval;
 		matrixPops.at(sp)->getPatch()->updateOccupancy(whichRow);
-		
-		vector<Population*>& popns = allPopns.at(sp);
-		for (auto pop : popns) {
-			if (pop->getSpecies()->getID() != sp) continue;
+		for (auto pop : allPopns.at(sp)) {
 			pop->getPatch()->updateOccupancy(whichRow);
 		}
-		commStats s = getStats();
+		commStats s = getStats(sp);
 		occupancyMaps.at(sp)[whichRow][rep] = trunc(s.occupied / static_cast<double>(s.suitable));
 	}
 }
@@ -566,12 +567,10 @@ commStats Community::getStats(species_id sp)
 	// Count individuals for the matrix
 	s.ninds = 0;
 	s.nnonjuvs = 0;
-	
-	for (auto& [spId, mtxPop] : matrixPops) {
-		s.ninds += mtxPop->getStats().nInds;
-		s.nnonjuvs += mtxPop->getStats().nNonJuvs;
-	}
-	for (auto pop : popns) {
+	s.ninds += matrixPops.at(sp)->getStats().nInds;
+	s.nnonjuvs += matrixPops.at(sp)->getStats().nNonJuvs;
+
+	for (auto pop : allPopns.at(sp)) {
 
 		patchPop = pop->getStats();
 		s.ninds += patchPop.nInds;
@@ -1253,13 +1252,16 @@ void Community::outOccSuit(Species* pSpecies) {
 	double sum, ss, mean, sd, se;
 	simParams sim = paramsSim->getSim();
 	int occInt = pSpecies->getOutOccInt();
-	ofstream& suitOfs = outSuitOfs.at(pSpecies->getID());
+	species_id sp = pSpecies->getID();
+	ofstream& suitOfs = outSuitOfs.at(sp);
 
 	for (int i = 0; i < (sim.years / occInt) + 1; i++) {
+
 		sum = ss = 0.0;
 		for (int rep = 0; rep < sim.reps; rep++) {
-			sum += occupancyMaps[i][rep];
-			ss += occupancyMaps[i][rep] * occupancyMaps[i][rep];
+			int occ = occupancyMaps.at(sp)[i][rep];
+			sum += occ;
+			ss += occ * occ;
 		}
 		mean = sum / (double)sim.reps;
 		sd = (ss - (sum * sum / (double)sim.reps)) / (double)(sim.reps - 1);

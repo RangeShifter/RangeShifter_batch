@@ -109,7 +109,7 @@ public:
 	commStats getStats(species_id sp);
 
 	void createOccupancy(species_id sp, int nbOutputRows, int nbReps);
-	void updateOccupancy(int whichRow, int replicate);
+	void updateOccupancy(int year, int replicate);
 
 	bool openOutputFiles(const simParams& sim, const int landNum); // open all output files, close all if any fails
 	void closeGlobalOutputFiles(const simParams& sim);

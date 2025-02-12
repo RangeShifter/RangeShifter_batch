@@ -474,12 +474,6 @@ int Population::stagePop(int stg) {
 	return t;
 }
 
-void Population::applyRandLocalExtinction(const float& locExtProb) {
-	if (pRandom->Bernoulli(locExt)) {
-		extirpate();
-	}
-}
-
 //---------------------------------------------------------------------------
 // Extirpate all populations according to
 // local extinction probability gradient
