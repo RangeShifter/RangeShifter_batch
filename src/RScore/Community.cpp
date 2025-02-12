@@ -36,11 +36,13 @@ Community::Community(Landscape* pLand, speciesMap_t allSpecies) {
 }
 
 Community::~Community() {
-	for (int i = 0; i < popns.size(); i++) {
-		delete popns[i];
+	for (auto& [speciesID, popns] : allPopns) {
+		for (int i = 0; i < popns.size(); i++) {
+			delete popns[i];
+		}
+		popns.clear();
 	}
-	popns.clear();
-	for (auto const& [speciesID, mtxPop] : matrixPops) {
+	for (auto& [speciesID, mtxPop] : matrixPops) {
 		delete mtxPop;
 	}
 }
@@ -136,7 +138,7 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 				int nInds = pPatch->getInitNbInds(ppLand.usesPatches, ppLand.resol);
 				if (nInds > 0) {
 					Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
-					popns.push_back(pPop); // add new population to community list
+					allPopns.at(pSpecies->getID()).push_back(pPop); // add new population to community list
 				}
 			}
 			break;
@@ -185,7 +187,7 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 					int nInds = pPatch->getInitNbInds(ppLand.usesPatches, ppLand.resol);
 					if (nInds > 0) {
 						Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
-						popns.push_back(pPop); // add new population to community list
+						allPopns.at(pSpecies->getID()).push_back(pPop); // add new population to community list
 					}
 				}
 			}
@@ -250,42 +252,52 @@ Species* Community::findSpecies(species_id id) {
 }
 
 void Community::resetPopns() {
-	for (auto const& [speciesID, mtxPop] : matrixPops) {
+	
+	for (auto& [sp, mtxPop] : matrixPops)
 		mtxPop->getPatch()->resetPop();
+
+	for (auto& [sp, popns] : allPopns) {
+		for (auto pop : popns) {
+			pop->getPatch()->resetPop();
+		}
+		popns.clear();
 	}
-	for (auto pop : popns) {
-		pop->getPatch()->resetPop();
-	}
-	popns.clear();
+		
 	// reset the individual ids to start from zero
 	Individual::indCounter = 0;
 }
 
 void Community::applyRandLocExt(const float& probExt) {
-	for (auto pop : popns) {
-		if (pRandom->Bernoulli(probExt)) 
-			pop->extirpate();
+	for (auto& [sp, popns] : allPopns) {
+		for (auto pop : popns) {
+			if (pRandom->Bernoulli(probExt))
+				pop->extirpate();
+		}
 	}
 }
 
 void Community::applyLocalExtGrad() {
-	for (auto pop : popns) {
-		pop->applyLocalExtGrad();
+	for (auto& [sp, popns] : allPopns) {
+		for (auto pop : popns) {
+			pop->applyLocalExtGrad();
+		}
 	}
 }
 
 void Community::scanUnsuitablePatches() {
-	for (auto pop : popns) {
-		float localK = pop->getPatch()->getK();
-		if (localK <= 0.0) { // patch in dynamic landscape has become unsuitable
-			Species* pSpecies = pop->getSpecies();
-			if (pSpecies->getDemogrParams().stageStruct) {
-				if (pSpecies->getStageParams().disperseOnLoss) 
-					pop->allEmigrate();
-				else pop->extirpate();
-			}
-			else { // non-stage-structured species is destroyed
-				pop->extirpate();
+	for (auto& [sp, popns] : allPopns) {
+		for (auto pop : popns) {
+			float localK = pop->getPatch()->getK();
+			if (localK <= 0.0) { // patch in dynamic landscape has become unsuitable
+				Species* pSpecies = pop->getSpecies();
+				if (pSpecies->getDemogrParams().stageStruct) {
+					if (pSpecies->getStageParams().disperseOnLoss)
+						pop->allEmigrate();
+					else pop->extirpate();
+				}
+				else { // non-stage-structured species is destroyed
+					pop->extirpate();
+				}
 			}
 		}
 	}
@@ -302,21 +314,24 @@ void Community::reproduction(int yr)
 			eps = pLandscape->getGlobalStoch(yr);
 		}
 	}
-
-	for (auto pop : popns) {
-		Patch* pPatch = pop->getPatch();
-		float localK = pPatch->getK();
-		if (localK > 0.0) {
-			pop->reproduction(localK, land.resol);
-			pop->fledge();
+	for (auto& [sp, popns] : allPopns) {
+		for (auto pop : popns) {
+			Patch* pPatch = pop->getPatch();
+			float localK = pPatch->getK();
+			if (localK > 0.0) {
+				pop->reproduction(localK, land.resol);
+				pop->fledge();
+			}
 		}
 	}
 }
 
 void Community::emigration()
 {
-	for (auto pop : popns) {
-		pop->emigration(pop->getPatch()->getK());
+	for (auto& [sp, popns] : allPopns) {
+		for (auto pop : popns) {
+			pop->emigration(pop->getPatch()->getK());
+		}
 	}
 }
 
@@ -325,20 +340,22 @@ void Community::dispersal(short landIx, short nextseason)
 	simParams sim = paramsSim->getSim();
 
 	// initiate dispersal - all emigrants leave their natal community and join matrix community
-	for (auto pop : popns) {
+	for (auto& [sp, popns] : allPopns) {
+		for (auto pop : popns) {
 
-		for (int j = 0; j < pop->getStats().nInds; j++) {
-			disperser disp = pop->extractDisperser(j);
-			if (disp.isDispersing) { // disperser - has already been removed from natal population
-				short spID = pop->getSpecies()->getID();
-				auto it = matrixPops.find(spID);
-				if (it != matrixPops.end())
-					it->second->recruit(disp.pInd); // add to matrix population
-				else throw runtime_error("");
+			for (int j = 0; j < pop->getStats().nInds; j++) {
+				disperser disp = pop->extractDisperser(j);
+				if (disp.isDispersing) { // disperser - has already been removed from natal population
+					short spID = pop->getSpecies()->getID();
+					auto it = matrixPops.find(spID);
+					if (it != matrixPops.end())
+						it->second->recruit(disp.pInd); // add to matrix population
+					else throw runtime_error("");
+				}
 			}
+			// remove pointers to emigrants
+			pop->clean();
 		}
-		// remove pointers to emigrants
-		pop->clean();
 	}
 
 	// dispersal is undertaken by all individuals now in the matrix patch
@@ -346,15 +363,17 @@ void Community::dispersal(short landIx, short nextseason)
 	int ndispersers = 0;
 	do {
 		// Reset possible settlers for all patches before transfer
-		for (auto const& [speciesID, mtxPop] : matrixPops) {
+		for (auto& [speciesID, mtxPop] : matrixPops) {
 			mtxPop->getPatch()->resetPossSettlers();
 		}
-		for (auto pop : popns) {
-			pop->getPatch()->resetPossSettlers();
+		for (auto& [sp, popns] : allPopns) {
+			for (auto pop : popns) {
+				pop->getPatch()->resetPossSettlers();
+			}
 		}
 
 		// Transfer takes place in the matrix
-		for (auto const& [speciesID, mtxPop] : matrixPops) {
+		for (auto& [speciesID, mtxPop] : matrixPops) {
 			ndispersers = mtxPop->transfer(pLandscape, landIx, nextseason);
 		}
 		completeDispersal(pLandscape, sim.outConnect);
@@ -389,7 +408,7 @@ void Community::completeDispersal(Landscape* pLandscape, bool connect)
 				if (pPop == nullptr) { // settler is the first in a previously uninhabited patch
 					// create a new population in the corresponding sub-community
 					pPop = new Population(mtxPop->getSpecies(), pNewPatch, 0, pLandscape->getLandParams().resol);
-					popns.push_back(pPop); // add new pop to community list
+					allPopns.at(sp).push_back(pPop); // add new pop to community list
 				}
 
 				pPop->recruit(settler.pInd);
@@ -425,7 +444,7 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 	if (pPop == nullptr) {
 		pPop = new Population(pSpecies, pPatch, 0, pLandscape->getLandParams().resol);
 		pPatch->setPop(pPop);
-		popns.push_back(pPop);
+		allPopns.at(pSpecies->getID()).push_back(pPop);
 	}
 
 	// create new individual
@@ -457,21 +476,27 @@ void Community::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool re
 	for (auto& [spId, mtxPop] : matrixPops) {
 		mtxPop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
 	}
-	for (auto pop : popns) {
-		pop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
+	for (auto& [sp, popns] : allPopns) {
+		for (auto pop : popns) {
+			pop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
+		}
 	}
 }
 
 void Community::applySurvivalDevlpt() {
-	for (auto pop : popns) pop->applySurvivalDevlpt();
+	for (auto& [sp, popns] : allPopns) {
+		for (auto pop : popns) 
+			pop->applySurvivalDevlpt();
+	}
 }
 
 void Community::ageIncrement() {
 	for (auto& [spId, mtxPop] : matrixPops) {
 		mtxPop->ageIncrement();
 	}
-	for (auto pop : popns) {
-		pop->ageIncrement();
+	for (auto& [sp, popns] : allPopns) {
+		for (auto pop : popns)
+			pop->ageIncrement();
 	}
 }
 
@@ -481,8 +506,10 @@ int Community::totalInds() {
 	for (auto& [spId, mtxPop] : matrixPops) {
 		total += mtxPop->getStats().nInds;
 	}
-	for (auto pop : popns) {
-		total += pop->getStats().nInds;
+	for (auto& [sp, popns] : allPopns) {
+		for (auto pop : popns) {
+			total += pop->getStats().nInds;
+		}
 	}
 	return total;
 }
@@ -491,6 +518,7 @@ int Community::totalInds() {
 void Community::createOccupancy(species_id sp, int nbOutputRows, int nbReps) {
 	
 	matrixPops.at(sp)->getPatch()->createOccupancy(nbOutputRows);
+	vector<Population*>& popns = allPopns.at(sp);
 	for (auto pop : popns) {
 		if (pop->getSpecies()->getID() != sp) continue;
 		pop->getPatch()->createOccupancy(nbOutputRows);
@@ -510,6 +538,8 @@ void Community::updateOccupancy(int whichRow, int rep)
 		if (!pSpecies->doesOutputOccup()) continue;
 
 		matrixPops.at(sp)->getPatch()->updateOccupancy(whichRow);
+		
+		vector<Population*>& popns = allPopns.at(sp);
 		for (auto pop : popns) {
 			if (pop->getSpecies()->getID() != sp) continue;
 			pop->getPatch()->updateOccupancy(whichRow);
@@ -1203,9 +1233,8 @@ void Community::outOccupancy(Species* pSpecies) {
 	int nbRows = sim.years / pSpecies->getOutOccInt();
 	ofstream& occOfs = outOccupOfs.at(pSpecies->getID());
 
+	vector<Population*>& popns = allPopns.at(pSpecies->getID());
 	for (auto pop : popns) {
-		if (pop->getSpecies()->getID() != pSpecies->getID())
-			continue;
 		if (ppLand.usesPatches) {
 			occOfs << pop->getPatch()->getPatchNum();
 		}

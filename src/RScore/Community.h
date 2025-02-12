@@ -190,7 +190,7 @@ private:
 	map<species_id, vector<vector<int>>> occupancyMaps;	// track which suitable cells / patches are occupied
 
 	map<int, Population*> matrixPops;
-	std::vector<Population*> popns;
+	map<species_id, std::vector<Population*>> allPopns;
 
 	map<species_id, unique_ptr<NeutralStatsManager>> neutralStatsMaps;
 
