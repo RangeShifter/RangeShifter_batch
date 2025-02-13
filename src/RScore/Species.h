@@ -381,12 +381,34 @@ public:
 	}
 	bool savesVisits() const { return output.saveVisits;  }
 	bool doesOutputOccup() const { return output.outOccup; }
+	bool isOccOutputYear(int yr) const {
+		return output.outOccup
+			&& yr % output.outIntConn == 0;
+	}
 	int getOutOccInt() const { return output.outIntOcc; }
 	bool doesOutputPop() const { return output.outPop; }
 	bool isPopOutputYear(int yr) const { 
 		return output.outPop 
 			&& yr >= output.outStartPop 
 			&& yr % output.outIntPop == 0;
+	}
+	bool doesOutputRange() const { return output.outRange; }
+	bool isRangeOutputYear(int yr) const {
+		return output.outRange
+			&& yr % output.outIntRange == 0;
+	}
+	bool doesOutputTraitCell() const { return output.outIntTraitCell; }
+	bool isTraitCellOutYear(int yr) const {
+		return output.outTraitsCells
+			&& yr >= output.outStartTraitCell
+			&& yr % output.outIntTraitCell == 0;
+	}
+	int getOutTrCellInt() const { return output.outIntTraitCell; }
+	bool doesOutputTraitRows() const { return output.outIntTraitRow; }
+	bool isTraitRowOutYear(int yr) const {
+		return output.outTraitsRows 
+			&& yr >= output.outStartTraitRow
+			&& yr % output.outIntTraitRow == 0;
 	}
 
 private:

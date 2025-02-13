@@ -109,10 +109,10 @@ public:
 	commStats getStats(species_id sp);
 
 	void createOccupancy(species_id sp, int nbOutputRows, int nbReps);
-	void updateOccupancy(int year, int replicate);
+	void updateOccupancy(species_id sp, int year, int replicate);
 
-	bool openOutputFiles(const simParams& sim, const int landNum); // open all output files, close all if any fails
-	void closeGlobalOutputFiles();
+	bool openOutputFiles(bool hasMultipleReplicates, const int landNum); // open all output files, close all if any fails
+	void closeGlobalOutputFiles(bool hasMultipleReplicates);
 	void closeYearlyOutputFiles();
 
 	// Open occupancy file, write header record and set up occupancy array
@@ -122,17 +122,18 @@ public:
 	void outOccSuit(Species* pSpecies);
 
 	void popAndRangeOutput(int rep, int yr, int gen);
+	void traitAndOccOutput(int rep, int yr, int gen);
 
 	// Open range file and write header record
-	bool outRangeHeaders(int landnr);
+	bool outRangeHeaders(species_id sp, int landnr);
 
 	// Write record to range file
-	void outRange(int rep, int yr, int gen);
-	bool closeRangeOfs();
+	void outRange(species_id sp, int rep, int yr, int gen);
+	bool closeRangeOfs(species_id sp);
 
 	// Open population file and write header record
 	bool outPopHeaders(Species* pSpecies);
-	bool closePopOfs();
+	bool closePopOfs(species_id sp);
 
 	// Write records to population file
 	void outPop(species_id sp, int rep, int year, int gen);
@@ -144,21 +145,22 @@ public:
 	void outInds(species_id sp, int rep, int year,	int gen);
 	
 	// Write records to traits file
-	void outTraits(int rep, int year, int gen);
-	bool outTraitsHeaders(Landscape* pLandscape, int landnb);
-	bool closeOutTraitOfs();
+	void outTraits(species_id sp, int rep, int year, int gen);
+	bool outTraitsHeaders(species_id sp, Landscape* pLandscape, int landnb);
+	bool closeOutTraitOfs(species_id sp);
 
 	// Open trait rows file and write header record
-	bool outTraitsRowsHeaders(int landnr);
+	bool outTraitsRowsHeaders(species_id sp, int landnr);
 	// Write records to trait rows file
 	void writeTraitsRows(
+		species_id sp,
 		int rep, 
 		int year,
 		int gen, 
 		int row, 
 		traitsums ts
 	);
-	bool closeTraitRows();
+	bool closeTraitRows(species_id sp);
 
 #if RS_RCPP && !R_CMD
 	Rcpp::IntegerMatrix addYearToPopList(int rep, int yr);

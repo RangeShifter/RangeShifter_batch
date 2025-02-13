@@ -34,8 +34,10 @@ Community::Community(Landscape* pLand, speciesMap_t allSpecies) {
 	// Populate species maps
 	for (auto& [sp, pSpecies] : allSpecies) {
 		neutralStatsMaps.emplace(sp, nullptr);
+		// Output file streams
 		if (pSpecies->doesOutputInds()) outIndsOfs.emplace(sp, ofstream());
 		if (pSpecies->doesOutputPop()) outPopOfs.emplace(sp, ofstream());
+		if (pSpecies->doesOutputRange()) outRangeOfs.emplace(sp, ofstream());
 		if (pSpecies->doesOutputGeneValues()) ofsGenes.emplace(sp, ofstream());
 		if (pSpecies->doesOutputWeirHill()) outPairwiseFstOfs.emplace(sp, ofstream());
 		if (pSpecies->doesOutputWeirCockerham()) {
@@ -46,9 +48,10 @@ Community::Community(Landscape* pLand, speciesMap_t allSpecies) {
 			outOccupOfs.emplace(sp, ofstream());
 			outSuitOfs.emplace(sp, ofstream());
 		}
-		//map<species_id, ofstream> outTraitsOfs;
-		//map<species_id, ofstream> outRangeOfs;
-		//map<species_id, ofstream> outTraitsRows;
+		if (pSpecies->doesOutputTraitRows())
+			outTraitsRows.emplace(sp, ofstream());
+		if (pSpecies->doesOutputTraitCell())
+			outTraitsOfs.emplace(sp, ofstream());
 	}
 }
 
@@ -548,23 +551,15 @@ void Community::createOccupancy(species_id sp, int nbOutputRows, int nbReps) {
 	occupancyMaps.emplace(sp, occupancyMap);
 }
 
-void Community::updateOccupancy(int yr, int rep)
-{
-	for (auto& [sp, pSpecies] : speciesMap) {
+void Community::updateOccupancy(species_id sp, int yr, int rep) {
 
-		const int outputInterval = pSpecies->getOutOccInt();
-
-		if (!pSpecies->doesOutputOccup() 
-			|| yr % outputInterval != 0) continue;
-
-		int whichRow = yr / outputInterval;
+		int whichRow = yr / speciesMap.at(sp)->getOutOccInt();
 		matrixPops.at(sp)->getPatch()->updateOccupancy(whichRow);
 		for (auto pop : allPopns.at(sp)) {
 			pop->getPatch()->updateOccupancy(whichRow);
 		}
 		commStats s = getStats(sp);
 		occupancyMaps.at(sp)[whichRow][rep] = trunc(s.occupied / static_cast<double>(s.suitable));
-	}
 }
 
 //---------------------------------------------------------------------------
@@ -617,8 +612,9 @@ commStats Community::getStats(species_id sp)
 void Community::popAndRangeOutput(int rep, int yr, int gen) {
 
 	for (auto& [sp, pSpecies] : speciesMap) {
-		if (sim.outRange && (yr % sim.outIntRange == 0 || totalInds() <= 0))
-			outRange(rep, yr, gen);
+
+		if (pSpecies->isRangeOutputYear(yr))
+			outRange(sp, rep, yr, gen);
 
 		if (pSpecies->isIndOutputYear(yr))
 			outPop(sp, rep, yr, gen);
@@ -669,14 +665,10 @@ bool Community::outPopHeaders(Species* pSpecies) {
 	return popOfs.is_open();
 }
 
-bool Community::closePopOfs() {
-	for (auto& [sp, pSpecies] : speciesMap) {
-		if (!pSpecies->doesOutputPop())
-			continue;
-		if (outPopOfs.at(sp).is_open())
-			outPopOfs.at(sp).close();
-		outPopOfs.at(sp).clear();
-	}
+bool Community::closePopOfs(species_id sp) {
+	if (outPopOfs.at(sp).is_open())
+		outPopOfs.at(sp).close();
+	outPopOfs.at(sp).clear();
 	return true;
 }
 
@@ -778,136 +770,142 @@ void Community::outInds(species_id sp, int rep, int yr, int gen) {
 		pop->outIndividual(outIndsOfs.at(sp), pLandscape, rep, yr, gen);
 }
 
-bool Community::closeRangeOfs() {
-	if (outRangeOfs.is_open()) outRangeOfs.close();
-	outRangeOfs.clear();
+bool Community::closeRangeOfs(species_id sp) {
+	if (outRangeOfs.at(sp).is_open()) 
+		outRangeOfs.at(sp).close();
+	outRangeOfs.at(sp).clear();
 	return true;
 }
 
 // Open range file and write header record
-bool Community::outRangeHeaders(int landNr)
+bool Community::outRangeHeaders(species_id sp, int landNr)
 {
 	string name;
 	landParams ppLand = pLandscape->getLandParams();
 	envStochParams env = paramsStoch->getStoch();
 	simParams sim = paramsSim->getSim();
 
-	// NEED TO REPLACE CONDITIONAL COLUMNS BASED ON ATTRIBUTES OF ONE SPECIES TO COVER
-	// ATTRIBUTES OF *ALL* SPECIES AS DETECTED AT MODEL LEVEL
-	demogrParams dem = speciesMap.at(gSingleSpeciesID)->getDemogrParams();
-	stageParams sstruct = speciesMap.at(gSingleSpeciesID)->getStageParams();
-	emigRules emig = speciesMap.at(gSingleSpeciesID)->getEmigRules();
-	transferRules trfr = speciesMap.at(gSingleSpeciesID)->getTransferRules();
-	settleType sett = speciesMap.at(gSingleSpeciesID)->getSettle();
+	Species* pSpecies = speciesMap.at(sp);
+	demogrParams dem = pSpecies->getDemogrParams();
+	stageParams sstruct = pSpecies->getStageParams();
+	emigRules emig = pSpecies->getEmigRules();
+	transferRules trfr = pSpecies->getTransferRules();
+	settleType sett = pSpecies->getSettle();
 
 	if (sim.batchMode) {
 		name = paramsSim->getDir(2)
-			+ "Batch" + to_string(sim.batchNum) + "_"
-			+ "Sim" + to_string(sim.simulation) + "_Land"
-			+ to_string(landNr)
+			+ "Batch" + to_string(sim.batchNum) +
+			+ "_Sim" + to_string(sim.simulation) 
+			+ "_Land" + to_string(landNr)
+			+ "_Species" + to_string(sp)
 			+ "_Range.txt";
 	}
 	else {
-		name = paramsSim->getDir(2) + "Sim" + to_string(sim.simulation) + "_Range.txt";
+		name = paramsSim->getDir(2) 
+			+ "Sim" + to_string(sim.simulation) 
+			+ "_Species" + to_string(sp)
+			+ "_Range.txt";
 	}
-	outRangeOfs.open(name.c_str());
-	outRangeOfs << "Rep\tYear\tRepSeason";
-	if (env.usesStoch && !env.stochIsLocal) outRangeOfs << "\tEpsilon";
 
-	outRangeOfs << "\tNInds";
+	ofstream& rangeOfs = outRangeOfs.at(sp);
+	rangeOfs.open(name.c_str());
+	rangeOfs << "Rep\tYear\tRepSeason";
+	if (env.usesStoch && !env.stochIsLocal) rangeOfs << "\tEpsilon";
+
+	rangeOfs << "\tNInds";
 	if (dem.stageStruct) {
-		for (int i = 1; i < sstruct.nStages; i++) outRangeOfs << "\tNInd_stage" << i;
-		outRangeOfs << "\tNJuvs";
+		for (int i = 1; i < sstruct.nStages; i++) rangeOfs << "\tNInd_stage" << i;
+		rangeOfs << "\tNJuvs";
 	}
-	if (ppLand.usesPatches) outRangeOfs << "\tNOccupPatches";
-	else outRangeOfs << "\tNOccupCells";
-	outRangeOfs << "\tOccup/Suit\tmin_X\tmax_X\tmin_Y\tmax_Y";
+	if (ppLand.usesPatches) rangeOfs << "\tNOccupPatches";
+	else rangeOfs << "\tNOccupCells";
+	rangeOfs << "\tOccup/Suit\tmin_X\tmax_X\tmin_Y\tmax_Y";
 
 	if (emig.indVar) {
 		if (emig.sexDep) {
 			if (emig.densDep) {
-				outRangeOfs << "\tF_meanD0\tF_stdD0\tM_meanD0\tM_stdD0";
-				outRangeOfs << "\tF_meanAlpha\tF_stdAlpha\tM_meanAlpha\tM_stdAlpha";
-				outRangeOfs << "\tF_meanBeta\tF_stdBeta\tM_meanBeta\tM_stdBeta";
+				rangeOfs << "\tF_meanD0\tF_stdD0\tM_meanD0\tM_stdD0";
+				rangeOfs << "\tF_meanAlpha\tF_stdAlpha\tM_meanAlpha\tM_stdAlpha";
+				rangeOfs << "\tF_meanBeta\tF_stdBeta\tM_meanBeta\tM_stdBeta";
 			}
 			else {
-				outRangeOfs << "\tF_meanEP\tF_stdEP\tM_meanEP\tM_stdEP";
+				rangeOfs << "\tF_meanEP\tF_stdEP\tM_meanEP\tM_stdEP";
 			}
 		}
 		else {
 			if (emig.densDep) {
-				outRangeOfs << "\tmeanD0\tstdD0\tmeanAlpha\tstdAlpha";
-				outRangeOfs << "\tmeanBeta\tstdBeta";
+				rangeOfs << "\tmeanD0\tstdD0\tmeanAlpha\tstdAlpha";
+				rangeOfs << "\tmeanBeta\tstdBeta";
 			}
 			else {
-				outRangeOfs << "\tmeanEP\tstdEP";
+				rangeOfs << "\tmeanEP\tstdEP";
 			}
 		}
 	}
 	if (trfr.indVar) {
 		if (trfr.usesMovtProc) {
 			if (trfr.moveType == 1) {
-				outRangeOfs << "\tmeanDP\tstdDP\tmeanGB\tstdGB";
-				outRangeOfs << "\tmeanAlphaDB\tstdAlphaDB\tmeanBetaDB\tstdBetaDB";
+				rangeOfs << "\tmeanDP\tstdDP\tmeanGB\tstdGB";
+				rangeOfs << "\tmeanAlphaDB\tstdAlphaDB\tmeanBetaDB\tstdBetaDB";
 			}
 			if (trfr.moveType == 2) {
-				outRangeOfs << "\tmeanStepLength\tstdStepLength\tmeanRho\tstdRho";
+				rangeOfs << "\tmeanStepLength\tstdStepLength\tmeanRho\tstdRho";
 			}
 		}
 		else {
 			if (trfr.sexDep) {
-				outRangeOfs << "\tF_mean_distI\tF_std_distI\tM_mean_distI\tM_std_distI";
+				rangeOfs << "\tF_mean_distI\tF_std_distI\tM_mean_distI\tM_std_distI";
 				if (trfr.twinKern)
-					outRangeOfs << "\tF_mean_distII\tF_std_distII\tM_mean_distII\tM_std_distII"
+					rangeOfs << "\tF_mean_distII\tF_std_distII\tM_mean_distII\tM_std_distII"
 					<< "\tF_meanPfirstKernel\tF_stdPfirstKernel"
 					<< "\tM_meanPfirstKernel\tM_stdPfirstKernel";
 			}
 			else {
-				outRangeOfs << "\tmean_distI\tstd_distI";
+				rangeOfs << "\tmean_distI\tstd_distI";
 				if (trfr.twinKern)
-					outRangeOfs << "\tmean_distII\tstd_distII\tmeanPfirstKernel\tstdPfirstKernel";
+					rangeOfs << "\tmean_distII\tstd_distII\tmeanPfirstKernel\tstdPfirstKernel";
 			}
 		}
 	}
 	if (sett.indVar) {
 		if (sett.sexDep) {
-			outRangeOfs << "\tF_meanS0\tF_stdS0\tM_meanS0\tM_stdS0";
-			outRangeOfs << "\tF_meanAlphaS\tF_stdAlphaS\tM_meanAlphaS\tM_stdAlphaS";
-			outRangeOfs << "\tF_meanBetaS\tF_stdBetaS\tM_meanBetaS\tM_stdBetaS";
+			rangeOfs << "\tF_meanS0\tF_stdS0\tM_meanS0\tM_stdS0";
+			rangeOfs << "\tF_meanAlphaS\tF_stdAlphaS\tM_meanAlphaS\tM_stdAlphaS";
+			rangeOfs << "\tF_meanBetaS\tF_stdBetaS\tM_meanBetaS\tM_stdBetaS";
 
 		}
 		else {
-			outRangeOfs << "\tmeanS0\tstdS0";
-			outRangeOfs << "\tmeanAlphaS\tstdAlphaS";
-			outRangeOfs << "\tmeanBetaS\tstdBetaS";
+			rangeOfs << "\tmeanS0\tstdS0";
+			rangeOfs << "\tmeanAlphaS\tstdAlphaS";
+			rangeOfs << "\tmeanBetaS\tstdBetaS";
 		}
 	}
-	outRangeOfs << endl;
-	return outRangeOfs.is_open();
+	rangeOfs << endl;
+	return rangeOfs.is_open();
 }
 
 // Write record to range file
-void Community::outRange(int rep, int yr, int gen)
+void Community::outRange(species_id sp, int rep, int yr, int gen)
 {
 	landParams ppLand = pLandscape->getLandParams();
 	envStochParams env = paramsStoch->getStoch();
 
-	// NEED TO REPLACE CONDITIONAL COLUMNS BASED ON ATTRIBUTES OF ONE SPECIES TO COVER
-	// ATTRIBUTES OF *ALL* SPECIES AS DETECTED AT MODEL LEVEL
-	demogrParams dem = speciesMap.at(gSingleSpeciesID)->getDemogrParams();
-	stageParams sstruct = speciesMap.at(gSingleSpeciesID)->getStageParams();
-	emigRules emig = speciesMap.at(gSingleSpeciesID)->getEmigRules();
-	transferRules trfr = speciesMap.at(gSingleSpeciesID)->getTransferRules();
-	settleType sett = speciesMap.at(gSingleSpeciesID)->getSettle();
+	Species* pSpecies = speciesMap.at(sp);
+	demogrParams dem = pSpecies->getDemogrParams();
+	stageParams sstruct = pSpecies->getStageParams();
+	emigRules emig = pSpecies->getEmigRules();
+	transferRules trfr = pSpecies->getTransferRules();
+	settleType sett = pSpecies->getSettle();
 
-	outRangeOfs << rep << "\t" << yr << "\t" << gen;
+	ofstream& rangeOfs = outRangeOfs.at(sp);
+	rangeOfs << rep << "\t" << yr << "\t" << gen;
 	if (env.usesStoch && !env.stochIsLocal) // write global environmental stochasticity
-		outRangeOfs << "\t" << pLandscape->getGlobalStoch(yr);
+		rangeOfs << "\t" << pLandscape->getGlobalStoch(yr);
 
-	commStats s = getStats();
+	commStats s = getStats(sp);
 
 	if (dem.stageStruct) {
-		outRangeOfs << "\t" << s.nnonjuvs;
+		rangeOfs << "\t" << s.nnonjuvs;
 		int stagepop;
 		// all non-juvenile stages
 		for (int stg = 1; stg < sstruct.nStages; stg++) {
@@ -915,84 +913,84 @@ void Community::outRange(int rep, int yr, int gen)
 			for (auto& [spId, mtxPop] : matrixPops) {
 				stagepop += mtxPop->stagePop(stg);
 			}
-			for (auto pop : popns) {
+			for (auto pop : allPopns.at(sp)) {
 				stagepop += pop->stagePop(stg);
 			}
-			outRangeOfs << "\t" << stagepop;
+			rangeOfs << "\t" << stagepop;
 		}
 		// juveniles born in current reproductive season
 		stagepop = 0;
 		for (auto& [spId, mtxPop] : matrixPops) {
 			stagepop += mtxPop->stagePop(0);
 		}
-		for (auto pop : popns) {
+		for (auto pop : allPopns.at(sp)) {
 			stagepop += pop->stagePop(0);
 		}
-		outRangeOfs << "\t" << stagepop;
+		rangeOfs << "\t" << stagepop;
 	}
 	else { // non-structured species
-		outRangeOfs << "\t" << s.ninds;
+		rangeOfs << "\t" << s.ninds;
 	}
 
 	float occsuit = 0.0;
 	if (s.suitable > 0) occsuit = (float)s.occupied / (float)s.suitable;
-	outRangeOfs << "\t" << s.occupied << "\t" << occsuit;
+	rangeOfs << "\t" << s.occupied << "\t" << occsuit;
 	// RANGE MINIMA AND MAXIMA NEED TO BECOME A PROPERTY OF THE SPECIES
 	if (s.ninds > 0) {
 		landOrigin originVal = pLandscape->getOrigin();
-		outRangeOfs << "\t" << (float)s.minX * (float)ppLand.resol + originVal.minEast
+		rangeOfs << "\t" << (float)s.minX * (float)ppLand.resol + originVal.minEast
 			<< "\t" << (float)(s.maxX + 1) * (float)ppLand.resol + originVal.minEast
 			<< "\t" << (float)s.minY * (float)ppLand.resol + originVal.minNorth
 			<< "\t" << (float)(s.maxY + 1) * (float)ppLand.resol + originVal.minNorth;
 	}
 	else
-		outRangeOfs << "\t0\t0\t0\t0";
+		rangeOfs << "\t0\t0\t0\t0";
 
 	if (emig.indVar || trfr.indVar || sett.indVar) { // output trait means
 		traitsums ts = traitsums();
-		traitsums scts; // sub-community traits
+		traitsums popTraits; 
 		int ngenes, popsize;
 		for (auto& [spId, mtxPop] : matrixPops) {
-			scts = mtxPop->outTraits(outTraitsOfs, false);
+			popTraits = mtxPop->outTraits(outTraitsOfs.at(sp), false);
 			for (int j = 0; j < gMaxNbSexes; j++) {
-				ts.ninds[j] += scts.ninds[j];
-				ts.sumD0[j] += scts.sumD0[j];     ts.ssqD0[j] += scts.ssqD0[j];
-				ts.sumAlpha[j] += scts.sumAlpha[j];  ts.ssqAlpha[j] += scts.ssqAlpha[j];
-				ts.sumBeta[j] += scts.sumBeta[j];   ts.ssqBeta[j] += scts.ssqBeta[j];
-				ts.sumDist1[j] += scts.sumDist1[j];  ts.ssqDist1[j] += scts.ssqDist1[j];
-				ts.sumDist2[j] += scts.sumDist2[j];  ts.ssqDist2[j] += scts.ssqDist2[j];
-				ts.sumProp1[j] += scts.sumProp1[j];  ts.ssqProp1[j] += scts.ssqProp1[j];
-				ts.sumDP[j] += scts.sumDP[j];     ts.ssqDP[j] += scts.ssqDP[j];
-				ts.sumGB[j] += scts.sumGB[j];     ts.ssqGB[j] += scts.ssqGB[j];
-				ts.sumAlphaDB[j] += scts.sumAlphaDB[j]; ts.ssqAlphaDB[j] += scts.ssqAlphaDB[j];
-				ts.sumBetaDB[j] += scts.sumBetaDB[j];  ts.ssqBetaDB[j] += scts.ssqBetaDB[j];
-				ts.sumStepL[j] += scts.sumStepL[j];  ts.ssqStepL[j] += scts.ssqStepL[j];
-				ts.sumRho[j] += scts.sumRho[j];    ts.ssqRho[j] += scts.ssqRho[j];
-				ts.sumS0[j] += scts.sumS0[j];     ts.ssqS0[j] += scts.ssqS0[j];
-				ts.sumAlphaS[j] += scts.sumAlphaS[j]; ts.ssqAlphaS[j] += scts.ssqAlphaS[j];
-				ts.sumBetaS[j] += scts.sumBetaS[j];  ts.ssqBetaS[j] += scts.ssqBetaS[j];
+				ts.ninds[j] += popTraits.ninds[j];
+				ts.sumD0[j] += popTraits.sumD0[j];     ts.ssqD0[j] += popTraits.ssqD0[j];
+				ts.sumAlpha[j] += popTraits.sumAlpha[j];  ts.ssqAlpha[j] += popTraits.ssqAlpha[j];
+				ts.sumBeta[j] += popTraits.sumBeta[j];   ts.ssqBeta[j] += popTraits.ssqBeta[j];
+				ts.sumDist1[j] += popTraits.sumDist1[j];  ts.ssqDist1[j] += popTraits.ssqDist1[j];
+				ts.sumDist2[j] += popTraits.sumDist2[j];  ts.ssqDist2[j] += popTraits.ssqDist2[j];
+				ts.sumProp1[j] += popTraits.sumProp1[j];  ts.ssqProp1[j] += popTraits.ssqProp1[j];
+				ts.sumDP[j] += popTraits.sumDP[j];     ts.ssqDP[j] += popTraits.ssqDP[j];
+				ts.sumGB[j] += popTraits.sumGB[j];     ts.ssqGB[j] += popTraits.ssqGB[j];
+				ts.sumAlphaDB[j] += popTraits.sumAlphaDB[j]; ts.ssqAlphaDB[j] += popTraits.ssqAlphaDB[j];
+				ts.sumBetaDB[j] += popTraits.sumBetaDB[j];  ts.ssqBetaDB[j] += popTraits.ssqBetaDB[j];
+				ts.sumStepL[j] += popTraits.sumStepL[j];  ts.ssqStepL[j] += popTraits.ssqStepL[j];
+				ts.sumRho[j] += popTraits.sumRho[j];    ts.ssqRho[j] += popTraits.ssqRho[j];
+				ts.sumS0[j] += popTraits.sumS0[j];     ts.ssqS0[j] += popTraits.ssqS0[j];
+				ts.sumAlphaS[j] += popTraits.sumAlphaS[j]; ts.ssqAlphaS[j] += popTraits.ssqAlphaS[j];
+				ts.sumBetaS[j] += popTraits.sumBetaS[j];  ts.ssqBetaS[j] += popTraits.ssqBetaS[j];
 			}
 		}
-		int npops = static_cast<int>(popns.size());
+		int npops = static_cast<int>(allPopns.at(sp).size());
 		for (int i = 0; i < npops; i++) { 
-			scts = popns[i]->outTraits(outTraitsOfs, false);
+			popTraits = allPopns.at(sp)[i]->outTraits(outTraitsOfs.at(sp), false);
 			for (int j = 0; j < gMaxNbSexes; j++) {
-				ts.ninds[j] += scts.ninds[j];
-				ts.sumD0[j] += scts.sumD0[j];     ts.ssqD0[j] += scts.ssqD0[j];
-				ts.sumAlpha[j] += scts.sumAlpha[j];  ts.ssqAlpha[j] += scts.ssqAlpha[j];
-				ts.sumBeta[j] += scts.sumBeta[j];   ts.ssqBeta[j] += scts.ssqBeta[j];
-				ts.sumDist1[j] += scts.sumDist1[j];  ts.ssqDist1[j] += scts.ssqDist1[j];
-				ts.sumDist2[j] += scts.sumDist2[j];  ts.ssqDist2[j] += scts.ssqDist2[j];
-				ts.sumProp1[j] += scts.sumProp1[j];  ts.ssqProp1[j] += scts.ssqProp1[j];
-				ts.sumDP[j] += scts.sumDP[j];     ts.ssqDP[j] += scts.ssqDP[j];
-				ts.sumGB[j] += scts.sumGB[j];     ts.ssqGB[j] += scts.ssqGB[j];
-				ts.sumAlphaDB[j] += scts.sumAlphaDB[j]; ts.ssqAlphaDB[j] += scts.ssqAlphaDB[j];
-				ts.sumBetaDB[j] += scts.sumBetaDB[j];  ts.ssqBetaDB[j] += scts.ssqBetaDB[j];
-				ts.sumStepL[j] += scts.sumStepL[j];  ts.ssqStepL[j] += scts.ssqStepL[j];
-				ts.sumRho[j] += scts.sumRho[j];    ts.ssqRho[j] += scts.ssqRho[j];
-				ts.sumS0[j] += scts.sumS0[j];     ts.ssqS0[j] += scts.ssqS0[j];
-				ts.sumAlphaS[j] += scts.sumAlphaS[j]; ts.ssqAlphaS[j] += scts.ssqAlphaS[j];
-				ts.sumBetaS[j] += scts.sumBetaS[j];  ts.ssqBetaS[j] += scts.ssqBetaS[j];
+				ts.ninds[j] += popTraits.ninds[j];
+				ts.sumD0[j] += popTraits.sumD0[j];     ts.ssqD0[j] += popTraits.ssqD0[j];
+				ts.sumAlpha[j] += popTraits.sumAlpha[j];  ts.ssqAlpha[j] += popTraits.ssqAlpha[j];
+				ts.sumBeta[j] += popTraits.sumBeta[j];   ts.ssqBeta[j] += popTraits.ssqBeta[j];
+				ts.sumDist1[j] += popTraits.sumDist1[j];  ts.ssqDist1[j] += popTraits.ssqDist1[j];
+				ts.sumDist2[j] += popTraits.sumDist2[j];  ts.ssqDist2[j] += popTraits.ssqDist2[j];
+				ts.sumProp1[j] += popTraits.sumProp1[j];  ts.ssqProp1[j] += popTraits.ssqProp1[j];
+				ts.sumDP[j] += popTraits.sumDP[j];     ts.ssqDP[j] += popTraits.ssqDP[j];
+				ts.sumGB[j] += popTraits.sumGB[j];     ts.ssqGB[j] += popTraits.ssqGB[j];
+				ts.sumAlphaDB[j] += popTraits.sumAlphaDB[j]; ts.ssqAlphaDB[j] += popTraits.ssqAlphaDB[j];
+				ts.sumBetaDB[j] += popTraits.sumBetaDB[j];  ts.ssqBetaDB[j] += popTraits.ssqBetaDB[j];
+				ts.sumStepL[j] += popTraits.sumStepL[j];  ts.ssqStepL[j] += popTraits.ssqStepL[j];
+				ts.sumRho[j] += popTraits.sumRho[j];    ts.ssqRho[j] += popTraits.ssqRho[j];
+				ts.sumS0[j] += popTraits.sumS0[j];     ts.ssqS0[j] += popTraits.ssqS0[j];
+				ts.sumAlphaS[j] += popTraits.sumAlphaS[j]; ts.ssqAlphaS[j] += popTraits.ssqAlphaS[j];
+				ts.sumBetaS[j] += popTraits.sumBetaS[j];  ts.ssqBetaS[j] += popTraits.ssqBetaS[j];
 			}
 		}
 
@@ -1033,20 +1031,20 @@ void Community::outRange(int rep, int yr, int gen)
 				}
 			}
 			if (emig.sexDep) {
-				outRangeOfs << "\t" << mnD0[0] << "\t" << sdD0[0];
-				outRangeOfs << "\t" << mnD0[1] << "\t" << sdD0[1];
+				rangeOfs << "\t" << mnD0[0] << "\t" << sdD0[0];
+				rangeOfs << "\t" << mnD0[1] << "\t" << sdD0[1];
 				if (emig.densDep) {
-					outRangeOfs << "\t" << mnAlpha[0] << "\t" << sdAlpha[0];
-					outRangeOfs << "\t" << mnAlpha[1] << "\t" << sdAlpha[1];
-					outRangeOfs << "\t" << mnBeta[0] << "\t" << sdBeta[0];
-					outRangeOfs << "\t" << mnBeta[1] << "\t" << sdBeta[1];
+					rangeOfs << "\t" << mnAlpha[0] << "\t" << sdAlpha[0];
+					rangeOfs << "\t" << mnAlpha[1] << "\t" << sdAlpha[1];
+					rangeOfs << "\t" << mnBeta[0] << "\t" << sdBeta[0];
+					rangeOfs << "\t" << mnBeta[1] << "\t" << sdBeta[1];
 				}
 			}
 			else { // sex-independent
-				outRangeOfs << "\t" << mnD0[0] << "\t" << sdD0[0];
+				rangeOfs << "\t" << mnD0[0] << "\t" << sdD0[0];
 				if (emig.densDep) {
-					outRangeOfs << "\t" << mnAlpha[0] << "\t" << sdAlpha[0];
-					outRangeOfs << "\t" << mnBeta[0] << "\t" << sdBeta[0];
+					rangeOfs << "\t" << mnAlpha[0] << "\t" << sdAlpha[0];
+					rangeOfs << "\t" << mnBeta[0] << "\t" << sdBeta[0];
 				}
 			}
 		}
@@ -1111,34 +1109,34 @@ void Community::outRange(int rep, int yr, int gen)
 			}
 			if (trfr.usesMovtProc) {
 				if (trfr.moveType == 1) {
-					outRangeOfs << "\t" << mnDP[0] << "\t" << sdDP[0];
-					outRangeOfs << "\t" << mnGB[0] << "\t" << sdGB[0];
-					outRangeOfs << "\t" << mnAlphaDB[0] << "\t" << sdAlphaDB[0];
-					outRangeOfs << "\t" << mnBetaDB[0] << "\t" << sdBetaDB[0];
+					rangeOfs << "\t" << mnDP[0] << "\t" << sdDP[0];
+					rangeOfs << "\t" << mnGB[0] << "\t" << sdGB[0];
+					rangeOfs << "\t" << mnAlphaDB[0] << "\t" << sdAlphaDB[0];
+					rangeOfs << "\t" << mnBetaDB[0] << "\t" << sdBetaDB[0];
 				}
 				if (trfr.moveType == 2) {
-					outRangeOfs << "\t" << mnStepL[0] << "\t" << sdStepL[0];
-					outRangeOfs << "\t" << mnRho[0] << "\t" << sdRho[0];
+					rangeOfs << "\t" << mnStepL[0] << "\t" << sdStepL[0];
+					rangeOfs << "\t" << mnRho[0] << "\t" << sdRho[0];
 				}
 			}
 			else {
 				if (trfr.sexDep) {
-					outRangeOfs << "\t" << mnDist1[0] << "\t" << sdDist1[0];
-					outRangeOfs << "\t" << mnDist1[1] << "\t" << sdDist1[1];
+					rangeOfs << "\t" << mnDist1[0] << "\t" << sdDist1[0];
+					rangeOfs << "\t" << mnDist1[1] << "\t" << sdDist1[1];
 					if (trfr.twinKern)
 					{
-						outRangeOfs << "\t" << mnDist2[0] << "\t" << sdDist2[0];
-						outRangeOfs << "\t" << mnDist2[1] << "\t" << sdDist2[1];
-						outRangeOfs << "\t" << mnProp1[0] << "\t" << sdProp1[0];
-						outRangeOfs << "\t" << mnProp1[1] << "\t" << sdProp1[1];
+						rangeOfs << "\t" << mnDist2[0] << "\t" << sdDist2[0];
+						rangeOfs << "\t" << mnDist2[1] << "\t" << sdDist2[1];
+						rangeOfs << "\t" << mnProp1[0] << "\t" << sdProp1[0];
+						rangeOfs << "\t" << mnProp1[1] << "\t" << sdProp1[1];
 					}
 				}
 				else { // sex-independent
-					outRangeOfs << "\t" << mnDist1[0] << "\t" << sdDist1[0];
+					rangeOfs << "\t" << mnDist1[0] << "\t" << sdDist1[0];
 					if (trfr.twinKern)
 					{
-						outRangeOfs << "\t" << mnDist2[0] << "\t" << sdDist2[0];
-						outRangeOfs << "\t" << mnProp1[0] << "\t" << sdProp1[0];
+						rangeOfs << "\t" << mnDist2[0] << "\t" << sdDist2[0];
+						rangeOfs << "\t" << mnProp1[0] << "\t" << sdProp1[0];
 					}
 				}
 			}
@@ -1182,23 +1180,23 @@ void Community::outRange(int rep, int yr, int gen)
 				}
 			}
 			if (sett.sexDep) {
-				outRangeOfs << "\t" << mnS0[0] << "\t" << sdS0[0];
-				outRangeOfs << "\t" << mnS0[1] << "\t" << sdS0[1];
-				outRangeOfs << "\t" << mnAlpha[0] << "\t" << sdAlpha[0];
-				outRangeOfs << "\t" << mnAlpha[1] << "\t" << sdAlpha[1];
-				outRangeOfs << "\t" << mnBeta[0] << "\t" << sdBeta[0];
-				outRangeOfs << "\t" << mnBeta[1] << "\t" << sdBeta[1];
+				rangeOfs << "\t" << mnS0[0] << "\t" << sdS0[0];
+				rangeOfs << "\t" << mnS0[1] << "\t" << sdS0[1];
+				rangeOfs << "\t" << mnAlpha[0] << "\t" << sdAlpha[0];
+				rangeOfs << "\t" << mnAlpha[1] << "\t" << sdAlpha[1];
+				rangeOfs << "\t" << mnBeta[0] << "\t" << sdBeta[0];
+				rangeOfs << "\t" << mnBeta[1] << "\t" << sdBeta[1];
 			}
 			else {
-				outRangeOfs << "\t" << mnS0[0] << "\t" << sdS0[0];
-				outRangeOfs << "\t" << mnAlpha[0] << "\t" << sdAlpha[0];
-				outRangeOfs << "\t" << mnBeta[0] << "\t" << sdBeta[0];
+				rangeOfs << "\t" << mnS0[0] << "\t" << sdS0[0];
+				rangeOfs << "\t" << mnAlpha[0] << "\t" << sdAlpha[0];
+				rangeOfs << "\t" << mnBeta[0] << "\t" << sdBeta[0];
 			}
 		}
 
 	}
 
-	outRangeOfs << endl;
+	rangeOfs << endl;
 }
 
 void Community::closeOccupancyOfs(species_id sp) {
@@ -1304,234 +1302,220 @@ void Community::outOccSuit(Species* pSpecies) {
 	}
 }
 
-bool Community::closeOutTraitOfs() {
-	if (outTraitsOfs.is_open()) outTraitsOfs.close();
-	outTraitsOfs.clear();
+bool Community::closeOutTraitOfs(species_id sp) {
+	if (outTraitsOfs.at(sp).is_open()) outTraitsOfs.at(sp).close();
+	outTraitsOfs.at(sp).clear();
 	return true;
 }
 
 // Open traits file and write header record
-bool Community::outTraitsHeaders(Landscape* pLandscape, int landNr)
+bool Community::outTraitsHeaders(species_id sp, Landscape* pLandscape, int landNr)
 {
 	landParams land = pLandscape->getLandParams();
 	string name;
-	emigRules emig = speciesMap.at(gSingleSpeciesID)->getEmigRules();
-	transferRules trfr = speciesMap.at(gSingleSpeciesID)->getTransferRules();
-	settleType sett = speciesMap.at(gSingleSpeciesID)->getSettle();
+	Species* pSpecies = speciesMap.at(sp);
+	emigRules emig = pSpecies->getEmigRules();
+	transferRules trfr = pSpecies->getTransferRules();
+	settleType sett = pSpecies->getSettle();
 	simParams sim = paramsSim->getSim();
-	demogrParams dem = speciesMap.at(gSingleSpeciesID)->getDemogrParams();
-	bool hasGenLoad = speciesMap.at(gSingleSpeciesID)->getNbGenLoadTraits() > 0;
+	demogrParams dem = pSpecies->getDemogrParams();
+	bool hasGenLoad = pSpecies->getNbGenLoadTraits() > 0;
 
 	string DirOut = paramsSim->getDir(2);
 	if (sim.batchMode) {
-		if (land.usesPatches) {
 			name = DirOut
 				+ "Batch" + to_string(sim.batchNum) + "_"
-				+ "Sim" + to_string(sim.simulation) + "_Land" + to_string(landNr)
-				+ "_TraitsXpatch.txt";
-		}
-		else {
-			name = DirOut
-				+ "Batch" + to_string(sim.batchNum) + "_"
-				+ "Sim" + to_string(sim.simulation) + "_Land" + to_string(landNr)
-				+ "_TraitsXcell.txt";
-		}
+				+ "Sim" + to_string(sim.simulation) 
+				+ "_Land" + to_string(landNr) 
+				+ "_Species" + to_string(sp)
+				+ (land.usesPatches ? "_TraitsXpatch.txt" : "_TraitsXcell.txt");
 	}
 	else {
-		if (land.usesPatches) {
-			name = DirOut + "Sim" + to_string(sim.simulation) + "_TraitsXpatch.txt";
-		}
-		else {
-			name = DirOut + "Sim" + to_string(sim.simulation) + "_TraitsXcell.txt";
-		}
+			name = DirOut + "Sim" + to_string(sim.simulation) 
+				+ "_Species" + to_string(sp)
+				+ (land.usesPatches ? "_TraitsXpatch.txt" : "_TraitsXcell.txt");
 	}
 
-	outTraitsOfs.open(name.c_str());
+	ofstream& traitsOfs = outTraitsOfs.at(sp);
+	traitsOfs.open(name.c_str());
 
-	outTraitsOfs << "Rep\tYear\tRepSeason";
-	if (land.usesPatches) outTraitsOfs << "\tPatchID";
-	else outTraitsOfs << "\tx\ty";
+	traitsOfs << "Rep\tYear\tRepSeason";
+	if (land.usesPatches) traitsOfs << "\tPatchID";
+	else traitsOfs << "\tx\ty";
 
 	if (emig.indVar) {
 		if (emig.sexDep) {
 			if (emig.densDep) {
-				outTraitsOfs << "\tF_meanD0\tF_stdD0\tM_meanD0\tM_stdD0";
-				outTraitsOfs << "\tF_meanAlpha\tF_stdAlpha\tM_meanAlpha\tM_stdAlpha";
-				outTraitsOfs << "\tF_meanBeta\tF_stdBeta\tM_meanBeta\tM_stdBeta";
+				traitsOfs << "\tF_meanD0\tF_stdD0\tM_meanD0\tM_stdD0";
+				traitsOfs << "\tF_meanAlpha\tF_stdAlpha\tM_meanAlpha\tM_stdAlpha";
+				traitsOfs << "\tF_meanBeta\tF_stdBeta\tM_meanBeta\tM_stdBeta";
 			}
 			else {
-				outTraitsOfs << "\tF_meanEP\tF_stdEP\tM_meanEP\tM_stdEP";
+				traitsOfs << "\tF_meanEP\tF_stdEP\tM_meanEP\tM_stdEP";
 			}
 		}
 		else {
 			if (emig.densDep) {
-				outTraitsOfs << "\tmeanD0\tstdD0\tmeanAlpha\tstdAlpha";
-				outTraitsOfs << "\tmeanBeta\tstdBeta";
+				traitsOfs << "\tmeanD0\tstdD0\tmeanAlpha\tstdAlpha";
+				traitsOfs << "\tmeanBeta\tstdBeta";
 			}
 			else {
-				outTraitsOfs << "\tmeanEP\tstdEP";
+				traitsOfs << "\tmeanEP\tstdEP";
 			}
 		}
 	}
 	if (trfr.indVar) {
 		if (trfr.usesMovtProc) {
 			if (trfr.moveType == 1) {
-				outTraitsOfs << "\tmeanDP\tstdDP\tmeanGB\tstdGB";
-				outTraitsOfs << "\tmeanAlphaDB\tstdAlphaDB\tmeanBetaDB\tstdBetaDB";
+				traitsOfs << "\tmeanDP\tstdDP\tmeanGB\tstdGB";
+				traitsOfs << "\tmeanAlphaDB\tstdAlphaDB\tmeanBetaDB\tstdBetaDB";
 			}
 			if (trfr.moveType == 2) {
-				outTraitsOfs << "\tmeanStepLength\tstdStepLength\tmeanRho\tstdRho";
+				traitsOfs << "\tmeanStepLength\tstdStepLength\tmeanRho\tstdRho";
 			}
 		}
 		else {
 			if (trfr.sexDep) {
-				outTraitsOfs << "\tF_mean_distI\tF_std_distI\tM_mean_distI\tM_std_distI";
+				traitsOfs << "\tF_mean_distI\tF_std_distI\tM_mean_distI\tM_std_distI";
 				if (trfr.twinKern)
-					outTraitsOfs << "\tF_mean_distII\tF_std_distII\tM_mean_distII\tM_std_distII"
+					traitsOfs << "\tF_mean_distII\tF_std_distII\tM_mean_distII\tM_std_distII"
 					<< "\tF_meanPfirstKernel\tF_stdPfirstKernel"
 					<< "\tM_meanPfirstKernel\tM_stdPfirstKernel";
 			}
 			else {
-				outTraitsOfs << "\tmean_distI\tstd_distI";
+				traitsOfs << "\tmean_distI\tstd_distI";
 				if (trfr.twinKern)
-					outTraitsOfs << "\tmean_distII\tstd_distII\tmeanPfirstKernel\tstdPfirstKernel";
+					traitsOfs << "\tmean_distII\tstd_distII\tmeanPfirstKernel\tstdPfirstKernel";
 			}
 		}
 	}
 	if (sett.indVar) {
 		if (sett.sexDep) {
-			outTraitsOfs << "\tF_meanS0\tF_stdS0\tM_meanS0\tM_stdS0";
-			outTraitsOfs << "\tF_meanAlphaS\tF_stdAlphaS\tM_meanAlphaS\tM_stdAlphaS";
-			outTraitsOfs << "\tF_meanBetaS\tF_stdBetaS\tM_meanBetaS\tM_stdBetaS";
+			traitsOfs << "\tF_meanS0\tF_stdS0\tM_meanS0\tM_stdS0";
+			traitsOfs << "\tF_meanAlphaS\tF_stdAlphaS\tM_meanAlphaS\tM_stdAlphaS";
+			traitsOfs << "\tF_meanBetaS\tF_stdBetaS\tM_meanBetaS\tM_stdBetaS";
 		}
 		else {
-			outTraitsOfs << "\tmeanS0\tstdS0";
-			outTraitsOfs << "\tmeanAlphaS\tstdAlphaS";
-			outTraitsOfs << "\tmeanBetaS\tstdBetaS";
+			traitsOfs << "\tmeanS0\tstdS0";
+			traitsOfs << "\tmeanAlphaS\tstdAlphaS";
+			traitsOfs << "\tmeanBetaS\tstdBetaS";
 		}
 	}
 	if (hasGenLoad) {
 		if (dem.repType > 0) {
-			outTraitsOfs << "\tF_meanGenFitness\tF_stdGenFitness\tM_meanGenFitness\tM_stdGenFitness";
+			traitsOfs << "\tF_meanGenFitness\tF_stdGenFitness\tM_meanGenFitness\tM_stdGenFitness";
 		}
 		else {
-			outTraitsOfs << "\tmeanGenFitness\tstdGenFitness";
+			traitsOfs << "\tmeanGenFitness\tstdGenFitness";
 		}
 	}
 
-	outTraitsOfs << endl;
+	traitsOfs << endl;
 
-	return outTraitsOfs.is_open();
+	return traitsOfs.is_open();
 }
 
 // Write records to traits file
 /* NOTE: for summary traits by rows, which is permissible for a cell-based landscape
-only, this function relies on the fact that subcommunities are created in the same
-sequence as patches, which is in asecending order of x nested within descending
+only, this function relies on the fact that populations are created in the same
+sequence as patches, which is in ascending order of x nested within descending
 order of y
 */
-void Community::outTraits(int rep, int yr, int gen)
+void Community::outTraits(species_id sp, int rep, int yr, int gen)
 {
-	simParams sim = paramsSim->getSim();
 	landParams land = pLandscape->getLandParams();
 	traitsums* ts = 0;
-	traitsums sctraits;
+	traitsums popTraits;
 
-	const bool mustOutputTraitRows = sim.outTraitsRows
-		&& yr >= sim.outStartTraitRow
-		&& yr % sim.outIntTraitRow == 0;
-
-	const bool mustOutputTraitCells = sim.outTraitsCells
-		&& yr % sim.outIntTraitCell == 0;
+	Species* pSpecies = speciesMap.at(sp);
+	const bool mustOutputTraitRows = pSpecies->isTraitRowOutYear(yr);
+	const bool mustOutputTraitCells = pSpecies->doesOutputTraitCell()
+		&& yr % pSpecies->getOutTrCellInt() == 0;
 
 	if (mustOutputTraitRows) {
 		// create array of traits means, etc., one for each row
 		ts = new traitsums[land.dimY];
 	}
 
-	if ((mustOutputTraitCells && yr >= sim.outStartTraitCell) 
+	if (pSpecies->isTraitCellOutYear(yr)
 			|| mustOutputTraitRows) {
 
 		// Generate output for each population in the community
 		if (mustOutputTraitCells) {
-			for (auto& [spId, mtxPop] : matrixPops) {
-				mtxPop->outputTraitPatchInfo(outTraitsOfs, rep, yr, gen, land.usesPatches);
-			}
+			matrixPops.at(sp)->outputTraitPatchInfo(outTraitsOfs.at(sp), rep, yr, gen, land.usesPatches);
 		}
 		if (mustOutputTraitRows) {
-			for (auto& [spId, mtxPop] : matrixPops) {
-				sctraits = mtxPop->outTraits(outTraitsOfs, mustOutputTraitCells);
-				int y = mtxPop->getPatch()->getCellLocn(0).y;
-				for (int s = 0; s < gMaxNbSexes; s++) {
-					ts[y].ninds[s] += sctraits.ninds[s];
-					ts[y].sumD0[s] += sctraits.sumD0[s];
-					ts[y].ssqD0[s] += sctraits.ssqD0[s];
-					ts[y].sumAlpha[s] += sctraits.sumAlpha[s];
-					ts[y].ssqAlpha[s] += sctraits.ssqAlpha[s];
-					ts[y].sumBeta[s] += sctraits.sumBeta[s];
-					ts[y].ssqBeta[s] += sctraits.ssqBeta[s];
-					ts[y].sumDist1[s] += sctraits.sumDist1[s];
-					ts[y].ssqDist1[s] += sctraits.ssqDist1[s];
-					ts[y].sumDist2[s] += sctraits.sumDist2[s];
-					ts[y].ssqDist2[s] += sctraits.ssqDist2[s];
-					ts[y].sumProp1[s] += sctraits.sumProp1[s];
-					ts[y].ssqProp1[s] += sctraits.ssqProp1[s];
-					ts[y].sumStepL[s] += sctraits.sumStepL[s];
-					ts[y].ssqStepL[s] += sctraits.ssqStepL[s];
-					ts[y].sumRho[s] += sctraits.sumRho[s];
-					ts[y].ssqRho[s] += sctraits.ssqRho[s];
-					ts[y].sumS0[s] += sctraits.sumS0[s];
-					ts[y].ssqS0[s] += sctraits.ssqS0[s];
-					ts[y].sumAlphaS[s] += sctraits.sumAlphaS[s];
-					ts[y].ssqAlphaS[s] += sctraits.ssqAlphaS[s];
-					ts[y].sumBetaS[s] += sctraits.sumBetaS[s];
-					ts[y].ssqBetaS[s] += sctraits.ssqBetaS[s];
-					ts[y].sumGeneticFitness[s] += sctraits.sumGeneticFitness[s];
-					ts[y].ssqGeneticFitness[s] += sctraits.ssqGeneticFitness[s];
-				}
+			popTraits = matrixPops.at(sp)->outTraits(outTraitsOfs.at(sp), mustOutputTraitCells);
+			int y = matrixPops.at(sp)->getPatch()->getCellLocn(0).y;
+			for (int s = 0; s < gMaxNbSexes; s++) {
+				ts[y].ninds[s] += popTraits.ninds[s];
+				ts[y].sumD0[s] += popTraits.sumD0[s];
+				ts[y].ssqD0[s] += popTraits.ssqD0[s];
+				ts[y].sumAlpha[s] += popTraits.sumAlpha[s];
+				ts[y].ssqAlpha[s] += popTraits.ssqAlpha[s];
+				ts[y].sumBeta[s] += popTraits.sumBeta[s];
+				ts[y].ssqBeta[s] += popTraits.ssqBeta[s];
+				ts[y].sumDist1[s] += popTraits.sumDist1[s];
+				ts[y].ssqDist1[s] += popTraits.ssqDist1[s];
+				ts[y].sumDist2[s] += popTraits.sumDist2[s];
+				ts[y].ssqDist2[s] += popTraits.ssqDist2[s];
+				ts[y].sumProp1[s] += popTraits.sumProp1[s];
+				ts[y].ssqProp1[s] += popTraits.ssqProp1[s];
+				ts[y].sumStepL[s] += popTraits.sumStepL[s];
+				ts[y].ssqStepL[s] += popTraits.ssqStepL[s];
+				ts[y].sumRho[s] += popTraits.sumRho[s];
+				ts[y].ssqRho[s] += popTraits.ssqRho[s];
+				ts[y].sumS0[s] += popTraits.sumS0[s];
+				ts[y].ssqS0[s] += popTraits.ssqS0[s];
+				ts[y].sumAlphaS[s] += popTraits.sumAlphaS[s];
+				ts[y].ssqAlphaS[s] += popTraits.ssqAlphaS[s];
+				ts[y].sumBetaS[s] += popTraits.sumBetaS[s];
+				ts[y].ssqBetaS[s] += popTraits.ssqBetaS[s];
+				ts[y].sumGeneticFitness[s] += popTraits.sumGeneticFitness[s];
+				ts[y].ssqGeneticFitness[s] += popTraits.ssqGeneticFitness[s];
 			}
 		}
-		for (auto pop : popns) {
+		for (auto pop : allPopns.at(sp)) {
 			if (mustOutputTraitCells) {
-				pop->outputTraitPatchInfo(outTraitsOfs, rep, yr, gen, land.usesPatches);
+				pop->outputTraitPatchInfo(outTraitsOfs.at(sp), rep, yr, gen, land.usesPatches);
 			}
-			sctraits = pop->outTraits(outTraitsOfs, mustOutputTraitCells);
+			popTraits = pop->outTraits(outTraitsOfs.at(sp), mustOutputTraitCells);
 			int y = pop->getPatch()->getCellLocn(0).y;
 			if (mustOutputTraitRows){
 				for (int s = 0; s < gMaxNbSexes; s++) {
-					ts[y].ninds[s] += sctraits.ninds[s];
-					ts[y].sumD0[s] += sctraits.sumD0[s];    
-					ts[y].ssqD0[s] += sctraits.ssqD0[s];
-					ts[y].sumAlpha[s] += sctraits.sumAlpha[s]; 
-					ts[y].ssqAlpha[s] += sctraits.ssqAlpha[s];
-					ts[y].sumBeta[s] += sctraits.sumBeta[s]; 
-					ts[y].ssqBeta[s] += sctraits.ssqBeta[s];
-					ts[y].sumDist1[s] += sctraits.sumDist1[s]; 
-					ts[y].ssqDist1[s] += sctraits.ssqDist1[s];
-					ts[y].sumDist2[s] += sctraits.sumDist2[s]; 
-					ts[y].ssqDist2[s] += sctraits.ssqDist2[s];
-					ts[y].sumProp1[s] += sctraits.sumProp1[s]; 
-					ts[y].ssqProp1[s] += sctraits.ssqProp1[s];
-					ts[y].sumStepL[s] += sctraits.sumStepL[s];
-					ts[y].ssqStepL[s] += sctraits.ssqStepL[s];
-					ts[y].sumRho[s] += sctraits.sumRho[s]; 
-					ts[y].ssqRho[s] += sctraits.ssqRho[s];
-					ts[y].sumS0[s] += sctraits.sumS0[s];  
-					ts[y].ssqS0[s] += sctraits.ssqS0[s];
-					ts[y].sumAlphaS[s] += sctraits.sumAlphaS[s];
-					ts[y].ssqAlphaS[s] += sctraits.ssqAlphaS[s];
-					ts[y].sumBetaS[s] += sctraits.sumBetaS[s]; 
-					ts[y].ssqBetaS[s] += sctraits.ssqBetaS[s];
-					ts[y].sumGeneticFitness[s] += sctraits.sumGeneticFitness[s];
-					ts[y].ssqGeneticFitness[s] += sctraits.ssqGeneticFitness[s];
+					ts[y].ninds[s] += popTraits.ninds[s];
+					ts[y].sumD0[s] += popTraits.sumD0[s];    
+					ts[y].ssqD0[s] += popTraits.ssqD0[s];
+					ts[y].sumAlpha[s] += popTraits.sumAlpha[s]; 
+					ts[y].ssqAlpha[s] += popTraits.ssqAlpha[s];
+					ts[y].sumBeta[s] += popTraits.sumBeta[s]; 
+					ts[y].ssqBeta[s] += popTraits.ssqBeta[s];
+					ts[y].sumDist1[s] += popTraits.sumDist1[s]; 
+					ts[y].ssqDist1[s] += popTraits.ssqDist1[s];
+					ts[y].sumDist2[s] += popTraits.sumDist2[s]; 
+					ts[y].ssqDist2[s] += popTraits.ssqDist2[s];
+					ts[y].sumProp1[s] += popTraits.sumProp1[s]; 
+					ts[y].ssqProp1[s] += popTraits.ssqProp1[s];
+					ts[y].sumStepL[s] += popTraits.sumStepL[s];
+					ts[y].ssqStepL[s] += popTraits.ssqStepL[s];
+					ts[y].sumRho[s] += popTraits.sumRho[s]; 
+					ts[y].ssqRho[s] += popTraits.ssqRho[s];
+					ts[y].sumS0[s] += popTraits.sumS0[s];  
+					ts[y].ssqS0[s] += popTraits.ssqS0[s];
+					ts[y].sumAlphaS[s] += popTraits.sumAlphaS[s];
+					ts[y].ssqAlphaS[s] += popTraits.ssqAlphaS[s];
+					ts[y].sumBetaS[s] += popTraits.sumBetaS[s]; 
+					ts[y].ssqBetaS[s] += popTraits.ssqBetaS[s];
+					ts[y].sumGeneticFitness[s] += popTraits.sumGeneticFitness[s];
+					ts[y].ssqGeneticFitness[s] += popTraits.ssqGeneticFitness[s];
 				}
 			}
 		}
 
-		if (popns.size() > 0 && mustOutputTraitRows) {
+		if (allPopns.at(sp).size() > 0 && mustOutputTraitRows) {
 			for (int y = 0; y < land.dimY; y++) {
 				if ((ts[y].ninds[0] + ts[y].ninds[1]) > 0) {
-					writeTraitsRows(rep, yr, gen, y, ts[y]);
+					writeTraitsRows(sp, rep, yr, gen, y, ts[y]);
 				}
 			}
 		}
@@ -1543,68 +1527,71 @@ void Community::outTraits(int rep, int yr, int gen)
 }
 
 // Write records to trait rows file
-void Community::writeTraitsRows(int rep, int yr, int gen, int y,
+void Community::writeTraitsRows(species_id sp, int rep, int yr, int gen, int y,
 	traitsums ts)
 {
-	emigRules emig = speciesMap.at(gSingleSpeciesID)->getEmigRules();
-	transferRules trfr = speciesMap.at(gSingleSpeciesID)->getTransferRules();
-	settleType sett = speciesMap.at(gSingleSpeciesID)->getSettle();
-	bool hasGenLoad = speciesMap.at(gSingleSpeciesID)->getNbGenLoadTraits() > 0;
+	Species* pSpecies = speciesMap.at(sp);
+	emigRules emig = pSpecies->getEmigRules();
+	transferRules trfr = pSpecies->getTransferRules();
+	settleType sett = pSpecies->getSettle();
+	bool hasGenLoad = pSpecies->getNbGenLoadTraits() > 0;
 	double mn, sd;
+
+	ofstream& traitRowsOfs = outTraitsRows.at(sp);
 
 	// calculate population size in case one phase is sex-dependent and the other is not
 	// (in which case numbers of individuals are recorded by sex)
 	int popsize = ts.ninds[0] + ts.ninds[1];
-	outTraitsRows << rep << "\t" << yr << "\t" << gen
+	traitRowsOfs << rep << "\t" << yr << "\t" << gen
 		<< "\t" << y;
 	if ((emig.indVar && emig.sexDep) || (trfr.indVar && trfr.sexDep))
-		outTraitsRows << "\t" << ts.ninds[0] << "\t" << ts.ninds[1];
+		traitRowsOfs << "\t" << ts.ninds[0] << "\t" << ts.ninds[1];
 	else
-		outTraitsRows << "\t" << popsize;
+		traitRowsOfs << "\t" << popsize;
 
 	if (emig.indVar) {
 		if (emig.sexDep) {
 			if (ts.ninds[0] > 0) mn = ts.sumD0[0] / (double)ts.ninds[0]; else mn = 0.0;
 			if (ts.ninds[0] > 1) sd = ts.ssqD0[0] / (double)ts.ninds[0] - mn * mn; else sd = 0.0;
 			if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-			outTraitsRows << "\t" << mn << "\t" << sd;
+			traitRowsOfs << "\t" << mn << "\t" << sd;
 			if (ts.ninds[1] > 0) mn = ts.sumD0[1] / (double)ts.ninds[1]; else mn = 0.0;
 			if (ts.ninds[1] > 1) sd = ts.ssqD0[1] / (double)ts.ninds[1] - mn * mn; else sd = 0.0;
 			if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-			outTraitsRows << "\t" << mn << "\t" << sd;
+			traitRowsOfs << "\t" << mn << "\t" << sd;
 			if (emig.densDep) {
 				if (ts.ninds[0] > 0) mn = ts.sumAlpha[0] / (double)ts.ninds[0]; else mn = 0.0;
 				if (ts.ninds[0] > 1) sd = ts.ssqAlpha[0] / (double)ts.ninds[0] - mn * mn; else sd = 0.0;
 				if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-				outTraitsRows << "\t" << mn << "\t" << sd;
+				traitRowsOfs << "\t" << mn << "\t" << sd;
 				if (ts.ninds[1] > 0) mn = ts.sumAlpha[1] / (double)ts.ninds[1]; else mn = 0.0;
 				if (ts.ninds[1] > 1) sd = ts.ssqAlpha[1] / (double)ts.ninds[1] - mn * mn; else sd = 0.0;
 				if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-				outTraitsRows << "\t" << mn << "\t" << sd;
+				traitRowsOfs << "\t" << mn << "\t" << sd;
 				if (ts.ninds[0] > 0) mn = ts.sumBeta[0] / (double)ts.ninds[0]; else mn = 0.0;
 				if (ts.ninds[0] > 1) sd = ts.ssqBeta[0] / (double)ts.ninds[0] - mn * mn; else sd = 0.0;
 				if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-				outTraitsRows << "\t" << mn << "\t" << sd;
+				traitRowsOfs << "\t" << mn << "\t" << sd;
 				if (ts.ninds[1] > 0) mn = ts.sumBeta[1] / (double)ts.ninds[1]; else mn = 0.0;
 				if (ts.ninds[1] > 1) sd = ts.ssqBeta[1] / (double)ts.ninds[1] - mn * mn; else sd = 0.0;
 				if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-				outTraitsRows << "\t" << mn << "\t" << sd;
+				traitRowsOfs << "\t" << mn << "\t" << sd;
 			}
 		}
 		else { // no sex dependence in emigration
 			if (popsize > 0) mn = ts.sumD0[0] / (double)popsize; else mn = 0.0;
 			if (popsize > 1) sd = ts.ssqD0[0] / (double)popsize - mn * mn; else sd = 0.0;
 			if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-			outTraitsRows << "\t" << mn << "\t" << sd;
+			traitRowsOfs << "\t" << mn << "\t" << sd;
 			if (emig.densDep) {
 				if (popsize > 0) mn = ts.sumAlpha[0] / (double)popsize; else mn = 0.0;
 				if (popsize > 1) sd = ts.ssqAlpha[0] / (double)popsize - mn * mn; else sd = 0.0;
 				if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-				outTraitsRows << "\t" << mn << "\t" << sd;
+				traitRowsOfs << "\t" << mn << "\t" << sd;
 				if (popsize > 0) mn = ts.sumBeta[0] / (double)popsize; else mn = 0.0;
 				if (popsize > 1) sd = ts.ssqBeta[0] / (double)popsize - mn * mn; else sd = 0.0;
 				if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-				outTraitsRows << "\t" << mn << "\t" << sd;
+				traitRowsOfs << "\t" << mn << "\t" << sd;
 			}
 		}
 	}
@@ -1616,11 +1603,11 @@ void Community::writeTraitsRows(int rep, int yr, int gen, int y,
 				if (popsize > 0) mn = ts.sumStepL[0] / (double)popsize; else mn = 0.0;
 				if (popsize > 1) sd = ts.ssqStepL[0] / (double)popsize - mn * mn; else sd = 0.0;
 				if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-				outTraitsRows << "\t" << mn << "\t" << sd;
+				traitRowsOfs << "\t" << mn << "\t" << sd;
 				if (popsize > 0) mn = ts.sumRho[0] / (double)popsize; else mn = 0.0;
 				if (popsize > 1) sd = ts.ssqRho[0] / (double)popsize - mn * mn; else sd = 0.0;
 				if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-				outTraitsRows << "\t" << mn << "\t" << sd;
+				traitRowsOfs << "\t" << mn << "\t" << sd;
 			}
 		}
 		else { // dispersal kernel
@@ -1628,46 +1615,46 @@ void Community::writeTraitsRows(int rep, int yr, int gen, int y,
 				if (ts.ninds[0] > 0) mn = ts.sumDist1[0] / (double)ts.ninds[0]; else mn = 0.0;
 				if (ts.ninds[0] > 1) sd = ts.ssqDist1[0] / (double)ts.ninds[0] - mn * mn; else sd = 0.0;
 				if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-				outTraitsRows << "\t" << mn << "\t" << sd;
+				traitRowsOfs << "\t" << mn << "\t" << sd;
 				if (ts.ninds[1] > 0) mn = ts.sumDist1[1] / (double)ts.ninds[1]; else mn = 0.0;
 				if (ts.ninds[1] > 1) sd = ts.ssqDist1[1] / (double)ts.ninds[1] - mn * mn; else sd = 0.0;
 				if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-				outTraitsRows << "\t" << mn << "\t" << sd;
+				traitRowsOfs << "\t" << mn << "\t" << sd;
 				if (trfr.twinKern)
 				{
 					if (ts.ninds[0] > 0) mn = ts.sumDist2[0] / (double)ts.ninds[0]; else mn = 0.0;
 					if (ts.ninds[0] > 1) sd = ts.ssqDist2[0] / (double)ts.ninds[0] - mn * mn; else sd = 0.0;
 					if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-					outTraitsRows << "\t" << mn << "\t" << sd;
+					traitRowsOfs << "\t" << mn << "\t" << sd;
 					if (ts.ninds[1] > 0) mn = ts.sumDist2[1] / (double)ts.ninds[1]; else mn = 0.0;
 					if (ts.ninds[1] > 1) sd = ts.ssqDist2[1] / (double)ts.ninds[1] - mn * mn; else sd = 0.0;
 					if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-					outTraitsRows << "\t" << mn << "\t" << sd;
+					traitRowsOfs << "\t" << mn << "\t" << sd;
 					if (ts.ninds[0] > 0) mn = ts.sumProp1[0] / (double)ts.ninds[0]; else mn = 0.0;
 					if (ts.ninds[0] > 1) sd = ts.ssqProp1[0] / (double)ts.ninds[0] - mn * mn; else sd = 0.0;
 					if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-					outTraitsRows << "\t" << mn << "\t" << sd;
+					traitRowsOfs << "\t" << mn << "\t" << sd;
 					if (ts.ninds[1] > 0) mn = ts.sumProp1[1] / (double)ts.ninds[1]; else mn = 0.0;
 					if (ts.ninds[1] > 1) sd = ts.ssqProp1[1] / (double)ts.ninds[1] - mn * mn; else sd = 0.0;
 					if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-					outTraitsRows << "\t" << mn << "\t" << sd;
+					traitRowsOfs << "\t" << mn << "\t" << sd;
 				}
 			}
 			else { // sex-independent
 				if (popsize > 0) mn = ts.sumDist1[0] / (double)popsize; else mn = 0.0;
 				if (popsize > 1) sd = ts.ssqDist1[0] / (double)popsize - mn * mn; else sd = 0.0;
 				if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-				outTraitsRows << "\t" << mn << "\t" << sd;
+				traitRowsOfs << "\t" << mn << "\t" << sd;
 				if (trfr.twinKern)
 				{
 					if (popsize > 0) mn = ts.sumDist2[0] / (double)popsize; else mn = 0.0;
 					if (popsize > 1) sd = ts.ssqDist2[0] / (double)popsize - mn * mn; else sd = 0.0;
 					if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-					outTraitsRows << "\t" << mn << "\t" << sd;
+					traitRowsOfs << "\t" << mn << "\t" << sd;
 					if (popsize > 0) mn = ts.sumProp1[0] / (double)popsize; else mn = 0.0;
 					if (popsize > 1) sd = ts.ssqProp1[0] / (double)popsize - mn * mn; else sd = 0.0;
 					if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-					outTraitsRows << "\t" << mn << "\t" << sd;
+					traitRowsOfs << "\t" << mn << "\t" << sd;
 				}
 			}
 		}
@@ -1677,15 +1664,15 @@ void Community::writeTraitsRows(int rep, int yr, int gen, int y,
 		if (popsize > 0) mn = ts.sumS0[0] / (double)popsize; else mn = 0.0;
 		if (popsize > 1) sd = ts.ssqS0[0] / (double)popsize - mn * mn; else sd = 0.0;
 		if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-		outTraitsRows << "\t" << mn << "\t" << sd;
+		traitRowsOfs << "\t" << mn << "\t" << sd;
 		if (popsize > 0) mn = ts.sumAlphaS[0] / (double)popsize; else mn = 0.0;
 		if (popsize > 1) sd = ts.ssqAlphaS[0] / (double)popsize - mn * mn; else sd = 0.0;
 		if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-		outTraitsRows << "\t" << mn << "\t" << sd;
+		traitRowsOfs << "\t" << mn << "\t" << sd;
 		if (popsize > 0) mn = ts.sumBetaS[0] / (double)popsize; else mn = 0.0;
 		if (popsize > 1) sd = ts.ssqBetaS[0] / (double)popsize - mn * mn; else sd = 0.0;
 		if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-		outTraitsRows << "\t" << mn << "\t" << sd;
+		traitRowsOfs << "\t" << mn << "\t" << sd;
 	}
 
 	if (hasGenLoad) {
@@ -1693,115 +1680,125 @@ void Community::writeTraitsRows(int rep, int yr, int gen, int y,
 			if (ts.ninds[0] > 0) mn = ts.sumGeneticFitness[0] / (double)ts.ninds[0]; else mn = 0.0;
 			if (ts.ninds[0] > 1) sd = ts.ssqGeneticFitness[0] / (double)ts.ninds[0] - mn * mn; else sd = 0.0;
 			if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-			outTraitsRows << "\t" << mn << "\t" << sd;
+			traitRowsOfs << "\t" << mn << "\t" << sd;
 			if (ts.ninds[1] > 0) mn = ts.sumGeneticFitness[1] / (double)ts.ninds[1]; else mn = 0.0;
 			if (ts.ninds[1] > 1) sd = ts.ssqGeneticFitness[1] / (double)ts.ninds[1] - mn * mn; else sd = 0.0;
 			if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-			outTraitsRows << "\t" << mn << "\t" << sd;
+			traitRowsOfs << "\t" << mn << "\t" << sd;
 		}
 		else {
 			if (ts.ninds[0] > 0) mn = ts.sumGeneticFitness[0] / (double)ts.ninds[0]; else mn = 0.0;
 			if (ts.ninds[0] > 1) sd = ts.ssqGeneticFitness[0] / (double)ts.ninds[0] - mn * mn; else sd = 0.0;
 			if (sd > 0.0) sd = sqrt(sd); else sd = 0.0;
-			outTraitsRows << "\t" << mn << "\t" << sd;
+			traitRowsOfs << "\t" << mn << "\t" << sd;
 		}
 	}
-	outTraitsRows << endl;
+	traitRowsOfs << endl;
 }
 
-bool Community::closeTraitRows() {
-	if (outTraitsRows.is_open()) outTraitsRows.close();
-	outTraitsRows.clear();
+bool Community::closeTraitRows(species_id sp) {
+	if (outTraitsRows.at(sp).is_open()) outTraitsRows.at(sp).close();
+	outTraitsRows.at(sp).clear();
 	return true;
 }
 
 // Open trait rows file and write header record
-bool Community::outTraitsRowsHeaders(int landNr) {
+bool Community::outTraitsRowsHeaders(species_id sp, int landNr) {
 
 	string name;
-	emigRules emig = speciesMap.at(gSingleSpeciesID)->getEmigRules();
-	transferRules trfr = speciesMap.at(gSingleSpeciesID)->getTransferRules();
-	settleType sett = speciesMap.at(gSingleSpeciesID)->getSettle();
+	Species* pSpecies = speciesMap.at(sp);
+	emigRules emig = pSpecies->getEmigRules();
+	transferRules trfr = pSpecies->getTransferRules();
+	settleType sett = pSpecies->getSettle();
 	simParams sim = paramsSim->getSim();
-	bool hasGenLoad = speciesMap.at(gSingleSpeciesID)->getNbGenLoadTraits() > 0;
+	bool hasGenLoad = pSpecies->getNbGenLoadTraits() > 0;
 
 	string DirOut = paramsSim->getDir(2);
 	if (sim.batchMode) {
 		name = DirOut
 			+ "Batch" + to_string(sim.batchNum) + "_"
-			+ "Sim" + to_string(sim.simulation) + "_Land" + to_string(landNr) + "_TraitsXrow.txt";
+			+ "Sim" + to_string(sim.simulation)
+			+ "_Land" + to_string(landNr)
+			+ "_Species" + to_string(sp);
+			+ "_TraitsXrow.txt";
 	}
 	else {
-		name = DirOut + "Sim" + to_string(sim.simulation) + "_TraitsXrow.txt";
+		name = DirOut 
+			+ "Sim" + to_string(sim.simulation) 
+			+ "_Species" + to_string(sp);
+			+ "_TraitsXrow.txt";
 	}
-	outTraitsRows.open(name.c_str());
 
-	outTraitsRows << "Rep\tYear\tRepSeason\ty";
+	ofstream& traitRowsOfs = outTraitsRows.at(sp);
+
+	traitRowsOfs.open(name.c_str());
+
+	traitRowsOfs << "Rep\tYear\tRepSeason\ty";
 	if ((emig.indVar && emig.sexDep) || (trfr.indVar && trfr.sexDep))
-		outTraitsRows << "\tN_females\tN_males";
+		traitRowsOfs << "\tN_females\tN_males";
 	else
-		outTraitsRows << "\tN";
+		traitRowsOfs << "\tN";
 
 	if (emig.indVar) {
 		if (emig.sexDep) {
 			if (emig.densDep) {
-				outTraitsRows << "\tF_meanD0\tF_stdD0\tM_meanD0\tM_stdD0";
-				outTraitsRows << "\tF_meanAlpha\tF_stdAlpha\tM_meanAlpha\tM_stdAlpha";
-				outTraitsRows << "\tF_meanBeta\tF_stdBeta\tM_meanBeta\tM_stdBeta";
+				traitRowsOfs << "\tF_meanD0\tF_stdD0\tM_meanD0\tM_stdD0";
+				traitRowsOfs << "\tF_meanAlpha\tF_stdAlpha\tM_meanAlpha\tM_stdAlpha";
+				traitRowsOfs << "\tF_meanBeta\tF_stdBeta\tM_meanBeta\tM_stdBeta";
 			}
 			else {
-				outTraitsRows << "\tF_meanEP\tF_stdEP\tM_meanEP\tM_stdEP";
+				traitRowsOfs << "\tF_meanEP\tF_stdEP\tM_meanEP\tM_stdEP";
 			}
 		}
 		else {
 			if (emig.densDep) {
-				outTraitsRows << "\tmeanD0\tstdD0\tmeanAlpha\tstdAlpha";
-				outTraitsRows << "\tmeanBeta\tstdBeta";
+				traitRowsOfs << "\tmeanD0\tstdD0\tmeanAlpha\tstdAlpha";
+				traitRowsOfs << "\tmeanBeta\tstdBeta";
 			}
 			else {
-				outTraitsRows << "\tmeanEP\tstdEP";
+				traitRowsOfs << "\tmeanEP\tstdEP";
 			}
 		}
 	}
 	if (trfr.indVar) {
 		if (trfr.usesMovtProc) {
 			if (trfr.moveType == 2) {
-				outTraitsRows << "\tmeanStepLength\tstdStepLength\tmeanRho\tstdRho";
+				traitRowsOfs << "\tmeanStepLength\tstdStepLength\tmeanRho\tstdRho";
 			}
 		}
 		else { // dispersal kernel
 			if (trfr.sexDep) {
-				outTraitsRows << "\tF_mean_distI\tF_std_distI\tM_mean_distI\tM_std_distI";
+				traitRowsOfs << "\tF_mean_distI\tF_std_distI\tM_mean_distI\tM_std_distI";
 				if (trfr.twinKern)
-					outTraitsRows << "\tF_mean_distII\tF_std_distII\tM_mean_distII\tM_std_distII"
+					traitRowsOfs << "\tF_mean_distII\tF_std_distII\tM_mean_distII\tM_std_distII"
 					<< "\tF_meanPfirstKernel\tF_stdPfirstKernel"
 					<< "\tM_meanPfirstKernel\tM_stdPfirstKernel";
 			}
 			else {
-				outTraitsRows << "\tmean_distI\tstd_distI";
+				traitRowsOfs << "\tmean_distI\tstd_distI";
 				if (trfr.twinKern)
-					outTraitsRows << "\tmean_distII\tstd_distII\tmeanPfirstKernel\tstdPfirstKernel";
+					traitRowsOfs << "\tmean_distII\tstd_distII\tmeanPfirstKernel\tstdPfirstKernel";
 			}
 		}
 	}
 
 	if (sett.indVar) {
-		outTraitsRows << "\tmeanS0\tstdS0";
-		outTraitsRows << "\tmeanAlphaS\tstdAlphaS";
-		outTraitsRows << "\tmeanBetaS\tstdBetaS";
+		traitRowsOfs << "\tmeanS0\tstdS0";
+		traitRowsOfs << "\tmeanAlphaS\tstdAlphaS";
+		traitRowsOfs << "\tmeanBetaS\tstdBetaS";
 	}
 
 	if (hasGenLoad) {
 		if (gMaxNbSexes > 1) {
-			outTraitsRows << "\tF_meanProbViable\tF_stdProbViable\tM_meanProbViable\tM_stdProbViable";
+			traitRowsOfs << "\tF_meanProbViable\tF_stdProbViable\tM_meanProbViable\tM_stdProbViable";
 		}
 		else
-			outTraitsRows << "\tmeanProbViable\tstdProbViable";
+			traitRowsOfs << "\tmeanProbViable\tstdProbViable";
 	}
 
-	outTraitsRows << endl;
+	traitRowsOfs << endl;
 
-	return outTraitsRows.is_open();
+	return traitRowsOfs.is_open();
 
 }
 
@@ -2190,18 +2187,33 @@ void Community::outNeutralGenetics(species_id sp, int rep, int yr, int gen) {
 	}
 }
 
-bool Community::openOutputFiles(const simParams& sim, const int landNum) {
+//---------------------------------------------------------------------------
+//For outputs and population visualisations pre-reproduction
+void Community::traitAndOccOutput(int rep, int yr, int gen) {
+
+	for (auto& [sp, pSpecies] : speciesMap) {
+		// trait outputs and visualisation
+		if (pSpecies->isTraitCellOutYear(yr)
+			|| pSpecies->isTraitRowOutYear(yr))
+			outTraits(sp, rep, yr, gen);
+		if (gen == 0 && pSpecies->isOccOutputYear(yr)) 
+			updateOccupancy(sp, yr, rep);
+	}
+}
+
+
+bool Community::openOutputFiles(bool hasMultipleReplicates, const int landNum) {
 
 	bool filesOK = true;
 
 	// Open output files
 	for (auto& [sp, pSpecies] : speciesMap) {
-		if (sim.outRange) { // open Range file
-			if (!outRangeHeaders(landNum)) {
+		if (pSpecies->doesOutputRange()) { // open Range file
+			if (!outRangeHeaders(sp, landNum)) {
 				filesOK = false;
 			}
 		}
-		if (pSpecies->doesOutputOccup() && sim.reps > 1)
+		if (pSpecies->doesOutputOccup() && hasMultipleReplicates)
 			if (!outOccupancyHeaders(pSpecies))
 				filesOK = false;
 
@@ -2209,12 +2221,12 @@ bool Community::openOutputFiles(const simParams& sim, const int landNum) {
 			if (!outPopHeaders(pSpecies))
 				filesOK = false;
 
-		if (sim.outTraitsCells)
-			if (!outTraitsHeaders(pLandscape, landNum)) {
+		if (pSpecies->doesOutputTraitCell())
+			if (!outTraitsHeaders(sp, pLandscape, landNum)) {
 				filesOK = false;
 			}
-		if (sim.outTraitsRows)
-			if (!outTraitsRowsHeaders(landNum)) {
+		if (pSpecies->doesOutputTraitRows())
+			if (!outTraitsRowsHeaders(sp, landNum)) {
 				filesOK = false;
 			}
 		if (pSpecies->doesOutputWeirCockerham()
@@ -2226,26 +2238,28 @@ bool Community::openOutputFiles(const simParams& sim, const int landNum) {
 	}
 
 	if (!filesOK) {
-		closeGlobalOutputFiles();
+		closeGlobalOutputFiles(hasMultipleReplicates);
 	}
 
 	return filesOK;
 }
 
-void Community::closeGlobalOutputFiles() {
-
-	if (sim.outRange) closeRangeOfs();
-	if (sim.outPop) closePopOfs();
-	if (sim.outTraitsCells) closeOutTraitOfs();
-	if (sim.outTraitsRows) closeTraitRows();
+void Community::closeGlobalOutputFiles(bool hasMultipleReplicates) {
 
 	for (auto& [sp, pSpecies] : speciesMap) {
+
+		if (pSpecies->doesOutputTraitRows())
+			closeTraitRows(sp);
+		if (pSpecies->doesOutputTraitCell()) closeOutTraitOfs(sp);
+
+		if (pSpecies->doesOutputRange()) closeRangeOfs(sp);
+		if (pSpecies->doesOutputPop()) closePopOfs(sp);
 
 		if (pSpecies->doesOutputWeirCockerham() 
 			|| pSpecies->doesOutputWeirCockerham()) 
 			closeNeutralOutputOfs(sp);
 
-		if (sim.reps > 1 && pSpecies->doesOutputOccup())
+		if (hasMultipleReplicates && pSpecies->doesOutputOccup())
 			closeOccupancyOfs(sp);
 	}
 }

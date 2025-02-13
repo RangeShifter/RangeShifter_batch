@@ -50,6 +50,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		if (pSpecies->usesGradient()) anyUsesGradient = true;
 		if (pSpecies->savesVisits()) anySavesVisits = true;
 	}
+	bool hasMultipleReplicates = sim.reps > 1;
 
 	if (!ppLand.generated) {
 		pComm = new Community(pLandscape, allSpecies);
@@ -90,7 +91,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 
 		if (rep == 0) {
-			if (!pComm->openOutputFiles(sim, ppLand.landNum)) {
+			if (!pComm->openOutputFiles(hasMultipleReplicates, ppLand.landNum)) {
 				// abort if any file fails to open
 #if RS_RCPP && !R_CMD
 				return Rcpp::List::create(Rcpp::Named("Errors") = 666);
@@ -274,7 +275,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			for (int gen = 0; gen < dem.repSeasons; gen++) {
 				
 				// Output and pop. visualisation before reproduction
-				traitAndOccOutput(sim, pComm, rep, yr, gen);
+				pComm->traitAndOccOutput(rep, yr, gen);
 
 				// Non-structured pops: range and population output *before* reproductrion
 				if (!dem.stageStruct) pComm->popAndRangeOutput(rep, yr, gen);
@@ -300,7 +301,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				}
 
 				// Stage-structured pops: range + pop output *after* reproductrion
-				if (dem.stageStruct) popAndRangeOutput(allSpecies.at(gSingleSpeciesID), sim, pComm, rep, yr, gen);
+				if (dem.stageStruct) pComm->popAndRangeOutput(rep, yr, gen);
 
 				// Dispersal
 				pComm->emigration();
@@ -373,8 +374,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		} // end of the years loop
 
 		// Final summary output
-		traitAndOccOutput(sim, pComm, rep, yr, 0);
-		popAndRangeOutput(allSpecies.at(gSingleSpeciesID), sim, pComm, rep, yr, 0);
+		pComm->traitAndOccOutput(rep, yr, 0);
+		pComm->popAndRangeOutput(rep, yr, 0);
 
 		pComm->resetPopns();
 
@@ -433,7 +434,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 	}
 
-	if (sim.reps > 1) {
+	if (hasMultipleReplicates) {
 		for (auto& [sp, pSpecies] : allSpecies) {
 			if (pSpecies->doesOutputOccup()) {
 				pComm->outOccupancy(pSpecies);
@@ -442,7 +443,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 	}
 
-	pComm->closeGlobalOutputFiles();
+	pComm->closeGlobalOutputFiles(hasMultipleReplicates);
 	pComm->closeYearlyOutputFiles(); // might still be open if the simulation was stopped by the user
 
 	delete pComm; 
@@ -494,19 +495,6 @@ bool CheckDirectory(const string& pathToProjDir)
 		return false;
 	}
 	else return true;
-}
-
-//---------------------------------------------------------------------------
-//For outputs and population visualisations pre-reproduction
-void traitAndOccOutput(const simParams& sim, Community* pComm, int rep, int yr, int gen)
-{
-	// trait outputs and visualisation
-	if ((sim.outTraitsCells && yr >= sim.outStartTraitCell && yr % sim.outIntTraitCell == 0) 
-		|| (sim.outTraitsRows && yr >= sim.outStartTraitRow && yr % sim.outIntTraitRow == 0))
-	{
-		pComm->outTraits(rep, yr, gen);
-	}
-	if (gen == 0) pComm->updateOccupancy(yr, rep);
 }
 
 //---------------------------------------------------------------------------
