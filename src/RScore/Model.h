@@ -67,7 +67,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies);
 #endif // RS_RCPP && !R_CMD
 
 bool CheckDirectory(const string& pathToProjDir);
-void OutParameters(Landscape* pLandscape);
+void OutParameters(Landscape* pLandscape, speciesMap_t);
 
 extern paramStoch* paramsStoch;
 extern Species* pSpecies;

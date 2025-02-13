@@ -321,6 +321,7 @@ struct simParams {
 	int simulation; 
 	int reps; 
 	int years;
+	bool absorbing;
 	bool fixReplicateSeed;
 	bool batchMode;
 };

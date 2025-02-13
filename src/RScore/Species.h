@@ -410,7 +410,10 @@ public:
 			&& yr >= output.outStartTraitRow
 			&& yr % output.outIntTraitRow == 0;
 	}
-
+	outputParams getOutputParams() const { return output; }
+#if RS_RCPP
+	bool doesOutputPaths() const { return output.outPaths; }
+#endif
 private:
 
 	// Demographic parameters
@@ -454,7 +457,7 @@ private:
 	envGradParams grad;
 
 	// Genome parameters
-	/**The traits table.*/
+	/** The traits table. */
 	std::map<TraitType, std::unique_ptr<SpeciesTrait>> spTraitTable;
 	std::set<int> chromosomeEnds;
 	int genomeSize;

@@ -498,24 +498,18 @@ bool CheckDirectory(const string& pathToProjDir)
 }
 
 //---------------------------------------------------------------------------
-void OutParameters(Landscape* pLandscape)
-{
+void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 	double k;
 	int nsexes, nstages;
 
 	landParams ppLand = pLandscape->getLandParams();
 	genLandParams ppGenLand = pLandscape->getGenLandParams();
 	envStochParams env = paramsStoch->getStoch();
-	demogrParams dem = pSpecies->getDemogrParams();
-	stageParams sstruct = pSpecies->getStageParams();
-	emigRules emig = pSpecies->getEmigRules();
-	transferRules trfr = pSpecies->getTransferRules();
-	settleType sett = pSpecies->getSettle();
 	settleRules srules;
 	settleSteps ssteps;
 	settleTraits settleDD;
 	simParams sim = paramsSim->getSim();
-	envGradParams grad = pSpecies->getEnvGradient();
+	//envGradParams grad = pSpecies->getEnvGradient();
 
 	string name;
 	if (sim.batchMode)
@@ -542,7 +536,6 @@ void OutParameters(Landscape* pLandscape)
 	outPar << "SEED \t" << pRandom->getSeed() << endl;
 	outPar << "REPLICATES \t" << sim.reps << endl;
 	outPar << "YEARS \t" << sim.years << endl;
-	outPar << "REPRODUCTIVE SEASONS / YEAR\t" << dem.repSeasons << endl;
 	if (ppLand.usesPatches) {
 		outPar << "PATCH-BASED MODEL" << endl;
 		outPar << "No. PATCHES: \n" << pLandscape->allPatchCount() - 1 << endl;
@@ -632,688 +625,6 @@ void OutParameters(Landscape* pLandscape)
 	}
 	else outPar << "no" << endl;
 
-	outPar << endl << "ENVIRONMENTAL GRADIENT:\t ";
-	if (grad.usesGradient) {
-		switch (grad.gradType) {
-		case 1:
-			if (dem.stageStruct) outPar << "Density dependence strength (1/b)" << endl;
-			else outPar << "Carrying capacity (K)" << endl;
-			break;
-		case 2:
-			if (dem.stageStruct) outPar << "Fecundity" << endl;
-			else outPar << "Intrinsic growth rate (r)" << endl;
-			break;
-		case 3:
-			outPar << "Local extinction probability" << endl;
-			break;
-		default:
-			outPar << "ERROR ERROR ERROR" << endl;
-			;
-		}
-		outPar << "G:\t\t " << grad.gradIncr << endl;
-		outPar << "optimum Y:\t " << grad.optY << endl;
-		outPar << "f:\t\t " << grad.factor << endl;
-		if (grad.gradType == 3) outPar << "Local extinction prob. at optimum:\t "
-			<< grad.extProbOpt << endl;
-		outPar << "GRADIENT SHIFTING:\t ";
-		if (grad.doesShift)
-		{
-			outPar << "yes" << endl;
-			outPar << "SHIFTING RATE  (rows/year):\t " << grad.shift_rate << endl;
-			outPar << "SHIFTING START (year):\t\t " << grad.shiftBegin << endl;
-			outPar << "SHIFTING STOP  (year):\t\t " << grad.shiftStop << endl;
-		}
-		else   outPar << "no" << endl;
-	}
-	else outPar << "no";
-	outPar << endl;
-	outPar << "ENVIRONMENTAL STOCHASTICITY:\t";
-	if (env.usesStoch) {
-		outPar << "yes" << endl;
-		outPar << "TYPE\t in ";
-		if (dem.stageStruct) {
-			if (env.inK) outPar << "1/b" << endl;
-			else outPar << "fecundity" << endl;
-		}
-		else {
-			if (env.inK) outPar << "K" << endl;
-			else outPar << "R" << endl;
-		}
-		outPar << "SPATIAL AUTOCORRELATION\t ";
-		if (env.stochIsLocal) outPar << "local" << endl;
-		else outPar << "global" << endl;
-		outPar << "TEMPORAL AUTOCORRELATION (ac)\t" << env.ac << endl;
-		outPar << "AMPLITUDE (std)\t" << env.std << endl;
-		if (dem.stageStruct) {
-			if (env.inK) {
-				outPar << "MIN. 1/b\t" << pSpecies->getMinMax(0)
-					* (10000.0 / (float)(ppLand.resol * ppLand.resol)) << endl;
-				outPar << "MAX. 1/b\t" << pSpecies->getMinMax(1)
-					* (10000.0 / (float)(ppLand.resol * ppLand.resol)) << endl;
-			}
-			else {
-				outPar << "MIN. fecundity\t" << pSpecies->getMinMax(0) << endl;
-				outPar << "MAX. fecundity\t" << pSpecies->getMinMax(1) << endl;
-			}
-		}
-		else {
-			if (env.inK) {
-				outPar << "MIN. K\t" << pSpecies->getMinMax(0)
-					* (10000.0 / (float)(ppLand.resol * ppLand.resol)) << endl;
-				outPar << "MAX. K\t" << pSpecies->getMinMax(1)
-					* (10000.0 / (float)(ppLand.resol * ppLand.resol)) << endl;
-			}
-			else {
-				outPar << "MIN. r\t" << pSpecies->getMinMax(0) << endl;
-				outPar << "MAX. r\t" << pSpecies->getMinMax(1) << endl;
-			}
-		}
-	}
-	else outPar << "no" << endl;
-	outPar << "LOCAL EXTINCTION PROBABILITY:\t";
-	if (env.usesLocalExt) outPar << env.locExtProb << endl;
-	else outPar << "0.0" << endl;
-
-	outPar << endl << "SPECIES' PARAMETERS." << endl;
-	outPar << "REPRODUCTION:" << endl;
-	outPar << "TYPE: ";
-	switch (dem.repType) {
-	case 0:
-		outPar << "Asexual / Only female model" << endl;
-		break;
-	case 1:
-		outPar << "Sexual model (simple)";
-		outPar << endl;
-		outPar << "PROP. of MALES\t" << dem.propMales << endl;
-		break;
-	case 2:
-		outPar << "Sexual model (explicit mating system)" << endl;
-		outPar << "PROP. of MALES\t" << dem.propMales << endl;
-		outPar << "MAX. HAREM SIZE (h)\t" << dem.harem << endl;
-		break;
-	}
-	outPar << "STAGE STRUCTURE:\t";
-	if (dem.stageStruct) {
-		outPar << "yes" << endl;
-		outPar << "PROBABILITY OF REPRODUCING IN SUBSEQUENT SEASONS\t" << sstruct.probRep << endl;
-		outPar << "No. OF REP. SEASONS BEFORE SUBSEQUENT REPRODUCTIONS\t" << sstruct.repInterval << endl;
-		if (!ppLand.generated && ppLand.dynamic) {
-			outPar << "ACTION AFTER POPULATION DESTRUCTION: all individuals ";
-			if (sstruct.disperseOnLoss) outPar << "disperse" << endl;
-			else outPar << "die" << endl;
-		}
-		outPar << "No. STAGES\t" << sstruct.nStages << endl;
-		outPar << "MAX. AGE\t" << sstruct.maxAge << endl;
-		// no sex-specific demographic parameters
-		if (dem.repType != 2) {
-			outPar << "MIN. AGES:" << endl;
-			for (int i = 0; i < sstruct.nStages; i++) {
-				outPar << "stage\t" << i << ":\t" << pSpecies->getMinAge(i, 0) << "\tyears" << endl;
-			}
-			outPar << "FECUNDITIES:" << endl;
-			for (int i = 0; i < sstruct.nStages; i++) {
-				outPar << "stage\t" << i << ":\t" << pSpecies->getFec(i, 0) << endl;
-			}
-			outPar << "DEVELOPMENT PROB.:" << endl;
-			for (int i = 0; i < sstruct.nStages; i++) {
-				outPar << "stage\t" << i << ":\t" << pSpecies->getDev(i, 0) << endl;
-			}
-			outPar << "SURVIVAL PROB.:" << endl;
-			for (int i = 0; i < sstruct.nStages; i++) {
-				outPar << "stage\t" << i << ":\t" << pSpecies->getSurv(i, 0) << endl;
-			}
-		}
-		// sex-specific demographic parameters
-		else {
-			outPar << "MIN. AGES:" << endl;
-			for (int i = 0; i < sstruct.nStages; i++) {
-				outPar << "males " << i << ":\t" << pSpecies->getMinAge(i, 1) << " years;\t";
-				outPar << "females " << i << ":\t" << pSpecies->getMinAge(i, 0) << " years" << endl;
-			}
-			outPar << "FECUNDITIES:" << endl;
-			for (int i = 0; i < sstruct.nStages; i++) {
-				outPar << "males   " << i << ":\t" << pSpecies->getFec(i, 1) << endl;
-				outPar << "females " << i << ":\t" << pSpecies->getFec(i, 0) << endl;
-			}
-			outPar << "DEVELOPMENT PROB.:" << endl;
-			for (int i = 0; i < sstruct.nStages; i++) {
-				outPar << "males   " << i << ":\t" << pSpecies->getDev(i, 1) << endl;
-				outPar << "females " << i << ":\t" << pSpecies->getDev(i, 0) << endl;
-			}
-			outPar << "SURVIVAL PROB.:" << endl;
-			for (int i = 0; i < sstruct.nStages; i++) {
-				outPar << "males   " << i << ":\t" << pSpecies->getSurv(i, 1) << endl;
-				outPar << "females " << i << ":\t" << pSpecies->getSurv(i, 0) << endl;
-			}
-		}
-
-		outPar << "SCHEDULING OF SURVIVAL: ";
-		switch (sstruct.survival) {
-		case 0:
-			outPar << "At reproduction" << endl;
-			break;
-		case 1:
-			outPar << "Between reproductive events" << endl;
-			break;
-		case 2:
-			outPar << "Annually" << endl;
-			break;
-		}
-
-		int mSize; // index for weights matrices
-		if (dem.repType == 2) mSize = sstruct.nStages * gMaxNbSexes;
-		else mSize = sstruct.nStages;
-
-		outPar << "DENSITY-DEPENDENCE IN FECUNDITY:\t";
-		if (sstruct.fecDens) {
-			outPar << "yes" << endl;
-			if (sstruct.fecStageDens) {
-				outPar << "STAGE'S WEIGHTS:" << endl;
-				for (int i = 0; i < mSize; i++) {
-					if (dem.repType == 2) {
-						outPar << "stage " << i / gMaxNbSexes << " ";
-						if (i % gMaxNbSexes == 0) outPar << "males  : \t";
-						else outPar << "females: \t";
-					}
-					else outPar << "stage " << i << ": \t";
-					for (int j = 0; j < mSize; j++) outPar << pSpecies->getDDwtFec(j, i) << "\t";
-					outPar << endl;
-				}
-			}
-			else outPar << "not stage-dependent" << endl;
-		}
-		else outPar << "no" << endl;
-
-		densDepParams ddparams = pSpecies->getDensDep();
-
-		outPar << "DENSITY-DEPENDENCE IN DEVELOPMENT:\t";
-		if (sstruct.devDens) {
-			outPar << "yes - coefficient: " << ddparams.devCoeff << endl;
-			if (sstruct.devStageDens) {
-				outPar << "STAGE'S WEIGHTS:" << endl;
-				for (int i = 0; i < mSize; i++) {
-					if (dem.repType == 2) {
-						outPar << "stage " << i / gMaxNbSexes << " ";
-						if (i % gMaxNbSexes == 0) outPar << "males  : \t";
-						else outPar << "females: \t";
-					}
-					else outPar << "stage " << i << ": \t";
-					for (int j = 0; j < mSize; j++) outPar << pSpecies->getDDwtDev(j, i) << "\t";
-					outPar << endl;
-				}
-			}
-			else outPar << "not stage-dependent" << endl;
-		}
-		else outPar << "no" << endl;
-
-		outPar << "DENSITY-DEPENDENCE IN SURVIVAL:\t\t";
-		if (sstruct.survDens) {
-			outPar << "yes - coefficient: " << ddparams.survCoeff << endl;
-			if (sstruct.survStageDens) {
-				outPar << "STAGE'S WEIGHTS:" << endl;
-				for (int i = 0; i < mSize; i++) {
-					if (dem.repType == 2) {
-						outPar << "stage " << i / gMaxNbSexes << " ";
-						if (i % gMaxNbSexes == 0) outPar << "males  : \t";
-						else outPar << "females: \t";
-					}
-					else outPar << "stage " << i << ": \t";
-					for (int j = 0; j < mSize; j++) outPar << pSpecies->getDDwtSurv(j, i) << "\t";
-					outPar << endl;
-				}
-			}
-			else outPar << "not stage-dependent" << endl;
-		}
-		else outPar << "no" << endl;
-	} // end of if (dem.stageStruct)
-	else { // not stage-strutured
-		outPar << "no" << endl;
-		outPar << "Rmax\t" << dem.lambda << endl;
-		outPar << "bc\t" << dem.bc << endl;
-	}
-
-	if (dem.stageStruct) {
-		outPar << endl << "HABITAT SPECIFIC 1/b:" << endl;
-	}
-	else {
-		outPar << endl << "CARRYING CAPACITIES:" << endl;
-	}
-	int nhab = ppLand.nHab;
-	if (ppLand.generated) {
-		if (ppGenLand.continuous) nhab = 1;
-	}
-	for (int i = 0; i < nhab; i++) {
-		k = pSpecies->getHabK(i) * (10000.0 / (float)(ppLand.resol * ppLand.resol));
-		if (!ppLand.generated && ppLand.rasterType == 0) { // imported & habitat codes
-			outPar << "Habitat " << pLandscape->getHabCode(i) << ": \t";
-		}
-		else {
-			outPar << "Habitat " << i << ": ";
-		}
-		if (dem.stageStruct) outPar << "1/b ";
-		else outPar << "K ";
-		outPar << k << endl;
-	}
-	emigTraits ep0, ep1;
-	string sexdept = "SEX-DEPENDENT:   ";
-	string stgdept = "STAGE-DEPENDENT: ";
-	string indvar = "INDIVIDUAL VARIABILITY: ";
-	string emigstage = "EMIGRATION STAGE: ";
-
-	outPar << endl << "DISPERSAL - EMIGRATION:\t";
-	if (emig.densDep) {
-		outPar << "density-dependent" << endl;
-		if (emig.sexDep) {
-			outPar << sexdept << "yes" << endl;
-			if (emig.stgDep) {
-				outPar << stgdept << "yes" << endl;
-				outPar << indvar << "no" << endl;
-				for (int i = 0; i < sstruct.nStages; i++) {
-					outPar << "stage " << i << ":" << endl;
-					ep0 = pSpecies->getSpEmigTraits(i, 0);
-					ep1 = pSpecies->getSpEmigTraits(i, 1);
-					outPar << "D0:    females " << ep0.d0 << "  males " << ep1.d0 << endl;
-					outPar << "alpha: females " << ep0.alpha << "  males " << ep1.alpha << endl;
-					outPar << "beta:  females " << ep0.beta << "  males " << ep1.beta << endl;
-				}
-			}
-			else { // !emig.stgDep
-				outPar << stgdept << "no" << endl;
-				ep0 = pSpecies->getSpEmigTraits(0, 0);
-				ep1 = pSpecies->getSpEmigTraits(0, 1);
-				outPar << "D0:    females " << ep0.d0 << "  males " << ep1.d0 << endl;
-				outPar << "alpha: females " << ep0.alpha << "  males " << ep1.alpha << endl;
-				outPar << "beta:  females " << ep0.beta << "  males " << ep1.beta << endl;
-		}
-	}
-		else { // !emig.sexDep
-			outPar << sexdept << "no" << endl;
-			if (emig.stgDep) {
-				outPar << stgdept << "yes" << endl;
-				outPar << indvar << "no" << endl;
-				for (int i = 0; i < sstruct.nStages; i++) {
-					ep0 = pSpecies->getSpEmigTraits(i, 0);
-					outPar << "stage " << i << ": \t" << "D0: " << ep0.d0;
-					outPar << " \talpha: " << ep0.alpha << " \tbeta: " << ep0.beta << endl;
-				}
-			}
-			else { // !emig.stgDep
-				outPar << stgdept << "no" << endl;
-				ep0 = pSpecies->getSpEmigTraits(0, 0);
-				outPar << "D0:    " << ep0.d0 << endl;
-				outPar << "alpha: " << ep0.alpha << endl;
-				outPar << "beta:  " << ep0.beta << endl;
-			}
-		}
-	}
-	else { // not density-dependent
-		string initprob = "INITIAL EMIGRATION PROB. ";
-		outPar << "density-independent" << endl;
-		if (!trfr.usesMovtProc) { // transfer by kernel
-			outPar << "USE FULL KERNEL TO DETERMINE EMIGRATION: ";
-			if (pSpecies->useFullKernel()) outPar << "yes";
-			else outPar << "no";
-			outPar << endl;
-		}
-
-		if (emig.sexDep) {
-			outPar << sexdept << "yes" << endl;
-			if (emig.stgDep) {
-				outPar << stgdept << "yes" << endl;
-				outPar << indvar << "no" << endl;
-				for (int i = 0; i < sstruct.nStages; i++) {
-					outPar << "stage " << i << ": \t" << "EMIGRATION PROB.: \tfemales "
-						<< pSpecies->getSpEmigD0(i, 0) << " \tmales " << pSpecies->getSpEmigD0(i, 1) << endl;
-				}
-			}
-			else { // !emig.stgDep
-				outPar << stgdept << "no" << endl;
-				outPar << "EMIGRATION PROB.: \tfemales " << pSpecies->getSpEmigD0(0, 0)
-					<< "\t males " << pSpecies->getSpEmigD0(0, 1) << endl;
-			}
-		}
-		else { // !emig.sexDep
-			outPar << sexdept << "no" << endl;
-			if (emig.stgDep) {
-				outPar << stgdept << "yes" << endl;
-				outPar << indvar << "no" << endl;
-				for (int i = 0; i < sstruct.nStages; i++) {
-					outPar << "stage " << i << ": \t" << "EMIGRATION PROB.: "
-						<< pSpecies->getSpEmigD0(i, 0) << endl;
-				}
-			}
-			else { // !emig.stgDep
-				outPar << stgdept << "no" << endl;
-				outPar << "EMIGRATION PROB.:\t" << pSpecies->getSpEmigD0(0, 0) << endl;
-			}
-		}
-	}
-
-	// Transfer
-
-	outPar << endl << "DISPERSAL - TRANSFER: \t";
-
-	if (trfr.usesMovtProc) {
-		bool straightenPath;
-		if (trfr.moveType == 1) { // SMS
-			trfrSMSTraits move = pSpecies->getSpSMSTraits();
-			straightenPath = move.straightenPath;
-			if (trfr.costMap) {
-				outPar << "SMS\tcosts from imported cost map" << endl;
-			}
-			else {
-				outPar << "SMS\tcosts:" << endl;
-				if (!ppLand.generated && ppLand.rasterType == 0) {
-					for (int i = 0; i < ppLand.nHab; i++)
-						outPar << "\thab. " << pLandscape->getHabCode(i) << "\t"
-						<< pSpecies->getHabCost(i) << endl;
-				}
-				else {
-					for (int i = 0; i < ppLand.nHab; i++)
-						outPar << "\thab. " << i << "\t"
-						<< pSpecies->getHabCost(i) << endl;
-				}
-			}
-			string pr = "PERCEPTUAL RANGE";
-			outPar << pr << ":        " << move.pr << endl;
-			outPar << pr << " METHOD: " << move.prMethod << endl;
-			if (!trfr.indVar) outPar << "DIRECTIONAL PERSISTENCE: " << move.dp << endl;
-			outPar << "MEMORY SIZE: " << move.memSize << endl;
-			outPar << "GOAL TYPE:   " << move.goalType << endl;
-			if (!trfr.indVar) {
-				if (move.goalType == 2) { //  dispersal bias
-					outPar << "GOAL BIAS:   " << move.gb << endl;
-					outPar << "ALPHA DB:    " << move.alphaDB << endl;
-					outPar << "BETA DB:     " << move.betaDB << endl;
-				}
-			}
-			outPar << indvar << "no " << endl;
-		}
-		else { // CRW
-			trfrCRWTraits move = pSpecies->getSpCRWTraits();
-			straightenPath = move.straightenPath;
-			outPar << "CRW" << endl;
-			string lgth = "STEP LENGTH (m) ";
-			string corr = "STEP CORRELATION";
-			outPar << lgth << ": " << move.stepLength << endl;
-			outPar << corr << ": " << move.rho << endl;
-		}
-		outPar << "STRAIGHTEN PATH AFTER DECISION NOT TO SETTLE: ";
-		if (straightenPath) outPar << "yes" << endl;
-		else outPar << "no" << endl;
-		outPar << "STEP MORTALITY:\t" << endl;
-		if (trfr.habMort)
-		{
-			outPar << "habitat dependent:\t" << endl;
-			if (!ppLand.generated && ppLand.rasterType == 0) {
-				for (int i = 0; i < ppLand.nHab; i++)
-					outPar << "\thab. " << pLandscape->getHabCode(i) << "\t"
-					<< pSpecies->getHabMort(i) << endl;
-			}
-			else {
-				for (int i = 0; i < ppLand.nHab; i++)
-					outPar << "\thab. " << i << "\t"
-					<< pSpecies->getHabMort(i) << endl;
-			}
-		}
-		else
-		{
-			trfrCRWTraits move = pSpecies->getSpCRWTraits();
-			outPar << "constant " << move.stepMort << endl;
-		}
-	} // end of movement process
-	else { // kernel
-		string meandist = "MEAN DISTANCE";
-		string probkern = "PROB. KERNEL I";
-		trfrKernelParams kern0, kern1;
-		outPar << "dispersal kernel" << endl << "TYPE: \t";
-		if (trfr.twinKern) outPar << "double ";
-		outPar << "negative exponential" << endl;
-
-		if (trfr.sexDep) {
-			outPar << sexdept << "yes" << endl;
-			if (trfr.stgDep) {
-				outPar << stgdept << "yes" << endl;
-				outPar << indvar << "no" << endl;
-				for (int i = 0; i < sstruct.nStages; i++) {
-					outPar << "stage " << i << ":" << endl;
-					kern0 = pSpecies->getSpKernTraits(i, 0);
-					kern1 = pSpecies->getSpKernTraits(i, 1);
-					outPar << meandist << " I: \tfemales " << kern0.meanDist1 << " \tmales " << kern1.meanDist1 << endl;
-					if (trfr.twinKern)
-					{
-						outPar << meandist << " II: \tfemales " << kern0.meanDist2 << " \tmales " << kern1.meanDist2 << endl;
-						outPar << probkern << ": \tfemales " << kern0.probKern1 << " \tmales " << kern1.probKern1 << endl;
-					}
-				}
-			}
-			else { // !trfr.stgDep
-				outPar << stgdept << "no" << endl;
-				kern0 = pSpecies->getSpKernTraits(0, 0);
-				kern1 = pSpecies->getSpKernTraits(0, 1);
-				outPar << meandist << " I: \tfemales " << kern0.meanDist1 << " \tmales " << kern1.meanDist1 << endl;
-				if (trfr.twinKern)
-				{
-					outPar << meandist << " II: \tfemales " << kern0.meanDist2 << " \tmales " << kern1.meanDist2 << endl;
-					outPar << probkern << ": \tfemales " << kern0.probKern1 << " \tmales " << kern1.probKern1 << endl;
-				}
-			}
-		}
-		else { // !trfr.sexDep
-			outPar << sexdept << "no" << endl;
-			if (trfr.stgDep) {
-				outPar << stgdept << "yes" << endl;
-				outPar << indvar << "no" << endl;
-				for (int i = 0; i < sstruct.nStages; i++) {
-					kern0 = pSpecies->getSpKernTraits(i, 0);
-					outPar << "stage " << i << ": \t" << meandist << " I: " << kern0.meanDist1;
-					if (trfr.twinKern)
-					{
-						outPar << " \t" << meandist << " II: " << kern0.meanDist2;
-						outPar << " \t" << probkern << ": " << kern0.probKern1;
-					}
-					outPar << endl;
-				}
-			}
-			else { // !trfr.stgDep
-				outPar << stgdept << "no" << endl;
-				kern0 = pSpecies->getSpKernTraits(0, 0);
-				outPar << meandist << " I: \t" << kern0.meanDist1 << endl;
-				if (trfr.twinKern)
-				{
-					outPar << meandist << " II: \t" << kern0.meanDist2 << endl;
-					outPar << probkern << ": \t" << kern0.probKern1 << endl;
-				}
-			}
-		}
-
-		outPar << "DISPERSAL MORTALITY:   ";
-		trfrMortParams mort = pSpecies->getMortParams();
-		if (trfr.distMort) {
-			outPar << "distance-dependent" << endl;
-			outPar << "SLOPE: " << mort.mortAlpha << " \tINFLECTION POINT: " << mort.mortBeta << endl;
-		}
-		else {
-			outPar << "constant" << endl << "MORTALITY PROBABILITY: " << mort.fixedMort << endl;
-		}
-	} // end of kernel transfer
-
-	// Settlement
-
-	outPar << endl << "DISPERSAL - SETTLEMENT:" << endl;
-
-	if (trfr.usesMovtProc) {
-		string plusmating = "+ mating requirements";
-
-		if (sett.sexDep) {
-			nsexes = 2;
-			outPar << sexdept << "yes" << endl;
-			if (sett.stgDep) {
-				nstages = sstruct.nStages;
-				outPar << stgdept << "yes" << endl;
-				for (int i = 0; i < nstages; i++) {
-				    if (dem.stageStruct && nstages > 1) outPar << "stage " << i << ": " << endl;
-				    for (int sx = 0; sx < nsexes; sx++) {
-				        if (sx == 0) outPar << "FEMALES:" << endl;
-				        else outPar << "MALES:" << endl;
-				        ssteps = pSpecies->getSteps(i, sx);
-
-				        outPar << "MIN. No. OF STEPS:\t " << ssteps.minSteps << endl;
-				        outPar << "MAX. No. OF STEPS:\t ";
-				        if (ssteps.maxSteps == 99999999) outPar << "not applied" << endl;
-				        else outPar << ssteps.maxSteps << endl;
-				    }
-				}
-			}
-			else { // !sett.stgDep
-				nstages = 1;
-				outPar << stgdept << "no" << endl;
-				for (int sx = 0; sx < nsexes; sx++) {
-				    if (sx == 0) outPar << "FEMALES:" << endl;
-				    else outPar << "MALES:" << endl;
-				    ssteps = pSpecies->getSteps(0, sx);
-
-				    outPar << "MIN. No. OF STEPS:\t " << ssteps.minSteps << endl;
-				    outPar << "MAX. No. OF STEPS:\t ";
-				    if (ssteps.maxSteps == 99999999) outPar << "not applied" << endl;
-				    else outPar << ssteps.maxSteps << endl;
-				}
-			}
-		}
-		else { // !sett.sexDep
-			nsexes = 1;
-			outPar << sexdept << "no" << endl;
-			if (sett.stgDep) {
-				nstages = sstruct.nStages;
-				outPar << stgdept << "yes" << endl;
-				for (int i = 0; i < nstages; i++) {
-				    if (dem.stageStruct && nstages > 1) outPar << "stage " << i << ": " << endl;
-				    ssteps = pSpecies->getSteps(i, 0);
-
-				    outPar << "MIN. No. OF STEPS:\t " << ssteps.minSteps << endl;
-				    outPar << "MAX. No. OF STEPS:\t ";
-				    if (ssteps.maxSteps == 99999999) outPar << "not applied" << endl;
-				    else outPar << ssteps.maxSteps << endl;
-				}
-			}
-			else { // !sett.stgDep
-				nstages = 1;
-				outPar << stgdept << "no" << endl;
-				ssteps = pSpecies->getSteps(0, 0);
-
-				outPar << "MIN. No. OF STEPS:\t " << ssteps.minSteps << endl;
-				outPar << "MAX. No. OF STEPS:\t ";
-				if (ssteps.maxSteps == 99999999) outPar << "not applied" << endl;
-				else outPar << ssteps.maxSteps << endl;
-			}
-		}
-		for (int sx = 0; sx < nsexes; sx++) {
-			if (sett.sexDep) {
-				if (sx == 0) outPar << "FEMALES:" << endl;
-				else outPar << "MALES:" << endl;
-			}
-			outPar << "SETTLE IF: ";
-			for (int i = 0; i < nstages; i++) {
-				if (dem.stageStruct && nstages > 1) outPar << "stage " << i << ": " << endl;
-				outPar << "find a suitable cell/patch ";
-				srules = pSpecies->getSettRules(i, sx);
-				if (srules.densDep) {
-					settleDD = pSpecies->getSpSettTraits(i, sx);
-					outPar << "+ density dependence ";
-					if (srules.findMate) outPar << plusmating;
-					outPar << endl;
-					if (!sett.indVar) {
-						outPar << "S0: " << settleDD.s0 << "  AlphaS: " << settleDD.alpha
-							<< "  BetaS: " << settleDD.beta << endl;
-					}
-				}
-				else {
-					if (srules.findMate) outPar << plusmating << endl;
-					else outPar << "(not the natal one)" << endl;
-				}
-				if (dem.stageStruct) {
-					ssteps = pSpecies->getSteps(i, sx);
-					outPar << "MAX. No. OF STEPS/YEAR:\t ";
-					if (ssteps.maxStepsYr == 99999999) outPar << "not applied" << endl;
-					else outPar << ssteps.maxStepsYr << endl;
-				}
-			}
-		}
-	}
-	else { // kernel-based transfer
-		string notsuit = "IF THE ARRIVAL CELL/PATCH IS UNSUITABLE: ";
-		string rchoose = " randomly choose a suitable neighb. cell/patch or ";
-		string matereq = "MATING REQUIREMENTS: ";
-		if (sett.sexDep) {
-			nsexes = 2;
-			outPar << sexdept << "yes" << endl;
-			if (sett.stgDep) {
-				nstages = sstruct.nStages;
-				outPar << stgdept << "yes" << endl;
-				outPar << notsuit << endl;
-			}
-			else {
-				nstages = 1;
-				outPar << stgdept << "no" << endl;
-			}
-		}
-		else {
-			nsexes = 1;
-			outPar << sexdept << "no" << endl;
-			if (sett.stgDep) {
-				nstages = sstruct.nStages;
-				outPar << stgdept << "yes" << endl;
-				outPar << notsuit << endl;
-			}
-			else {
-				nstages = 1;
-				outPar << stgdept << "no" << endl;
-				outPar << notsuit;
-			}
-		}
-		for (int i = 0; i < nstages; i++) {
-			if (sett.stgDep) {
-				outPar << "stage " << i << ":" << endl;
-			}
-			for (int sx = 0; sx < nsexes; sx++) {
-				if (sett.sexDep) {
-					if (sx == 0) outPar << "FEMALES: ";
-					else outPar << "MALES:   ";
-					if (!sett.stgDep) outPar << notsuit;
-				}
-				srules = pSpecies->getSettRules(i, sx);
-				if (srules.goToNeighbourLocn) {
-					outPar << rchoose;
-					if (srules.wait) outPar << "wait" << endl;
-					else outPar << "die" << endl;
-				}
-				else {
-					if (srules.wait) outPar << "wait" << endl;
-					else outPar << "die" << endl;
-				}
-				outPar << matereq;
-				if (srules.findMate) outPar << "yes" << endl;
-				else outPar << "no" << endl;
-			}
-		}
-	}
-
-	// Genetics
-	outPar << endl << "GENETICS:" << endl;
-	set<TraitType> traitList = pSpecies->getTraitTypes();
-
-	if (pSpecies->isDiploid()) outPar << "DIPLOID" << endl; else outPar << "HAPLOID" << endl;
-	outPar << "Genome size: " << pSpecies->getGenomeSize() << endl;
-	outPar << "Chromosome breaks : ";
-
-	for (auto end : pSpecies->getChromosomeEnds())
-		outPar << end << " ";
-	outPar << endl;
-	outPar << "Recombination rate: " << pSpecies->getRecombinationRate() << endl;
-	outPar << "Traits modelled:  " << endl;
-	for (auto trait : traitList)
-		outPar << trait << endl;
-
 	// Initialisation
 
 	initParams init = paramsInit->getInit();
@@ -1396,9 +707,7 @@ void OutParameters(Landscape* pLandscape)
 		outPar << "GEOGRAPHICAL CONSTRAINTS (cell numbers): " << endl;
 		outPar << "min X: " << init.minSeedX << " max X: " << init.maxSeedX << endl;
 		outPar << "min Y: " << init.minSeedY << " max Y: " << init.maxSeedY << endl;
-		//	if (init.seedType != 1 && init.freeType < 2 && init.initFrzYr > 0) {
-		//		outPar << "Freeze initial range until year " << init.initFrzYr << endl;
-		//	}
+
 		if (init.seedType == 0 && init.freeType < 2) {
 			if (init.initFrzYr > 0) {
 				outPar << "Freeze initial range until year " << init.initFrzYr << endl;
@@ -1413,74 +722,775 @@ void OutParameters(Landscape* pLandscape)
 		}
 	}
 
-	outPar << endl << "OUTPUTS:" << endl;
-	if (sim.outRange) {
-		outPar << "Range - every " << sim.outIntRange << " year";
-		if (sim.outIntRange > 1) outPar << "s";
-		//	if (sim.outStartRange > 0) outPar << " starting year " << sim.outStartRange;
-		outPar << endl;
-	}
-	if (sim.outOccup) {
-		outPar << "Occupancy - every " << sim.outIntOcc << " year";
-		if (sim.outIntOcc > 1) outPar << "s";
-		//	if (sim.outStartOcc > 0) outPar << " starting year " << sim.outStartOcc;
-		outPar << endl;
-	}
-	if (sim.outPop) {
-		outPar << "Populations - every " << sim.outIntPop << " year";
-		if (sim.outIntPop > 1) outPar << "s";
-		if (sim.outStartPop > 0) outPar << " starting year " << sim.outStartPop;
-		outPar << endl;
-	}
-	if (sim.outInds) {
-		outPar << "Individuals - every " << sim.outIntInd << " year";
-		if (sim.outIntInd > 1) outPar << "s";
-		if (sim.outStartInd > 0) outPar << " starting year " << sim.outStartInd;
-		outPar << endl;
-	}
-	if (sim.outputWeirCockerham || sim.outputWeirHill) {
-		outPar << "Neutral genetics - every " << sim.outputGeneticInterval << " year";
-		if (sim.outputGeneticInterval > 1) outPar << "s";
-		if (sim.outputWeirHill) outPar << " outputting pairwise patch fst";
-		if (sim.outputWeirCockerham) outPar << " outputting per locus fst ";
-		outPar << endl;
-	}
+	outPar << endl << "SPECIES PARAMETERS" << endl;
 
-	if (sim.outTraitsCells) {
-		outPar << "Traits per ";
-		if (ppLand.usesPatches) outPar << "patch"; else outPar << "cell";
-		outPar << " - every " << sim.outIntTraitCell << " year";
-		if (sim.outIntTraitCell > 1) outPar << "s";
-		if (sim.outStartTraitCell > 0) outPar << " starting year " << sim.outStartTraitCell;
+	for (auto& [sp, pSpecies] : allSpecies) {
+
+		outPar << endl << "SPECIES " << to_string(sp) << endl;
+
+		demogrParams dem = pSpecies->getDemogrParams();
+		stageParams sstruct = pSpecies->getStageParams();
+		emigRules emig = pSpecies->getEmigRules();
+		transferRules trfr = pSpecies->getTransferRules();
+		settleType sett = pSpecies->getSettle();
+
+
+		outPar << endl << "ENVIRONMENTAL GRADIENT:\t ";
+		if (pSpecies->usesGradient()) {
+			envGradParams grad = pSpecies->getEnvGradient();
+			switch (grad.gradType) {
+			case 1:
+				if (dem.stageStruct) outPar << "Density dependence strength (1/b)" << endl;
+				else outPar << "Carrying capacity (K)" << endl;
+				break;
+			case 2:
+				if (dem.stageStruct) outPar << "Fecundity" << endl;
+				else outPar << "Intrinsic growth rate (r)" << endl;
+				break;
+			case 3:
+				outPar << "Local extinction probability" << endl;
+				break;
+			default:
+				outPar << "ERROR ERROR ERROR" << endl;
+				;
+			}
+			outPar << "G:\t\t " << grad.gradIncr << endl;
+			outPar << "optimum Y:\t " << grad.optY << endl;
+			outPar << "f:\t\t " << grad.factor << endl;
+			if (grad.gradType == 3) outPar << "Local extinction prob. at optimum:\t "
+				<< grad.extProbOpt << endl;
+			outPar << "GRADIENT SHIFTING:\t ";
+			if (grad.doesShift)
+			{
+				outPar << "yes" << endl;
+				outPar << "SHIFTING RATE  (rows/year):\t " << grad.shift_rate << endl;
+				outPar << "SHIFTING START (year):\t\t " << grad.shiftBegin << endl;
+				outPar << "SHIFTING STOP  (year):\t\t " << grad.shiftStop << endl;
+			}
+			else   outPar << "no" << endl;
+		}
+		else outPar << "no";
 		outPar << endl;
-	}
-	if (sim.outTraitsRows) {
-		outPar << "Traits per row - every " << sim.outIntTraitRow << " year";
-		if (sim.outIntTraitRow > 1) outPar << "s";
-		if (sim.outStartTraitRow > 0) outPar << " starting year " << sim.outStartTraitRow;
-		outPar << endl;
-	}
-	if (sim.outConnect) {
-		outPar << "Connectivity matrix - every " << sim.outIntConn << " year";
-		if (sim.outIntConn > 1) outPar << "s";
-		if (sim.outStartConn > 0) outPar << " starting year " << sim.outStartConn;
-		outPar << endl;
-	}
-#if RS_RCPP
-	if (sim.outPaths) {
-		outPar << "SMS paths - every " << sim.outIntPaths << " year";
-		if (sim.outIntPaths > 1) outPar << "s";
-		if (sim.outStartPaths > 0) outPar << " starting year " << sim.outStartPaths;
-		outPar << endl;
-	}
-#endif
-	
-	if (trfr.usesMovtProc && trfr.moveType == 1) {
-		outPar << "SMS HEAT MAPS: ";
-		if (sim.saveVisits) outPar << "yes" << endl;
+		outPar << "ENVIRONMENTAL STOCHASTICITY:\t";
+		if (env.usesStoch) {
+			outPar << "yes" << endl;
+			outPar << "TYPE\t in ";
+			if (dem.stageStruct) {
+				if (env.inK) outPar << "1/b" << endl;
+				else outPar << "fecundity" << endl;
+			}
+			else {
+				if (env.inK) outPar << "K" << endl;
+				else outPar << "R" << endl;
+			}
+			outPar << "SPATIAL AUTOCORRELATION\t ";
+			if (env.stochIsLocal) outPar << "local" << endl;
+			else outPar << "global" << endl;
+			outPar << "TEMPORAL AUTOCORRELATION (ac)\t" << env.ac << endl;
+			outPar << "AMPLITUDE (std)\t" << env.std << endl;
+			if (dem.stageStruct) {
+				if (env.inK) {
+					outPar << "MIN. 1/b\t" << pSpecies->getMinMax(0)
+						* (10000.0 / (float)(ppLand.resol * ppLand.resol)) << endl;
+					outPar << "MAX. 1/b\t" << pSpecies->getMinMax(1)
+						* (10000.0 / (float)(ppLand.resol * ppLand.resol)) << endl;
+				}
+				else {
+					outPar << "MIN. fecundity\t" << pSpecies->getMinMax(0) << endl;
+					outPar << "MAX. fecundity\t" << pSpecies->getMinMax(1) << endl;
+				}
+			}
+			else {
+				if (env.inK) {
+					outPar << "MIN. K\t" << pSpecies->getMinMax(0)
+						* (10000.0 / (float)(ppLand.resol * ppLand.resol)) << endl;
+					outPar << "MAX. K\t" << pSpecies->getMinMax(1)
+						* (10000.0 / (float)(ppLand.resol * ppLand.resol)) << endl;
+				}
+				else {
+					outPar << "MIN. r\t" << pSpecies->getMinMax(0) << endl;
+					outPar << "MAX. r\t" << pSpecies->getMinMax(1) << endl;
+				}
+			}
+		}
 		else outPar << "no" << endl;
+		outPar << "LOCAL EXTINCTION PROBABILITY:\t";
+		if (env.usesLocalExt) outPar << env.locExtProb << endl;
+		else outPar << "0.0" << endl;
+
+		outPar << "REPRODUCTION:" << endl;
+		outPar << "TYPE: ";
+		switch (dem.repType) {
+		case 0:
+			outPar << "Asexual / Only female model" << endl;
+			break;
+		case 1:
+			outPar << "Sexual model (simple)";
+			outPar << endl;
+			outPar << "PROP. of MALES\t" << dem.propMales << endl;
+			break;
+		case 2:
+			outPar << "Sexual model (explicit mating system)" << endl;
+			outPar << "PROP. of MALES\t" << dem.propMales << endl;
+			outPar << "MAX. HAREM SIZE (h)\t" << dem.harem << endl;
+			break;
+		}
+		outPar << "STAGE STRUCTURE:\t";
+		if (dem.stageStruct) {
+			outPar << "yes" << endl;
+			outPar << "PROBABILITY OF REPRODUCING IN SUBSEQUENT SEASONS\t" << sstruct.probRep << endl;
+			outPar << "No. OF REP. SEASONS BEFORE SUBSEQUENT REPRODUCTIONS\t" << sstruct.repInterval << endl;
+			if (!ppLand.generated && ppLand.dynamic) {
+				outPar << "ACTION AFTER POPULATION DESTRUCTION: all individuals ";
+				if (sstruct.disperseOnLoss) outPar << "disperse" << endl;
+				else outPar << "die" << endl;
+			}
+			outPar << "No. STAGES\t" << sstruct.nStages << endl;
+			outPar << "MAX. AGE\t" << sstruct.maxAge << endl;
+			// no sex-specific demographic parameters
+			if (dem.repType != 2) {
+				outPar << "MIN. AGES:" << endl;
+				for (int i = 0; i < sstruct.nStages; i++) {
+					outPar << "stage\t" << i << ":\t" << pSpecies->getMinAge(i, 0) << "\tyears" << endl;
+				}
+				outPar << "FECUNDITIES:" << endl;
+				for (int i = 0; i < sstruct.nStages; i++) {
+					outPar << "stage\t" << i << ":\t" << pSpecies->getFec(i, 0) << endl;
+				}
+				outPar << "DEVELOPMENT PROB.:" << endl;
+				for (int i = 0; i < sstruct.nStages; i++) {
+					outPar << "stage\t" << i << ":\t" << pSpecies->getDev(i, 0) << endl;
+				}
+				outPar << "SURVIVAL PROB.:" << endl;
+				for (int i = 0; i < sstruct.nStages; i++) {
+					outPar << "stage\t" << i << ":\t" << pSpecies->getSurv(i, 0) << endl;
+				}
+			}
+			// sex-specific demographic parameters
+			else {
+				outPar << "MIN. AGES:" << endl;
+				for (int i = 0; i < sstruct.nStages; i++) {
+					outPar << "males " << i << ":\t" << pSpecies->getMinAge(i, 1) << " years;\t";
+					outPar << "females " << i << ":\t" << pSpecies->getMinAge(i, 0) << " years" << endl;
+				}
+				outPar << "FECUNDITIES:" << endl;
+				for (int i = 0; i < sstruct.nStages; i++) {
+					outPar << "males   " << i << ":\t" << pSpecies->getFec(i, 1) << endl;
+					outPar << "females " << i << ":\t" << pSpecies->getFec(i, 0) << endl;
+				}
+				outPar << "DEVELOPMENT PROB.:" << endl;
+				for (int i = 0; i < sstruct.nStages; i++) {
+					outPar << "males   " << i << ":\t" << pSpecies->getDev(i, 1) << endl;
+					outPar << "females " << i << ":\t" << pSpecies->getDev(i, 0) << endl;
+				}
+				outPar << "SURVIVAL PROB.:" << endl;
+				for (int i = 0; i < sstruct.nStages; i++) {
+					outPar << "males   " << i << ":\t" << pSpecies->getSurv(i, 1) << endl;
+					outPar << "females " << i << ":\t" << pSpecies->getSurv(i, 0) << endl;
+				}
+			}
+
+			outPar << "SCHEDULING OF SURVIVAL: ";
+			switch (sstruct.survival) {
+			case 0:
+				outPar << "At reproduction" << endl;
+				break;
+			case 1:
+				outPar << "Between reproductive events" << endl;
+				break;
+			case 2:
+				outPar << "Annually" << endl;
+				break;
+			}
+
+			int mSize; // index for weights matrices
+			if (dem.repType == 2) mSize = sstruct.nStages * gMaxNbSexes;
+			else mSize = sstruct.nStages;
+
+			outPar << "DENSITY-DEPENDENCE IN FECUNDITY:\t";
+			if (sstruct.fecDens) {
+				outPar << "yes" << endl;
+				if (sstruct.fecStageDens) {
+					outPar << "STAGE'S WEIGHTS:" << endl;
+					for (int i = 0; i < mSize; i++) {
+						if (dem.repType == 2) {
+							outPar << "stage " << i / gMaxNbSexes << " ";
+							if (i % gMaxNbSexes == 0) outPar << "males  : \t";
+							else outPar << "females: \t";
+						}
+						else outPar << "stage " << i << ": \t";
+						for (int j = 0; j < mSize; j++) outPar << pSpecies->getDDwtFec(j, i) << "\t";
+						outPar << endl;
+					}
+				}
+				else outPar << "not stage-dependent" << endl;
+			}
+			else outPar << "no" << endl;
+
+			densDepParams ddparams = pSpecies->getDensDep();
+
+			outPar << "DENSITY-DEPENDENCE IN DEVELOPMENT:\t";
+			if (sstruct.devDens) {
+				outPar << "yes - coefficient: " << ddparams.devCoeff << endl;
+				if (sstruct.devStageDens) {
+					outPar << "STAGE'S WEIGHTS:" << endl;
+					for (int i = 0; i < mSize; i++) {
+						if (dem.repType == 2) {
+							outPar << "stage " << i / gMaxNbSexes << " ";
+							if (i % gMaxNbSexes == 0) outPar << "males  : \t";
+							else outPar << "females: \t";
+						}
+						else outPar << "stage " << i << ": \t";
+						for (int j = 0; j < mSize; j++) outPar << pSpecies->getDDwtDev(j, i) << "\t";
+						outPar << endl;
+					}
+				}
+				else outPar << "not stage-dependent" << endl;
+			}
+			else outPar << "no" << endl;
+
+			outPar << "DENSITY-DEPENDENCE IN SURVIVAL:\t\t";
+			if (sstruct.survDens) {
+				outPar << "yes - coefficient: " << ddparams.survCoeff << endl;
+				if (sstruct.survStageDens) {
+					outPar << "STAGE'S WEIGHTS:" << endl;
+					for (int i = 0; i < mSize; i++) {
+						if (dem.repType == 2) {
+							outPar << "stage " << i / gMaxNbSexes << " ";
+							if (i % gMaxNbSexes == 0) outPar << "males  : \t";
+							else outPar << "females: \t";
+						}
+						else outPar << "stage " << i << ": \t";
+						for (int j = 0; j < mSize; j++) outPar << pSpecies->getDDwtSurv(j, i) << "\t";
+						outPar << endl;
+					}
+				}
+				else outPar << "not stage-dependent" << endl;
+			}
+			else outPar << "no" << endl;
+		} // end of if (dem.stageStruct)
+		else { // not stage-strutured
+			outPar << "no" << endl;
+			outPar << "Rmax\t" << dem.lambda << endl;
+			outPar << "bc\t" << dem.bc << endl;
+		}
+
+		if (dem.stageStruct) {
+			outPar << endl << "HABITAT SPECIFIC 1/b:" << endl;
+		}
+		else {
+			outPar << endl << "CARRYING CAPACITIES:" << endl;
+		}
+		int nhab = ppLand.nHab;
+		if (ppLand.generated) {
+			if (ppGenLand.continuous) nhab = 1;
+		}
+		for (int i = 0; i < nhab; i++) {
+			k = pSpecies->getHabK(i) * (10000.0 / (float)(ppLand.resol * ppLand.resol));
+			if (!ppLand.generated && ppLand.rasterType == 0) { // imported & habitat codes
+				outPar << "Habitat " << pLandscape->getHabCode(i) << ": \t";
+			}
+			else {
+				outPar << "Habitat " << i << ": ";
+			}
+			if (dem.stageStruct) outPar << "1/b ";
+			else outPar << "K ";
+			outPar << k << endl;
+		}
+		
+		outPar << "REPRODUCTIVE SEASONS / YEAR\t" << dem.repSeasons << endl;
+		
+		emigTraits ep0, ep1;
+		string sexdept = "SEX-DEPENDENT:   ";
+		string stgdept = "STAGE-DEPENDENT: ";
+		string indvar = "INDIVIDUAL VARIABILITY: ";
+		string emigstage = "EMIGRATION STAGE: ";
+
+		outPar << endl << "DISPERSAL - EMIGRATION:\t";
+		if (emig.densDep) {
+			outPar << "density-dependent" << endl;
+			if (emig.sexDep) {
+				outPar << sexdept << "yes" << endl;
+				if (emig.stgDep) {
+					outPar << stgdept << "yes" << endl;
+					outPar << indvar << "no" << endl;
+					for (int i = 0; i < sstruct.nStages; i++) {
+						outPar << "stage " << i << ":" << endl;
+						ep0 = pSpecies->getSpEmigTraits(i, 0);
+						ep1 = pSpecies->getSpEmigTraits(i, 1);
+						outPar << "D0:    females " << ep0.d0 << "  males " << ep1.d0 << endl;
+						outPar << "alpha: females " << ep0.alpha << "  males " << ep1.alpha << endl;
+						outPar << "beta:  females " << ep0.beta << "  males " << ep1.beta << endl;
+					}
+				}
+				else { // !emig.stgDep
+					outPar << stgdept << "no" << endl;
+					ep0 = pSpecies->getSpEmigTraits(0, 0);
+					ep1 = pSpecies->getSpEmigTraits(0, 1);
+					outPar << "D0:    females " << ep0.d0 << "  males " << ep1.d0 << endl;
+					outPar << "alpha: females " << ep0.alpha << "  males " << ep1.alpha << endl;
+					outPar << "beta:  females " << ep0.beta << "  males " << ep1.beta << endl;
+				}
+			}
+			else { // !emig.sexDep
+				outPar << sexdept << "no" << endl;
+				if (emig.stgDep) {
+					outPar << stgdept << "yes" << endl;
+					outPar << indvar << "no" << endl;
+					for (int i = 0; i < sstruct.nStages; i++) {
+						ep0 = pSpecies->getSpEmigTraits(i, 0);
+						outPar << "stage " << i << ": \t" << "D0: " << ep0.d0;
+						outPar << " \talpha: " << ep0.alpha << " \tbeta: " << ep0.beta << endl;
+					}
+				}
+				else { // !emig.stgDep
+					outPar << stgdept << "no" << endl;
+					ep0 = pSpecies->getSpEmigTraits(0, 0);
+					outPar << "D0:    " << ep0.d0 << endl;
+					outPar << "alpha: " << ep0.alpha << endl;
+					outPar << "beta:  " << ep0.beta << endl;
+				}
+			}
+		}
+		else { // not density-dependent
+			string initprob = "INITIAL EMIGRATION PROB. ";
+			outPar << "density-independent" << endl;
+			if (!trfr.usesMovtProc) { // transfer by kernel
+				outPar << "USE FULL KERNEL TO DETERMINE EMIGRATION: ";
+				if (pSpecies->useFullKernel()) outPar << "yes";
+				else outPar << "no";
+				outPar << endl;
+			}
+
+			if (emig.sexDep) {
+				outPar << sexdept << "yes" << endl;
+				if (emig.stgDep) {
+					outPar << stgdept << "yes" << endl;
+					outPar << indvar << "no" << endl;
+					for (int i = 0; i < sstruct.nStages; i++) {
+						outPar << "stage " << i << ": \t" << "EMIGRATION PROB.: \tfemales "
+							<< pSpecies->getSpEmigD0(i, 0) << " \tmales " << pSpecies->getSpEmigD0(i, 1) << endl;
+					}
+				}
+				else { // !emig.stgDep
+					outPar << stgdept << "no" << endl;
+					outPar << "EMIGRATION PROB.: \tfemales " << pSpecies->getSpEmigD0(0, 0)
+						<< "\t males " << pSpecies->getSpEmigD0(0, 1) << endl;
+				}
+			}
+			else { // !emig.sexDep
+				outPar << sexdept << "no" << endl;
+				if (emig.stgDep) {
+					outPar << stgdept << "yes" << endl;
+					outPar << indvar << "no" << endl;
+					for (int i = 0; i < sstruct.nStages; i++) {
+						outPar << "stage " << i << ": \t" << "EMIGRATION PROB.: "
+							<< pSpecies->getSpEmigD0(i, 0) << endl;
+					}
+				}
+				else { // !emig.stgDep
+					outPar << stgdept << "no" << endl;
+					outPar << "EMIGRATION PROB.:\t" << pSpecies->getSpEmigD0(0, 0) << endl;
+				}
+			}
+		}
+
+		// Transfer
+
+		outPar << endl << "DISPERSAL - TRANSFER: \t";
+
+		if (trfr.usesMovtProc) {
+			bool straightenPath;
+			if (trfr.moveType == 1) { // SMS
+				trfrSMSTraits move = pSpecies->getSpSMSTraits();
+				straightenPath = move.straightenPath;
+				if (trfr.costMap) {
+					outPar << "SMS\tcosts from imported cost map" << endl;
+				}
+				else {
+					outPar << "SMS\tcosts:" << endl;
+					if (!ppLand.generated && ppLand.rasterType == 0) {
+						for (int i = 0; i < ppLand.nHab; i++)
+							outPar << "\thab. " << pLandscape->getHabCode(i) << "\t"
+							<< pSpecies->getHabCost(i) << endl;
+					}
+					else {
+						for (int i = 0; i < ppLand.nHab; i++)
+							outPar << "\thab. " << i << "\t"
+							<< pSpecies->getHabCost(i) << endl;
+					}
+				}
+				string pr = "PERCEPTUAL RANGE";
+				outPar << pr << ":        " << move.pr << endl;
+				outPar << pr << " METHOD: " << move.prMethod << endl;
+				if (!trfr.indVar) outPar << "DIRECTIONAL PERSISTENCE: " << move.dp << endl;
+				outPar << "MEMORY SIZE: " << move.memSize << endl;
+				outPar << "GOAL TYPE:   " << move.goalType << endl;
+				if (!trfr.indVar) {
+					if (move.goalType == 2) { //  dispersal bias
+						outPar << "GOAL BIAS:   " << move.gb << endl;
+						outPar << "ALPHA DB:    " << move.alphaDB << endl;
+						outPar << "BETA DB:     " << move.betaDB << endl;
+					}
+				}
+				outPar << indvar << "no " << endl;
+			}
+			else { // CRW
+				trfrCRWTraits move = pSpecies->getSpCRWTraits();
+				straightenPath = move.straightenPath;
+				outPar << "CRW" << endl;
+				string lgth = "STEP LENGTH (m) ";
+				string corr = "STEP CORRELATION";
+				outPar << lgth << ": " << move.stepLength << endl;
+				outPar << corr << ": " << move.rho << endl;
+			}
+			outPar << "STRAIGHTEN PATH AFTER DECISION NOT TO SETTLE: ";
+			if (straightenPath) outPar << "yes" << endl;
+			else outPar << "no" << endl;
+			outPar << "STEP MORTALITY:\t" << endl;
+			if (trfr.habMort)
+			{
+				outPar << "habitat dependent:\t" << endl;
+				if (!ppLand.generated && ppLand.rasterType == 0) {
+					for (int i = 0; i < ppLand.nHab; i++)
+						outPar << "\thab. " << pLandscape->getHabCode(i) << "\t"
+						<< pSpecies->getHabMort(i) << endl;
+				}
+				else {
+					for (int i = 0; i < ppLand.nHab; i++)
+						outPar << "\thab. " << i << "\t"
+						<< pSpecies->getHabMort(i) << endl;
+				}
+			}
+			else
+			{
+				trfrCRWTraits move = pSpecies->getSpCRWTraits();
+				outPar << "constant " << move.stepMort << endl;
+			}
+		} // end of movement process
+		else { // kernel
+			string meandist = "MEAN DISTANCE";
+			string probkern = "PROB. KERNEL I";
+			trfrKernelParams kern0, kern1;
+			outPar << "dispersal kernel" << endl << "TYPE: \t";
+			if (trfr.twinKern) outPar << "double ";
+			outPar << "negative exponential" << endl;
+
+			if (trfr.sexDep) {
+				outPar << sexdept << "yes" << endl;
+				if (trfr.stgDep) {
+					outPar << stgdept << "yes" << endl;
+					outPar << indvar << "no" << endl;
+					for (int i = 0; i < sstruct.nStages; i++) {
+						outPar << "stage " << i << ":" << endl;
+						kern0 = pSpecies->getSpKernTraits(i, 0);
+						kern1 = pSpecies->getSpKernTraits(i, 1);
+						outPar << meandist << " I: \tfemales " << kern0.meanDist1 << " \tmales " << kern1.meanDist1 << endl;
+						if (trfr.twinKern)
+						{
+							outPar << meandist << " II: \tfemales " << kern0.meanDist2 << " \tmales " << kern1.meanDist2 << endl;
+							outPar << probkern << ": \tfemales " << kern0.probKern1 << " \tmales " << kern1.probKern1 << endl;
+						}
+					}
+				}
+				else { // !trfr.stgDep
+					outPar << stgdept << "no" << endl;
+					kern0 = pSpecies->getSpKernTraits(0, 0);
+					kern1 = pSpecies->getSpKernTraits(0, 1);
+					outPar << meandist << " I: \tfemales " << kern0.meanDist1 << " \tmales " << kern1.meanDist1 << endl;
+					if (trfr.twinKern)
+					{
+						outPar << meandist << " II: \tfemales " << kern0.meanDist2 << " \tmales " << kern1.meanDist2 << endl;
+						outPar << probkern << ": \tfemales " << kern0.probKern1 << " \tmales " << kern1.probKern1 << endl;
+					}
+				}
+			}
+			else { // !trfr.sexDep
+				outPar << sexdept << "no" << endl;
+				if (trfr.stgDep) {
+					outPar << stgdept << "yes" << endl;
+					outPar << indvar << "no" << endl;
+					for (int i = 0; i < sstruct.nStages; i++) {
+						kern0 = pSpecies->getSpKernTraits(i, 0);
+						outPar << "stage " << i << ": \t" << meandist << " I: " << kern0.meanDist1;
+						if (trfr.twinKern)
+						{
+							outPar << " \t" << meandist << " II: " << kern0.meanDist2;
+							outPar << " \t" << probkern << ": " << kern0.probKern1;
+						}
+						outPar << endl;
+					}
+				}
+				else { // !trfr.stgDep
+					outPar << stgdept << "no" << endl;
+					kern0 = pSpecies->getSpKernTraits(0, 0);
+					outPar << meandist << " I: \t" << kern0.meanDist1 << endl;
+					if (trfr.twinKern)
+					{
+						outPar << meandist << " II: \t" << kern0.meanDist2 << endl;
+						outPar << probkern << ": \t" << kern0.probKern1 << endl;
+					}
+				}
+			}
+
+			outPar << "DISPERSAL MORTALITY:   ";
+			trfrMortParams mort = pSpecies->getMortParams();
+			if (trfr.distMort) {
+				outPar << "distance-dependent" << endl;
+				outPar << "SLOPE: " << mort.mortAlpha << " \tINFLECTION POINT: " << mort.mortBeta << endl;
+			}
+			else {
+				outPar << "constant" << endl << "MORTALITY PROBABILITY: " << mort.fixedMort << endl;
+			}
+		} // end of kernel transfer
+
+		// Settlement
+
+		outPar << endl << "DISPERSAL - SETTLEMENT:" << endl;
+
+		if (trfr.usesMovtProc) {
+			string plusmating = "+ mating requirements";
+
+			if (sett.sexDep) {
+				nsexes = 2;
+				outPar << sexdept << "yes" << endl;
+				if (sett.stgDep) {
+					nstages = sstruct.nStages;
+					outPar << stgdept << "yes" << endl;
+					for (int i = 0; i < nstages; i++) {
+						if (dem.stageStruct && nstages > 1) outPar << "stage " << i << ": " << endl;
+						for (int sx = 0; sx < nsexes; sx++) {
+							if (sx == 0) outPar << "FEMALES:" << endl;
+							else outPar << "MALES:" << endl;
+							ssteps = pSpecies->getSteps(i, sx);
+
+							outPar << "MIN. No. OF STEPS:\t " << ssteps.minSteps << endl;
+							outPar << "MAX. No. OF STEPS:\t ";
+							if (ssteps.maxSteps == 99999999) outPar << "not applied" << endl;
+							else outPar << ssteps.maxSteps << endl;
+						}
+					}
+				}
+				else { // !sett.stgDep
+					nstages = 1;
+					outPar << stgdept << "no" << endl;
+					for (int sx = 0; sx < nsexes; sx++) {
+						if (sx == 0) outPar << "FEMALES:" << endl;
+						else outPar << "MALES:" << endl;
+						ssteps = pSpecies->getSteps(0, sx);
+
+						outPar << "MIN. No. OF STEPS:\t " << ssteps.minSteps << endl;
+						outPar << "MAX. No. OF STEPS:\t ";
+						if (ssteps.maxSteps == 99999999) outPar << "not applied" << endl;
+						else outPar << ssteps.maxSteps << endl;
+					}
+				}
+			}
+			else { // !sett.sexDep
+				nsexes = 1;
+				outPar << sexdept << "no" << endl;
+				if (sett.stgDep) {
+					nstages = sstruct.nStages;
+					outPar << stgdept << "yes" << endl;
+					for (int i = 0; i < nstages; i++) {
+						if (dem.stageStruct && nstages > 1) outPar << "stage " << i << ": " << endl;
+						ssteps = pSpecies->getSteps(i, 0);
+
+						outPar << "MIN. No. OF STEPS:\t " << ssteps.minSteps << endl;
+						outPar << "MAX. No. OF STEPS:\t ";
+						if (ssteps.maxSteps == 99999999) outPar << "not applied" << endl;
+						else outPar << ssteps.maxSteps << endl;
+					}
+				}
+				else { // !sett.stgDep
+					nstages = 1;
+					outPar << stgdept << "no" << endl;
+					ssteps = pSpecies->getSteps(0, 0);
+
+					outPar << "MIN. No. OF STEPS:\t " << ssteps.minSteps << endl;
+					outPar << "MAX. No. OF STEPS:\t ";
+					if (ssteps.maxSteps == 99999999) outPar << "not applied" << endl;
+					else outPar << ssteps.maxSteps << endl;
+				}
+			}
+			for (int sx = 0; sx < nsexes; sx++) {
+				if (sett.sexDep) {
+					if (sx == 0) outPar << "FEMALES:" << endl;
+					else outPar << "MALES:" << endl;
+				}
+				outPar << "SETTLE IF: ";
+				for (int i = 0; i < nstages; i++) {
+					if (dem.stageStruct && nstages > 1) outPar << "stage " << i << ": " << endl;
+					outPar << "find a suitable cell/patch ";
+					srules = pSpecies->getSettRules(i, sx);
+					if (srules.densDep) {
+						settleDD = pSpecies->getSpSettTraits(i, sx);
+						outPar << "+ density dependence ";
+						if (srules.findMate) outPar << plusmating;
+						outPar << endl;
+						if (!sett.indVar) {
+							outPar << "S0: " << settleDD.s0 << "  AlphaS: " << settleDD.alpha
+								<< "  BetaS: " << settleDD.beta << endl;
+						}
+					}
+					else {
+						if (srules.findMate) outPar << plusmating << endl;
+						else outPar << "(not the natal one)" << endl;
+					}
+					if (dem.stageStruct) {
+						ssteps = pSpecies->getSteps(i, sx);
+						outPar << "MAX. No. OF STEPS/YEAR:\t ";
+						if (ssteps.maxStepsYr == 99999999) outPar << "not applied" << endl;
+						else outPar << ssteps.maxStepsYr << endl;
+					}
+				}
+			}
+		}
+		else { // kernel-based transfer
+			string notsuit = "IF THE ARRIVAL CELL/PATCH IS UNSUITABLE: ";
+			string rchoose = " randomly choose a suitable neighb. cell/patch or ";
+			string matereq = "MATING REQUIREMENTS: ";
+			if (sett.sexDep) {
+				nsexes = 2;
+				outPar << sexdept << "yes" << endl;
+				if (sett.stgDep) {
+					nstages = sstruct.nStages;
+					outPar << stgdept << "yes" << endl;
+					outPar << notsuit << endl;
+				}
+				else {
+					nstages = 1;
+					outPar << stgdept << "no" << endl;
+				}
+			}
+			else {
+				nsexes = 1;
+				outPar << sexdept << "no" << endl;
+				if (sett.stgDep) {
+					nstages = sstruct.nStages;
+					outPar << stgdept << "yes" << endl;
+					outPar << notsuit << endl;
+				}
+				else {
+					nstages = 1;
+					outPar << stgdept << "no" << endl;
+					outPar << notsuit;
+				}
+			}
+			for (int i = 0; i < nstages; i++) {
+				if (sett.stgDep) {
+					outPar << "stage " << i << ":" << endl;
+				}
+				for (int sx = 0; sx < nsexes; sx++) {
+					if (sett.sexDep) {
+						if (sx == 0) outPar << "FEMALES: ";
+						else outPar << "MALES:   ";
+						if (!sett.stgDep) outPar << notsuit;
+					}
+					srules = pSpecies->getSettRules(i, sx);
+					if (srules.goToNeighbourLocn) {
+						outPar << rchoose;
+						if (srules.wait) outPar << "wait" << endl;
+						else outPar << "die" << endl;
+					}
+					else {
+						if (srules.wait) outPar << "wait" << endl;
+						else outPar << "die" << endl;
+					}
+					outPar << matereq;
+					if (srules.findMate) outPar << "yes" << endl;
+					else outPar << "no" << endl;
+				}
+			}
+		}
+
+		// Genetics
+		outPar << endl << "GENETICS:" << endl;
+		set<TraitType> traitList = pSpecies->getTraitTypes();
+
+		if (pSpecies->isDiploid()) outPar << "DIPLOID" << endl; else outPar << "HAPLOID" << endl;
+		outPar << "Genome size: " << pSpecies->getGenomeSize() << endl;
+		outPar << "Chromosome breaks : ";
+
+		for (auto end : pSpecies->getChromosomeEnds())
+			outPar << end << " ";
+		outPar << endl;
+		outPar << "Recombination rate: " << pSpecies->getRecombinationRate() << endl;
+		outPar << "Traits modelled:  " << endl;
+		for (auto trait : traitList)
+			outPar << trait << endl;
+
+		outPar << endl << "OUTPUTS:" << endl;
+		outputParams out = pSpecies->getOutputParams();
+		if (pSpecies->doesOutputRange()) {
+		outPar << "Range - every " << out.outIntRange << " year";
+		if (out.outIntRange > 1) outPar << "s";
+			outPar << endl;
+		}
+		if (pSpecies->doesOutputOccup()) {
+			outPar << "Occupancy - every " << pSpecies->getOutOccInt() << " year";
+			if (pSpecies->getOutOccInt() > 1) outPar << "s";
+			outPar << endl;
+		}
+		if (pSpecies->doesOutputPop()) {
+			outPar << "Populations - every " << out.outIntPop << " year";
+			if (out.outIntPop > 1) outPar << "s";
+			if (out.outStartPop > 0) outPar << " starting year " << out.outStartPop;
+			outPar << endl;
+		}
+		if (pSpecies->doesOutputInds()) {
+			outPar << "Individuals - every " << out.outIntInd << " year";
+			if (out.outIntInd > 1) outPar << "s";
+			if (out.outStartInd > 0) outPar << " starting year " << out.outStartInd;
+			outPar << endl;
+		}
+		if (pSpecies->doesOutputWeirCockerham() 
+			|| pSpecies->doesOutputWeirHill()) {
+			outPar << "Neutral genetics - every " << out.outputGeneticInterval << " year";
+			if (out.outputGeneticInterval > 1) outPar << "s";
+			if (out.outputWeirHill) outPar << " outputting pairwise patch fst";
+			if (out.outputWeirCockerham) outPar << " outputting per locus fst ";
+			outPar << endl;
+		}
+
+		if (pSpecies->doesOutputTraitCell()) {
+			outPar << "Traits per ";
+			if (ppLand.usesPatches) outPar << "patch"; else outPar << "cell";
+			outPar << " - every " << out.outIntTraitCell << " year";
+			if (out.outIntTraitCell > 1) outPar << "s";
+			if (out.outStartTraitCell > 0) outPar << " starting year " << out.outStartTraitCell;
+			outPar << endl;
+		}
+		if (pSpecies->doesOutputTraitRows()) {
+			outPar << "Traits per row - every " << out.outIntTraitRow << " year";
+			if (out.outIntTraitRow > 1) outPar << "s";
+			if (out.outStartTraitRow > 0) outPar << " starting year " << out.outStartTraitRow;
+			outPar << endl;
+		}
+		if (pSpecies->doesOutputConnect()) {
+			outPar << "Connectivity matrix - every " << out.outIntConn << " year";
+			if (out.outIntConn > 1) outPar << "s";
+			if (out.outStartConn > 0) outPar << " starting year " << out.outStartConn;
+			outPar << endl;
+		}
+#if RS_RCPP
+		if (pSpecies->doesOutputPaths()) {
+			outPar << "SMS paths - every " << out.outIntPaths << " year";
+			if (out.outIntPaths > 1) outPar << "s";
+			if (out.outStartPaths > 0) outPar << " starting year " << out.outStartPaths;
+			outPar << endl;
+		}
+#endif
+
+		if (trfr.usesMovtProc && trfr.moveType == 1) {
+			outPar << "SMS HEAT MAPS: ";
+			if (out.saveVisits) outPar << "yes" << endl;
+			else outPar << "no" << endl;
+		}
 	}
-	outPar.close(); outPar.clear();
+	
+	outPar.close(); 
+	outPar.clear();
 }
 
 //---------------------------------------------------------------------------

@@ -6666,7 +6666,7 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 						<< " on landscape no. " << to_string(land_nr) << endl;
 
 					// for batch processing, include landscape number in parameter file name
-					OutParameters(pLandscape);
+					OutParameters(pLandscape, allSpecies);
 
 					RunModel(pLandscape, i, allSpecies);
 
