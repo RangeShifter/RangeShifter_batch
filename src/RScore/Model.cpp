@@ -42,7 +42,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
 	transferRules trfr = pSpecies->getTransferRules();
-	initParams init = paramsInit->getInit();
 	simParams sim = paramsSim->getSim();
 
 	bool anyUsesGradient = false, anySavesVisits = false;

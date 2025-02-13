@@ -229,25 +229,42 @@ private:
 // Initialisation (seeding) parameters
 
 struct initParams {
-	short seedType; 
-	short freeType; 
-	short spDistType; 
-	short initDens;
-	short initAge; 
-	int initFrzYr; 
-	bool restrictRange;
-	int restrictRows; 
-	int restrictFreq; 
-	int finalFrzYr;
-	int indsCell; 
-	float indsHa;
-	int minSeedX; 
-	int maxSeedX; 
-	int minSeedY; 
+	short seedType;		// initialisation type: 
+	//	0 = free, 
+	//	1 = from species distn,
+	//	2 = initial individuals, 
+	//	3 = from file
+	short freeType;		// free initialisation type:
+	//	0 = random (given no.)
+	//	1 = all suitable cells/patches
+	//	2 = manually selected cells/patches
+	short spDistType;	// species distribution initialisation type:
+	//	0 = all suitable cells/patches,
+	//	1 = some randomly chosen suitable cells/patches,
+	//	2 = all cells/patches within selected sp. dist. cells
+	short initDens;		// initialisation density:
+	//	0 = at carrying capacity
+	//	1 = at half carrying capacity
+	//	2 = specified no. per cell or density
+	short initAge;		// initial age distribution within each stage:
+	//	0 = lowest possible age
+	//	1 = randomised
+	//	2 = quasi-equilibrium
+	int initFrzYr;		 	// year until which initial range is frozen
+	bool restrictRange;		// restrict range to northern front
+	int restrictRows;		// no. of rows to retain behind front
+	int restrictFreq;		// frequency of range restriction
+	int finalFrzYr;		 	// year after which range is frozen
+	int indsCell;			 // initial individuals / cell (cell-based model)
+	float indsHa;			 // initial density (patch-based model)
+	int minSeedX;			 // min. and max. of area to initialise (cell numbers),
+	int maxSeedX;			 // only applied if seedType is 0
+	int minSeedY;
 	int maxSeedY;
-	int nSeedPatches; 
-	int nSpDistPatches;
-	string indsFile;
+	int nSeedPatches;	 	// no. of cells/patches to initialise
+	int nSpDistPatches;		// no. of species distribution cells to initialise
+	string indsFile;		// no. of species distribution cells to initialise
+	
 };
 
 struct initInd {
@@ -308,7 +325,6 @@ private:
 	int nSpDistPatches;		// no. of species distribution cells to initialise
 	string indsFile;		// no. of species distribution cells to initialise
 	float initProp[gMaxNbStages];	// initial stage proportions (structured population only)
-
 	vector <initInd> initinds;	// individuals to be initialised
 };
 

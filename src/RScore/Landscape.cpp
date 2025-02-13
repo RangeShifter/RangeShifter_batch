@@ -525,7 +525,12 @@ void Landscape::setLandLimits(int x0, int y0, int x1, int y1) {
 		&& x0 <= x1 && x1 < dimX
 		&& y0 >= 0 && y1 >= 0 
 		&& y0 <= y1 && y1 < dimY) {
-		minX = x0; maxX = x1; minY = y0; maxY = y1;
+
+		minX = x0; 
+		maxX = x1; 
+		minY = y0; 
+		maxY = y1;
+
 	}
 }
 

@@ -536,6 +536,9 @@ private:
 	float alphaS[gMaxNbStages][gMaxNbSexes];			// slope of the settlement reaction norm to density
 	float betaS[gMaxNbStages][gMaxNbSexes];				// inflection point of the settlement reaction norm to density
 
+	// Initialisation parameters
+	initParams init;
+
 	// Output controls
 	outputParams output;
 

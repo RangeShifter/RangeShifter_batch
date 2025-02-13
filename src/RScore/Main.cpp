@@ -57,7 +57,6 @@ void run_unit_tests() {
 // Global vars
 string landFile;
 paramStoch* paramsStoch;
-paramInit* paramsInit;
 paramSim* paramsSim;
 RSrandom* pRandom;
 Species* pSpecies;
@@ -77,7 +76,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	// Initialise globals
 	paramsStoch = new paramStoch;
 	paramsInit = new paramInit;
-	paramsSim = new paramSim;
 	pRandom = new RSrandom;
 
 	assert(0.1 > 0.0); // assert does run correctly
