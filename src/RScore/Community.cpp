@@ -30,8 +30,25 @@ Community::Community(Landscape* pLand, speciesMap_t allSpecies) {
 	pLandscape = pLand;
 	speciesMap = allSpecies;
 	indIx = 0;
-	for (const species_id& sp : views::keys(allSpecies)) {
+
+	// Populate species maps
+	for (auto& [sp, pSpecies] : allSpecies) {
 		neutralStatsMaps.emplace(sp, nullptr);
+		if (pSpecies->doesOutputInds()) outIndsOfs.emplace(sp, ofstream());
+		if (pSpecies->doesOutputPop()) outPopOfs.emplace(sp, ofstream());
+		if (pSpecies->doesOutputGeneValues()) ofsGenes.emplace(sp, ofstream());
+		if (pSpecies->doesOutputWeirHill()) outPairwiseFstOfs.emplace(sp, ofstream());
+		if (pSpecies->doesOutputWeirCockerham()) {
+			outWCFstatOfs.emplace(sp, ofstream());
+			outPerLocusFstat.emplace(sp, ofstream());
+		}
+		if (pSpecies->doesOutputOccup()) {
+			outOccupOfs.emplace(sp, ofstream());
+			outSuitOfs.emplace(sp, ofstream());
+		}
+		//map<species_id, ofstream> outTraitsOfs;
+		//map<species_id, ofstream> outRangeOfs;
+		//map<species_id, ofstream> outTraitsRows;
 	}
 }
 
@@ -376,7 +393,7 @@ void Community::dispersal(short landIx, short nextseason)
 		for (auto& [speciesID, mtxPop] : matrixPops) {
 			ndispersers = mtxPop->transfer(pLandscape, landIx, nextseason);
 		}
-		completeDispersal(pLandscape, sim.outConnect);
+		completeDispersal(pLandscape);
 
 	} while (ndispersers > 0);
 }
@@ -384,7 +401,7 @@ void Community::dispersal(short landIx, short nextseason)
 // Remove emigrants from patch 0 (matrix) and transfer to the population
 // in which their destination co-ordinates fall
 // This function is executed for matrix patch populations only
-void Community::completeDispersal(Landscape* pLandscape, bool connect)
+void Community::completeDispersal(Landscape* pLandscape)
 {
 	Population* pPop;
 	Patch* pPrevPatch;
@@ -413,7 +430,7 @@ void Community::completeDispersal(Landscape* pLandscape, bool connect)
 
 				pPop->recruit(settler.pInd);
 
-				if (connect) { // increment connectivity totals
+				if (mtxPop->getSpecies()->doesOutputConnect()) { // increment connectivity totals
 					int newpatch = pNewPatch->getSeqNum();
 					pPrevCell = settler.pInd->getLocn(0); // previous cell
 					Patch* pPatch = pPrevCell->getPatch(sp);
@@ -621,7 +638,6 @@ bool Community::outPopHeaders(Species* pSpecies) {
 		+ "Batch" + to_string(sim.batchNum) + "_"
 		+ "Sim" + to_string(sim.simulation) + "_Land" + to_string(land.landNum) + "_Pop.txt";
 
-	outPopOfs.emplace(pSpecies->getID(), ofstream());
 	ofstream& popOfs = outPopOfs.at(pSpecies->getID());
 
 	popOfs.open(name.c_str());
@@ -707,7 +723,6 @@ void Community::outIndsHeaders(species_id sp, int rep, int landNr, bool usesPatc
 		"_Rep" + to_string(rep) +
 		"_Species" + to_string(sp) +
 		"_Inds.txt";
-
 
 	ofstream& indsOfs = outIndsOfs.at(sp);
 
@@ -1825,15 +1840,15 @@ Rcpp::IntegerMatrix Community::addYearToPopList(int rep, int yr) {  // TODO: def
 }
 #endif
 
-bool Community::closeOutGenesOfs() {
-	if (ofsGenes.is_open()) {
-		ofsGenes.close();
-		ofsGenes.clear();
+bool Community::closeOutGenesOfs(species_id sp) {
+	if (ofsGenes.at(sp).is_open()) {
+		ofsGenes.at(sp).close();
+		ofsGenes.at(sp).clear();
 	}
 	return true;
 }
 
-bool Community::openOutGenesFile(const bool& isDiploid, const int landNr, const int rep)
+bool Community::openOutGenesFile(species_id sp, const bool& isDiploid, const int landNr, const int rep)
 {
 	string name;
 	simParams sim = paramsSim->getSim();
@@ -1852,18 +1867,18 @@ bool Community::openOutGenesFile(const bool& isDiploid, const int landNr, const 
 			+ "_geneValues.txt";
 	}
 
-	ofsGenes.open(name.c_str());
-	ofsGenes << "Year\tGeneration\tIndID\ttraitType\tlocusPosition"
+	ofsGenes.at(sp).open(name.c_str());
+	ofsGenes.at(sp) << "Year\tGeneration\tIndID\ttraitType\tlocusPosition"
 			 << "\talleleValueA\tdomCoefA";
-	if (isDiploid) ofsGenes << "\talleleValueB\tdomCoefB";
-	ofsGenes << endl;
+	if (isDiploid) ofsGenes.at(sp) << "\talleleValueB\tdomCoefB";
+	ofsGenes.at(sp) << endl;
 
-	return ofsGenes.is_open();
+	return ofsGenes.at(sp).is_open();
 }
 
 void Community::outputGeneValues(species_id sp, const int& year, const int& gen) {
 
-	if (!ofsGenes.is_open())
+	if (!ofsGenes.at(sp).is_open())
 		throw runtime_error("Could not open output gene values file.");
 
 	const set<int> patchList = speciesMap.at(sp)->getSamplePatches();
@@ -1874,7 +1889,7 @@ void Community::outputGeneValues(species_id sp, const int& year, const int& gen)
 		}
 		const auto pPop = patch->getPop();
 		if (pPop != nullptr) {
-			pPop->outputGeneValues(ofsGenes, year, gen);
+			pPop->outputGeneValues(ofsGenes.at(sp), year, gen);
 		}
 	}
 }
@@ -1906,13 +1921,14 @@ void Community::sampleIndividuals(species_id sp) {
 // Open population level Fstat output file
 // ----------------------------------------------------------------------------------------
 
-bool Community::closeNeutralOutputOfs() {
-	if (outWCFstatOfs.is_open()) outWCFstatOfs.close();
-	outWCFstatOfs.clear();
+bool Community::closeNeutralOutputOfs(species_id sp) {
+	if (outWCFstatOfs.at(sp).is_open()) 
+		outWCFstatOfs.at(sp).close();
+	outWCFstatOfs.at(sp).clear();
 	return true;
 }
 
-bool Community::openNeutralOutputFile(int landNr)
+bool Community::openNeutralOutputFile(species_id sp, int landNr)
 {
 	string name;
 	simParams sim = paramsSim->getSim();
@@ -1927,11 +1943,11 @@ bool Community::openNeutralOutputFile(int landNr)
 	else {
 		name = paramsSim->getDir(2) + "Sim" + to_string(sim.simulation) + "_neutralGenetics.txt";
 	}
-	outWCFstatOfs.open(name.c_str());
-	outWCFstatOfs << "Rep\tYear\tRepSeason\tnExtantPatches\tnIndividuals\tFstWC\tFisWC\tFitWC\tFstWH\tmeanAllelePerLocus\tmeanAllelePerLocusPatches\tmeanFixedLoci\tmeanFixedLociPatches\tmeanObHeterozygosity";
-	outWCFstatOfs << endl;
+	outWCFstatOfs.at(sp).open(name.c_str());
+	outWCFstatOfs.at(sp) << "Rep\tYear\tRepSeason\tnExtantPatches\tnIndividuals\tFstWC\tFisWC\tFitWC\tFstWH\tmeanAllelePerLocus\tmeanAllelePerLocusPatches\tmeanFixedLoci\tmeanFixedLociPatches\tmeanObHeterozygosity";
+	outWCFstatOfs.at(sp) << endl;
 
-	return outWCFstatOfs.is_open();
+	return outWCFstatOfs.at(sp).is_open();
 }
 
 // ----------------------------------------------------------------------------------------
@@ -1939,14 +1955,16 @@ bool Community::openNeutralOutputFile(int landNr)
 // in general population neutral genetics output file
 // ----------------------------------------------------------------------------------------
 
-bool Community::closePerLocusFstFile() {
-	if (outPerLocusFstat.is_open()) outPerLocusFstat.close();
-	outPerLocusFstat.clear();
+bool Community::closePerLocusFstFile(species_id sp) {
+	if (outPerLocusFstat.at(sp).is_open()) 
+		outPerLocusFstat.at(sp).close();
+	outPerLocusFstat.at(sp).clear();
 	return true;
 }
 
 bool Community::openPerLocusFstFile(Species* pSpecies, Landscape* pLandscape, const int landNr, const int rep)
 {
+	species_id sp = pSpecies->getID();
 	set<int> patchList = pSpecies->getSamplePatches();
 	if (patchList.size() == 0) {
 		// list of patches is not known yet and may change every generation,
@@ -1968,28 +1986,30 @@ bool Community::openPerLocusFstFile(Species* pSpecies, Landscape* pLandscape, co
 		+ "_Species" + to_string(pSpecies->getID()) +
 		+"_perLocusNeutralGenetics.txt";
 
-	outPerLocusFstat.open(name.c_str());
-	outPerLocusFstat << "Year\tRepSeason\tLocus\tFst\tFis\tFit\tHet";
+	outPerLocusFstat.at(sp).open(name.c_str());
+	outPerLocusFstat.at(sp) << "Year\tRepSeason\tLocus\tFst\tFis\tFit\tHet";
 	for (int patchId : patchList) {
-		outPerLocusFstat << "\tpatch_" + to_string(patchId) + "_Het";
+		outPerLocusFstat.at(sp) << "\tpatch_" + to_string(patchId) + "_Het";
 	}
-	outPerLocusFstat << endl;
+	outPerLocusFstat.at(sp) << endl;
 
-	return outPerLocusFstat.is_open();
+	return outPerLocusFstat.at(sp).is_open();
 }
 
 // ----------------------------------------------------------------------------------------
 // open pairwise fst file
 // ----------------------------------------------------------------------------------------
 
-bool Community::closePairwiseFstFile() {
-	if (outPairwiseFstOfs.is_open()) outPairwiseFstOfs.close();
-	outPairwiseFstOfs.clear();
+bool Community::closePairwiseFstFile(species_id sp) {
+	if (outPairwiseFstOfs.at(sp).is_open())
+		outPairwiseFstOfs.at(sp).close();
+	outPairwiseFstOfs.at(sp).clear();
 	return true;
 }
 
 bool Community::openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, const int landNr, const int rep) {
 
+	species_id sp = pSpecies->getID();
 	const set<int> patchList = pSpecies->getSamplePatches();
 	string name;
 	simParams sim = paramsSim->getSim();
@@ -2005,11 +2025,11 @@ bool Community::openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, co
 	else {
 		name = paramsSim->getDir(2) + "Sim" + to_string(sim.simulation) + "_Rep" + to_string(rep) + "_pairwisePatchNeutralGenetics.txt";
 	}
-	outPairwiseFstOfs.open(name.c_str());
-	outPairwiseFstOfs << "Year\tRepSeason\tpatchA\tpatchB\tFst";
-	outPairwiseFstOfs << endl;
+	outPairwiseFstOfs.at(sp).open(name.c_str());
+	outPairwiseFstOfs.at(sp) << "Year\tRepSeason\tpatchA\tpatchB\tFst";
+	outPairwiseFstOfs.at(sp) << endl;
 
-	return outPairwiseFstOfs.is_open();
+	return outPairwiseFstOfs.at(sp).is_open();
 }
 
 // ----------------------------------------------------------------------------------------
@@ -2018,27 +2038,27 @@ bool Community::openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, co
 
 void Community::writeNeutralOutputFile(const species_id& sp, int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill) {
 
-	outWCFstatOfs << rep << "\t" << yr << "\t" << gen << "\t";
-	outWCFstatOfs << neutralStatsMaps.at(sp)->getNbPopulatedSampledPatches()
+	outWCFstatOfs.at(sp) << rep << "\t" << yr << "\t" << gen << "\t";
+	outWCFstatOfs.at(sp) << neutralStatsMaps.at(sp)->getNbPopulatedSampledPatches()
 		<< "\t" << neutralStatsMaps.at(sp)->getTotalNbSampledInds() << "\t";
 
 	if (outWeirCockerham) {
-		outWCFstatOfs << neutralStatsMaps.at(sp)->getFstWC() << "\t"
+		outWCFstatOfs.at(sp) << neutralStatsMaps.at(sp)->getFstWC() << "\t"
 			<< neutralStatsMaps.at(sp)->getFisWC() << "\t"
 			<< neutralStatsMaps.at(sp)->getFitWC() << "\t";
 	}
-	else outWCFstatOfs << "N/A" << "\t" << "N/A" << "\t" << "N/A" << "\t";
+	else outWCFstatOfs.at(sp) << "N/A" << "\t" << "N/A" << "\t" << "N/A" << "\t";
 
-	if (outWeirHill) outWCFstatOfs << neutralStatsMaps.at(sp)->getWeightedFst() << "\t";
-	else outWCFstatOfs << "N/A" << "\t";
+	if (outWeirHill) outWCFstatOfs.at(sp) << neutralStatsMaps.at(sp)->getWeightedFst() << "\t";
+	else outWCFstatOfs.at(sp) << "N/A" << "\t";
 
-	outWCFstatOfs << neutralStatsMaps.at(sp)->getMeanNbAllPerLocus() << "\t"
+	outWCFstatOfs.at(sp) << neutralStatsMaps.at(sp)->getMeanNbAllPerLocus() << "\t"
 		<< neutralStatsMaps.at(sp)->getMeanNbAllPerLocusPerPatch() << "\t"
 		<< neutralStatsMaps.at(sp)->getTotalFixdAlleles() << "\t"
 		<< neutralStatsMaps.at(sp)->getMeanFixdAllelesPerPatch() << "\t"
 		<< neutralStatsMaps.at(sp)->getHo();
 
-	outWCFstatOfs << endl;
+	outWCFstatOfs.at(sp) << endl;
 }
 
 // ----------------------------------------------------------------------------------------
@@ -2052,10 +2072,10 @@ void Community::writePerLocusFstatFile(Species* pSpecies, const int yr, const in
 	int thisLocus = 0;
 	for (int position : positions) {
 
-		outPerLocusFstat << yr << "\t"
+		outPerLocusFstat.at(sp) << yr << "\t"
 			<< gen << "\t"
 			<< position << "\t";
-		outPerLocusFstat << neutralStatsMaps.at(sp)->getPerLocusFst(thisLocus) << "\t"
+		outPerLocusFstat.at(sp) << neutralStatsMaps.at(sp)->getPerLocusFst(thisLocus) << "\t"
 			<< neutralStatsMaps.at(sp)->getPerLocusFis(thisLocus) << "\t"
 			<< neutralStatsMaps.at(sp)->getPerLocusFit(thisLocus) << "\t"
 			<< neutralStatsMaps.at(sp)->getPerLocusHo(thisLocus);
@@ -2068,22 +2088,22 @@ void Community::writePerLocusFstatFile(Species* pSpecies, const int yr, const in
 			if (pPop != nullptr) {
 				popSize = pPop->sampleSize();
 				if (popSize == 0) {
-					outPerLocusFstat << "\t" << "N/A";
+					outPerLocusFstat.at(sp) << "\t" << "N/A";
 				}
 				else {
 					for (int a = 0; a < nAlleles; ++a) {
 						het += static_cast<int>(pPop->getHeteroTally(thisLocus, a));
 					}
-					outPerLocusFstat << "\t"
+					outPerLocusFstat.at(sp) << "\t"
 						<< het / (2.0 * popSize);
 				}
 			}
 			else {
-				outPerLocusFstat << "\t" << "N/A";
+				outPerLocusFstat.at(sp) << "\t" << "N/A";
 			}
 		}
 		++thisLocus;
-		outPerLocusFstat << endl;
+		outPerLocusFstat.at(sp) << endl;
 	}
 }
 
@@ -2097,8 +2117,8 @@ void Community::writePairwiseFstFile(Species* pSpecies, const int yr, const int 
 	// within patch fst (diagonal of matrix)
 	int i = 0;
 	for (int patchId : patchList) {
-		outPairwiseFstOfs << yr << "\t" << gen << "\t";
-		outPairwiseFstOfs << patchId << "\t" << patchId << "\t" 
+		outPairwiseFstOfs.at(sp) << yr << "\t" << gen << "\t";
+		outPairwiseFstOfs.at(sp) << patchId << "\t" << patchId << "\t"
 			<< neutralStatsMaps.at(sp)->getPairwiseFst(i, i)
 			<< endl;
 		++i;
@@ -2109,8 +2129,8 @@ void Community::writePairwiseFstFile(Species* pSpecies, const int yr, const int 
 	for (int patchIdA : patchList | std::views::take(patchList.size() - 1)) {
 		int j = i + 1;
 		for (int patchIdB : patchList | std::views::drop(j)) {
-			outPairwiseFstOfs << yr << "\t" << gen << "\t";
-			outPairwiseFstOfs << patchIdA << "\t" << patchIdB << "\t" 
+			outPairwiseFstOfs.at(sp) << yr << "\t" << gen << "\t";
+			outPairwiseFstOfs.at(sp) << patchIdA << "\t" << patchIdB << "\t"
 				<< neutralStatsMaps.at(sp)->getPairwiseFst(i, j)
 				<< endl;
 			++j;
@@ -2186,7 +2206,7 @@ bool Community::openOutputFiles(const simParams& sim, const int landNum) {
 				filesOK = false;
 
 		if (pSpecies->doesOutputPop())
-			if (!outPopHeaders(sp)
+			if (!outPopHeaders(pSpecies))
 				filesOK = false;
 
 		if (sim.outTraitsCells)
@@ -2197,40 +2217,47 @@ bool Community::openOutputFiles(const simParams& sim, const int landNum) {
 			if (!outTraitsRowsHeaders(landNum)) {
 				filesOK = false;
 			}
-		if (sim.outputWeirCockerham || sim.outputWeirHill) { // open neutral genetics file
-			if (!openNeutralOutputFile(landNum)) {
+		if (pSpecies->doesOutputWeirCockerham()
+			|| pSpecies->doesOutputWeirHill()) { // open neutral genetics file
+			if (!openNeutralOutputFile(sp, landNum)) {
 				filesOK = false;
 			}
 		}
 	}
 
 	if (!filesOK) {
-		closeGlobalOutputFiles(sim);
+		closeGlobalOutputFiles();
 	}
 
 	return filesOK;
 }
 
-void Community::closeGlobalOutputFiles(const simParams& sim) {
+void Community::closeGlobalOutputFiles() {
 
 	if (sim.outRange) closeRangeOfs();
 	if (sim.outPop) closePopOfs();
 	if (sim.outTraitsCells) closeOutTraitOfs();
 	if (sim.outTraitsRows) closeTraitRows();
-	if (sim.outputWeirCockerham || sim.outputWeirHill) closeNeutralOutputOfs();
 
 	for (auto& [sp, pSpecies] : speciesMap) {
+
+		if (pSpecies->doesOutputWeirCockerham() 
+			|| pSpecies->doesOutputWeirCockerham()) 
+			closeNeutralOutputOfs(sp);
+
 		if (sim.reps > 1 && pSpecies->doesOutputOccup())
 			closeOccupancyOfs(sp);
 	}
 }
 
-void Community::closeYearlyOutputFiles(const simParams& sim) {
-
-	if (sim.outInds) closeOutIndsOfs();
-	if (sim.outputGeneValues) closeOutGenesOfs();
-	if (sim.outputWeirCockerham) closePerLocusFstFile();
-	if (sim.outputWeirHill) closePairwiseFstFile();
+void Community::closeYearlyOutputFiles() {
+	
+	for (auto& [sp, pSpecies] : speciesMap) {
+		if (pSpecies->doesOutputInds()) closeOutIndsOfs(sp);
+		if (pSpecies->doesOutputGeneValues()) closeOutGenesOfs(sp);
+		if (pSpecies->doesOutputWeirCockerham()) closePerLocusFstFile(sp);
+		if (pSpecies->doesOutputWeirHill()) closePairwiseFstFile(sp);
+	}
 }
 
 //---------------------------------------------------------------------------

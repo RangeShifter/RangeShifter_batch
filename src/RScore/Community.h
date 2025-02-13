@@ -94,7 +94,7 @@ public:
 
 	// Remove emigrants from patch 0 (matrix) and transfer to the Population in which
 	// their destination co-ordinates fall (executed for the matrix patch only)
-	void completeDispersal(Landscape* pLandscape, bool connect);
+	void completeDispersal(Landscape* pLandscape);
 
 	void drawSurvivalDevlpt(
 		bool resolveJuvs,
@@ -112,8 +112,8 @@ public:
 	void updateOccupancy(int year, int replicate);
 
 	bool openOutputFiles(const simParams& sim, const int landNum); // open all output files, close all if any fails
-	void closeGlobalOutputFiles(const simParams& sim);
-	void closeYearlyOutputFiles(const simParams& sim);
+	void closeGlobalOutputFiles();
+	void closeYearlyOutputFiles();
 
 	// Open occupancy file, write header record and set up occupancy array
 	bool outOccupancyHeaders(Species* pSpecies);
@@ -167,22 +167,22 @@ public:
 	// sample individuals for genetics (or could be used for anything)
 	void sampleIndividuals(species_id sp);
 
-	bool openOutGenesFile(const bool& isDiploid, const int landNr, const int rep);
+	bool openOutGenesFile(species_id sp, const bool& isDiploid, const int landNr, const int rep);
 	void outputGeneValues(species_id sp, const int& year, const int& gen);
-	bool closeOutGenesOfs();
+	bool closeOutGenesOfs(species_id sp);
 
 	// control neutral stat output
 	void outNeutralGenetics(species_id sp, int rep, int yr, int gen);
-	bool openNeutralOutputFile(const int landNr);
+	bool openNeutralOutputFile(species_id sp, const int landNr);
 	void writeNeutralOutputFile(const species_id& sp, int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill);
-	bool closeNeutralOutputOfs();
+	bool closeNeutralOutputOfs(species_id sp);
 
 	bool openPerLocusFstFile(Species* pSpecies, Landscape* pLandscape, const int landNr, const int rep);
-	bool closePerLocusFstFile();
+	bool closePerLocusFstFile(species_id sp);
 	void writePerLocusFstatFile(Species* pSpecies, const int yr, const int gen, const  int nAlleles, const int nLoci, set<int> const& patchList);
 
 	bool openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, const int landNr, const int rep);
-	bool closePairwiseFstFile();
+	bool closePairwiseFstFile(species_id sp);
 	void writePairwiseFstFile(Species* pSpecies, const int yr, const int gen, const  int nAlleles, const int nLoci, set<int> const& patchList);
 
 private:

@@ -138,7 +138,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				pComm->outIndsHeaders(sp, rep, ppLand.landNum, ppLand.usesPatches);
 
 			if (pSpecies->doesOutputGeneValues()) {
-				bool geneOutFileHasOpened = pComm->openOutGenesFile(pSpecies->isDiploid(), ppLand.landNum, rep);
+				bool geneOutFileHasOpened = pComm->openOutGenesFile(sp, pSpecies->isDiploid(), ppLand.landNum, rep);
 				if (!geneOutFileHasOpened) throw logic_error("Output gene value file could not be initialised.");
 			}
 
@@ -409,7 +409,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			}
 		}
 		
-		pComm->closeYearlyOutputFiles(sim);
+		pComm->closeYearlyOutputFiles();
 		
 		for (auto& [sp, pSpecies] : allSpecies) {
 			if (pSpecies->savesVisits())
@@ -442,8 +442,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 	}
 
-	pComm->closeGlobalOutputFiles(sim);
-	pComm->closeYearlyOutputFiles(sim); // might still be open if the simulation was stopped by the user
+	pComm->closeGlobalOutputFiles();
+	pComm->closeYearlyOutputFiles(); // might still be open if the simulation was stopped by the user
 
 	delete pComm; 
 	pComm = nullptr;
