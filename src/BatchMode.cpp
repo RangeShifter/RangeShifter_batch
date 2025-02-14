@@ -6326,7 +6326,6 @@ int ReadInitialisation(Landscape* pLandscape)
 	landParams paramsLand = pLandscape->getLandParams();
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
-	initParams init = paramsInit->getInit();
 	string inputDir = paramsSim->getDir(1);
 
 	int simNb, maxcells;

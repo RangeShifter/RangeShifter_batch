@@ -67,7 +67,7 @@ Community::~Community() {
 	}
 }
 
-void Community::initialise(speciesMap_t& allSpecies, int year) {
+void Community::initialise(Species* pSpecies, int year) {
 	int npatches, ndistcells, spratio, patchnum, candidatePatch = 0;
 	locn distloc;
 	patchData pch;
@@ -77,80 +77,128 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 	Patch* pPatch;
 	Cell* pCell;
 	landParams ppLand = pLandscape->getLandParams();
-	initParams init = paramsInit->getInit();
+	initParams init = pSpecies->getInitParams();
+	species_id sp = pSpecies->getID();
 
 	spratio = ppLand.spResol / ppLand.resol;
 
 	// Initialise (empty) matrix populations
-	for (const auto& [sp, pSpecies] : allSpecies) {
-		matrixPops.emplace(
-			sp, 
-			new Population(pSpecies, pLandscape->findPatch(sp, 0), 0, ppLand.resol)
-		);
+	matrixPops.emplace(sp,
+		new Population(pSpecies, pLandscape->findPatch(sp, 0), 0, ppLand.resol)
+	);
 
-		switch (init.seedType) {
+	switch (init.seedType) {
 
-		case 0:	// free initialisation
+	case 0:	// free initialisation
 
-			switch (init.freeType) {
+		switch (init.freeType) {
 
-			case 0:	// random
-				// determine no. of patches / cells within the specified initialisation limits
-				// and record their corresponding sub-communities in a list
-				// parallel list records which have been selected
-				npatches = pLandscape->patchCount(sp);
-				limits.xMin = init.minSeedX;
-				limits.xMax = init.maxSeedX;
-				limits.yMin = init.minSeedY;
-				limits.yMax = init.maxSeedY;
+		case 0:	// random
+			// determine no. of patches / cells within the specified initialisation limits
+			// and record their corresponding sub-communities in a list
+			// parallel list records which have been selected
+			npatches = pLandscape->patchCount(sp);
+			limits.xMin = init.minSeedX;
+			limits.xMax = init.maxSeedX;
+			limits.yMin = init.minSeedY;
+			limits.yMax = init.maxSeedY;
 
-				for (int i = 0; i < npatches; i++) {
-					pch = pLandscape->getPatchData(sp, i);
+			for (int i = 0; i < npatches; i++) {
+				pch = pLandscape->getPatchData(sp, i);
+				patchnum = pch.pPatch->getPatchNum();
+				if (pch.pPatch->withinLimits(limits)) {
+					if (ppLand.usesPatches) {
+						if (patchnum != 0) {
+							suitablePatches.insert(patchnum);
+						}
+					}
+					else { // cell-based model - is cell(patch) suitable
+						if (pch.pPatch->isSuitable()) {
+							suitablePatches.insert(patchnum);
+						}
+					}
+				}
+			}
+
+			// select specified no. of patches/cells at random
+			sample(
+				suitablePatches.begin(),
+				suitablePatches.end(),
+				inserter(selectedPatches, selectedPatches.begin()),
+				init.nSeedPatches,
+				pRandom->getRNG()
+			);
+			break;
+
+		case 1:	// all suitable patches/cells
+			npatches = pLandscape->patchCount(sp);
+			limits.xMin = init.minSeedX;
+			limits.xMax = init.maxSeedX;
+			limits.yMin = init.minSeedY;
+			limits.yMax = init.maxSeedY;
+
+			for (int i = 0; i < npatches; i++) {
+				pch = pLandscape->getPatchData(sp, i);
+				if (pch.pPatch->withinLimits(limits)) {
 					patchnum = pch.pPatch->getPatchNum();
-					if (pch.pPatch->withinLimits(limits)) {
-						if (ppLand.usesPatches) {
-							if (patchnum != 0) {
-								suitablePatches.insert(patchnum);
-							}
-						}
-						else { // cell-based model - is cell(patch) suitable
-							if (pch.pPatch->isSuitable()) {
-								suitablePatches.insert(patchnum);
+					if (!pch.pPatch->isMatrix() && pch.pPatch->isSuitable()) {
+						selectedPatches.insert(patchnum);
+					}
+				}
+			}
+
+			break;
+
+		} // end of switch (init.freeType)
+
+		for (auto pchNum : selectedPatches) {
+			Patch* pPatch = pLandscape->findPatch(sp, pchNum);
+			// Determine size of initial population
+			int nInds = pPatch->getInitNbInds(ppLand.usesPatches, ppLand.resol);
+			if (nInds > 0) {
+				Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
+				allPopns.at(sp).push_back(pPop); // add new population to community list
+			}
+		}
+		break;
+
+	case 1:	// from species distribution
+		if (ppLand.useSpDist) {
+			// initialise from loaded species distribution
+			switch (init.spDistType) {
+			case 0: // all presence cells
+				pLandscape->setDistribution(pSpecies, 0); // activate all patches
+				break;
+			case 1: // some randomly selected presence cells
+				pLandscape->setDistribution(pSpecies, init.nSpDistPatches); // activate random patches
+				break;
+			case 2: // manually selected presence cells
+				// cells have already been identified - no further action here
+				break;
+			}
+
+			ndistcells = pLandscape->distCellCount(0);
+			for (int i = 0; i < ndistcells; i++) {
+				distloc = pLandscape->getSelectedDistnCell(0, i);
+				if (distloc.x >= 0) { // distribution cell is selected
+					// process each landscape cell within the distribution cell
+
+					for (int x = 0; x < spratio; x++) {
+						for (int y = 0; y < spratio; y++) {
+							pCell = pLandscape->findCell(distloc.x * spratio + x, distloc.y * spratio + y);
+							if (pCell != nullptr) { // not a no-data cell
+								pPatch = pCell->getPatch(sp);
+								if (pPatch != nullptr) {
+									if (!pPatch->isMatrix()) { // not the matrix patch
+										selectedPatches.insert(pPatch->getPatchNum());
+									}
+								}
 							}
 						}
 					}
+
 				}
-
-				// select specified no. of patches/cells at random
-				sample(
-					suitablePatches.begin(),
-					suitablePatches.end(),
-					inserter(selectedPatches, selectedPatches.begin()),
-					init.nSeedPatches,
-					pRandom->getRNG()
-				);
-				break;
-
-			case 1:	// all suitable patches/cells
-				npatches = pLandscape->patchCount(sp);
-				limits.xMin = init.minSeedX;
-				limits.xMax = init.maxSeedX;
-				limits.yMin = init.minSeedY;
-				limits.yMax = init.maxSeedY;
-
-				for (int i = 0; i < npatches; i++) {
-					pch = pLandscape->getPatchData(sp, i);
-					if (pch.pPatch->withinLimits(limits)) {
-						patchnum = pch.pPatch->getPatchNum();
-						if (!pch.pPatch->isMatrix() && pch.pPatch->isSuitable()) {
-							selectedPatches.insert(patchnum);
-						}
-					}
-				}
-
-				break;
-
-			} // end of switch (init.freeType)
+			}
 
 			for (auto pchNum : selectedPatches) {
 				Patch* pPatch = pLandscape->findPatch(sp, pchNum);
@@ -161,107 +209,57 @@ void Community::initialise(speciesMap_t& allSpecies, int year) {
 					allPopns.at(pSpecies->getID()).push_back(pPop); // add new population to community list
 				}
 			}
-			break;
+		}
+		else { // doesn't use species distribution
+			// WHAT HAPPENS IF INITIAL DISTRIBUTION IS NOT LOADED ??? ....
+			// should not occur - take no action - no initialisation will occur
+		}
+		break;
 
-		case 1:	// from species distribution
-			if (ppLand.useSpDist) {
-				// initialise from loaded species distribution
-				switch (init.spDistType) {
-				case 0: // all presence cells
-					pLandscape->setDistribution(pSpecies, 0); // activate all patches
-					break;
-				case 1: // some randomly selected presence cells
-					pLandscape->setDistribution(pSpecies, init.nSpDistPatches); // activate random patches
-					break;
-				case 2: // manually selected presence cells
-					// cells have already been identified - no further action here
-					break;
-				}
-
-				ndistcells = pLandscape->distCellCount(0);
-				for (int i = 0; i < ndistcells; i++) {
-					distloc = pLandscape->getSelectedDistnCell(0, i);
-					if (distloc.x >= 0) { // distribution cell is selected
-						// process each landscape cell within the distribution cell
-
-						for (int x = 0; x < spratio; x++) {
-							for (int y = 0; y < spratio; y++) {
-								pCell = pLandscape->findCell(distloc.x * spratio + x, distloc.y * spratio + y);
-								if (pCell != nullptr) { // not a no-data cell
-									pPatch = pCell->getPatch(sp);
-									if (pPatch != nullptr) {
-										if (!pPatch->isMatrix()) { // not the matrix patch
-											selectedPatches.insert(pPatch->getPatchNum());
-										}
-									}
-								}
+	case 2:	// initial individuals in specified patches/cells
+		if (year < 0) {
+			indIx = 0; // reset index for initial individuals
+		}
+		else { // add any initial individuals for the current year
+			initInd iind = initInd();
+			iind.year = 0;
+			int ninds = paramsInit->getNbInitInds();
+			while (indIx < ninds && iind.year <= year) {
+				iind = paramsInit->getInitInd(indIx);
+				while (iind.year == year && iind.speciesID == sp) {
+					if (ppLand.usesPatches) {
+						pPatch = pLandscape->findPatch(sp, iind.patchID);
+						if (pPatch != nullptr) { // exists
+							if (pPatch->isSuitable()) {
+								initialInd(pLandscape, pSpecies, pPatch, pPatch->getRandomCell(), indIx);
 							}
 						}
-
 					}
-				}
-
-				for (auto pchNum : selectedPatches) {
-					Patch* pPatch = pLandscape->findPatch(sp, pchNum);
-					// Determine size of initial population
-					int nInds = pPatch->getInitNbInds(ppLand.usesPatches, ppLand.resol);
-					if (nInds > 0) {
-						Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
-						allPopns.at(pSpecies->getID()).push_back(pPop); // add new population to community list
-					}
-				}
-			}
-			else { // doesn't use species distribution
-				// WHAT HAPPENS IF INITIAL DISTRIBUTION IS NOT LOADED ??? ....
-				// should not occur - take no action - no initialisation will occur
-			}
-			break;
-
-		case 2:	// initial individuals in specified patches/cells
-			if (year < 0) {
-				indIx = 0; // reset index for initial individuals
-			}
-			else { // add any initial individuals for the current year
-				initInd iind = initInd();
-				iind.year = 0;
-				int ninds = paramsInit->getNbInitInds();
-				while (indIx < ninds && iind.year <= year) {
-					iind = paramsInit->getInitInd(indIx);
-					while (iind.year == year && iind.speciesID == sp) {
-						if (ppLand.usesPatches) {
-							if (pLandscape->existsPatch(sp, iind.patchID)) {
-								pPatch = pLandscape->findPatch(sp, iind.patchID);
+					else { // cell-based model
+						pCell = pLandscape->findCell(iind.x, iind.y);
+						if (pCell != nullptr) {
+							pPatch = pCell->getPatch(sp);
+							if (pPatch != nullptr) {
 								if (pPatch->isSuitable()) {
-									initialInd(pLandscape, pSpecies, pPatch, pPatch->getRandomCell(), indIx);
+									initialInd(pLandscape, pSpecies, pPatch, pCell, indIx);
 								}
 							}
-						}
-						else { // cell-based model
-							pCell = pLandscape->findCell(iind.x, iind.y);
-							if (pCell != nullptr) {
-								pPatch = pCell->getPatch(sp);
-								if (pPatch != nullptr) {
-									if (pPatch->isSuitable()) {
-										initialInd(pLandscape, pSpecies, pPatch, pCell, indIx);
-									}
-								}
-							}
-						}
-						indIx++;
-						if (indIx < ninds) {
-							iind = paramsInit->getInitInd(indIx);
-						}
-						else {
-							iind.year = 99999999;
 						}
 					}
+					indIx++;
+					if (indIx < ninds) {
+						iind = paramsInit->getInitInd(indIx);
+					}
+					else {
+						iind.year = 99999999;
+					}
 				}
-			} // if year == 0
+			}
+		} // if year == 0
 
-			break;
-		} // end of switch (init.seedType)
+		break;
+	} // end of switch (init.seedType)
 
-	} // end loop through species
 }
 
 Species* Community::findSpecies(species_id id) {
@@ -272,7 +270,7 @@ Species* Community::findSpecies(species_id id) {
 }
 
 void Community::resetPopns() {
-	
+
 	for (auto& [sp, mtxPop] : matrixPops)
 		mtxPop->getPatch()->resetPop();
 
@@ -282,7 +280,7 @@ void Community::resetPopns() {
 		}
 		popns.clear();
 	}
-		
+
 	// reset the individual ids to start from zero
 	Individual::indCounter = 0;
 }
@@ -502,7 +500,7 @@ void Community::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool re
 
 void Community::applySurvivalDevlpt() {
 	for (auto& [sp, popns] : allPopns) {
-		for (auto pop : popns) 
+		for (auto pop : popns)
 			pop->applySurvivalDevlpt();
 	}
 }
@@ -533,7 +531,7 @@ int Community::totalInds() {
 
 //---------------------------------------------------------------------------
 void Community::createOccupancy(species_id sp, int nbOutputRows, int nbReps) {
-	
+
 	matrixPops.at(sp)->getPatch()->createOccupancy(nbOutputRows);
 	vector<Population*>& popns = allPopns.at(sp);
 	for (auto pop : popns) {
@@ -550,13 +548,13 @@ void Community::createOccupancy(species_id sp, int nbOutputRows, int nbReps) {
 
 void Community::updateOccupancy(species_id sp, int yr, int rep) {
 
-		int whichRow = yr / speciesMap.at(sp)->getOutOccInt();
-		matrixPops.at(sp)->getPatch()->updateOccupancy(whichRow);
-		for (auto pop : allPopns.at(sp)) {
-			pop->getPatch()->updateOccupancy(whichRow);
-		}
-		commStats s = getStats(sp);
-		occupancyMaps.at(sp)[whichRow][rep] = trunc(s.occupied / static_cast<double>(s.suitable));
+	int whichRow = yr / speciesMap.at(sp)->getOutOccInt();
+	matrixPops.at(sp)->getPatch()->updateOccupancy(whichRow);
+	for (auto pop : allPopns.at(sp)) {
+		pop->getPatch()->updateOccupancy(whichRow);
+	}
+	commStats s = getStats(sp);
+	occupancyMaps.at(sp)[whichRow][rep] = trunc(s.occupied / static_cast<double>(s.suitable));
 }
 
 //---------------------------------------------------------------------------
@@ -567,8 +565,8 @@ commStats Community::getStats(species_id sp)
 	commStats s = commStats();
 	landParams ppLand = pLandscape->getLandParams();
 	s.suitable = s.occupied = 0;
-	s.minX = ppLand.maxX; 
-	s.minY = ppLand.maxY; 
+	s.minX = ppLand.maxX;
+	s.minY = ppLand.maxY;
 	s.maxX = s.maxY = 0;
 	float localK;
 	popStats patchPop;
@@ -620,7 +618,7 @@ void Community::popAndRangeOutput(int rep, int yr, int gen) {
 
 // Open population file and write header record
 bool Community::outPopHeaders(Species* pSpecies) {
-	
+
 	landParams land = pLandscape->getLandParams();
 	simParams sim = paramsSim->getSim();
 	demogrParams dem = pSpecies->getDemogrParams();
@@ -708,7 +706,7 @@ void Community::outIndsHeaders(species_id sp, int rep, int landNr, bool usesPatc
 	name = paramsSim->getDir(2)
 		+ (sim.batchMode ? "Batch" + to_string(sim.batchNum) + "_" : "")
 		+ "Sim" + to_string(sim.simulation)
-		+ "_Land" + to_string(landNr) + 
+		+ "_Land" + to_string(landNr) +
 		"_Rep" + to_string(rep) +
 		"_Species" + to_string(sp) +
 		"_Inds.txt";
@@ -768,7 +766,7 @@ void Community::outInds(species_id sp, int rep, int yr, int gen) {
 }
 
 bool Community::closeRangeOfs(species_id sp) {
-	if (outRangeOfs.at(sp).is_open()) 
+	if (outRangeOfs.at(sp).is_open())
 		outRangeOfs.at(sp).close();
 	outRangeOfs.at(sp).clear();
 	return true;
@@ -792,14 +790,14 @@ bool Community::outRangeHeaders(species_id sp, int landNr)
 	if (sim.batchMode) {
 		name = paramsSim->getDir(2)
 			+ "Batch" + to_string(sim.batchNum) +
-			+ "_Sim" + to_string(sim.simulation) 
+			+"_Sim" + to_string(sim.simulation)
 			+ "_Land" + to_string(landNr)
 			+ "_Species" + to_string(sp)
 			+ "_Range.txt";
 	}
 	else {
-		name = paramsSim->getDir(2) 
-			+ "Sim" + to_string(sim.simulation) 
+		name = paramsSim->getDir(2)
+			+ "Sim" + to_string(sim.simulation)
 			+ "_Species" + to_string(sp)
 			+ "_Range.txt";
 	}
@@ -944,7 +942,7 @@ void Community::outRange(species_id sp, int rep, int yr, int gen)
 
 	if (emig.indVar || trfr.indVar || sett.indVar) { // output trait means
 		traitsums ts = traitsums();
-		traitsums popTraits; 
+		traitsums popTraits;
 		int ngenes, popsize;
 		for (auto& [spId, mtxPop] : matrixPops) {
 			popTraits = mtxPop->outTraits(outTraitsOfs.at(sp), false);
@@ -968,7 +966,7 @@ void Community::outRange(species_id sp, int rep, int yr, int gen)
 			}
 		}
 		int npops = static_cast<int>(allPopns.at(sp).size());
-		for (int i = 0; i < npops; i++) { 
+		for (int i = 0; i < npops; i++) {
 			popTraits = allPopns.at(sp)[i]->outTraits(outTraitsOfs.at(sp), false);
 			for (int j = 0; j < gMaxNbSexes; j++) {
 				ts.ninds[j] += popTraits.ninds[j];
@@ -1319,17 +1317,17 @@ bool Community::outTraitsHeaders(species_id sp, Landscape* pLandscape, int landN
 
 	string DirOut = paramsSim->getDir(2);
 	if (sim.batchMode) {
-			name = DirOut
-				+ "Batch" + to_string(sim.batchNum) + "_"
-				+ "Sim" + to_string(sim.simulation) 
-				+ "_Land" + to_string(landNr) 
-				+ "_Species" + to_string(sp)
-				+ (land.usesPatches ? "_TraitsXpatch.txt" : "_TraitsXcell.txt");
+		name = DirOut
+			+ "Batch" + to_string(sim.batchNum) + "_"
+			+ "Sim" + to_string(sim.simulation)
+			+ "_Land" + to_string(landNr)
+			+ "_Species" + to_string(sp)
+			+ (land.usesPatches ? "_TraitsXpatch.txt" : "_TraitsXcell.txt");
 	}
 	else {
-			name = DirOut + "Sim" + to_string(sim.simulation) 
-				+ "_Species" + to_string(sp)
-				+ (land.usesPatches ? "_TraitsXpatch.txt" : "_TraitsXcell.txt");
+		name = DirOut + "Sim" + to_string(sim.simulation)
+			+ "_Species" + to_string(sp)
+			+ (land.usesPatches ? "_TraitsXpatch.txt" : "_TraitsXcell.txt");
 	}
 
 	ofstream& traitsOfs = outTraitsOfs.at(sp);
@@ -1434,7 +1432,7 @@ void Community::outTraits(species_id sp, int rep, int yr, int gen)
 	}
 
 	if (pSpecies->isTraitCellOutYear(yr)
-			|| mustOutputTraitRows) {
+		|| mustOutputTraitRows) {
 
 		// Generate output for each population in the community
 		if (mustOutputTraitCells) {
@@ -1477,30 +1475,30 @@ void Community::outTraits(species_id sp, int rep, int yr, int gen)
 			}
 			popTraits = pop->outTraits(outTraitsOfs.at(sp), mustOutputTraitCells);
 			int y = pop->getPatch()->getCellLocn(0).y;
-			if (mustOutputTraitRows){
+			if (mustOutputTraitRows) {
 				for (int s = 0; s < gMaxNbSexes; s++) {
 					ts[y].ninds[s] += popTraits.ninds[s];
-					ts[y].sumD0[s] += popTraits.sumD0[s];    
+					ts[y].sumD0[s] += popTraits.sumD0[s];
 					ts[y].ssqD0[s] += popTraits.ssqD0[s];
-					ts[y].sumAlpha[s] += popTraits.sumAlpha[s]; 
+					ts[y].sumAlpha[s] += popTraits.sumAlpha[s];
 					ts[y].ssqAlpha[s] += popTraits.ssqAlpha[s];
-					ts[y].sumBeta[s] += popTraits.sumBeta[s]; 
+					ts[y].sumBeta[s] += popTraits.sumBeta[s];
 					ts[y].ssqBeta[s] += popTraits.ssqBeta[s];
-					ts[y].sumDist1[s] += popTraits.sumDist1[s]; 
+					ts[y].sumDist1[s] += popTraits.sumDist1[s];
 					ts[y].ssqDist1[s] += popTraits.ssqDist1[s];
-					ts[y].sumDist2[s] += popTraits.sumDist2[s]; 
+					ts[y].sumDist2[s] += popTraits.sumDist2[s];
 					ts[y].ssqDist2[s] += popTraits.ssqDist2[s];
-					ts[y].sumProp1[s] += popTraits.sumProp1[s]; 
+					ts[y].sumProp1[s] += popTraits.sumProp1[s];
 					ts[y].ssqProp1[s] += popTraits.ssqProp1[s];
 					ts[y].sumStepL[s] += popTraits.sumStepL[s];
 					ts[y].ssqStepL[s] += popTraits.ssqStepL[s];
-					ts[y].sumRho[s] += popTraits.sumRho[s]; 
+					ts[y].sumRho[s] += popTraits.sumRho[s];
 					ts[y].ssqRho[s] += popTraits.ssqRho[s];
-					ts[y].sumS0[s] += popTraits.sumS0[s];  
+					ts[y].sumS0[s] += popTraits.sumS0[s];
 					ts[y].ssqS0[s] += popTraits.ssqS0[s];
 					ts[y].sumAlphaS[s] += popTraits.sumAlphaS[s];
 					ts[y].ssqAlphaS[s] += popTraits.ssqAlphaS[s];
-					ts[y].sumBetaS[s] += popTraits.sumBetaS[s]; 
+					ts[y].sumBetaS[s] += popTraits.sumBetaS[s];
 					ts[y].ssqBetaS[s] += popTraits.ssqBetaS[s];
 					ts[y].sumGeneticFitness[s] += popTraits.sumGeneticFitness[s];
 					ts[y].ssqGeneticFitness[s] += popTraits.ssqGeneticFitness[s];
@@ -1516,9 +1514,9 @@ void Community::outTraits(species_id sp, int rep, int yr, int gen)
 			}
 		}
 	}
-	if (ts != 0) { 
-		delete[] ts; 
-		ts = 0; 
+	if (ts != 0) {
+		delete[] ts;
+		ts = 0;
 	}
 }
 
@@ -1716,13 +1714,13 @@ bool Community::outTraitsRowsHeaders(species_id sp, int landNr) {
 			+ "Sim" + to_string(sim.simulation)
 			+ "_Land" + to_string(landNr)
 			+ "_Species" + to_string(sp);
-			+ "_TraitsXrow.txt";
+		+"_TraitsXrow.txt";
 	}
 	else {
-		name = DirOut 
-			+ "Sim" + to_string(sim.simulation) 
+		name = DirOut
+			+ "Sim" + to_string(sim.simulation)
 			+ "_Species" + to_string(sp);
-			+ "_TraitsXrow.txt";
+		+"_TraitsXrow.txt";
 	}
 
 	ofstream& traitRowsOfs = outTraitsRows.at(sp);
@@ -1854,15 +1852,15 @@ bool Community::openOutGenesFile(species_id sp, const bool& isDiploid, const int
 			+ "_geneValues.txt";
 	}
 	else {
-		name = paramsSim->getDir(2) 
+		name = paramsSim->getDir(2)
 			+ "Sim" + to_string(sim.simulation) + "_Land"
-			+ to_string(landNr) + "_Rep" + to_string(rep) 
+			+ to_string(landNr) + "_Rep" + to_string(rep)
 			+ "_geneValues.txt";
 	}
 
 	ofsGenes.at(sp).open(name.c_str());
 	ofsGenes.at(sp) << "Year\tGeneration\tIndID\ttraitType\tlocusPosition"
-			 << "\talleleValueA\tdomCoefA";
+		<< "\talleleValueA\tdomCoefA";
 	if (isDiploid) ofsGenes.at(sp) << "\talleleValueB\tdomCoefB";
 	ofsGenes.at(sp) << endl;
 
@@ -1915,7 +1913,7 @@ void Community::sampleIndividuals(species_id sp) {
 // ----------------------------------------------------------------------------------------
 
 bool Community::closeNeutralOutputOfs(species_id sp) {
-	if (outWCFstatOfs.at(sp).is_open()) 
+	if (outWCFstatOfs.at(sp).is_open())
 		outWCFstatOfs.at(sp).close();
 	outWCFstatOfs.at(sp).clear();
 	return true;
@@ -1949,7 +1947,7 @@ bool Community::openNeutralOutputFile(species_id sp, int landNr)
 // ----------------------------------------------------------------------------------------
 
 bool Community::closePerLocusFstFile(species_id sp) {
-	if (outPerLocusFstat.at(sp).is_open()) 
+	if (outPerLocusFstat.at(sp).is_open())
 		outPerLocusFstat.at(sp).close();
 	outPerLocusFstat.at(sp).clear();
 	return true;
@@ -2192,7 +2190,7 @@ void Community::traitAndOccOutput(int rep, int yr, int gen) {
 		if (pSpecies->isTraitCellOutYear(yr)
 			|| pSpecies->isTraitRowOutYear(yr))
 			outTraits(sp, rep, yr, gen);
-		if (gen == 0 && pSpecies->isOccOutputYear(yr)) 
+		if (gen == 0 && pSpecies->isOccOutputYear(yr))
 			updateOccupancy(sp, yr, rep);
 	}
 }
@@ -2251,8 +2249,8 @@ void Community::closeGlobalOutputFiles(bool hasMultipleReplicates) {
 		if (pSpecies->doesOutputRange()) closeRangeOfs(sp);
 		if (pSpecies->doesOutputPop()) closePopOfs(sp);
 
-		if (pSpecies->doesOutputWeirCockerham() 
-			|| pSpecies->doesOutputWeirCockerham()) 
+		if (pSpecies->doesOutputWeirCockerham()
+			|| pSpecies->doesOutputWeirCockerham())
 			closeNeutralOutputOfs(sp);
 
 		if (hasMultipleReplicates && pSpecies->doesOutputOccup())
@@ -2261,7 +2259,7 @@ void Community::closeGlobalOutputFiles(bool hasMultipleReplicates) {
 }
 
 void Community::closeYearlyOutputFiles() {
-	
+
 	for (auto& [sp, pSpecies] : speciesMap) {
 		if (pSpecies->doesOutputInds()) closeOutIndsOfs(sp);
 		if (pSpecies->doesOutputGeneValues()) closeOutGenesOfs(sp);

@@ -75,7 +75,7 @@ public:
 	Community(Landscape* pLand, speciesMap_t allSpecies);
 	~Community();
 	// functions to manage populations occurring in the community
-	void initialise(speciesMap_t& speciesMap, int year);
+	void initialise(Species* pSpecies, int year);
 	void resetPopns();
 	Species* findSpecies(species_id id);
 	void initialInd(

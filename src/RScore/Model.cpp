@@ -123,9 +123,11 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			landChg = pLandscape->getLandChange(0); // get first change year
 		}
 
-		// set up populations in the community
-		pLandscape->updateCarryingCapacity(allSpecies, 0, 0);
-		pComm->initialise(allSpecies, -1);
+		// Set up populations in the community
+		for (auto& [sp, pSpecies] : allSpecies) {
+			pLandscape->updateCarryingCapacity(pSpecies, 0, 0);
+			pComm->initialise(pSpecies, -1);
+		}
 
 #if BATCH && RS_RCPP && !R_CMD
 		Rcpp::Rcout << "RunModel(): completed initialisation " << endl;
