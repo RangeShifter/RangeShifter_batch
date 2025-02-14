@@ -87,7 +87,7 @@ public:
 	);
 	void applyLocalExtGrad();
 	void applyRandLocExt(const float& probExt);
-	void scanUnsuitablePatches();
+	void scanUnsuitablePatches(Species* pSpecies);
 	void reproduction(int year);
 	void emigration();
 	void dispersal(short landIx, short nextseason);

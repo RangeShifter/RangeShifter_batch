@@ -774,11 +774,11 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 				loopsteps++;
 			} while (loopsteps < maxLoopSteps &&
 				// keep drawing if out of bounds of landscape or same cell
-				((!absorbing && isWithinLimits(newX, newY, land))
+				((!absorbing && pSpecies->isWithinLimits(newX, newY))
 					|| (!usefullkernel && newX == loc.x && newY == loc.y))
 				);
 			if (loopsteps < maxLoopSteps) {
-				if (isWithinLimits(newX, newY, land)) { // beyond absorbing boundary
+				if (pSpecies->isWithinLimits(newX, newY)) { // beyond absorbing boundary
 					// this cannot be reached if not absorbing?
 					pCell = nullptr;
 					patch = nullptr;
@@ -961,7 +961,7 @@ bool Individual::moveStep(Landscape* pLandscape,
 			do {
 				do {
 					// Sample direction
-					if (!isInLandscape(newX, newY, land)
+					if (!pSpecies->isWithinLimits(newX, newY)
 						|| pCurrCell == nullptr) {
 						// Random direction to avoid invalid area again
 						moveDirection = drawDirection(pCRW.prevdrn, 0.0);
@@ -977,10 +977,10 @@ bool Individual::moveStep(Landscape* pLandscape,
 					loopSteps++;
 				} while (!absorbing && 
 					loopSteps < maxLoopSteps &&
-					!isInLandscape(newX, newY, land));
+					!pSpecies->isWithinLimits(newX, newY));
 				
 				// Get cell and patch for new coordinates
-				if (!isInLandscape(newX, newY, land)) pCurrCell = nullptr;
+				if (!pSpecies->isWithinLimits(newX, newY)) pCurrCell = nullptr;
 				else pCurrCell = pLandscape->findCell(newX, newY);
 				if (pCurrCell == nullptr) { // no-data or beyond absorbing boundary
 					pPatch = nullptr;
@@ -1134,7 +1134,7 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 			if (!absorbing) {
 				int neighbourX = currLoc.x + x - 1;
 				int neighbourY = currLoc.y + y - 1;
-				if (!isInLandscape(neighbourX, neighbourY, land))
+				if (!pSpecies->isWithinLimits(neighbourX, neighbourY))
 					// cell is beyond current landscape limits
 					neighbourWeights.cell[x][y] = 0.0;
 				else if (pLand->findCell(neighbourX, neighbourY) == nullptr) {
@@ -1196,11 +1196,11 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 			loopsteps++;
 
 		} while (loopsteps < maxLoopSteps
-			&& (!absorbing && !isInLandscape(newX, newY, land)));
+			&& (!absorbing && !pSpecies->isWithinLimits(newX, newY)));
 
 		if (loopsteps >= maxLoopSteps) pNewCell = nullptr;
 		else {
-			if (!isInLandscape(newX, newY, land)) {
+			if (!pSpecies->isWithinLimits(newX, newY)) {
 				pNewCell = nullptr;
 			}
 			pNewCell = pLand->findCell(newX, newY);

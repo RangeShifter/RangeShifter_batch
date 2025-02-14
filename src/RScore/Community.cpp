@@ -304,20 +304,17 @@ void Community::applyLocalExtGrad() {
 	}
 }
 
-void Community::scanUnsuitablePatches() {
-	for (auto& [sp, popns] : allPopns) {
-		for (auto pop : popns) {
-			float localK = pop->getPatch()->getK();
-			if (localK <= 0.0) { // patch in dynamic landscape has become unsuitable
-				Species* pSpecies = pop->getSpecies();
-				if (pSpecies->getDemogrParams().stageStruct) {
-					if (pSpecies->getStageParams().disperseOnLoss)
-						pop->allEmigrate();
-					else pop->extirpate();
-				}
-				else { // non-stage-structured species is destroyed
-					pop->extirpate();
-				}
+void Community::scanUnsuitablePatches(Species* pSpecies) {
+	for (auto pPop : allPopns.at(pSpecies->getID())) {
+		float localK = pPop->getPatch()->getK();
+		if (localK <= 0.0) { // patch in dynamic landscape has become unsuitable
+			if (pSpecies->getDemogrParams().stageStruct) {
+				if (pSpecies->getStageParams().disperseOnLoss)
+					pPop->allEmigrate();
+				else pPop->extirpate();
+			}
+			else { // non-stage-structured species is destroyed
+				pPop->extirpate();
 			}
 		}
 	}

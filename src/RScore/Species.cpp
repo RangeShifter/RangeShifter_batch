@@ -229,11 +229,11 @@ void Species::applyRangeRestriction() {
 	maxY = init.maxSeedY;
 }
 
-void Species::freezeYrange(int minYcurrRange, int maxYcurrRange, int dimX) {
+void Species::freezeYrange(int minYlimit, int maxYlimit, int maxXlimit) {
 	minX = 0;
-	maxX = dimX - 1;
-	minY = minYcurrRange;
-	maxY = maxYcurrRange;
+	maxX = maxXlimit;
+	minY = minYlimit;
+	maxY = maxYlimit;
 }
 
 void Species::liftRangeRestriction(int dimX, int dimY) {
@@ -242,11 +242,12 @@ void Species::liftRangeRestriction(int dimX, int dimY) {
 	maxY = dimY - 1;
 }
 
-void Species::setLandLimits(int x0, int y0, int x1, int y1) {
-	minX = x0;
-	maxX = x1;
-	minY = y0;
-	maxY = y1;
+bool Species::isWithinLimits(const int& x, const int& y) {
+	// including limits set by the freeze feature
+	return (x >= minX
+		&& x <= maxX
+		&& y >= minY
+		&& y <= maxY);
 }
 
 void Species::setStage(const stageParams s) {

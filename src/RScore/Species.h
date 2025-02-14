@@ -416,10 +416,15 @@ public:
 #endif
 
 	initParams getInitParams() const { return init; }
+	bool isRestrictYear(int yr) const {
+		return init.restrictRange
+			&& yr > init.initFrzYr
+			&& yr < init.finalFrzYr;
+	}
 	void applyRangeRestriction();
 	void liftRangeRestriction(int dimX, int dimY);
-	void freezeYrange(int minYcurrRange, int maxYcurrRange, int dimX);
-	void setLandLimits(int x0, int y0, int x1, int y1);
+	void freezeYrange(int minYlimit, int maxYlimit, int maxXlimit);
+	bool isWithinLimits(const int& x, const int& y);
 
 private:
 
@@ -545,7 +550,8 @@ private:
 
 	// Initialisation parameters
 	initParams init;
-	int minX, minY, maxX, maxY;
+	int minX, minY, maxX, maxY; // limits the species is allowed to live in,
+								// changed by the freeze/range restriction feature
 
 	// Output controls
 	outputParams output;

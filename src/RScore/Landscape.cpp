@@ -32,14 +32,6 @@ ofstream outMovePaths;
 
 //---------------------------------------------------------------------------
 
-bool isWithinLimits(const int& x, const int& y, const landData& land) {
-	// including limits set by the freeze feature
-	return (x >= land.minX
-		&& x <= land.maxX
-		&& y >= land.minY
-		&& y <= land.maxY);
-}
-
 // Initial species distribution functions
 
 InitDist::InitDist(Species* pSp)

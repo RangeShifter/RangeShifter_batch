@@ -196,19 +196,18 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 						mustUpdateK.at(sp) = true;
 					}
 					else if (init.restrictRange && yr > init.initFrzYr) {
-						if (yr < init.finalFrzYr) {
-							if ((yr - init.initFrzYr) % init.restrictFreq == 0) {
-								// Apply dynamic range restriction
-								commStats s = pComm->getStats(sp);
-								int minY = max(0, s.maxY - init.restrictRows);
-								pSpecies->setLandLimits(ppLand.minX, minY, ppLand.maxX, ppLand.maxY);
-								mustUpdateK.at(sp) = true;
-							}
+						if (yr < init.finalFrzYr 
+							&& (yr - init.initFrzYr) % init.restrictFreq == 0) {
+							// Apply dynamic range restriction
+							commStats s = pComm->getStats(sp);
+							int minY = max(0, s.maxY - init.restrictRows);
+							pSpecies->freezeYrange(minY, ppLand.maxY, ppLand.maxX);
+							mustUpdateK.at(sp) = true;
 						}
 						else if (yr == init.finalFrzYr) {
 							// Freeze range in the Y dimension until end of simulation
 							commStats s = pComm->getStats(sp);
-							pSpecies->freezeYrange(s.minY, s.maxY, ppLand.dimX);
+							pSpecies->freezeYrange(s.minY, s.maxY, ppLand.maxX);
 							mustUpdateK.at(sp) = true;
 						}
 					}
@@ -268,22 +267,20 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					if (!trfr.costMap) pLandscape->resetCosts(); // in case habitats have changed
 				}
 				// apply effects of landscape change to species present in changed patches
-				pComm->scanUnsuitablePatches();
+				for (auto& [sp, pSpecies] : allSpecies)
+					pComm->scanUnsuitablePatches(pSpecies);
 				pComm->dispersal(chgNb, yr);
 			}
 
-			if (init.restrictRange) {
-				// remove any population from region removed from restricted range
-				if (yr > init.initFrzYr && yr < init.finalFrzYr) {
-					if ((yr - init.initFrzYr) % init.restrictFreq == 0) {
-						pComm->scanUnsuitablePatches();
-					}
-				}
-			}
+			for (auto& [sp, pSpecies] : allSpecies) {
+				if (pSpecies->isRestrictYear(yr))
+					// Extirpate populations beyond the new limits
+					pComm->scanUnsuitablePatches(pSpecies);
 
-			if (init.seedType == 2) {
-				// add any new initial individuals for the current year
-				pComm->initialise(allSpecies, yr);
+				if (pSpecies->getInitParams().seedType == 2) {
+					// add any new initial individuals for the current year
+					pComm->initialise(pSpecies, yr);
+				}
 			}
 
 			// Generation loop
