@@ -273,61 +273,6 @@ struct initInd {
 	short speciesID;
 };
 
-class paramInit {
-
-public:
-	paramInit();
-	~paramInit();
-	void setInit(initParams i);
-	initParams getInit();
-	void setProp(short stg, float initProp);
-	float getProp(short stg);
-	void addInitInd(initInd iind);
-	initInd getInitInd(int ix);
-	void resetInitInds();
-	int getNbInitInds();
-
-private:
-	short seedType;		// initialisation type: 
-						//	0 = free, 
-						//	1 = from species distn,
-						//	2 = initial individuals, 
-						//	3 = from file
-	short freeType;		// free initialisation type:
-						//	0 = random (given no.)
-						//	1 = all suitable cells/patches
-						//	2 = manually selected cells/patches
-	short spDistType;	// species distribution initialisation type:
-						//	0 = all suitable cells/patches,
-						//	1 = some randomly chosen suitable cells/patches,
-						//	2 = all cells/patches within selected sp. dist. cells
-	short initDens;		// initialisation density:
-						//	0 = at carrying capacity
-						//	1 = at half carrying capacity
-						//	2 = specified no. per cell or density
-	short initAge;		// initial age distribution within each stage:
-						//	0 = lowest possible age
-						//	1 = randomised
-						//	2 = quasi-equilibrium
-
-	int initFrzYr;		 	// year until which initial range is frozen
-	bool restrictRange;		// restrict range to northern front
-	int restrictRows;		// no. of rows to retain behind front
-	int restrictFreq;		// frequency of range restriction
-	int finalFrzYr;		 	// year after which range is frozen
-	int indsCell;			 // initial individuals / cell (cell-based model)
-	float indsHa;			 // initial density (patch-based model)
-	int minSeedX;			 // min. and max. of area to initialise (cell numbers),
-	int maxSeedX;			 // only applied if seedType is 0
-	int minSeedY;
-	int maxSeedY;
-	int nSeedPatches;	 	// no. of cells/patches to initialise
-	int nSpDistPatches;		// no. of species distribution cells to initialise
-	string indsFile;		// no. of species distribution cells to initialise
-	float initProp[gMaxNbStages];	// initial stage proportions (structured population only)
-	vector <initInd> initinds;	// individuals to be initialised
-};
-
 //---------------------------------------------------------------------------
 
 // Simulation parameters
@@ -371,24 +316,6 @@ private:
 	string dir;					// full name of working directory
 	bool fixReplicateSeed;
 };
-
-
-/* c'tor?
-outIntRange = 1;
-	outStartPop = outStartInd = 0;
-	outStartTraitCell = outStartTraitRow = outStartConn = 0;
-	outIntOcc = outIntPop = outIntInd = outputGeneticInterval = 10;
-	outIntTraitCell = outIntTraitRow = outIntConn = 10;
-	traitInt = 10;
-	outRange = outOccup = outPop = outInds = false;
-	outTraitsCells = outTraitsRows = outConnect = false;
-	outputGenes = outputWeirCockerham = outputWeirHill = false;
-	saveVisits = false;
-#if RS_RCPP
-	outStartPaths = 0; outIntPaths = 0;
-	outPaths = false; ReturnPopRaster = false; CreatePopFile = true;
-#endif
-*/
 
 struct outputParams {
 	int outStartPop;			// output start year for population file

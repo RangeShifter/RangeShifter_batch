@@ -223,7 +223,7 @@ float Patch::getK() { return localK; }
 
 bool Patch::isSuitable() { return localK > 0.0f; }
 
-int Patch::getInitNbInds(const bool& isPatchModel, const int& landResol) const {
+int Patch::getInitNbInds(initParams init, const bool& isPatchModel, const int& landResol) const {
 
 	int nInds = 0;
 	if (localK > 0.0) { // patch is currently suitable for this species

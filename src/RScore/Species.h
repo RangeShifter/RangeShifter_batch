@@ -416,6 +416,12 @@ public:
 #endif
 
 	initParams getInitParams() const { return init; }
+	initInd getInitInd(int ix);
+	void addInitInd(initInd iind);
+	void resetInitInds();
+	int getNbInitInds();
+	void setProp(short stg, float initProp);
+	float getProp(short stg);
 	bool isRestrictYear(int yr) const {
 		return init.restrictRange
 			&& yr > init.initFrzYr
@@ -550,6 +556,8 @@ private:
 
 	// Initialisation parameters
 	initParams init;
+	vector<initInd> initInds;	// individuals to be initialised
+	vector<float> initProps; // proportion of each stage among initial individuals
 	int minX, minY, maxX, maxY; // limits the species is allowed to live in,
 								// changed by the freeze/range restriction feature
 

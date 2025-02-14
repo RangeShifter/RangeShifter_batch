@@ -53,8 +53,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 	if (!ppLand.generated) {
 		pComm = new Community(pLandscape, allSpecies);
-		// Allocate patches, sample patches and set landscape limits
-		pLandscape->initialise(allSpecies, ppLand, init);
+		// Allocate patches and sample patches
+		pLandscape->initialise(allSpecies, ppLand);
 	}
 
 #if RS_RCPP && !R_CMD
@@ -85,8 +85,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			if (pComm != nullptr) delete pComm;
 			pComm = new Community(pLandscape, allSpecies);
 			pLandscape->resetLand();
-			// Generate patches, sample patches and set landscape limits
-			pLandscape->initialise(allSpecies, ppLand, init);
+			// Generate patches, sample patches
+			pLandscape->initialise(allSpecies, ppLand);
 		}
 
 		if (rep == 0) {
@@ -397,8 +397,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		for (auto& [sp, pSpecies] : allSpecies) {
 			if (pSpecies->usesGradient())
 				pSpecies->resetOptY();
+			pSpecies->liftRangeRestriction(ppLand.dimX, ppLand.dimY);
 		}
-		pLandscape->resetLandLimits();
 		const int lastChange = 666666;
 		if (ppLand.usesPatches && ppLand.dynamic && iPatchChg > 0) {
 			// apply any patch changes to reset landscape to original configuration
@@ -639,103 +639,6 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 	}
 	else outPar << "no" << endl;
 
-	// Initialisation
-
-	initParams init = paramsInit->getInit();
-	outPar << endl << "INITIALISATION CONDITIONS:" << endl;
-	switch (init.seedType) {
-	case 0:
-		outPar << "Free initialisation: \t";
-		switch (init.freeType) {
-		case 0:
-			outPar << "Random \t";
-			outPar << "No. of cells/patches: " << init.nSeedPatches << endl;
-			break;
-		case 1:
-			outPar << "all suitable cells/patches" << endl;
-			break;
-		case 2:
-			outPar << "manually selected cells/patches" << endl;
-			break;
-		}
-		break;
-	case 1:
-		outPar << "From species distribution: \t" << endl;
-		switch (init.spDistType) {
-		case 0:
-			outPar << "all presence cells/patches" << endl;
-			break;
-		case 1:
-			outPar << "some random presence cells/patches" << endl;
-			break;
-		case 2:
-			outPar << "all cells/patches within selected distribution cells" << endl;
-			break;
-		}
-		break;
-	case 2:
-		outPar << "From initial individuals file: " << paramsSim->getDir(1) + init.indsFile << endl;
-		break;
-	case 3:
-		outPar << "From file" << endl;
-		break;
-	}
-	if (init.seedType != 2) {
-		outPar << "INITIAL NO. OF INDIVIDUALS: \t";
-		switch (init.initDens) {
-		case 0:
-			outPar << "at carrying capacity" << endl;
-			break;
-		case 1:
-			outPar << "at half carrying capacity" << endl;
-			break;
-		case 2:
-			if (ppLand.usesPatches) {
-				outPar << init.indsHa << " individuals per ha" << endl;
-			}
-			else {
-				outPar << init.indsCell << " individuals per cell" << endl;
-			}
-			break;
-		}
-		if (dem.stageStruct) {
-			outPar << "INITIAL STAGE PROPORTIONS:" << endl;
-			for (int i = 1; i < sstruct.nStages; i++) {
-				outPar << "stage " << i << ": " << paramsInit->getProp(i) << " \t";
-			}
-			outPar << endl;
-			outPar << "Initial age distribution: ";
-			switch (init.initAge) {
-			case 0:
-				outPar << "lowest possible age";
-				break;
-			case 1:
-				outPar << "randomised";
-				break;
-			case 2:
-				outPar << "quasi-equilibrium";
-				break;
-			}
-			outPar << endl;
-		}
-		outPar << "GEOGRAPHICAL CONSTRAINTS (cell numbers): " << endl;
-		outPar << "min X: " << init.minSeedX << " max X: " << init.maxSeedX << endl;
-		outPar << "min Y: " << init.minSeedY << " max Y: " << init.maxSeedY << endl;
-
-		if (init.seedType == 0) {
-			if (init.initFrzYr > 0) {
-				outPar << "Freeze initial range until year " << init.initFrzYr << endl;
-			}
-			if (init.restrictRange) {
-				outPar << "Restrict range to northern " << init.restrictRows
-					<< " rows every " << init.restrictFreq << " years" << endl;
-				if (init.finalFrzYr < sim.years) {
-					outPar << "Freeze range at year " << init.finalFrzYr << endl;
-				}
-			}
-		}
-	}
-
 	outPar << endl << "SPECIES PARAMETERS" << endl;
 
 	for (auto& [sp, pSpecies] : allSpecies) {
@@ -747,7 +650,101 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 		emigRules emig = pSpecies->getEmigRules();
 		transferRules trfr = pSpecies->getTransferRules();
 		settleType sett = pSpecies->getSettle();
+		initParams init = pSpecies->getInitParams();
+		// Initialisation
+		outPar << endl << "INITIALISATION CONDITIONS:" << endl;
+		switch (init.seedType) {
+		case 0:
+			outPar << "Free initialisation: \t";
+			switch (init.freeType) {
+			case 0:
+				outPar << "Random \t";
+				outPar << "No. of cells/patches: " << init.nSeedPatches << endl;
+				break;
+			case 1:
+				outPar << "all suitable cells/patches" << endl;
+				break;
+			case 2:
+				outPar << "manually selected cells/patches" << endl;
+				break;
+			}
+			break;
+		case 1:
+			outPar << "From species distribution: \t" << endl;
+			switch (init.spDistType) {
+			case 0:
+				outPar << "all presence cells/patches" << endl;
+				break;
+			case 1:
+				outPar << "some random presence cells/patches" << endl;
+				break;
+			case 2:
+				outPar << "all cells/patches within selected distribution cells" << endl;
+				break;
+			}
+			break;
+		case 2:
+			outPar << "From initial individuals file: " << paramsSim->getDir(1) + init.indsFile << endl;
+			break;
+		case 3:
+			outPar << "From file" << endl;
+			break;
+		}
+		if (init.seedType != 2) {
+			outPar << "INITIAL NO. OF INDIVIDUALS: \t";
+			switch (init.initDens) {
+			case 0:
+				outPar << "at carrying capacity" << endl;
+				break;
+			case 1:
+				outPar << "at half carrying capacity" << endl;
+				break;
+			case 2:
+				if (ppLand.usesPatches) {
+					outPar << init.indsHa << " individuals per ha" << endl;
+				}
+				else {
+					outPar << init.indsCell << " individuals per cell" << endl;
+				}
+				break;
+			}
+			if (dem.stageStruct) {
+				outPar << "INITIAL STAGE PROPORTIONS:" << endl;
+				for (int i = 1; i < sstruct.nStages; i++) {
+					outPar << "stage " << i << ": " << pSpecies->getProp(i) << " \t";
+				}
+				outPar << endl;
+				outPar << "Initial age distribution: ";
+				switch (init.initAge) {
+				case 0:
+					outPar << "lowest possible age";
+					break;
+				case 1:
+					outPar << "randomised";
+					break;
+				case 2:
+					outPar << "quasi-equilibrium";
+					break;
+				}
+				outPar << endl;
+			}
+			outPar << "GEOGRAPHICAL CONSTRAINTS (cell numbers): " << endl;
+			outPar << "min X: " << init.minSeedX << " max X: " << init.maxSeedX << endl;
+			outPar << "min Y: " << init.minSeedY << " max Y: " << init.maxSeedY << endl;
 
+			if (init.seedType == 0) {
+				if (init.initFrzYr > 0) {
+					outPar << "Freeze initial range until year " << init.initFrzYr << endl;
+				}
+				if (init.restrictRange) {
+					outPar << "Restrict range to northern " << init.restrictRows
+						<< " rows every " << init.restrictFreq << " years" << endl;
+					if (init.finalFrzYr < sim.years) {
+						outPar << "Freeze range at year " << init.finalFrzYr << endl;
+					}
+				}
+			}
+		}
 
 		outPar << endl << "ENVIRONMENTAL GRADIENT:\t ";
 		if (pSpecies->usesGradient()) {

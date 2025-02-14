@@ -394,7 +394,6 @@ void NeutralStatsManager::calcPairwiseWeightedFst(set<int> const& patchList, con
 	// Reset table
 	pairwiseFstMatrix.setAll(0.0); // or nanf("NULL")?
 
-	//init
 	vector<double> popWeights(nPatches);
 	vector<double> popSizes(nPatches);
 	vector<vector<double>> numeratorPairwiseFst(nPatches);

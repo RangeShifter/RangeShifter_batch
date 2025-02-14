@@ -142,6 +142,11 @@ Species::Species(
 		}
 	}
 	resetGeneticParameters();
+
+	init.indsFile = "NULL";
+	for (int i = 0; i < gMaxNbStages; i++) {
+		initProps[i] = 0.0;
+	}
 }
 
 Species::~Species() {
@@ -220,6 +225,29 @@ void Species::deleteHabK() {
 		delete[] habK; 
 		habK = nullptr;
 	}
+}
+
+
+void Species::addInitInd(initInd iind) {
+	initInds.push_back(iind);
+}
+
+initInd Species::getInitInd(int ix) { return initInds[ix]; }
+
+void Species::resetInitInds() { initInds.clear(); }
+
+int Species::getNbInitInds() { return static_cast<int>(initInds.size()); }
+
+
+void Species::setProp(short stg, float p) {
+	if (stg >= 0
+		&& stg < gMaxNbStages
+		&& p >= 0.0 && p <= 1.0)
+		initProps[stg] = p;
+}
+
+float Species::getProp(short stg) {
+	return initProps[stg];
 }
 
 void Species::applyRangeRestriction() {

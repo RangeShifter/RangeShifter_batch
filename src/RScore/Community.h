@@ -212,8 +212,6 @@ private:
 };
 
 extern paramSim* paramsSim;
-extern paramInit* paramsInit;
-
 
 //---------------------------------------------------------------------------
 #endif

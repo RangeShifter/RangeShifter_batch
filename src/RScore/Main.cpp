@@ -75,7 +75,6 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	// Initialise globals
 	paramsStoch = new paramStoch;
-	paramsInit = new paramInit;
 	pRandom = new RSrandom;
 
 	assert(0.1 > 0.0); // assert does run correctly

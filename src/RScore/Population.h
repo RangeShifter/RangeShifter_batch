@@ -231,7 +231,6 @@ private:
 //---------------------------------------------------------------------------
 
 extern paramStoch* paramsStoch;
-extern paramInit* paramsInit;
 extern paramSim* paramsSim;
 extern RSrandom* pRandom;
 

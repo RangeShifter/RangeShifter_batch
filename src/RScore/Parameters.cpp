@@ -19,13 +19,11 @@
  *
  --------------------------------------------------------------------------*/
 
-
  //---------------------------------------------------------------------------
 
 #include "Parameters.h"
-//---------------------------------------------------------------------------
 
-//---------------------------------------------------------------------------
+ //---------------------------------------------------------------------------
 
 // Environmental gradient parameters
 
@@ -106,7 +104,6 @@ paramStoch::paramStoch() {
 
 paramStoch::~paramStoch() {}
 
-
 void paramStoch::setStoch(envStochParams e)
 {
 	stoch = e.usesStoch; 
@@ -132,104 +129,6 @@ envStochParams paramStoch::getStoch()
 	e.locExtProb = locExtProb;
 	return e;
 }
-
-
-//---------------------------------------------------------------------------
-
-// Initialisation (seeding) parameters
-
-paramInit::paramInit() {
-	seedType = freeType = spDistType = initDens = 0;
-	initAge = initFrzYr = 0;
-	restrictRange = false;
-	restrictRows = 100;
-	restrictFreq = 10;
-	finalFrzYr = 99999999;
-	indsCell = 1; 
-	indsHa = 0.0;
-	minSeedX = 0; 
-	maxSeedX = 99999999; 
-	minSeedY = 0; 
-	maxSeedY = 99999999;
-	nSeedPatches = 1; 
-	nSpDistPatches = 1;
-	indsFile = "NULL";
-	for (int i = 0; i < gMaxNbStages; i++) {
-		initProp[i] = 0.0;
-	}
-}
-
-paramInit::~paramInit() {
-	initinds.clear();
-}
-
-void paramInit::setInit(initParams i) {
-	if (i.seedType >= 0 && i.seedType <= 3) seedType = i.seedType;
-	if (i.freeType >= 0 && i.freeType <= 2) freeType = i.freeType;
-	if (i.spDistType >= 0 && i.spDistType <= 2) spDistType = i.spDistType;
-	initDens = i.initDens;
-	initAge = i.initAge;
-	if (i.initFrzYr >= 0) initFrzYr = i.initFrzYr;
-	restrictRange = i.restrictRange;
-	if (i.restrictRows > 0) restrictRows = i.restrictRows;
-	if (i.restrictFreq > 0) restrictFreq = i.restrictFreq;
-	if (i.finalFrzYr > 0) finalFrzYr = i.finalFrzYr;
-	if (i.indsCell >= 1) indsCell = i.indsCell;
-	if (i.indsHa > 0.0) indsHa = i.indsHa;
-	if (i.minSeedX >= 0) minSeedX = i.minSeedX;
-	if (i.maxSeedX >= 0) maxSeedX = i.maxSeedX;
-	if (i.minSeedY >= 0) minSeedY = i.minSeedY;
-	if (i.maxSeedY >= 0) maxSeedY = i.maxSeedY;
-	if (i.nSeedPatches >= 1) nSeedPatches = i.nSeedPatches;
-	if (i.nSpDistPatches >= 1) nSpDistPatches = i.nSpDistPatches;
-	indsFile = i.indsFile;
-}
-
-initParams paramInit::getInit() {
-	initParams i;
-	i.seedType = seedType; 
-	i.freeType = freeType; 
-	i.spDistType = spDistType;
-	i.initDens = initDens; 
-	i.initAge = initAge;
-	i.initFrzYr = initFrzYr;
-	i.restrictRange = restrictRange;
-	i.restrictRows = restrictRows; 
-	i.restrictFreq = restrictFreq;
-	i.finalFrzYr = finalFrzYr;
-	i.indsCell = indsCell; 
-	i.indsHa = indsHa;
-	i.minSeedX = minSeedX; 
-	i.minSeedY = minSeedY;
-	i.maxSeedX = maxSeedX; 
-	i.maxSeedY = maxSeedY;
-	i.nSeedPatches = nSeedPatches; 
-	i.nSpDistPatches = nSpDistPatches;
-	i.indsFile = indsFile;
-	return i;
-}
-
-void paramInit::setProp(short stg, float p) {
-	if (stg >= 0 
-		&& stg < gMaxNbStages 
-		&& p >= 0.0 && p <= 1.0) 
-		initProp[stg] = p;
-}
-
-float paramInit::getProp(short stg) {
-	return initProp[stg];
-}
-
-void paramInit::addInitInd(initInd iind) {
-	initinds.push_back(iind);
-}
-
-initInd paramInit::getInitInd(int ix) { return initinds[ix]; }
-
-void paramInit::resetInitInds() { initinds.clear(); }
-
-int paramInit::getNbInitInds() { return static_cast<int>(initinds.size()); }
-
 
 //---------------------------------------------------------------------------
 

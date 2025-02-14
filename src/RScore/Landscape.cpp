@@ -384,7 +384,7 @@ void Landscape::resetLand() {
 	}
 }
 
-void Landscape::initialise(speciesMap_t& allSpecies, landParams land, initParams init) {
+void Landscape::initialise(speciesMap_t& allSpecies, landParams land) {
 
 	// Create patches if not done in ReadLandscape
 	if (land.generated) generatePatches(allSpecies); // artificial landscape
@@ -395,19 +395,9 @@ void Landscape::initialise(speciesMap_t& allSpecies, landParams land, initParams
 		if (pSpecies->getSamplingOption() == "random")
 			samplePatches(pSpecies);
 	}
-
-	// Restrict available landscape to initialised region
-	if (init.seedType == 0 && init.freeType < 2 && init.initFrzYr > 0) {
-		setLandLimits(init.minSeedX, init.minSeedY,
-			init.maxSeedX, init.maxSeedY);
-	}
-	else {
-		resetLandLimits();
-	}
 }
 
-void Landscape::setLandParams(landParams ppp, bool batchMode)
-{
+void Landscape::setLandParams(landParams ppp, bool batchMode) {
 	generated = ppp.generated; 
 	usesPatches = ppp.usesPatches; 
 	spDist = ppp.useSpDist;
@@ -1914,7 +1904,6 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 	ifstream ifsHabMap; // habitat file input stream
 	ifstream ifsPatchMap; // patch file input stream
 #endif
-	initParams init = paramsInit->getInit();
 
 	// Open habitat file and optionally also patch file
 #if RS_RCPP

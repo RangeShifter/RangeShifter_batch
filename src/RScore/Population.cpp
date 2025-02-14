@@ -51,7 +51,7 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 	emigRules emig = pSpecies->getEmigRules();
 	transferRules trfr = pSpecies->getTransferRules();
 	settleType sett = pSpecies->getSettle();
-	initParams init = paramsInit->getInit();
+	initParams init = pSpecies->getInitParams();
 
 	// determine no. of stages and sexes of species to initialise
 	if (dem.stageStruct) {
@@ -97,7 +97,7 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 				n = ninds - cumtotal;
 			}
 			else {
-				n = (int)(ninds * paramsInit->getProp(stg) + 0.5);
+				n = (int)(ninds * pSpecies->getProp(stg) + 0.5);
 				cumtotal += n;
 			}
 		}

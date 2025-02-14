@@ -129,7 +129,7 @@ public:
 	float getK();
 	bool isSuitable();
 
-	int getInitNbInds(const bool& isPatchModel, const int& landResol) const;
+	int getInitNbInds(initParams init, const bool& isPatchModel, const int& landResol) const;
 	
 	void calcGradVal(Species* pSpecies);
 	double getGradVal() const;

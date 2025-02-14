@@ -72,7 +72,6 @@ void OutParameters(Landscape* pLandscape, speciesMap_t);
 extern paramStoch* paramsStoch;
 extern Species* pSpecies;
 extern paramSim* paramsSim;
-extern paramInit* paramsInit;
 extern Community* pComm;
 
 extern string landFile;

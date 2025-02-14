@@ -224,7 +224,6 @@ GenParamType strToGenParamType(const string& str);
 
 // external pointers to parameter sets
 extern paramStoch* paramsStoch;
-extern paramInit* paramsInit;
 extern paramSim* paramsSim;
 
 extern Species* pSpecies;

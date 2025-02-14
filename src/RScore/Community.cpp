@@ -154,7 +154,7 @@ void Community::initialise(Species* pSpecies, int year) {
 		for (auto pchNum : selectedPatches) {
 			Patch* pPatch = pLandscape->findPatch(sp, pchNum);
 			// Determine size of initial population
-			int nInds = pPatch->getInitNbInds(ppLand.usesPatches, ppLand.resol);
+			int nInds = pPatch->getInitNbInds(init, ppLand.usesPatches, ppLand.resol);
 			if (nInds > 0) {
 				Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
 				allPopns.at(sp).push_back(pPop); // add new population to community list
@@ -203,7 +203,7 @@ void Community::initialise(Species* pSpecies, int year) {
 			for (auto pchNum : selectedPatches) {
 				Patch* pPatch = pLandscape->findPatch(sp, pchNum);
 				// Determine size of initial population
-				int nInds = pPatch->getInitNbInds(ppLand.usesPatches, ppLand.resol);
+				int nInds = pPatch->getInitNbInds(init, ppLand.usesPatches, ppLand.resol);
 				if (nInds > 0) {
 					Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
 					allPopns.at(pSpecies->getID()).push_back(pPop); // add new population to community list
@@ -223,9 +223,9 @@ void Community::initialise(Species* pSpecies, int year) {
 		else { // add any initial individuals for the current year
 			initInd iind = initInd();
 			iind.year = 0;
-			int ninds = paramsInit->getNbInitInds();
+			int ninds = pSpecies->getNbInitInds();
 			while (indIx < ninds && iind.year <= year) {
-				iind = paramsInit->getInitInd(indIx);
+				iind = pSpecies->getInitInd(indIx);
 				while (iind.year == year && iind.speciesID == sp) {
 					if (ppLand.usesPatches) {
 						pPatch = pLandscape->findPatch(sp, iind.patchID);
@@ -248,7 +248,7 @@ void Community::initialise(Species* pSpecies, int year) {
 					}
 					indIx++;
 					if (indIx < ninds) {
-						iind = paramsInit->getInitInd(indIx);
+						iind = pSpecies->getInitInd(indIx);
 					}
 					else {
 						iind.year = 99999999;
@@ -463,7 +463,7 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 	}
 
 	// create new individual
-	initInd iind = paramsInit->getInitInd(ix);
+	initInd iind = pSpecies->getInitInd(ix);
 	if (dem.stageStruct) {
 		stg = iind.stage;
 		age = iind.age;

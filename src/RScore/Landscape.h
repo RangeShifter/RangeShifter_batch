@@ -203,7 +203,7 @@ public:
 	void resetLand();
 
 	// Generate patches, sample patches and set landscape limits
-	void initialise(speciesMap_t& allSpecies, landParams land, initParams init);
+	void initialise(speciesMap_t& allSpecies, landParams land);
 
 	// Landscape parameters
 	void setLandParams(landParams ppp, bool batchmode);
@@ -211,8 +211,6 @@ public:
 	landData getLandData();
 	void setGenLandParams(genLandParams ppp);
 	genLandParams getGenLandParams();
-	void setLandLimits(int minX, int minY, int maxX, int maxY);
-	void resetLandLimits();
 	landOrigin getOrigin();
 
 	// Habitat codes
@@ -415,7 +413,6 @@ private:
 rasterdata CheckRasterFile(string);
 
 extern paramStoch* paramsStoch;
-extern paramInit* paramsInit;
 extern paramSim* paramsSim;
 extern RSrandom* pRandom;
 
