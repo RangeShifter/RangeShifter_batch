@@ -414,6 +414,13 @@ public:
 #if RS_RCPP
 	bool doesOutputPaths() const { return output.outPaths; }
 #endif
+
+	initParams getInitParams() const { return init; }
+	void applyRangeRestriction();
+	void liftRangeRestriction(int dimX, int dimY);
+	void freezeYrange(int minYcurrRange, int maxYcurrRange, int dimX);
+	void setLandLimits(int x0, int y0, int x1, int y1);
+
 private:
 
 	// Demographic parameters
@@ -538,6 +545,7 @@ private:
 
 	// Initialisation parameters
 	initParams init;
+	int minX, minY, maxX, maxY;
 
 	// Output controls
 	outputParams output;

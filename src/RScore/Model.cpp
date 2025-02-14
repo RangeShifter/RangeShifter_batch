@@ -133,6 +133,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 		for (auto& [sp, pSpecies] : allSpecies) {
 
+			initParams init = pSpecies->getInitParams();
+			if (init.seedType == 0 && init.initFrzYr > 0)
+				pSpecies->applyRangeRestriction();
+
 			// open a new individuals file for each replicate
 			if (pSpecies->doesOutputInds())
 				pComm->outIndsHeaders(sp, rep, ppLand.landNum, ppLand.usesPatches);
@@ -155,6 +159,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			pLandscape->outPathsHeaders(rep, 0);
 #endif
 
+		// how often should the year be printed?
 		int coutYrFreq = sim.years < 30 ? 1 :
 			sim.years < 300 ? 10 :
 			sim.years < 3000 ? 100 : 
@@ -166,7 +171,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 #if RS_RCPP && !R_CMD
 			Rcpp::checkUserInterrupt();
 #endif
-			bool mustUpdateK = false;
 			if (yr % coutYrFreq == 0) {
 #if RS_RCPP && !R_CMD
 				Rcpp::Rcout << "Starting year " << yr << "..." << endl;
@@ -174,32 +178,43 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				std::cout << "Starting year " << yr << endl;
 #endif
 			}
-			if (init.seedType == 0 && init.freeType < 2) {
-				// apply any range restrictions
-				if (yr == init.initFrzYr) {
-					// release initial frozen range - reset landscape to its full extent
-					pLandscape->resetLandLimits();
-					mustUpdateK = true;
-				}
-				else if (init.restrictRange && yr > init.initFrzYr) {
-					if (yr < init.finalFrzYr) {
-						if ((yr - init.initFrzYr) % init.restrictFreq == 0) {
-							// apply dynamic range restriction
-							commStats s = pComm->getStats();
-							int minY = s.maxY - init.restrictRows;
-							if (minY < 0) minY = 0;
-							pLandscape->setLandLimits(ppLand.minX, minY, ppLand.maxX, ppLand.maxY);
-							mustUpdateK = true;
-						}
+
+			map<species_id, bool> mustUpdateK; 
+				// track which species should have their K re-calculated
+
+			for (auto& [sp, pSpecies] : allSpecies) {
+
+				mustUpdateK.emplace(sp, false);
+
+				initParams init = pSpecies->getInitParams();
+				if (init.seedType == 0) {
+					// apply any range restrictions
+					if (yr == init.initFrzYr) {
+						// Release initial frozen range
+						// Reset available landscape to its full extent
+						pSpecies->liftRangeRestriction(ppLand.dimX, ppLand.dimY);
+						mustUpdateK.at(sp) = true;
 					}
-					else if (yr == init.finalFrzYr) {
-						// apply final range restriction
-						commStats s = pComm->getStats();
-						pLandscape->setLandLimits(ppLand.minX, s.minY, ppLand.maxX, s.maxY);
-						mustUpdateK = true;
+					else if (init.restrictRange && yr > init.initFrzYr) {
+						if (yr < init.finalFrzYr) {
+							if ((yr - init.initFrzYr) % init.restrictFreq == 0) {
+								// Apply dynamic range restriction
+								commStats s = pComm->getStats(sp);
+								int minY = max(0, s.maxY - init.restrictRows);
+								pSpecies->setLandLimits(ppLand.minX, minY, ppLand.maxX, ppLand.maxY);
+								mustUpdateK.at(sp) = true;
+							}
+						}
+						else if (yr == init.finalFrzYr) {
+							// Freeze range in the Y dimension until end of simulation
+							commStats s = pComm->getStats(sp);
+							pSpecies->freezeYrange(s.minY, s.maxY, ppLand.dimX);
+							mustUpdateK.at(sp) = true;
+						}
 					}
 				}
 			}
+			
 			// environmental gradient, stochasticity & local extinction
 			// or dynamic landscape
 			updateland = false;
@@ -207,7 +222,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			// Environmental stochasticity
 			if (env.usesStoch && env.stochIsLocal) {
 				pLandscape->updateLocalStoch();
-				mustUpdateK = true;
+				for (auto& [sp, updateK] : mustUpdateK ) updateK = true;
 			}
 
 			// Environmental gradient
@@ -216,15 +231,16 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					if (pSpecies->isGradientShifting(yr)) {
 						pSpecies->incrementGradOptY();
 					}
-					mustUpdateK = true;
-					pLandscape->updateEnvGradient(sp);
+					mustUpdateK.at(sp) = true;
+					pLandscape->updateEnvGradient(pSpecies);
 				}
 			}
 			
 			// Dynamic landscape
 			if (ppLand.dynamic && yr == landChg.chgyear) {
 				chgNb = landChg.chgnum;
-				updateland = mustUpdateK = true;
+				updateland = true;
+				for (auto& [sp, updateK] : mustUpdateK) updateK = true;
 
 				if (ppLand.usesPatches) {
 					iPatchChg = pLandscape->applyPatchChanges(chgNb, iPatchChg);
@@ -241,10 +257,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				}
 			}
 
-			if (mustUpdateK) {
-				pLandscape->updateCarryingCapacity(allSpecies, yr, chgNb);
+			for (auto& [sp, updateK] : mustUpdateK) {
+				if (updateK) pLandscape->updateCarryingCapacity(allSpecies.at(sp), yr, chgNb);
 			}
-
+			
 			if (ppLand.usesPatches) pLandscape->resetConnectMatrix();
 
 			if (ppLand.dynamic && updateland) {
@@ -707,7 +723,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 		outPar << "min X: " << init.minSeedX << " max X: " << init.maxSeedX << endl;
 		outPar << "min Y: " << init.minSeedY << " max Y: " << init.maxSeedY << endl;
 
-		if (init.seedType == 0 && init.freeType < 2) {
+		if (init.seedType == 0) {
 			if (init.initFrzYr > 0) {
 				outPar << "Freeze initial range until year " << init.initFrzYr << endl;
 			}

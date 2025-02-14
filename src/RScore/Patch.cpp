@@ -134,9 +134,10 @@ void Patch::addCell(Cell* pCell, int x, int y) {
 
 // Calculate the total carrying capacity (no. of individuals) and
 // centroid co-ordinates of the patch
-void Patch::setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float epsGlobal,
-	short nHab, short rasterType, short landIx, bool gradK) {
+void Patch::setCarryingCapacity(Species* pSpecies, float epsGlobal,
+	short nHab, short rasterType, short landIx) {
 	
+	patchLimits landlimits = pSpecies->getLandLimits();
 	envStochParams env = paramsStoch->getStoch();
 	locn loc;
 	short hx;
@@ -224,8 +225,6 @@ bool Patch::isSuitable() { return localK > 0.0f; }
 
 int Patch::getInitNbInds(const bool& isPatchModel, const int& landResol) const {
 
-	initParams init = paramsInit->getInit();
-
 	int nInds = 0;
 	if (localK > 0.0) { // patch is currently suitable for this species
 		switch (init.initDens) {
@@ -248,9 +247,9 @@ int Patch::getInitNbInds(const bool& isPatchModel, const int& landResol) const {
 	return nInds;
 }
 
-void Patch::calcGradVal() {
+void Patch::calcGradVal(Species* pSpecies) {
 	Cell* pCell = getCell(0); // only one cell/patch since cell-based landscape
-	envGradParams grad = getPop()->getSpecies()->getEnvGradient();
+	envGradParams grad = pSpecies->getEnvGradient();
 	float dev = pCell->getEnvDev();
 	float distFromOpt = fabs(grad.optY - y);
 	gradVal = min(1.0, 1.0 - distFromOpt * grad.gradIncr + dev * grad.factor);

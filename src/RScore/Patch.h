@@ -124,14 +124,14 @@ public:
 	void resetPossSettlers();
 	
 	// Calculate total Patch carrying capacity (no. of inds)
-	void setCarryingCapacity(Species* pSpecies, patchLimits landlimits, float epsGlobal,
-		short nHab, short rasterType, short landIx, bool gradK);
+	void setCarryingCapacity(Species* pSpecies, float epsGlobal,
+		short nHab, short rasterType, short landIx);
 	float getK();
 	bool isSuitable();
 
 	int getInitNbInds(const bool& isPatchModel, const int& landResol) const;
 	
-	void calcGradVal();
+	void calcGradVal(Species* pSpecies);
 	double getGradVal() const;
 
 	bool speciesIsPresent();

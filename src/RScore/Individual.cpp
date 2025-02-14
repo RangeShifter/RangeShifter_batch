@@ -696,15 +696,16 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 	Cell* pCell;
 	Patch* pPatch;
 	locn loc = pCurrCell->getLocn();
+	constexpr int maxLoopSteps = 1000;
 
-	landData land = pLandscape->getLandData();
+	int resol = pLandscape->getLandData().resol;
 
 	bool usefullkernel = pSpecies->useFullKernel();
 	transferRules trfr = pSpecies->getTransferRules();
 	settleRules sett = pSpecies->getSettRules(stage, sex);
 
-	pCell = NULL;
-	pPatch = NULL;
+	pCell = nullptr;
+	pPatch = nullptr;
 
 	if (trfr.indVar) { // get individual's kernel parameters
 		kern.meanDist1 = kern.meanDist2 = kern.probKern1 = 0.0;
@@ -712,41 +713,27 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 		auto& pKernel = dynamic_cast<const kernelData&>(*pTrfrData);
 
 		kern.meanDist1 = pKernel.meanDist1;
-		if (trfr.twinKern)
-		{
+		if (trfr.twinKern) {
 			kern.meanDist2 = pKernel.meanDist2;
 			kern.probKern1 = pKernel.probKern1;
 		}
 	}
 	else { // get kernel parameters for the species
-		if (trfr.sexDep) {
-			if (trfr.stgDep) {
-				kern = pSpecies->getSpKernTraits(stage, sex);
-			}
-			else {
-				kern = pSpecies->getSpKernTraits(0, sex);
-			}
-		}
-		else {
-			if (trfr.stgDep) {
-				kern = pSpecies->getSpKernTraits(stage, 0);
-			}
-			else {
-				kern = pSpecies->getSpKernTraits(0, 0);
-			}
-		}
+		kern = pSpecies->getSpKernTraits(
+			trfr.stgDep ? stage : 0,
+			trfr.sexDep ? sex : 0
+		);
 	}
 
 	// scale the appropriate kernel mean to the cell size
-	if (trfr.twinKern)
-	{
+	if (trfr.twinKern) {
 		if (pRandom->Bernoulli(kern.probKern1))
-			meandist = kern.meanDist1 / (float)land.resol;
+			meandist = kern.meanDist1 / (float)resol;
 		else
-			meandist = kern.meanDist2 / (float)land.resol;
+			meandist = kern.meanDist2 / (float)resol;
 	}
-	else
-		meandist = kern.meanDist1 / (float)land.resol;
+	else meandist = kern.meanDist1 / (float)resol;
+
 	// scaled mean may not be less than 1 unless emigration derives from the kernel
 	// (i.e. the 'use full kernel' option is applied)
 	if (!usefullkernel && meandist < 1.0) meandist = 1.0;
@@ -763,7 +750,7 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 				// (in a cell-based model, this has no effect, other than as a processing overhead)
 				if (status == dispersing) {
 					pCell = pNatalPatch->getRandomCell();
-					if (pCell != 0) {
+					if (pCell != nullptr) {
 						loc = pCell->getLocn();
 					}
 				}
@@ -785,15 +772,13 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 				if (path != nullptr) (path->year)++;
 #endif
 				loopsteps++;
-			} while (loopsteps < 1000 &&
+			} while (loopsteps < maxLoopSteps &&
 				// keep drawing if out of bounds of landscape or same cell
-				((!absorbing && (newX < land.minX || newX > land.maxX
-					|| newY < land.minY || newY > land.maxY))
+				((!absorbing && isWithinLimits(newX, newY, land))
 					|| (!usefullkernel && newX == loc.x && newY == loc.y))
 				);
-			if (loopsteps < 1000) {
-				if (newX < land.minX || newX > land.maxX
-					|| newY < land.minY || newY > land.maxY) { // beyond absorbing boundary
+			if (loopsteps < maxLoopSteps) {
+				if (isWithinLimits(newX, newY, land)) { // beyond absorbing boundary
 					// this cannot be reached if not absorbing?
 					pCell = nullptr;
 					patch = nullptr;
@@ -822,10 +807,14 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 				patch = nullptr;
 				patchNum = -1;
 			}
-		} while (!absorbing && patchNum < 0 && loopsteps < 1000); 			 // in a no-data region
-	} while (!usefullkernel && pPatch == pNatalPatch && loopsteps < 1000); 	// still in the original (natal) patch
+		} while (!absorbing 
+			&& patchNum < 0 
+			&& loopsteps < maxLoopSteps); 			 // in a no-data region
+	} while (!usefullkernel 
+		&& pPatch == pNatalPatch
+		&& loopsteps < maxLoopSteps); 	// still in the original (natal) patch
 
-	if (loopsteps < 1000) {
+	if (loopsteps < maxLoopSteps) {
 		if (pCell == nullptr) { // beyond absorbing boundary or in no-data cell
 			// only if absorbing=true and out of bounddaries
 			pCurrCell = nullptr;
@@ -842,14 +831,8 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 				// unsuitable patch
 				isDispersing = false;
 				// can wait in matrix if population is stage structured ...
-				if (pSpecies->stageStructured()) {
-					// ... and wait option is applied ...
-					if (sett.wait) { // ... it is
-						status = waitNextDispersal; // waiting
-					}
-					else // ... it is not
-						status = diedInTransfer; // dies (unless there is a suitable neighbouring cell)
-				}
+				if (pSpecies->stageStructured() && sett.wait)
+					status = waitNextDispersal;
 				else status = diedInTransfer; // dies (unless there is a suitable neighbouring cell)
 			}
 		}
@@ -860,7 +843,7 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 	}
 
 	// apply dispersal-related mortality, which may be distance-dependent
-	dist *= (float)land.resol; // re-scale distance moved to landscape scale
+	dist *= (float)resol; // re-scale distance moved to landscape scale
 	if (isAlive(status) || status == diedInTransfer) {
 		double dispmort;
 		trfrMortParams mort = pSpecies->getMortParams();
@@ -875,7 +858,6 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 			isDispersing = false;
 		}
 	}
-
 	return isDispersing;
 }
 

@@ -32,7 +32,7 @@ ofstream outMovePaths;
 
 //---------------------------------------------------------------------------
 
-bool isInLandBounds(const int& x, const int& y, const landData& land) {
+bool isWithinLimits(const int& x, const int& y, const landData& land) {
 	// including limits set by the freeze feature
 	return (x >= land.minX
 		&& x <= land.maxX
@@ -518,26 +518,6 @@ genLandParams Landscape::getGenLandParams()
 	ppp.hurst = hurst;
 	ppp.maxCells = maxCells;
 	return ppp;
-}
-
-void Landscape::setLandLimits(int x0, int y0, int x1, int y1) {
-	if (x0 >= 0 && x1 >= 0 
-		&& x0 <= x1 && x1 < dimX
-		&& y0 >= 0 && y1 >= 0 
-		&& y0 <= y1 && y1 < dimY) {
-
-		minX = x0; 
-		maxX = x1; 
-		minY = y0; 
-		maxY = y1;
-
-	}
-}
-
-void Landscape::resetLandLimits() {
-	minX = minY = 0; 
-	maxX = dimX - 1; 
-	maxY = dimY - 1;
 }
 
 //---------------------------------------------------------------------------
@@ -1031,27 +1011,10 @@ void Landscape::resetPatchPopns() {
 	}
 }
 
-void Landscape::updateCarryingCapacity(const speciesMap_t& allSpecies, int yr, short landIx) {
-	
-	patchLimits landlimits;
-	landlimits.xMin = minX; 
-	landlimits.xMax = maxX;
-	landlimits.yMin = minY; 
-	landlimits.yMax = maxY;
-
-	for (auto& [sp, patches] : patchesList) {
-
-		Species* pSpecies = allSpecies.at(sp);
-		envGradParams grad = pSpecies->getEnvGradient();
-		bool gradientInK = grad.usesGradient && grad.gradType == 1;
-
-		int npatches = static_cast<int>(patches.size());
-		for (int i = 0; i < npatches; i++) {
-			if (!patches[i]->isMatrix()) {
-				patches[i]->setCarryingCapacity(pSpecies, landlimits, getGlobalStoch(yr),
-					nHab, rasterType, landIx, gradientInK);
-			}
-		}
+void Landscape::updateCarryingCapacity(Species* pSpecies, int yr, short landIx) {
+	for (auto& pPatch : patchesList.at(pSpecies->getID())) {
+		if (pPatch->isMatrix()) continue;
+		pPatch->setCarryingCapacity(pSpecies, getGlobalStoch(yr), nHab, rasterType, landIx);
 	}
 }
 
@@ -1131,10 +1094,10 @@ void Landscape::drawGradientDev() {
 	}
 }
 
-void Landscape::updateEnvGradient(species_id sp)
+void Landscape::updateEnvGradient(Species* pSpecies)
 {
-	for (auto& pPatch : patchesList.at(sp)) {
-		pPatch->calcGradVal();
+	for (auto& pPatch : patchesList.at(pSpecies->getID())) {
+		pPatch->calcGradVal(pSpecies);
 	}
 }
 
@@ -2018,7 +1981,7 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 
 	dimX = ncols; 
 	dimY = nrows; 
-	minX = maxY = 0; 
+	minX = minY = 0; 
 	maxX = dimX - 1;
 	maxY = dimY - 1;
 
@@ -2408,8 +2371,7 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 #if RS_RCPP
 	ifsHabMap >> habFloat;
 	if (!ifsHabMap.eof()) EOFerrorR(habfile);
-	if (usesPatches)
-	{
+	if (usesPatches) {
 		ifsPatchMap >> patchFloat;
 		if (!ifsPatchMap.eof()) EOFerrorR(pchfile);
 	}

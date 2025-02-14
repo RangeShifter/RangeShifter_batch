@@ -244,7 +244,7 @@ public:
 	void samplePatches(Species* pSpecies);
 	int checkTotalCover();
 	void resetPatchPopns();
-	void updateCarryingCapacity(const speciesMap_t& allSpecies, int year, short landIx);
+	void updateCarryingCapacity(Species* pSpecies, int year, short landIx);
 	Cell* findCell(int x, int y);
 	int patchCount(species_id id) const;
 	int allPatchCount() const;
@@ -252,7 +252,7 @@ public:
 
 	// Environmental gradient
 	void drawGradientDev();
-	void updateEnvGradient(species_id sp);
+	void updateEnvGradient(Species* pSpecies);
 
 	// Environmental stochasticity
 	void setGlobalStoch(int	nbYears);

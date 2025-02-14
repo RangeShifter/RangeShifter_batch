@@ -222,6 +222,33 @@ void Species::deleteHabK() {
 	}
 }
 
+void Species::applyRangeRestriction() {
+	minX = init.minSeedX;
+	maxX = init.maxSeedX;
+	minY = init.minSeedY;
+	maxY = init.maxSeedY;
+}
+
+void Species::freezeYrange(int minYcurrRange, int maxYcurrRange, int dimX) {
+	minX = 0;
+	maxX = dimX - 1;
+	minY = minYcurrRange;
+	maxY = maxYcurrRange;
+}
+
+void Species::liftRangeRestriction(int dimX, int dimY) {
+	minX = minY = 0;
+	maxX = dimX - 1;
+	maxY = dimY - 1;
+}
+
+void Species::setLandLimits(int x0, int y0, int x1, int y1) {
+	minX = x0;
+	maxX = x1;
+	minY = y0;
+	maxY = y1;
+}
+
 void Species::setStage(const stageParams s) {
 	if (s.nStages > 1) nStages = s.nStages;
 	if (s.repInterval >= 0) repInterval = s.repInterval;

@@ -582,9 +582,9 @@ commStats Community::getStats(species_id sp)
 	s.ninds += matrixPops.at(sp)->getStats().nInds;
 	s.nnonjuvs += matrixPops.at(sp)->getStats().nNonJuvs;
 
-	for (auto pop : allPopns.at(sp)) {
+	for (auto pPop : allPopns.at(sp)) {
 
-		patchPop = pop->getStats();
+		patchPop = pPop->getStats();
 		s.ninds += patchPop.nInds;
 		s.nnonjuvs += patchPop.nNonJuvs;
 
@@ -943,8 +943,7 @@ void Community::outRange(species_id sp, int rep, int yr, int gen)
 			<< "\t" << (float)s.minY * (float)ppLand.resol + originVal.minNorth
 			<< "\t" << (float)(s.maxY + 1) * (float)ppLand.resol + originVal.minNorth;
 	}
-	else
-		rangeOfs << "\t0\t0\t0\t0";
+	else rangeOfs << "\t0\t0\t0\t0";
 
 	if (emig.indVar || trfr.indVar || sett.indVar) { // output trait means
 		traitsums ts = traitsums();
