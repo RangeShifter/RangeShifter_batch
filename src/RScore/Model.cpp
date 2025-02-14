@@ -39,7 +39,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 	landParams ppLand = pLandscape->getLandParams();
 	envStochParams env = paramsStoch->getStoch();
-	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
 	transferRules trfr = pSpecies->getTransferRules();
 	simParams sim = paramsSim->getSim();
@@ -50,6 +49,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		if (pSpecies->savesVisits()) anySavesVisits = true;
 	}
 	bool hasMultipleReplicates = sim.reps > 1;
+
+	int maxNbSeasons = 0;
+	for (auto& [sp, pSpecies] : allSpecies) {
+		int nbSeasons = pSpecies->getDemogrParams().repSeasons;
+		if (nbSeasons > maxNbSeasons) maxNbSeasons = nbSeasons;
+	}
 
 	if (!ppLand.generated) {
 		pComm = new Community(pLandscape, allSpecies);
@@ -286,13 +291,13 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			}
 
 			// Generation loop
-			for (int gen = 0; gen < dem.repSeasons; gen++) {
+			for (int gen = 0; gen < maxNbSeasons; gen++) {
 				
 				// Output and pop. visualisation before reproduction
 				pComm->traitAndOccOutput(rep, yr, gen);
 
 				// Non-structured pops: range and population output *before* reproductrion
-				if (!dem.stageStruct) pComm->popAndRangeOutput(rep, yr, gen);
+				if (!paramsSim.stageStruct) pComm->popAndRangeOutput(rep, yr, gen);
 
 #if RS_RCPP && !R_CMD
 				if (sim.ReturnPopRaster && sim.outPop && yr >= sim.outStartPop && yr % sim.outIntPop == 0) {
@@ -309,13 +314,13 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				// Reproduction
 				pComm->reproduction(yr);
 
-				if (dem.stageStruct && sstruct.survival == 0) { // at reproduction
+				if (paramsSim.stageStruct && sstruct.survival == 0) { // at reproduction
 					// Draw survival + devlpt for adults only
 					pComm->drawSurvivalDevlpt(false, true, true, true);
 				}
 
 				// Stage-structured pops: range + pop output *after* reproductrion
-				if (dem.stageStruct) pComm->popAndRangeOutput(rep, yr, gen);
+				if (paramsSim.stageStruct) pComm->popAndRangeOutput(rep, yr, gen);
 
 				// Dispersal
 				pComm->emigration();
@@ -323,10 +328,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 				// Draw survival and development
 				bool drawJuvs = true;
-				bool drawAdults = !dem.stageStruct 
+				bool drawAdults = !paramsSim.stageStruct
 					|| sstruct.survival != 0; // else already resolved for adults
 				bool drawDevlpt = true;
-				bool drawSurvival = !dem.stageStruct 
+				bool drawSurvival = !paramsSim.stageStruct
 					|| sstruct.survival != 2; // else resolved at end of year
 				pComm->drawSurvivalDevlpt(drawJuvs, drawAdults, drawDevlpt, drawSurvival);
 
@@ -355,7 +360,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 			} // end of the generation loop
 
-			if (dem.stageStruct) {
+			if (paramsSim.stageStruct) {
 				if (sstruct.survival == 2) {
 					// Draw survival for all stages
 					pComm->drawSurvivalDevlpt(true, true, false, true);
