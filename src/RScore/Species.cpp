@@ -151,12 +151,12 @@ Species::Species(
 
 Species::~Species() {
 	// demographic parameters
-	if (habK != NULL) deleteHabK();
-	if (ddwtFec != 0) deleteDDwtFec();
-	if (ddwtDev != 0) deleteDDwtDev();
-	if (ddwtSurv != 0) deleteDDwtSurv();
+	if (habK != nullptr) deleteHabK();
+	if (ddwtFec != nullptr) deleteDDwtFec();
+	if (ddwtDev != nullptr) deleteDDwtDev();
+	if (ddwtSurv != nullptr) deleteDDwtSurv();
 	// transfer parameters
-	if (habCost != 0 || habStepMort != 0) deleteHabCostMort();
+	if (habCost != nullptr || habStepMort != nullptr) deleteHabCostMort();
 }
 
 species_id Species::getID() { return ID; }

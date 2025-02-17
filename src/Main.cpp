@@ -81,7 +81,6 @@ string getProjectDir(const vector<string>& mainArgs) {
 
 paramSim* paramsSim;		// pointer to simulation parameters
 
-Species* pSpecies;		// pointer to species
 Community* pComm;		// pointer to community
 RSrandom* pRandom;		// pointer to random number routines
 
@@ -103,6 +102,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	t0 = static_cast<int>(time(0));
 
 	paramsStoch = new paramStoch;
+	speciesMap_t allSpecies;
 
 	// set up working directory and control file name
 	vector<string> args(argc);
@@ -129,14 +129,16 @@ int _tmain(int argc, _TCHAR* argv[])
 	if (b.ok) {
 		paramsSim->setBatchNum(b.batchNum);
 		// Set up species
-		pSpecies = new Species(
-			b.reproType,
-			b.nbRepSeasons,
-			b.isStageStruct == 1, // int to bool
-			b.nbStages,
-			b.transferType == 1,
-			b.transferType
-		);
+		allSpecies.emplace(0,
+			new Species(
+				b.reproType,
+				b.nbRepSeasons,
+				b.usesStageStruct == 1, // int to bool
+				b.nbStages,
+				b.transferType == 1,
+				b.transferType
+				// TODO: outParameters need to be moved from sp c'tor
+			));
 		cout << endl << "Batch input files OK" << endl;
 	}
 	else {
@@ -156,7 +158,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if (b.ok) {
 		try {
-			RunBatch(b.nSimuls, b.nLandscapes, pSpecies);
+			RunBatch(b.nSimuls, b.nLandscapes, allSpecies);
 		}
 		catch (const std::exception& e) {
 			cerr << endl << "Error: " << e.what() << endl;
@@ -167,7 +169,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	delete paramsStoch;
 
 	delete paramsSim;
-	delete pSpecies;
+
+	for (auto& [sp, pSpecies] : allSpecies)
+		delete pSpecies;
 
 	t1 = static_cast<int>(time(0));
 	cout << endl << "***** Elapsed time " << t1 - t0 << " seconds" << endl << endl;

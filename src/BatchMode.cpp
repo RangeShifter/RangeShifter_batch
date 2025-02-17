@@ -266,7 +266,7 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 		if (gStageStruct != 0 && gStageStruct != 1) {
 			BatchError(whichInputFile, -999, 1, "StageStruct"); nbErrors++;
 		}
-		else b.isStageStruct = gStageStruct;
+		else b.usesStageStruct = gStageStruct;
 	}
 	else anyFormatError = true; // wrong control file format
 
@@ -6487,7 +6487,7 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 }
 
 //---------------------------------------------------------------------------
-void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
+void RunBatch(int nSimuls, int nLandscapes, speciesMap_t allSpecies)
 {
 	int land_nr;
 	int read_error;
@@ -6495,8 +6495,6 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 	simParams sim = paramsSim->getSim();
 
 	Landscape* pLandscape = nullptr;  		// pointer to landscape
-
-	speciesMap_t allSpecies{ {0, pSpecies} }; // only one for now
 
 	// Open landscape batch file and read header record
 	ifsLandFile.open(landFile);
@@ -6631,31 +6629,19 @@ void RunBatch(int nSimuls, int nLandscapes, Species* pSpecies)
 					ReadStageStructure();
 				}
 				read_error = ReadEmigration();
-				if (read_error) {
-					params_ok = false;
-				}
+				if (read_error) params_ok = false;
 				read_error = ReadTransferFile(pLandscape);
-				if (read_error) {
-					params_ok = false;
-				}
+				if (read_error) params_ok = false; 
 				read_error = ReadSettlement();
-				if (read_error) {
-					params_ok = false;
-				}
+				if (read_error) params_ok = false;
 				read_error = ReadInitialisation(pLandscape);
-				if (read_error) {
-					params_ok = false;
-				}
+				if (read_error) params_ok = false;
 
 				if (gHasGenetics) {
 					read_error = ReadGeneticsFile(ifsGeneticsFile, pLandscape);
-					if (read_error) {
-						params_ok = false;
-					}
+					if (read_error) params_ok = false; 
 					read_error = ReadTraitsFile(ifsTraitsFile, gNbTraitFileRows[i]);
-					if (read_error) {
-						params_ok = false;
-					}
+					if (read_error) params_ok = false;
 				}
 				
 				if (params_ok) {

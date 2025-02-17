@@ -63,7 +63,7 @@ struct batchfiles {
 	int isPatchModel, resolution, landType, maxNbHab, speciesDist, distResol;
 	int reproType;
 	int nbRepSeasons;
-	int isStageStruct, nbStages, transferType;
+	int usesStageStruct, nbStages, transferType;
 	int sexesDem;		// no. of explicit sexes for demographic model
 	int nbSexesDisp;	// no. of explicit sexes for dispersal model
 	string parameterFile;
@@ -185,7 +185,7 @@ void FileOK(string, int, int);
 void FileHeadersOK(string);
 void SimulnCountError(string);
 
-void RunBatch(int nbSims, int nbLandscapes, Species* pSpecies);
+void RunBatch(int nbSims, int nbLandscapes, speciesMap_t allSpecies);
 int ReadParameters(Landscape*);
 int ReadLandFile(Landscape*);
 int ReadDynLandFile(Landscape*);
