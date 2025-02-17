@@ -77,6 +77,9 @@ public:
 	// functions to manage populations occurring in the community
 	void initialise(Species* pSpecies, int year);
 	void resetPopns();
+	void resetActiveSpecies();
+	void disableInactiveSpecies(int gen);
+
 	Species* findSpecies(species_id id);
 	void initialInd(
 		Landscape* pLandscape, 
@@ -123,6 +126,7 @@ public:
 
 	void popAndRangeOutput(int rep, int yr, int gen);
 	void traitAndOccOutput(int rep, int yr, int gen);
+	void indsAndGeneticsOutput(int rep, int yr, int gen);
 
 	// Open range file and write header record
 	bool outRangeHeaders(species_id sp, int landnr);
@@ -197,6 +201,8 @@ private:
 	map<species_id, std::vector<Population*>> allPopns;
 
 	map<species_id, unique_ptr<NeutralStatsManager>> neutralStatsMaps;
+
+	set<species_id> activeSpecies;
 
 	map<species_id, ofstream> outPopOfs;
 	map<species_id, ofstream> outIndsOfs;

@@ -290,9 +290,15 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				}
 			}
 
+			// Keep track of which species are 
+			pComm->resetActiveSpecies();
+
 			// Generation loop
 			for (int gen = 0; gen < maxNbSeasons; gen++) {
-				
+
+				// Pause species which last season has been exceeded
+				pComm->disableInactiveSpecies(gen);
+
 				// Output and pop. visualisation before reproduction
 				pComm->traitAndOccOutput(rep, yr, gen);
 
@@ -335,26 +341,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					|| sstruct.survival != 2; // else resolved at end of year
 				pComm->drawSurvivalDevlpt(drawJuvs, drawAdults, drawDevlpt, drawSurvival);
 
-				for (auto& [sp, pSpecies] : allSpecies) { // could subset ahead
-
-					// Output Individuals
-					if (pSpecies->isIndOutputYear(yr)) {
-						pComm->outInds(sp, rep, yr, gen);
-					}
-
-					// Output Genetics
-					if (pSpecies->isGeneticOutputYear(yr)) {
-						if (pSpecies->getSamplingOption() == "random_occupied" 
-							|| pSpecies->getSamplingOption() == "all")
-							// then must re-sample every year
-							pLandscape->samplePatches(pSpecies);
-						pComm->sampleIndividuals(sp);
-						if (pSpecies->doesOutputGeneValues())
-							pComm->outputGeneValues(sp, yr, gen);
-						if (pSpecies->doesOutputWeirCockerham() || pSpecies->doesOutputWeirHill())
-							pComm->outNeutralGenetics(sp, rep, yr, gen);
-					}
-				}
+				pComm->indsAndGeneticsOutput(rep, yr, gen);
 
 				pComm->applySurvivalDevlpt();
 

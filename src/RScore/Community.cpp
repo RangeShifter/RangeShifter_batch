@@ -285,9 +285,25 @@ void Community::resetPopns() {
 	Individual::indCounter = 0;
 }
 
+void Community::resetActiveSpecies() {
+	activeSpecies.clear();
+	for (auto& sp : views::keys(speciesMap))
+		activeSpecies.insert(sp);
+}
+
+void Community::disableInactiveSpecies(int gen) {
+	set<species_id> actSpCopy = activeSpecies; 
+	// Since we're erasing elements we need to iterate over a copy
+
+	for (auto& sp : actSpCopy) {
+		int nbSeasons = speciesMap.at(sp)->getDemogrParams().repSeasons;
+		if (gen >= nbSeasons) activeSpecies.erase(sp);
+	}
+}
+
 void Community::applyRandLocExt(const float& probExt) {
-	for (auto& [sp, popns] : allPopns) {
-		for (auto pop : popns) {
+	for (auto& sp : activeSpecies) {
+		for (auto pop : allPopns.at(sp)) {
 			if (pRandom->Bernoulli(probExt))
 				pop->extirpate();
 		}
@@ -295,8 +311,8 @@ void Community::applyRandLocExt(const float& probExt) {
 }
 
 void Community::applyLocalExtGrad() {
-	for (auto& [sp, popns] : allPopns) {
-		for (auto pop : popns) {
+	for (auto& sp : activeSpecies) {
+		for (auto pop : allPopns.at(sp)) {
 			pop->applyLocalExtGrad();
 		}
 	}
@@ -329,8 +345,8 @@ void Community::reproduction(int yr)
 			eps = pLandscape->getGlobalStoch(yr);
 		}
 	}
-	for (auto& [sp, popns] : allPopns) {
-		for (auto pop : popns) {
+	for (auto& sp : activeSpecies) {
+		for (auto pop : allPopns.at(sp)) {
 			Patch* pPatch = pop->getPatch();
 			float localK = pPatch->getK();
 			if (localK > 0.0) {
@@ -343,8 +359,8 @@ void Community::reproduction(int yr)
 
 void Community::emigration()
 {
-	for (auto& [sp, popns] : allPopns) {
-		for (auto pop : popns) {
+	for (auto& sp : activeSpecies) {
+		for (auto pop : allPopns.at(sp)) {
 			pop->emigration(pop->getPatch()->getK());
 		}
 	}
@@ -355,8 +371,8 @@ void Community::dispersal(short landIx, short nextseason)
 	simParams sim = paramsSim->getSim();
 
 	// initiate dispersal - all emigrants leave their natal community and join matrix community
-	for (auto& [sp, popns] : allPopns) {
-		for (auto pop : popns) {
+	for (auto& sp : activeSpecies) {
+		for (auto pop : allPopns.at(sp)) {
 
 			for (int j = 0; j < pop->getStats().nInds; j++) {
 				disperser disp = pop->extractDisperser(j);
@@ -378,18 +394,18 @@ void Community::dispersal(short landIx, short nextseason)
 	int ndispersers = 0;
 	do {
 		// Reset possible settlers for all patches before transfer
-		for (auto& [speciesID, mtxPop] : matrixPops) {
-			mtxPop->getPatch()->resetPossSettlers();
+		for (auto& sp : activeSpecies) {
+			matrixPops.at(sp)->getPatch()->resetPossSettlers();
 		}
-		for (auto& [sp, popns] : allPopns) {
-			for (auto pop : popns) {
+		for (auto& sp : activeSpecies) {
+			for (auto pop : allPopns.at(sp)) {
 				pop->getPatch()->resetPossSettlers();
 			}
 		}
 
 		// Transfer takes place in the matrix
-		for (auto& [speciesID, mtxPop] : matrixPops) {
-			ndispersers = mtxPop->transfer(pLandscape, landIx, nextseason);
+		for (auto& sp : activeSpecies) {
+			ndispersers = matrixPops.at(sp)->transfer(pLandscape, landIx, nextseason);
 		}
 		completeDispersal(pLandscape);
 
@@ -406,8 +422,9 @@ void Community::completeDispersal(Landscape* pLandscape)
 	Patch* pNewPatch;
 	Cell* pPrevCell;
 
-	for (auto& [sp, mtxPop] : matrixPops) {
+	for (auto& sp : activeSpecies) {
 
+		Population* mtxPop = matrixPops.at(sp);
 		int popsize = mtxPop->getNInds();
 		for (int j = 0; j < popsize; j++) {
 
@@ -488,19 +505,19 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 
 void Community::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv)
 {
-	for (auto& [spId, mtxPop] : matrixPops) {
-		mtxPop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
+	for (auto& sp: activeSpecies) {
+		matrixPops.at(sp)->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
 	}
-	for (auto& [sp, popns] : allPopns) {
-		for (auto pop : popns) {
+	for (auto& sp : activeSpecies) {
+		for (auto pop : allPopns.at(sp)) {
 			pop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
 		}
 	}
 }
 
 void Community::applySurvivalDevlpt() {
-	for (auto& [sp, popns] : allPopns) {
-		for (auto pop : popns)
+	for (auto& sp : activeSpecies) {
+		for (auto pop : allPopns.at(sp))
 			pop->applySurvivalDevlpt();
 	}
 }
@@ -606,11 +623,11 @@ commStats Community::getStats(species_id sp)
 // For outputs and population visualisations pre-reproduction
 void Community::popAndRangeOutput(int rep, int yr, int gen) {
 
-	for (auto& [sp, pSpecies] : speciesMap) {
+	for (auto& sp : activeSpecies) {
 
+		Species* pSpecies = speciesMap.at(sp);
 		if (pSpecies->isRangeOutputYear(yr))
 			outRange(sp, rep, yr, gen);
-
 		if (pSpecies->isIndOutputYear(yr))
 			outPop(sp, rep, yr, gen);
 	}
@@ -687,6 +704,34 @@ void Community::outPop(species_id sp, int rep, int yr, int gen) {
 	for (auto pop : allPopns.at(sp)) {
 		if (pop->getPatch()->isSuitable() || pop->totalPop() > 0) {
 			pop->outPopulation(outPopOfs.at(sp), rep, yr, gen, env.stochIsLocal, eps, land.usesPatches, writeEnv, gradK);
+		}
+	}
+}
+
+void Community::indsAndGeneticsOutput(int rep, int yr, int gen) {
+
+	for (auto& sp : activeSpecies) {
+
+		Species* pSpecies = speciesMap.at(sp);
+
+		// Output Individuals
+		if (pSpecies->isIndOutputYear(yr))
+			outInds(sp, rep, yr, gen);
+
+		// Output Genetics
+		if (pSpecies->isGeneticOutputYear(yr)) {
+			if (pSpecies->getSamplingOption() == "random_occupied"
+				|| pSpecies->getSamplingOption() == "all")
+				// then must re-sample every year
+				pLandscape->samplePatches(pSpecies);
+
+			sampleIndividuals(sp);
+
+			if (pSpecies->doesOutputGeneValues())
+				outputGeneValues(sp, yr, gen);
+			if (pSpecies->doesOutputWeirCockerham() 
+				|| pSpecies->doesOutputWeirHill())
+				outNeutralGenetics(sp, rep, yr, gen);
 		}
 	}
 }
@@ -2185,7 +2230,8 @@ void Community::outNeutralGenetics(species_id sp, int rep, int yr, int gen) {
 //For outputs and population visualisations pre-reproduction
 void Community::traitAndOccOutput(int rep, int yr, int gen) {
 
-	for (auto& [sp, pSpecies] : speciesMap) {
+	for (auto& sp : activeSpecies) {
+		Species* pSpecies = speciesMap.at(sp);
 		// trait outputs and visualisation
 		if (pSpecies->isTraitCellOutYear(yr)
 			|| pSpecies->isTraitRowOutYear(yr))
