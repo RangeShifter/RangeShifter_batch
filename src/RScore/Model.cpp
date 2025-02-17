@@ -303,7 +303,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				pComm->traitAndOccOutput(rep, yr, gen);
 
 				// Non-structured pops: range and population output *before* reproductrion
-				if (!paramsSim.stageStruct) pComm->popAndRangeOutput(rep, yr, gen);
+				if (!sim.usesStageStruct) pComm->popAndRangeOutput(rep, yr, gen);
 
 #if RS_RCPP && !R_CMD
 				if (sim.ReturnPopRaster && sim.outPop && yr >= sim.outStartPop && yr % sim.outIntPop == 0) {
@@ -320,13 +320,13 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				// Reproduction
 				pComm->reproduction(yr);
 
-				if (paramsSim.stageStruct && sstruct.survival == 0) { // at reproduction
+				if (sim.usesStageStruct && sstruct.survival == 0) { // at reproduction
 					// Draw survival + devlpt for adults only
 					pComm->drawSurvivalDevlpt(false, true, true, true);
 				}
 
 				// Stage-structured pops: range + pop output *after* reproductrion
-				if (paramsSim.stageStruct) pComm->popAndRangeOutput(rep, yr, gen);
+				if (sim.usesStageStruct) pComm->popAndRangeOutput(rep, yr, gen);
 
 				// Dispersal
 				pComm->emigration();
@@ -334,10 +334,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 				// Draw survival and development
 				bool drawJuvs = true;
-				bool drawAdults = !paramsSim.stageStruct
+				bool drawAdults = !sim.usesStageStruct
 					|| sstruct.survival != 0; // else already resolved for adults
 				bool drawDevlpt = true;
-				bool drawSurvival = !paramsSim.stageStruct
+				bool drawSurvival = !sim.usesStageStruct
 					|| sstruct.survival != 2; // else resolved at end of year
 				pComm->drawSurvivalDevlpt(drawJuvs, drawAdults, drawDevlpt, drawSurvival);
 
@@ -347,7 +347,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 			} // end of the generation loop
 
-			if (paramsSim.stageStruct) {
+			if (sim.usesStageStruct) {
 				if (sstruct.survival == 2) {
 					// Draw survival for all stages
 					pComm->drawSurvivalDevlpt(true, true, false, true);

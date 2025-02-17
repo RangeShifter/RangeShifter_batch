@@ -116,11 +116,8 @@ enum DistributionType { UNIFORM, NORMAL, GAMMA, NEGEXP, SCALED, KAM, SSM, NONE }
 enum ExpressionType { AVERAGE, ADDITIVE, NOTEXPR, MULTIPLICATIVE };
 
 string to_string(const TraitType& tr);
-
 string to_string(const GenParamType& param);
-
 string to_string(const DistributionType& dist);
-
 string to_string(const ExpressionType& expr);
 
 /** Param's types **/
@@ -178,9 +175,9 @@ public:
 	envStochParams getStoch();
 
 private:
-	bool stoch;			// stochasticity applied
-	bool local;			// applied locally (if not, application is global)
-	bool inK;			// in carrying capacity (if not, in growth rate)
+	bool usesStoch;			// stochasticity applied
+	bool stochIsLocal;			// applied locally (if not, application is global)
+	bool stochInK;			// in carrying capacity (if not, in growth rate)
 	bool usesLocalExt;	// local extinction applied
 	float ac;			// temporal autocorrelation coefficient		
 	float std;			// amplitude of fluctuations: sampled from N(0,std)
@@ -245,6 +242,7 @@ struct simParams {
 	int simulation; 
 	int reps; 
 	int years;
+	bool usesStageStruct;
 	bool absorbing;
 	bool fixReplicateSeed;
 	bool batchMode;
@@ -256,7 +254,6 @@ public:
 	paramSim(const string& pathToProjDir = "");
 	~paramSim();
 	void setSim(simParams sim);
-	void setGeneticSim(string patchSamplingOption, bool outputGeneticValues, bool outputWeirCockerham, bool outputWeirHill, int outputStartGenetics, int outputGeneticInterval);
 	simParams getSim();
 	int getSimNum();
 	string getDir(int option);
@@ -274,7 +271,8 @@ private:
 	int simulation;				// simulation no.
 	int reps;					// no. of replicates
 	int years;					// no. of years
-	bool batchMode;				
+	bool batchMode;		
+	bool usesStageStruct;       // is stage-structure enabled?
 	bool absorbing; 			// landscape boundary and no-data regions are absorbing boundaries
 	string dir;					// full name of working directory
 	bool fixReplicateSeed;

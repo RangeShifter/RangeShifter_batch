@@ -26,9 +26,9 @@
 // Environmental stochasticity parameters
 
 paramStoch::paramStoch() {
-	stoch = false; 
-	local = false; 
-	inK = false; 
+	usesStoch = false; 
+	stochIsLocal = false; 
+	stochInK = false; 
 	usesLocalExt = false;
 	ac = 0.0; std = 0.25;
 	locExtProb = 0.1;
@@ -38,23 +38,23 @@ paramStoch::~paramStoch() {}
 
 void paramStoch::setStoch(envStochParams e)
 {
-	stoch = e.usesStoch; 
-	local = e.stochIsLocal; 
-	inK = e.inK; 
+	usesStoch = e.usesStoch; 
+	stochIsLocal = e.stochIsLocal; 
+	stochInK = e.inK; 
 	usesLocalExt = e.usesLocalExt;
 	if (e.ac >= 0.0 && e.ac < 1.0) ac = e.ac;
 	if (e.std > 0.0 && e.std <= 1.0) std = e.std;
 	locExtProb = e.locExtProb;
 }
 
-bool paramStoch::envStoch() { return stoch; }
+bool paramStoch::envStoch() { return usesStoch; }
 
 envStochParams paramStoch::getStoch()
 {
 	envStochParams e;
-	e.usesStoch = stoch; 
-	e.stochIsLocal = local; 
-	e.inK = inK; 
+	e.usesStoch = usesStoch; 
+	e.stochIsLocal = stochIsLocal; 
+	e.inK = stochInK; 
 	e.usesLocalExt = usesLocalExt;
 	e.ac = ac; 
 	e.std = std;
@@ -84,49 +84,18 @@ void paramSim::setSim(simParams s) {
 	batchMode = s.batchMode;
 	absorbing = s.absorbing;
 	fixReplicateSeed = s.fixReplicateSeed;
-}
-
-void paramSim::setGeneticSim(string patchSamplingOption, bool outputGeneticValues, bool outputWeirCockerham, bool outputWeirHill, int outputStartGenetics, int outputGeneticInterval) {
-	this->patchSamplingOption = patchSamplingOption;
-	this->outputGenes = outputGeneticValues;
-	this->outputWeirCockerham = outputWeirCockerham;
-	this->outputWeirHill = outputWeirHill;
-	this->outputStartGenetics = outputStartGenetics;
-	this->outputGeneticInterval = outputGeneticInterval;
+	usesStageStruct = s.usesStageStruct;
 }
 
 simParams paramSim::getSim() {
 	simParams s;
 	s.batchNum = batchNum;
-	s.simulation = simulation; s.reps = reps; s.years = years;
-	s.outRange = outRange; s.outOccup = outOccup; s.outPop = outPop; s.outInds = outInds;
-	s.outTraitsCells = outTraitsCells; s.outTraitsRows = outTraitsRows; s.outConnect = outConnect;
-	s.outStartPop = outStartPop; s.outStartInd = outStartInd;
-	s.outStartTraitCell = outStartTraitCell; s.outStartTraitRow = outStartTraitRow;
-	s.outStartConn = outStartConn;
-	s.outIntRange = outIntRange;
-	s.outIntOcc = outIntOcc; s.outIntPop = outIntPop;
-	s.outIntInd = outIntInd;
-	s.outIntTraitCell = outIntTraitCell;
-	s.outIntTraitRow = outIntTraitRow;
-	s.outIntConn = outIntConn;
+	s.simulation = simulation; 
+	s.reps = reps; 
+	s.years = years;
 	s.batchMode = batchMode;
 	s.absorbing = absorbing;
-	s.traitInt = traitInt;
-#if RS_RCPP
-	s.outStartPaths = outStartPaths;
-	s.outIntPaths = outIntPaths;
-	s.outPaths = outPaths;
-	s.ReturnPopRaster = ReturnPopRaster;
-	s.CreatePopFile = CreatePopFile;
-#endif
-	s.patchSamplingOption = patchSamplingOption;
-	s.outputGeneValues = outputGenes;
-	s.outputWeirCockerham = outputWeirCockerham;
-	s.outputWeirHill = outputWeirHill;
-	s.outStartGenetics = outputStartGenetics;
-	s.outputGeneticInterval = outputGeneticInterval;
-
+	s.usesStageStruct = usesStageStruct;
 	return s;
 }
 
