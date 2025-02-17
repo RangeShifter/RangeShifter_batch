@@ -766,7 +766,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 			if (grad.doesShift)
 			{
 				outPar << "yes" << endl;
-				outPar << "SHIFTING RATE  (rows/year):\t " << grad.shift_rate << endl;
+				outPar << "SHIFTING RATE  (rows/year):\t " << grad.shiftRate << endl;
 				outPar << "SHIFTING START (year):\t\t " << grad.shiftBegin << endl;
 				outPar << "SHIFTING STOP  (year):\t\t " << grad.shiftStop << endl;
 			}

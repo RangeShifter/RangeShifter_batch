@@ -140,60 +140,23 @@ typedef enum {
 struct envGradParams {
 	bool usesGradient; 
 	bool doesShift;
-	int gradType;
-	float gradIncr; 
-	float optY; 
-	float optY0;
-	float factor; 
+	int gradType;	// 0 = none
+					// 1 = carrying capacity
+					// 2 = growth rate
+					// 3 = local extinction probability
+	float gradIncr; // gradient steepness
+	float optY;		// current optimum row
+	float optY0;	// optimum row before shift
+	float factor;	// local scaling factor
 	float extProbOpt;
-	float shift_rate;
+	float shiftRate; // rows per year
 	int shiftBegin; 
 	int shiftStop;
 };
 
-class paramGrad {
-
-public:
-	paramGrad();
-	~paramGrad();
-	void setGradient(
-		int,		// gradient type
-		float,		// gradient steepness
-		float,	// optimum row (Y dimension)
-		float,	// local scaling factor
-		float		// local extinction probability at optimum
-	);
-	void setShifting(
-		float,		// shifting rate (rows/year)
-		int,		// first year of shifting
-		int			// last year of shifting
-	);
-	void noGradient();
-	void noShifting();
-	envGradParams getGradient();
-	void incrementOptY();
-	void resetOptY();
-
-private:
-	bool usesGradient;		// there a gradient
-	bool doesShift;		// the gradient is shifting
-	int gradType;		// 0 = none, 1  = carrying capacity,
-						// 2 = growth rate, 3 = local extinction probability
-	float grad_inc;		// gradient steepness
-	float opt_y;		// optimum row (Y dimension)
-	float opt_y0;		// optimum row at year 0 (internal use only)
-	float factor;		// local scaling factor
-	float extProbOpt;	// local extinction probability at optimum (if gradient = 4, otherwise 0)
-	float shift_rate;	// rows/year
-	int shiftBegin;	// first year of shifting
-	int shiftStop;		// last year of shifting
-};
-
-//---------------------------------------------------------------------------
+//----------------------------------------
 
 // Environmental stochasticity parameters
-
-// SHOULD THIS BE PART OF LANDSCAPE OBJECT OR A SEPARATE OBJECT?????????????
 
 struct envStochParams {
 	bool usesStoch; 
