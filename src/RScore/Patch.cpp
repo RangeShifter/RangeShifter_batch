@@ -135,9 +135,8 @@ void Patch::addCell(Cell* pCell, int x, int y) {
 // Calculate the total carrying capacity (no. of individuals) and
 // centroid co-ordinates of the patch
 void Patch::setCarryingCapacity(Species* pSpecies, float epsGlobal,
-	short nHab, short rasterType, short landIx) {
+	short nHab, short rasterType, short dynLandIndex) {
 	
-	patchLimits landlimits = pSpecies->getLandLimits();
 	envStochParams env = paramsStoch->getStoch();
 	locn loc;
 	short hx;
@@ -147,13 +146,10 @@ void Patch::setCarryingCapacity(Species* pSpecies, float epsGlobal,
 	int nsuitable = 0;
 	double mean;
 
-	if (xMin > landlimits.xMax || xMax < landlimits.xMin
-		|| yMin > landlimits.yMax || yMax < landlimits.yMin) {
-		// patch lies wholely outwith current landscape limits
-		// NB the next statement is unnecessary, as localK has been set to zero above
-		//    retained only for consistency in standard variant
-		localK = 0.0;
-		return;
+	if (!pSpecies->isWithinLimits(xMin, yMin) 
+		&& !pSpecies->isWithinLimits(xMax, yMax)) {
+		// patch lies wholly outwith current landscape limit
+		return; // K is 0
 	}
 
 	int ncells = static_cast<int>(cells.size());
@@ -171,7 +167,7 @@ void Patch::setCarryingCapacity(Species* pSpecies, float epsGlobal,
 
 		switch (rasterType) {
 		case 0: // habitat codes
-			hx = cells[i]->getHabIndex(landIx);
+			hx = cells[i]->getHabIndex(dynLandIndex);
 			k = pSpecies->getHabK(hx);
 			if (k > 0.0) {
 				nsuitable++;
@@ -190,7 +186,7 @@ void Patch::setCarryingCapacity(Species* pSpecies, float epsGlobal,
 			}
 			break;
 		case 2: // habitat quality
-			q = cells[i]->getHabitat(landIx);
+			q = cells[i]->getHabitat(dynLandIndex);
 			if (q > 0.0) {
 				nsuitable++;
 				localK += envVal * pSpecies->getHabK(0) * q / 100.0f;

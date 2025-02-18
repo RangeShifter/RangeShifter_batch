@@ -55,17 +55,14 @@ using namespace std;
 #include "./RScore/SpeciesTrait.h"
 #include "./RScore/NeutralTrait.h"
 
+/*
 struct batchfiles {
 	bool ok = true;
 	int batchNum;
 	int nSimuls = 0;
 	int nLandscapes = 0;
-	int isPatchModel, resolution, landType, maxNbHab, speciesDist, distResol;
-	int reproType;
-	int nbRepSeasons;
-	int usesStageStruct, nbStages, transferType;
-	int sexesDem;		// no. of explicit sexes for demographic model
-	int nbSexesDisp;	// no. of explicit sexes for dispersal model
+	int isPatchModel, resolution, landType, maxNbHab;
+	int usesStageStruct, transferType;
 	string parameterFile;
 	string landFile;
 	string stageStructFile;
@@ -76,6 +73,7 @@ struct batchfiles {
 	string traitsFile;
 	string initFile;
 };
+*/
 
 struct TraitInputOptions {
 	bool anyNeutral = false;
@@ -107,7 +105,7 @@ struct simCheck {
 	int simNb, simLines, reqdSimLines, errors;
 };
 
-batchfiles ParseControlAndCheckInputFiles(string, string, string);
+bool checkInputFiles(string, string, string);
 int CheckParameterFile();
 int CheckLandFile(int, string);
 int CheckGeneticsFile(string);
@@ -176,8 +174,7 @@ void BatchError(
 
 bool isValidFractalDim(int x);
 
-void CtrlFormatError(void);
-void ArchFormatError(void);
+void printControlFormatError();
 void FormatError(string, int);
 void OpenError(string, string);
 void EOFerror(string);

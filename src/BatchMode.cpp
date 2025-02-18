@@ -42,7 +42,6 @@ ofstream batchLogOfs;
 int gBatchNb;
 int gIsPatchModel, gResol, gLandType, gMaxNbHab, gUseSpeciesDist, gDistResol;
 int gReproType;
-int gNbRepSeasons;
 int gStageStruct, gNbStages, gTransferType;
 int gNbSexesDem;		// no. of explicit sexes for demographic model
 int gNbSexesDisp;	// no. of explicit sexes for dispersal model
@@ -58,7 +57,7 @@ vector<int> gNbTraitFileRows;
 
 rasterdata landraster;
 // ...including names of the input files
-string parameterFile;
+string gParametersFile;
 string landFile;
 string gHabMapName, gPatchMapName, gDynLandFileName, gSpDistFileName, gNameCostFile;
 string stageStructFile, transMatrix;
@@ -91,12 +90,11 @@ bool isValidFractalDim(int x) {
 }
 
 //---------------------------------------------------------------------------
-batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string inputDir, string outputDir)
+bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir)
 {
-	batchfiles b;
 	int lines, nSimuls;
 	int nbErrors = 0;
-	string paramName, filename, fname, batchLogPath, header;
+	string paramName, filename, pathToFile, batchLogPath, header;
 	string whichInputFile = "Control file";
 	bool anyFormatError = false;
 	
@@ -105,8 +103,7 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	batchLogOfs.open(batchLogPath.c_str());
 	if (!batchLogOfs.is_open()) {
 		cout << "Error opening batch output log file " << batchLogPath << endl;
-		b.ok = false;
-		return b;
+		return false;
 	}
 
 	// Open control file
@@ -114,43 +111,40 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	if (!controlIfs.is_open()) {
 		cout << "Error opening Control file: " << pathToControlFile << endl;
 		batchLogOfs << "Error opening Control file: " << pathToControlFile << endl;
-		b.ok = false;
 		if (batchLogOfs.is_open()) { 
 			batchLogOfs.close(); 
 			batchLogOfs.clear(); 
 		}
-		return b;
+		return false;
 	}
-	else {
-		batchLogOfs << "Checking Control file " << pathToControlFile << endl;
-	}
+	else batchLogOfs << "Checking Control file " << pathToControlFile << endl;
 
 	// Check batch parameters
 
 	controlIfs >> paramName >> gBatchNb;
 	if (paramName == "BatchNum") {
 		if (gBatchNb < 0) {
-			BatchError(whichInputFile, -999, 19, "BatchNum"); nbErrors++;
+			BatchError(whichInputFile, -999, 19, "BatchNum"); 
+			nbErrors++;
 		}
-		else b.batchNum = gBatchNb;
 	}
 	else anyFormatError = true; // wrong control file format
 
 	controlIfs >> paramName >> gIsPatchModel;
 	if (paramName == "PatchModel") {
 		if (gIsPatchModel != 0 && gIsPatchModel != 1) {
-			BatchError(whichInputFile, -999, 1, "PatchModel"); nbErrors++;
+			BatchError(whichInputFile, -999, 1, "PatchModel"); 
+			nbErrors++;
 		}
-		else b.isPatchModel = gIsPatchModel;
 	}
 	else anyFormatError = true; // wrong control file format
 
 	controlIfs >> paramName >> gResol;
 	if (paramName == "Resolution") {
 		if (gResol < 1) {
-			BatchError(whichInputFile, -999, 11, "Resolution"); nbErrors++;
+			BatchError(whichInputFile, -999, 11, "Resolution");
+			nbErrors++;
 		}
-		else b.resolution = gResol;
 	}
 	else anyFormatError = true; // wrong control file format
 
@@ -167,7 +161,6 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 				batchLogOfs << "LandType may not be 9 for a patch-based model" << endl;
 				nbErrors++;
 			}
-			else b.landType = gLandType;
 		}
 	}
 	else anyFormatError = true; // wrong control file format
@@ -178,109 +171,19 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 			if (gMaxNbHab < 2) {
 				BatchError(whichInputFile, -999, 12, "MaxHabitats"); nbErrors++;
 			}
-			else b.maxNbHab = gMaxNbHab;
 		}
-		else { // raster with habitat quality OR artificial landscape
-			if (gMaxNbHab != 1) {
-				BatchError(whichInputFile, -999, 0, " "); nbErrors++;
-				batchLogOfs << "MaxHabitats must be 1 for LandType = " << gLandType << endl;
-			}
-			else {
-				if (gLandType == 9) // artificial landscape
-					// although the user enters 1, the actual number of habitats is 2
-					b.maxNbHab = 2;
-				else
-					b.maxNbHab = gMaxNbHab;
-			}
+		else if (gMaxNbHab != 1) { // habitat quality or artificial landscape
+			BatchError(whichInputFile, -999, 0, " "); nbErrors++;
+			batchLogOfs << "MaxHabitats must be 1 for LandType = " << gLandType << endl;
 		}
 	}
-	else anyFormatError = true; // wrong control file format
-
-	controlIfs >> paramName >> gUseSpeciesDist;
-	if (paramName == "SpeciesDist") {
-		if (gUseSpeciesDist != 0 && gUseSpeciesDist != 1) {
-			BatchError(whichInputFile, -999, 1, "SpeciesDist"); nbErrors++;
-		}
-		else {
-			if (gUseSpeciesDist != 0 && gLandType == 9) {
-				BatchError(whichInputFile, -999, 0, "SpeciesDist");
-				batchLogOfs << "SpeciesDist must be 0 for an artificial landscape" << endl;
-				nbErrors++;
-
-			}
-			else b.speciesDist = gUseSpeciesDist;
-		}
-	}
-	else anyFormatError = true; // wrong control file format
-
-	controlIfs >> paramName >> gDistResol;
-	if (paramName == "DistResolution") {
-		if (gUseSpeciesDist == 1) { // distribution resolution is required
-			if (gDistResol < gResol) {
-				BatchError(whichInputFile, -999, 0, "DistResolution");
-				batchLogOfs << "DistResolution may not be less than Resolution" << endl;
-				nbErrors++;
-			}
-			else {
-				if (gDistResol % gResol) {
-					BatchError(whichInputFile, -999, 0, "DistResolution");
-					batchLogOfs << "DistResolution must be an integer multiple of Resolution" << endl;
-					nbErrors++;
-				}
-				else b.distResol = gDistResol;
-			}
-		}
-	}
-	else anyFormatError = true; // wrong control file format
-
-	controlIfs >> paramName >> gReproType;
-	gNbSexesDem = gNbSexesDisp = 0;
-	if (paramName == "Reproduction") {
-		if (gReproType != 0 && gReproType != 1 && gReproType != 2) {
-			BatchError(whichInputFile, -999, 2, "Reproduction"); nbErrors++;
-		}
-		else {
-			switch (gReproType) {
-			case 0: { gNbSexesDem = 1; gNbSexesDisp = 1; break; }
-			case 1: { gNbSexesDem = 1; gNbSexesDisp = 2; break; }
-			case 2: { gNbSexesDem = 2; gNbSexesDisp = 2; break; }
-			}
-			b.reproType = gReproType; 
-			b.sexesDem = gNbSexesDem; 
-			b.nbSexesDisp = gNbSexesDisp;
-		}
-	}
-	else anyFormatError = true; // wrong control file format
-
-	controlIfs >> paramName >> gNbRepSeasons;
-	if (paramName == "RepSeasons") {
-		if (gNbRepSeasons < 1) {
-			BatchError(whichInputFile, -999, 11, "RepSeasons"); nbErrors++;
-		}
-		else b.nbRepSeasons = gNbRepSeasons;
-	}
-	else anyFormatError = true; // wrong control file format
+	else anyFormatError = true;
 
 	controlIfs >> paramName >> gStageStruct;
 	if (paramName == "StageStruct") {
 		if (gStageStruct != 0 && gStageStruct != 1) {
-			BatchError(whichInputFile, -999, 1, "StageStruct"); nbErrors++;
-		}
-		else b.usesStageStruct = gStageStruct;
-	}
-	else anyFormatError = true; // wrong control file format
-
-	controlIfs >> paramName >> gNbStages;
-	if (paramName == "Stages") {
-		if (gStageStruct) {
-			if (gNbStages < 2 || gNbStages > 10) {
-				BatchError(whichInputFile, -999, 0, " "); nbErrors++;
-				batchLogOfs << "Stages must be between 2 and 10" << endl;
-			}
-			b.nbStages = gNbStages;
-		}
-		else { // non-stage-structured model must have 2 stages
-			b.nbStages = gNbStages = 2;
+			BatchError(whichInputFile, -999, 1, "StageStruct"); 
+			nbErrors++;
 		}
 	}
 	else anyFormatError = true; // wrong control file format
@@ -288,33 +191,30 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	controlIfs >> paramName >> gTransferType;
 	if (paramName == "Transfer") {
 		if (gTransferType < 0 || gTransferType > 2) {
-			BatchError(whichInputFile, -999, 2, "Transfer"); nbErrors++;
+			BatchError(whichInputFile, -999, 2, "Transfer"); 
+			nbErrors++;
 		}
-		else b.transferType = gTransferType;
 	}
 	else anyFormatError = true; // wrong control file format
 
 	if (anyFormatError || nbErrors > 0) { // terminate batch error checking
-		if (anyFormatError) {
-			CtrlFormatError();
-		}
+		if (anyFormatError) printControlFormatError();
 		batchLogOfs << endl
 			<< "*** Model parameters in Control file must be corrected before further input file checks are conducted"
 			<< endl;
 		batchLogOfs.close(); 
 		batchLogOfs.clear();
-		b.ok = false;
 		controlIfs.close(); 
 		controlIfs.clear();
-		return b;
+		return false;
 	}
 
 	// Check parameter file
 	controlIfs >> paramName >> filename;
 	if (paramName == "ParameterFile" && !anyFormatError) {
-		fname = inputDir + filename;
-		batchLogOfs << endl << "Checking " << paramName << " " << fname << endl;
-		ifsParamFile.open(fname.c_str());
+		pathToFile = inputDir + filename;
+		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
+		ifsParamFile.open(pathToFile.c_str());
 		if (ifsParamFile.is_open()) {
 			b.nSimuls = CheckParameterFile();
 			if (b.nSimuls < 0) {
@@ -322,12 +222,13 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 			}
 			else {
 				FileOK(paramName, b.nSimuls, 0);
-				parameterFile = fname;
+				gParametersFile = pathToFile;
 			}
 			ifsParamFile.close();
 		}
 		else {
-			OpenError(paramName, fname); b.ok = false;
+			OpenError(paramName, pathToFile); 
+			b.ok = false;
 			cout << "Unable to open ParameterFile" << endl;
 		}
 		ifsParamFile.clear();
@@ -337,22 +238,22 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 				<< endl;
 			batchLogOfs.close(); 
 			batchLogOfs.clear();
-			b.ok = false;
 			controlIfs.close(); 
 			controlIfs.clear();
-			return b;
+			return false;
 		}
 	}
 	else anyFormatError = true; // wrong control file format
-	if (ifsParamFile.is_open()) ifsParamFile.close();
+	if (ifsParamFile.is_open()) 
+		ifsParamFile.close();
 	ifsParamFile.clear();
 
 	// Check land file
 	controlIfs >> paramName >> filename;
 	if (paramName == "LandFile" && !anyFormatError) {
-		fname = inputDir + filename;
-		batchLogOfs << endl << "Checking " << paramName << " " << fname << endl;
-		ifsLandFile.open(fname.c_str());
+		pathToFile = inputDir + filename;
+		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
+		ifsLandFile.open(pathToFile.c_str());
 		if (ifsLandFile.is_open()) {
 			lines = CheckLandFile(gLandType, inputDir);
 			if (lines < 0) {
@@ -362,13 +263,13 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 			}
 			else {
 				FileOK(paramName, lines, 1);
-				landFile = fname; 
+				landFile = pathToFile; 
 				b.nLandscapes = lines;
 			}
 			ifsLandFile.close();
 		}
 		else {
-			OpenError(paramName, fname); b.ok = false;
+			OpenError(paramName, pathToFile); b.ok = false;
 		}
 		ifsLandFile.clear();
 	}
@@ -387,9 +288,9 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 		}
 		else { // filename is not NULL
 			if (gStageStruct) { // check file only if it is required
-				fname = inputDir + filename;
-				batchLogOfs << "Checking " << paramName << " " << fname << endl;
-				ifsStageStructFile.open(fname.c_str());
+				pathToFile = inputDir + filename;
+				batchLogOfs << "Checking " << paramName << " " << pathToFile << endl;
+				ifsStageStructFile.open(pathToFile.c_str());
 				if (ifsStageStructFile.is_open()) {
 					nSimuls = CheckStageFile(inputDir);
 					if (nSimuls < 0) {
@@ -400,12 +301,12 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 						if (nSimuls != b.nSimuls) {
 							SimulnCountError(filename); b.ok = false;
 						}
-						else stageStructFile = fname;
+						else stageStructFile = pathToFile;
 					}
 					ifsStageStructFile.close();
 				}
 				else {
-					OpenError(paramName, fname); b.ok = false;
+					OpenError(paramName, pathToFile); b.ok = false;
 				}
 				ifsStageStructFile.clear();
 			} // end of required
@@ -423,9 +324,9 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	// Check emigration file
 	controlIfs >> paramName >> filename;
 	if (paramName == "EmigrationFile" && !anyFormatError) {
-		fname = inputDir + filename;
-		batchLogOfs << endl << "Checking " << paramName << " " << fname << endl;
-		ifsEmigrationFile.open(fname.c_str());
+		pathToFile = inputDir + filename;
+		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
+		ifsEmigrationFile.open(pathToFile.c_str());
 		if (ifsEmigrationFile.is_open()) {
 			nSimuls = CheckEmigFile();
 			if (nSimuls < 0) {
@@ -437,12 +338,12 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 					SimulnCountError(filename); 
 					b.ok = false;
 				}
-				else emigrationFile = fname;
+				else emigrationFile = pathToFile;
 			}
 			ifsEmigrationFile.close();
 		}
 		else {
-			OpenError(paramName, fname); 
+			OpenError(paramName, pathToFile); 
 			b.ok = false;
 		}
 		ifsEmigrationFile.clear();
@@ -452,9 +353,9 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	// Check transfer file
 	controlIfs >> paramName >> filename;
 	if (paramName == "TransferFile" && !anyFormatError) {
-		fname = inputDir + filename;
-		batchLogOfs << endl << "Checking " << paramName << " " << fname << endl;
-		ifsTransferFile.open(fname.c_str());
+		pathToFile = inputDir + filename;
+		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
+		ifsTransferFile.open(pathToFile.c_str());
 		if (ifsTransferFile.is_open()) {
 			nSimuls = CheckTransferFile(inputDir);
 			if (nSimuls < 0) {
@@ -465,12 +366,12 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 				if (nSimuls != b.nSimuls) {
 					SimulnCountError(filename); b.ok = false;
 				}
-				else transferFile = fname;
+				else transferFile = pathToFile;
 			}
 			ifsTransferFile.close(); ifsTransferFile.clear();
 		}
 		else {
-			OpenError(paramName, fname); b.ok = false;
+			OpenError(paramName, pathToFile); b.ok = false;
 		}
 		ifsTransferFile.clear();
 	}
@@ -479,9 +380,9 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	// Check settlement file
 	controlIfs >> paramName >> filename;
 	if (paramName == "SettlementFile" && !anyFormatError) {
-		fname = inputDir + filename;
-		batchLogOfs << endl << "Checking " << paramName << " " << fname << endl;
-		ifsSettlementFile.open(fname.c_str());
+		pathToFile = inputDir + filename;
+		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
+		ifsSettlementFile.open(pathToFile.c_str());
 		if (ifsSettlementFile.is_open()) {
 			nSimuls = CheckSettleFile();
 			if (nSimuls < 0) {
@@ -493,12 +394,12 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 					SimulnCountError(filename); 
 					b.ok = false;
 				}
-				else settleFile = fname;
+				else settleFile = pathToFile;
 			}
 			ifsSettlementFile.close();
 		}
 		else {
-			OpenError(paramName, fname); 
+			OpenError(paramName, pathToFile); 
 			b.ok = false;
 		}
 		ifsSettlementFile.clear();
@@ -535,9 +436,9 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 		}
 		else {
 			gHasGenetics = true;
-			fname = inputDir + filename;
-			batchLogOfs << "Checking " << paramName << " " << fname << endl;
-			ifsGeneticsFile.open(fname.c_str());
+			pathToFile = inputDir + filename;
+			batchLogOfs << "Checking " << paramName << " " << pathToFile << endl;
+			ifsGeneticsFile.open(pathToFile.c_str());
 			if (ifsGeneticsFile.is_open()) {
 				nSimuls = CheckGeneticsFile(inputDir);
 				if (nSimuls < 0) {
@@ -545,12 +446,12 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 				}
 				else {
 					FileOK(paramName, nSimuls, 0);
-					geneticsFile = fname;
+					geneticsFile = pathToFile;
 				}
 				ifsGeneticsFile.close();
 			}
 			else {
-				OpenError(paramName, fname); 
+				OpenError(paramName, pathToFile); 
 				b.ok = false;
 			}
 			ifsGeneticsFile.clear();
@@ -571,9 +472,9 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 			}
 		}
 		else {
-			fname = inputDir + filename;
-			batchLogOfs << "Checking " << paramName << " " << fname << endl;
-			ifsTraitsFile.open(fname.c_str());
+			pathToFile = inputDir + filename;
+			batchLogOfs << "Checking " << paramName << " " << pathToFile << endl;
+			ifsTraitsFile.open(pathToFile.c_str());
 			if (ifsTraitsFile.is_open()) {
 				nSimuls = CheckTraitsFile(inputDir);
 				if (nSimuls < 0) {
@@ -581,7 +482,7 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 				}
 				else {
 					FileOK(paramName, nSimuls, 0);
-					traitsFile = fname;
+					traitsFile = pathToFile;
 				}
 				ifsTraitsFile.close();
 			}
@@ -597,9 +498,9 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 	// Check initialisation file
 	controlIfs >> paramName >> filename;
 	if (paramName == "InitialisationFile" && !anyFormatError) {
-		fname = inputDir + filename;
-		batchLogOfs << endl << "Checking " << paramName << " " << fname << endl;
-		ifsInitFile.open(fname.c_str());
+		pathToFile = inputDir + filename;
+		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
+		ifsInitFile.open(pathToFile.c_str());
 		if (ifsInitFile.is_open()) {
 			nSimuls = CheckInitFile(inputDir);
 			if (nSimuls < 0) {
@@ -610,19 +511,19 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string input
 				if (nSimuls != b.nSimuls) {
 					SimulnCountError(filename); b.ok = false;
 				}
-				else initialFile = fname;
+				else initialFile = pathToFile;
 			}
 			ifsInitFile.close();
 		}
 		else {
-			OpenError(paramName, fname); b.ok = false;
+			OpenError(paramName, pathToFile); b.ok = false;
 		}
 		ifsInitFile.clear();
 	}
 	else anyFormatError = true; // wrong control file format
 
 	if (anyFormatError) {
-		CtrlFormatError();
+		printControlFormatError();
 		b.ok = false;
 	}
 
@@ -1249,7 +1150,8 @@ int CheckLandFile(int landtype, string indir)
 					if (something < 0) {
 						errors++;
 					}
-					ifsDynLandFile.close(); ifsDynLandFile.clear();
+					ifsDynLandFile.close(); 
+					ifsDynLandFile.clear();
 				}
 				else {
 					ifsDynLandFile.clear();
@@ -4751,18 +4653,13 @@ void BatchError(string filename, int line, int option, string fieldname, string 
 	if (option != 0) batchLogOfs << endl;
 }
 
-void CtrlFormatError(void)
+void printControlFormatError()
 {
 	cout << "Format error in Control file" << endl;
 	batchLogOfs << endl << "***" << endl << "*** Format error in Control file:"
 		<< gCaseSensitiveStr << " and file names" << gSpecMustMatchStr
 		<< endl
 		<< "***" << endl;
-}
-
-void ArchFormatError(void)
-{
-	batchLogOfs << "*** Format error in ArchFile:" << gCaseSensitiveStr << gSpecMustMatchStr << endl;
 }
 
 void FormatError(string filename, int errors)
@@ -6577,7 +6474,7 @@ void RunBatch(int nSimuls, int nLandscapes, speciesMap_t allSpecies)
 		if (landOK) {
 
 			// Open all other batch files and read header records
-			ifsParamFile.open(parameterFile);
+			ifsParamFile.open(gParametersFile);
 			if (!ifsParamFile.is_open()) {
 				cout << endl << "Error opening ParameterFile - aborting batch run" << endl;
 				return;

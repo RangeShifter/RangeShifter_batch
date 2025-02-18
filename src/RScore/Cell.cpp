@@ -72,7 +72,8 @@ Cell::~Cell() {
 	habIxx.clear();
 	habitats.clear();
 	if (smsData != nullptr) {
-		if (smsData->effcosts != nullptr) delete smsData->effcosts;
+		if (smsData->effcosts != nullptr) 
+			delete smsData->effcosts;
 		delete smsData;
 	}
 }
@@ -82,13 +83,14 @@ void Cell::addHabIndex(short hx) {
 	else habIxx.push_back(hx);
 }
 
-void Cell::changeHabIndex(short ix, short hx) {
-	if (ix >= 0 && ix < habIxx.size() && hx >= 0) habIxx[ix] = hx;
-	else habIxx[ix] = 0;
+void Cell::changeHabIndex(short dynLandIndex, short hx) {
+	if (dynLandIndex >= 0 && dynLandIndex < habIxx.size() && hx >= 0) 
+		habIxx[dynLandIndex] = hx;
+	else habIxx[dynLandIndex] = 0;
 }
 
-int Cell::getHabIndex(int ix) {
-	return habIxx[ix];
+int Cell::getHabIndex(int dynLandIndex) {
+	return habIxx[dynLandIndex];
 }
 int Cell::nHabitats() {
 	int nh = habIxx.size();

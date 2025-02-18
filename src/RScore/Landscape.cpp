@@ -934,10 +934,10 @@ void Landscape::resetPatchPopns() {
 	}
 }
 
-void Landscape::updateCarryingCapacity(Species* pSpecies, int yr, short landIx) {
+void Landscape::updateCarryingCapacity(Species* pSpecies, int yr, short dynLandIndex) {
 	for (auto& pPatch : patchesList.at(pSpecies->getID())) {
 		if (pPatch->isMatrix()) continue;
-		pPatch->setCarryingCapacity(pSpecies, getGlobalStoch(yr), nHab, rasterType, landIx);
+		pPatch->setCarryingCapacity(pSpecies, getGlobalStoch(yr), nHab, rasterType, dynLandIndex);
 	}
 }
 

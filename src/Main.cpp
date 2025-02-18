@@ -102,7 +102,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	t0 = static_cast<int>(time(0));
 
 	paramsStoch = new paramStoch;
-	speciesMap_t allSpecies;
 
 	// set up working directory and control file name
 	vector<string> args(argc);
@@ -125,10 +124,11 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	string indir = paramsSim->getDir(1);
 	string outdir = paramsSim->getDir(2);
-	batchfiles b = ParseControlAndCheckInputFiles(pathToControlFile, indir, outdir);
+	bool areInputsOk = checkInputFiles(pathToControlFile, indir, outdir);
 	if (b.ok) {
 		paramsSim->setBatchNum(b.batchNum);
 		// Set up species
+		/*
 		allSpecies.emplace(0,
 			new Species(
 				//b.reproType,
@@ -138,6 +138,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				b.transferType == 1,
 				b.transferType
 			));
+			*/
 		// create species later, after reading parameters
 		cout << endl << "Batch input files OK" << endl;
 	}
