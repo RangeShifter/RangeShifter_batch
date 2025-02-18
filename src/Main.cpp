@@ -131,14 +131,14 @@ int _tmain(int argc, _TCHAR* argv[])
 		// Set up species
 		allSpecies.emplace(0,
 			new Species(
-				b.reproType,
-				b.nbRepSeasons,
+				//b.reproType,
+				//b.nbRepSeasons,
 				b.usesStageStruct == 1, // int to bool
-				b.nbStages,
+				//b.nbStages,
 				b.transferType == 1,
 				b.transferType
-				// TODO: outParameters need to be moved from sp c'tor
 			));
+		// create species later, after reading parameters
 		cout << endl << "Batch input files OK" << endl;
 	}
 	else {

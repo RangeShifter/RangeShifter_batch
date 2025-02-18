@@ -81,49 +81,8 @@ void InitDist::setDistribution(int nInit) {
 	}
 }
 
-// Set a specified cell (by position in cells vector)
-void InitDist::setDistCell(int ix, bool init) {
-	cells[ix]->setCell(init);
-}
-
-// Set a specified cell (by co-ordinates)
-void InitDist::setDistCell(locn loc, bool init) {
-	locn cellloc;
-	int ncells = (int)cells.size();
-	for (int i = 0; i < ncells; i++) {
-		cellloc = cells[i]->getLocn();
-		if (cellloc.x == loc.x && cellloc.y == loc.y) {
-			cells[i]->setCell(init);
-			i = ncells;
-		}
-	}
-}
-
-// Specified location is within the initial distribution?
-bool InitDist::isInInitialDist(locn loc) {
-	int ncells = static_cast<int>(cells.size());
-	for (int i = 0; i < ncells; i++) {
-		if (cells[i]->toInitialise(loc)) { // cell is to be initialised
-			return true;
-		}
-	}
-	return false;
-}
-
 int InitDist::cellCount() {
 	return cells.size();
-}
-
-// Return the co-ordinates of a specified initial distribution cell
-locn InitDist::getCell(int ix) {
-	locn loc;
-	if (ix >= 0 && ix < cells.size()) {
-		loc = cells[ix]->getLocn();
-	}
-	else {
-		loc.x = loc.y = -666; // indicates invalid index specified
-	}
-	return loc;
 }
 
 // Return the co-ordinates of a specified initial distribution cell if it has been
@@ -138,21 +97,6 @@ locn InitDist::getSelectedCell(int ix) {
 	}
 	return loc;
 }
-
-locn InitDist::getDimensions() {
-	locn d; 
-	d.x = maxX; 
-	d.y = maxY; 
-	return d;
-}
-
-void InitDist::resetDistribution() {
-	int ncells = static_cast<int>(cells.size());
-	for (int i = 0; i < ncells; i++) {
-		cells[i]->setCell(false);
-	}
-}
-
 //---------------------------------------------------------------------------
 
 // Read species initial distribution file
@@ -340,8 +284,6 @@ Landscape::~Landscape() {
 	}
 	
 	int ndistns = static_cast<int>(distns.size());
-	for (int i = 0; i < ndistns; i++)
-		if (distns[i] != nullptr) delete distns[i];
 	distns.clear();
 
 	int ninitcells = static_cast<int>(initcells.size());
@@ -361,7 +303,6 @@ Landscape::~Landscape() {
 // Remove all patches and cells
 // Used for replicating artificial landscape without deleting the landscape itself
 void Landscape::resetLand() {
-	resetLandLimits();
 
 	for (auto& [sp, patches] : patchesList) {
 		int npatches = static_cast<int>(patches.size());
@@ -554,7 +495,7 @@ int Landscape::findHabCode(int hab) {
 
 // Get the specified habitat code
 int Landscape::getHabCode(int ixhab) {
-	if (ixhab < static_cast<int>(habCodes.size())) return habCodes[ixhab];
+	if (ixhab <static_cast<int>(habCodes.size())) return habCodes[ixhab];
 	else return -999;
 }
 
@@ -1776,101 +1717,31 @@ int Landscape::applyCostChanges(const int& landChgNb, int iCostChg) {
 
 int Landscape::newDistribution(Species* pSpecies, string distname) {
 	int ndistns = distns.size();
-	distns.push_back(new InitDist(pSpecies));
-	int readcode = distns[ndistns]->readDistribution(distname);
+	distns.push_back(InitDist(pSpecies));
+	int readcode = distns[ndistns].readDistribution(distname);
 	if (readcode != 0) { // error encountered
-		// delete the distribution created above
-		delete distns[ndistns];
 		distns.pop_back();
 	}
 	return readcode;
 }
 
 void Landscape::setDistribution(Species* pSpecies, int nInit) {
-	// WILL NEED TO SELECT DISTRIBUTION FOR CORRECT SPECIES ...
-	// ... CURRENTLY IT IS THE ONLY ONE
-	distns[0]->setDistribution(nInit);
-}
-
-// Specified cell match one of the distribution cells to be initialised?
-bool Landscape::isInInitialDist(Species* pSpecies, locn loc) {
-	// convert landscape co-ordinates to distribution co-ordinates
-	locn initloc;
-	initloc.x = loc.x * resol / spResol;
-	initloc.y = loc.y * resol / spResol;
-	// WILL HAVE TO GET CORRECT SPECIES WHEN THERE ARE MULTIPLE SPECIES ...
-	bool initialise = distns[0]->isInInitialDist(initloc);
-	return initialise;
-}
-
-void Landscape::deleteDistribution(Species* pSpecies) {
-	if (distns[0] != nullptr) delete distns[0]; 
-	distns.clear();
+	distns[gSingleSpeciesID].setDistribution(nInit);
 }
 
 // Return no. of initial distributions
-int Landscape::distnCount(void) {
+int Landscape::distnCount() {
 	return (int)distns.size();
 }
 
 int Landscape::distCellCount(int dist) {
-	return distns[dist]->cellCount();
-}
-
-// Set a cell in a specified initial distribution (by position in cells vector)
-void Landscape::setDistnCell(int dist, int ix, bool init) {
-	distns[dist]->setDistCell(ix, init);
-}
-
-// Set a cell in a specified initial distribution (by given co-ordinates)
-void Landscape::setDistnCell(int dist, locn loc, bool init) {
-	distns[dist]->setDistCell(loc, init);
-}
-
-// Get the co-ordinates of a specified cell in a specified initial distribution
-locn Landscape::getDistnCell(int dist, int ix) {
-	return distns[dist]->getCell(ix);
+	return distns[dist].cellCount();
 }
 
 // Get the co-ordinates of a specified cell in a specified initial distribution
 // Returns negative co-ordinates if the cell is not selected
 locn Landscape::getSelectedDistnCell(int dist, int ix) {
-	return distns[dist]->getSelectedCell(ix);
-}
-
-// Get the dimensions of a specified initial distribution
-locn Landscape::getDistnDimensions(int dist) {
-	return distns[dist]->getDimensions();
-}
-
-// Reset the distribution for a given species so that all cells are deselected
-void Landscape::resetDistribution(Species* pSp) {
-	// CURRENTLY WORKS FOR FIRST SPECIES ONLY ...
-	distns[0]->resetDistribution();
-}
-
-//---------------------------------------------------------------------------
-
-// Initialisation cell functions
-
-int Landscape::initCellCount(void) {
-	return static_cast<int>(initcells.size());
-}
-
-void Landscape::addInitCell(int x, int y) {
-	initcells.push_back(new DistCell(x, y));
-}
-
-locn Landscape::getInitCell(int ix) {
-	return initcells[ix]->getLocn();
-}
-
-void Landscape::clearInitCells(void) {
-	int ncells = static_cast<int>(initcells.size());
-	for (int i = 0; i < ncells; i++) {
-		delete initcells[i];
-	}
-	initcells.clear();
+	return distns[dist].getSelectedCell(ix);
 }
 
 //---------------------------------------------------------------------------

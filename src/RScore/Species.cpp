@@ -31,8 +31,7 @@ Species::Species(
 	const bool& hasStgStruct, 
 	const short& nStg, 
 	const bool& usesMovtProc, 
-	const short& movementType,
-	const outputParams& out
+	const short& movementType
 ) :
 	repType{repro},
 	repSeasons{nbRepSeasons},

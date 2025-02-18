@@ -102,36 +102,14 @@ public:
 	InitDist(Species*);
 	~InitDist();
 
-	int readDistribution(
-		string // name of species distribution file
-	);
-	void setDistribution(
-		int	// no. of distribution cells to be initialised (0 for all cells)
-	);
-	void setDistCell( // Set a specified cell (by position in cells vector)
-		int,	// index no. of DistCell in cells vector
-		bool  // value to be set
-	);
-	void setDistCell( // Set a specified cell (by co-ordinates)
-		locn,	// structure holding x (column) and y (row) co-ordinates
-		bool
-	);
-
-	// Specified location is within the initial distribution?
-	bool isInInitialDist(locn loc);
-
+	int readDistribution(string filename);
+	void setDistribution(int nbInitialCells); // (0 for all cells)
 	int cellCount();
-
-	// Return the co-ordinates of a specified initial distribution cell
-	locn getCell(int cellIndex);
 
 	// Return the co-ordinates of a specified initial distribution
 	// cell if it has been selected
 	// otherwise return negative co-ordinates
 	locn getSelectedCell(int cellIndex);
-
-	locn getDimensions();
-	void resetDistribution();
 
 private:
 	Species* pSpecies;		// pointer to species
@@ -298,31 +276,13 @@ public:
 	int newDistribution(Species* pSpecies, string distFileName);
 	void setDistribution(Species* pSpecies, int nInit);
 	// Specified cell matches one of the distn cells to be initialised?
-	bool isInInitialDist(Species* pSpecies, locn loc);
-	void deleteDistribution(Species* pSpecies);
 	int distnCount();	// Return no. of initial distributions in the Landscape
 	// Return no. of distribution cells in an initial distribution
 	int distCellCount(int dist);
 	// Get co-ordinates of a specified cell in a specified initial distn
-	locn getDistnCell(int dist, int ix);
-	// Get co-ordinates of a specified cell in a specified initial distn
 	// Returns negative co-ordinates if the cell is not selected
 	locn getSelectedDistnCell(int dist, int ix);
-	// Get the dimensions of a specified initial distribution
-	locn getDistnDimensions(int initDistIx);
-	// Set a cell in a specified init distn (by posn in cells vector)
-	void setDistnCell(int initDistIx, int cellIx, bool isInitial);
-	// Set a cell in a specified init distn (by given co-ordinates)
-	void setDistnCell(int initDistIx, locn cellLoc, bool isInitial);
-	void resetDistribution(Species*	pSpecies);
-
-	int initCellCount();
-
-	// Create a new DistCell and add to the initcells vector
-	void addInitCell(int x,	int y);
-	locn getInitCell(int distCellIx);
-	void clearInitCells();
-
+	
 	// Functions to handle connectivity matrix
 	void createConnectMatrix(species_id sp);
 	void resetConnectMatrix();
@@ -387,7 +347,7 @@ private:
 	map<species_id, vector<costChange>> costsChanges;
 
 	// list of initial individual species distributions
-	std::vector<InitDist*> distns;
+	std::vector<InitDist> distns;
 
 	// list of cells to be initialised for ALL species
 	std::vector<DistCell*> initcells;

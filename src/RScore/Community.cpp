@@ -172,9 +172,6 @@ void Community::initialise(Species* pSpecies, int year) {
 			case 1: // some randomly selected presence cells
 				pLandscape->setDistribution(pSpecies, init.nSpDistPatches); // activate random patches
 				break;
-			case 2: // manually selected presence cells
-				// cells have already been identified - no further action here
-				break;
 			}
 
 			ndistcells = pLandscape->distCellCount(0);

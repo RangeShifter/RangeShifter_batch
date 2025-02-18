@@ -220,8 +220,7 @@ public:
 		const bool& hasStgStruct = false, 
 		const short& nStg = 2, 
 		const bool& usesMovtProc = false, 
-		const short& movementType = 1,
-		const outputParams& out
+		const short& movementType = 1
 	);
 	~Species();
 	species_id getID();
@@ -411,6 +410,7 @@ public:
 			&& yr % output.outIntTraitRow == 0;
 	}
 	outputParams getOutputParams() const { return output; }
+	void setOutputParams(const outputParams& out) { output = out; }
 #if RS_RCPP
 	bool doesOutputPaths() const { return output.outPaths; }
 #endif
