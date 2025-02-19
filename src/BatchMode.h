@@ -162,7 +162,7 @@ void FileOK(string, int, int);
 void FileHeadersOK(string);
 void SimulnCountError(string);
 
-void RunBatch(int nbSims, int nbLandscapes, speciesMap_t allSpecies);
+void RunBatch();
 int ReadParameters(Landscape*);
 int ReadLandFile(Landscape*);
 int ReadDynLandFile(Landscape*);

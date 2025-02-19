@@ -176,7 +176,7 @@ struct costChange {
 
 class Landscape {
 public:
-	Landscape(const speciesMap_t& allSpecies);
+	Landscape(const set<species_id>& speciesNames);
 	~Landscape();
 	void resetLand();
 

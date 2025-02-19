@@ -39,14 +39,13 @@ ofstream batchLogOfs;
 
 // global variables passed between parsing functions...
 // should be removed eventually, maybe share variables through members of a class
-int gBatchNb;
 int gIsPatchModel, gResol, gLandType, gMaxNbHab, gUseSpeciesDist, gDistResol;
 int gReproType;
 int gUsesStageStruct, gNbStages, gTransferType;
 int gNbSexesDem;		// no. of explicit sexes for demographic model
 int gNbSexesDisp;	// no. of explicit sexes for dispersal model
 int gFirstSimNb = 0; // not great, globals should not be modified.
-bool gHasGenetics = true;
+bool gAnyUsesGenetics = true;
 
 int gNbLandscapes = 0;
 set<int> gSimNbs; // record of simulation numbers to check input file use the same numbers
@@ -121,13 +120,14 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 	else batchLogOfs << "Checking Control file " << pathToControlFile << endl;
 
 	// Check batch parameters
-
-	controlIfs >> paramName >> gBatchNb;
+	int batchNb;
+	controlIfs >> paramName >> batchNb;
 	if (paramName == "BatchNum") {
-		if (gBatchNb < 0) {
-			BatchError(whichInputFile, -999, 19, "BatchNum"); 
+		if (batchNb < 0) {
+			BatchError(whichInputFile, -999, 19, "BatchNum");
 			nbErrors++;
 		}
+		else paramsSim->setBatchNum(batchNb);
 	}
 	else anyFormatError = true; // wrong control file format
 
@@ -429,12 +429,12 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 				areInputFilesOk = false;
 			}
 			else {
-				gHasGenetics = false;
+				gAnyUsesGenetics = false;
 				batchLogOfs << "No genetics required " << paramName << endl;
 			}
 		}
 		else {
-			gHasGenetics = true;
+			gAnyUsesGenetics = true;
 			pathToFile = inputDir + filename;
 			batchLogOfs << "Checking " << paramName << " " << pathToFile << endl;
 			ifsGeneticsFile.open(pathToFile.c_str());
@@ -464,7 +464,7 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 
 	if (paramName == "TraitsFile" && !anyFormatError) {
 		if (filename == "NULL") {
-			if (gHasGenetics) {
+			if (gAnyUsesGenetics) {
 				batchLogOfs << "Error: Genetics are enabled but no TraitsFile is provided." << endl;
 				areInputFilesOk = false;
 			}
@@ -6378,11 +6378,11 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 }
 
 //---------------------------------------------------------------------------
-void RunBatch(int nSimuls, int nLandscapes, speciesMap_t allSpecies)
+void RunBatch()
 {
 	int land_nr;
 	int read_error;
-	bool params_ok;
+	bool areParamsOk;
 	simParams sim = paramsSim->getSim();
 
 	Landscape* pLandscape = nullptr;  		// pointer to landscape
@@ -6395,11 +6395,11 @@ void RunBatch(int nSimuls, int nLandscapes, speciesMap_t allSpecies)
 	}
 	flushHeaders(ifsLandFile);
 
-	for (int j = 0; j < nLandscapes; j++) {
+	for (int j = 0; j < gNbLandscapes; j++) {
 
 		// Create new landscape
 		if (pLandscape != nullptr) delete pLandscape;
-		pLandscape = new Landscape(allSpecies);
+		pLandscape = new Landscape(gSpeciesNames);
 		bool landOK = true;
 
 		land_nr = ReadLandFile(pLandscape);
@@ -6421,8 +6421,7 @@ void RunBatch(int nSimuls, int nLandscapes, speciesMap_t allSpecies)
 		}
 		else {
 			paramsLand.generated = false;
-			if (gDynLandFileName == "NULL") paramsLand.dynamic = false;
-			else paramsLand.dynamic = true;
+			paramsLand.dynamic = gDynLandFileName != "NULL";
 		}
 		paramsLand.nHabMax = gMaxNbHab;
 		paramsLand.useSpDist = gUseSpeciesDist;
@@ -6468,74 +6467,84 @@ void RunBatch(int nSimuls, int nLandscapes, speciesMap_t allSpecies)
 		if (landOK) {
 
 			// Open all other batch files and read header records
-			ifsParamFile.open(gParametersFile);
-			if (!ifsParamFile.is_open()) {
-				cout << endl << "Error opening ParameterFile - aborting batch run" << endl;
-				return;
-			}
-			flushHeaders(ifsParamFile);
-
-			if (gUsesStageStruct) {
-				ifsStageStructFile.open(stageStructFile);
-				flushHeaders(ifsStageStructFile);
-			}
-
-			ifsEmigrationFile.open(emigrationFile);
-			flushHeaders(ifsEmigrationFile);
-
-			ifsTransferFile.open(transferFile);
-			flushHeaders(ifsTransferFile);
-			if (pSpecies->getTransferRules().usesMovtProc) {
-				if (paramsLand.generated)
-					pSpecies->createHabCostMort(paramsLand.nHab);
-				else pSpecies->createHabCostMort(paramsLand.nHabMax);
-			}
-			ifsSettlementFile.open(settleFile);
-			flushHeaders(ifsSettlementFile);
-
-			ifsInitFile.open(initialFile);
-			flushHeaders(ifsInitFile);
-
-			if (gHasGenetics) {
-				ifsGeneticsFile.open(geneticsFile.c_str());
-				flushHeaders(ifsGeneticsFile);
-				ifsTraitsFile.open(traitsFile.c_str());
-				flushHeaders(ifsTraitsFile);
-			}
-
-			// nSimuls is the total number of lines (simulations) in
-			// the batch and is set in the control function
-			string msgsim = "Simulation,";
-			string msgerr = ",ERROR CODE,";
-			string msgabt = ",simulation aborted";
-
-			for (int i = 0; i < nSimuls; i++) {
-
-				params_ok = true;
-				read_error = ReadParameters(pLandscape);
-				if (read_error) {
-					params_ok = false;
+			{
+				ifsParamFile.open(gParametersFile);
+				if (!ifsParamFile.is_open()) {
+					cout << endl << "Error opening ParameterFile - aborting batch run" << endl;
+					return;
 				}
+				flushHeaders(ifsParamFile);
+
 				if (gUsesStageStruct) {
-					ReadStageStructure();
+					ifsStageStructFile.open(stageStructFile);
+					flushHeaders(ifsStageStructFile);
 				}
-				read_error = ReadEmigration();
-				if (read_error) params_ok = false;
-				read_error = ReadTransferFile(pLandscape);
-				if (read_error) params_ok = false; 
-				read_error = ReadSettlement();
-				if (read_error) params_ok = false;
-				read_error = ReadInitialisation(pLandscape);
-				if (read_error) params_ok = false;
 
-				if (gHasGenetics) {
+				ifsEmigrationFile.open(emigrationFile);
+				flushHeaders(ifsEmigrationFile);
+
+				ifsTransferFile.open(transferFile);
+				flushHeaders(ifsTransferFile);
+
+				ifsSettlementFile.open(settleFile);
+				flushHeaders(ifsSettlementFile);
+
+				ifsInitFile.open(initialFile);
+				flushHeaders(ifsInitFile);
+
+				if (gAnyUsesGenetics) {
+					ifsGeneticsFile.open(geneticsFile.c_str());
+					flushHeaders(ifsGeneticsFile);
+					ifsTraitsFile.open(traitsFile.c_str());
+					flushHeaders(ifsTraitsFile);
+				}
+			}
+
+			// create species here?
+			speciesMap_t allSpecies;
+			for (species_id sp : gSpeciesNames) {
+				allSpecies.emplace(sp,
+					new Species(
+						//b.reproType,
+						//b.nbRepSeasons,
+						b.usesStageStruct == 1, // int to bool
+						//b.nbStages,
+						b.transferType == 1,
+						b.transferType
+					));
+			}
+
+			if (pSpecies->getTransferRules().usesMovtProc) {
+				int nbHab = paramsLand.generated ? 
+					paramsLand.nHab : paramsLand.nHabMax;
+				pSpecies->createHabCostMort(nbHab);
+			}
+
+			for (int i = 0; i < gSimNbs.size(); i++) {
+
+				// Load parameters for this simulation
+				areParamsOk = true;
+				read_error = ReadParameters(pLandscape);
+				if (read_error) areParamsOk = false;
+				if (gUsesStageStruct)
+					ReadStageStructure();
+				read_error = ReadEmigration();
+				if (read_error) areParamsOk = false;
+				read_error = ReadTransferFile(pLandscape);
+				if (read_error) areParamsOk = false; 
+				read_error = ReadSettlement();
+				if (read_error) areParamsOk = false;
+				read_error = ReadInitialisation(pLandscape);
+				if (read_error) areParamsOk = false;
+
+				if (gAnyUsesGenetics) {
 					read_error = ReadGeneticsFile(ifsGeneticsFile, pLandscape);
-					if (read_error) params_ok = false; 
+					if (read_error) areParamsOk = false; 
 					read_error = ReadTraitsFile(ifsTraitsFile, gNbTraitFileRows[i]);
-					if (read_error) params_ok = false;
+					if (read_error) areParamsOk = false;
 				}
 				
-				if (params_ok) {
+				if (areParamsOk) {
 
 					cout << endl << "Running simulation nr. " 
 						<< to_string(paramsSim->getSim().simulation)
@@ -6546,11 +6555,12 @@ void RunBatch(int nSimuls, int nLandscapes, speciesMap_t allSpecies)
 
 					RunModel(pLandscape, i, allSpecies);
 
-				} // end of if (params_ok)
+				}
 				else {
 					cout << endl << "Error in reading parameter file(s)" << endl;
 				}
-			} // end of nSimuls for loop
+
+			} // end of loop through simulations
 
 			// close input files
 			ifsParamFile.close();
@@ -6568,7 +6578,7 @@ void RunBatch(int nSimuls, int nLandscapes, speciesMap_t allSpecies)
 			ifsInitFile.close(); 
 			ifsInitFile.clear();
 
-			if (gHasGenetics) {
+			if (gAnyUsesGenetics) {
 				ifsGeneticsFile.close();
 				ifsGeneticsFile.clear();
 				ifsTraitsFile.close();

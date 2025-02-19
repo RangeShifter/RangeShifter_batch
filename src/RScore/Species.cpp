@@ -747,11 +747,12 @@ short Species::getMovtHabDim() { return habDimTrfr; }
 void Species::createHabCostMort(short nhab) {
 	if (nhab >= 0) {
 		habDimTrfr = nhab;
-		if (habCost != 0 || habStepMort != 0) deleteHabCostMort();
+		if (habCost != nullptr || habStepMort != nullptr) deleteHabCostMort();
 		habCost = new int[nhab];
 		habStepMort = new double[nhab];
 		for (int i = 0; i < nhab; i++) {
-			habCost[i] = 1; habStepMort[i] = 0.0;
+			habCost[i] = 1; 
+			habStepMort[i] = 0.0;
 		}
 	}
 }

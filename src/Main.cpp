@@ -126,7 +126,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	string outdir = paramsSim->getDir(2);
 	bool areInputsOk = checkInputFiles(pathToControlFile, indir, outdir);
 	if (areInputsOk) {
-		paramsSim->setBatchNum(b.batchNum);
 		// Set up species
 		/*
 		allSpecies.emplace(0,
@@ -159,7 +158,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if (areInputsOk) {
 		try {
-			RunBatch(b.nSimuls, b.nLandscapes, allSpecies);
+			RunBatch();
 		}
 		catch (const std::exception& e) {
 			cerr << endl << "Error: " << e.what() << endl;

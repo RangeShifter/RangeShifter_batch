@@ -230,7 +230,7 @@ int InitDist::readDistribution(string distfile) {
 
 // Landscape functions
 
-Landscape::Landscape(const speciesMap_t& allSpecies) {
+Landscape::Landscape(const set<species_id>& speciesNames) {
 	usesPatches = false; 
 	spDist = false; 
 	generated = false;
@@ -252,7 +252,7 @@ Landscape::Landscape(const speciesMap_t& allSpecies) {
 	epsGlobal = nullptr;
 
 	// Initialise maps for species-dependent members
-	for (auto& sp : views::keys(allSpecies)) {
+	for (auto& sp : speciesNames) {
 		patchChgMatrices.emplace(sp, vector<vector<cellChange>>());
 		costsChgMatrices.emplace(sp, vector<vector<cellChange>>());
 		connectMatrices.emplace(sp, nullptr);

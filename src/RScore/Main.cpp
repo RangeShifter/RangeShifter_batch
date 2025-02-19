@@ -59,7 +59,6 @@ string landFile;
 paramStoch* paramsStoch;
 paramSim* paramsSim;
 RSrandom* pRandom;
-Species* pSpecies;
 Community* pComm;
 
 #if LINUX_CLUSTER || RS_RCPP

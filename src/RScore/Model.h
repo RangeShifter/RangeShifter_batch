@@ -70,7 +70,6 @@ bool CheckDirectory(const string& pathToProjDir);
 void OutParameters(Landscape* pLandscape, speciesMap_t);
 
 extern paramStoch* paramsStoch;
-extern Species* pSpecies;
 extern paramSim* paramsSim;
 extern Community* pComm;
 
