@@ -55,26 +55,6 @@ using namespace std;
 #include "./RScore/SpeciesTrait.h"
 #include "./RScore/NeutralTrait.h"
 
-/*
-struct batchfiles {
-	bool ok = true;
-	int batchNum;
-	int nSimuls = 0;
-	int nLandscapes = 0;
-	int isPatchModel, resolution, landType, maxNbHab;
-	int usesStageStruct, transferType;
-	string parameterFile;
-	string landFile;
-	string stageStructFile;
-	string emigrationFile;
-	string transferFile;
-	string settleFile;
-	string geneticsFile;
-	string traitsFile;
-	string initFile;
-};
-*/
-
 struct TraitInputOptions {
 	bool anyNeutral = false;
 	bool isEmigIndVar = false;
@@ -106,18 +86,18 @@ struct simCheck {
 };
 
 bool checkInputFiles(string, string, string);
-int CheckParameterFile();
-int CheckLandFile(int, string);
+bool CheckParameterFile();
+bool CheckLandFile(int, string);
 int CheckGeneticsFile(string);
 int CheckDynamicFile(string, string);
 int CheckStageFile(string);
 int CheckTransitionFile(short, short);
 int CheckWeightsFile(string);
-int CheckEmigFile(void);
+int CheckEmigFile();
 int CheckTransferFile(string);
-int CheckSettleFile(void);
+int CheckSettleFile();
 int CheckInitFile(string);
-int CheckInitIndsFile(void);
+int CheckInitIndsFile();
 simCheck CheckStageSex(string, int, int, simCheck, int, int, int, int, int, bool, bool);
 int CheckGeneticsFile(string inputDirectory);
 int CheckTraitsFile(string indir);
@@ -222,8 +202,6 @@ GenParamType strToGenParamType(const string& str);
 // external pointers to parameter sets
 extern paramStoch* paramsStoch;
 extern paramSim* paramsSim;
-
-extern Species* pSpecies;
 extern int RS_random_seed;
 
 //---------------------------------------------------------------------------

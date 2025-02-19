@@ -125,7 +125,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	string indir = paramsSim->getDir(1);
 	string outdir = paramsSim->getDir(2);
 	bool areInputsOk = checkInputFiles(pathToControlFile, indir, outdir);
-	if (b.ok) {
+	if (areInputsOk) {
 		paramsSim->setBatchNum(b.batchNum);
 		// Set up species
 		/*
@@ -157,7 +157,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	pRandom = new RSrandom();
 #endif
 
-	if (b.ok) {
+	if (areInputsOk) {
 		try {
 			RunBatch(b.nSimuls, b.nLandscapes, allSpecies);
 		}
