@@ -661,6 +661,7 @@ bool CheckParameterFile()
 	int inOptimum;
 	int inLocalExt, inSaveMaps;
 	int prevsimul = 0;
+	int inRepro, inNbStages, inRepSeasons;
 	float inMinR, inMaxR, inMinK, inMaxK, sum_K, min_K, max_K;
 	float inGradSteep, inGradScalingFactor, inLocalExtOpt, inShiftRate;
 	float inStochAC, inStochStD, inLocalExtProb, inPropMales, inHarem;
@@ -889,23 +890,20 @@ bool CheckParameterFile()
 		}
 
 		ifsParamFile >> inRepro;
-		// TODO: check where gReprotype is used
-		// same for every other param in global input options 
-
-		if (gReproType && (inPropMales <= 0.0 || inPropMales >= 1.0)) {
-			BatchError(whichFile, whichLine, 0, "");
-			batchLogOfs << "PropMales should be above 0 and below 1 for sexual models" << endl;
+		if (!(inRepro == 0 || inRepro == 1 || inRepro == 2)) {
+			BatchError(whichFile, whichLine, 2, "ReproType");
 			nbErrors++;
 		}
-
+		else gSpInputOpt.at(simNb).at(inSp).reproType = inRepro;
+		
 		ifsParamFile >> inPropMales;
-		if (gReproType && (inPropMales <= 0.0 || inPropMales >= 1.0)) {
+		if (inRepro > 0 && (inPropMales <= 0.0 || inPropMales >= 1.0)) {
 			BatchError(whichFile, whichLine, 0, "");
 			batchLogOfs << "PropMales should be above 0 and below 1 for sexual models" << endl;
 			nbErrors++;
 		}
 		ifsParamFile >> inHarem;
-		if (gReproType == 2 && inHarem <= 0.0) {
+		if (inRepro == 2 && inHarem <= 0.0) {
 			BatchError(whichFile, whichLine, 10, "Harem"); 
 			nbErrors++; 
 		}
@@ -1672,6 +1670,8 @@ int CheckStageFile(string indir)
 	prevSim = simNb;
 	while (simNb != -98765) {
 
+		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(sp);
+
 		if (!gSpInputOpt.contains(simNb)) {
 			BatchError(filetype, line, 0, " ");
 			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
@@ -1707,12 +1707,14 @@ int CheckStageFile(string indir)
 				batchLogOfs << "Checking " << ftype2 << " " << fname << endl;
 				ifsTransMatrix.open(fname.c_str());
 				if (ifsTransMatrix.is_open()) {
-					err = CheckTransitionFile(gNbStages, gNbSexesDem);
+					short nbSexesDem = inputOpt.reproType == 2 ? 2 : 1;
+					err = CheckTransitionFile(inputOpt.nbStages, nbSexesDem);
 					if (err == 0) FileHeadersOK(ftype2); else errors++;
 					ifsTransMatrix.close();
 				}
 				else {
-					OpenError(ftype2, fname); errors++;
+					OpenError(ftype2, fname); 
+					errors++;
 				}
 				if (ifsTransMatrix.is_open()) ifsTransMatrix.close();
 				ifsTransMatrix.clear();
@@ -2860,7 +2862,7 @@ int CheckSettleFile()
 				gTraitOptions.at(simNb).isSettSexDep = inSexDep == 1;
 			}
 
-			if (gReproType != 0 && gNbSexesDisp > 1) {
+			if (gSpInputOpt.at(simNb).at(sp).reproType != 0 && gNbSexesDisp > 1) {
 				if (inFindMate != 0 && inFindMate != 1) {
 					BatchError(whichFile, whichLine, 1, "FindMate"); 
 					nbErrors++;
