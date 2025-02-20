@@ -55,23 +55,33 @@ using namespace std;
 #include "./RScore/SpeciesTrait.h"
 #include "./RScore/NeutralTrait.h"
 
-struct TraitInputOptions {
+// Global variables to check parameter
+// consistency across input files
+struct spInputOptions {
+
+	int reproType;
+	int nbSexesDem;		// no. of explicit sexes for demographic model
+	int nbSexesDisp;	// no. of explicit sexes for dispersal model
+
+	int useSpeciesDist;
+	int distResol;
+	int nbStages;
+
+	// Track trait-relevant options to check for coherency across input files, 
+	// e.g. if emig file says emigration is indvar, trait file should have d0 entry
 	bool anyNeutral = false;
 	bool isEmigIndVar = false;
 	bool isEmigDensDep = false;
 	bool isEmigSexDep = false;
-
 	bool isSettIndVar = false;
 	bool isSettSexDep = false;
-
 	bool isKernTransfIndVar = false;
 	bool isKernTransfSexDep = false;
 	bool usesTwoKernels = false;
-
 	bool isSMSTransfIndVar = false;
 	bool usesSMSGoalBias = false;
-
 	bool isCRWTransfIndVar = false;
+	int nbTraitFileRows; // how many lines to expect in traitsFile?
 };
 
 bool traitExists(const TraitType& tr, const vector<TraitType>& existingTraits);
@@ -86,6 +96,7 @@ struct simCheck {
 };
 
 bool checkInputFiles(string, string, string);
+bool CheckSimFile();
 bool CheckParameterFile();
 bool CheckLandFile(int, string);
 int CheckGeneticsFile(string);

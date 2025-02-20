@@ -26,7 +26,7 @@
 //---------------------------------------------------------------------------
 
 // Note - all batch files are prefixed 'b' here for reasons concerned with RS v1.0
-ifstream ifsParamFile, ifsLandFile, ifsDynLandFile;
+ifstream ifsSimFile, ifsParamFile, ifsLandFile, ifsDynLandFile;
 ifstream ifsSpDistFile, ifsStageStructFile, ifsTransMatrix;
 ifstream ifsStageWeightsFile;
 ifstream ifsEmigrationFile, ifsTransferFile, ifsSettlementFile;
@@ -36,28 +36,21 @@ ifstream ifsFecDens, ifsDevDens, ifsSurvDens;
 
 ofstream batchLogOfs;
 
-
 // global variables passed between parsing functions...
 // should be removed eventually, maybe share variables through members of a class
-int gIsPatchModel, gResol, gLandType, gMaxNbHab, gUseSpeciesDist, gDistResol;
-int gReproType;
-int gUsesStageStruct, gNbStages, gTransferType;
-int gNbSexesDem;		// no. of explicit sexes for demographic model
-int gNbSexesDisp;	// no. of explicit sexes for dispersal model
-int gFirstSimNb = 0; // not great, globals should not be modified.
-bool gAnyUsesGenetics = true;
-
+int gUsesPatches, gUsesStageStruct, gResol;
+int gTransferType, gLandType, gMaxNbHab;
+bool gAnyUsesGenetics;
 int gNbLandscapes = 0;
+int gFirstSimNb = 0;
 set<int> gSimNbs; // record of simulation numbers to check input file use the same numbers
 
-// Track trait-relevant options to check for coherency across input files, 
-// e.g. if emig file says emigration is indvar, trait file should have d0 entry
-map<int, TraitInputOptions> gTraitOptions;
-vector<int> gNbTraitFileRows;
+// sim x species grid of parameters to check coherency between input files
+map<int, map<species_id, spInputOptions>> gSpInputOpt;
 
 rasterdata landraster;
 // ...including names of the input files
-string gParametersFile;
+string gSimFile, gParametersFile;
 string landFile;
 string gHabMapName, gPatchMapName, gDynLandFileName, gSpDistFileName, gNameCostFile;
 string stageStructFile, transMatrix;
@@ -131,9 +124,9 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 	}
 	else anyFormatError = true; // wrong control file format
 
-	controlIfs >> paramName >> gIsPatchModel;
+	controlIfs >> paramName >> gUsesPatches;
 	if (paramName == "PatchModel") {
-		if (gIsPatchModel != 0 && gIsPatchModel != 1) {
+		if (gUsesPatches != 0 && gUsesPatches != 1) {
 			BatchError(whichInputFile, -999, 1, "PatchModel"); 
 			nbErrors++;
 		}
@@ -157,7 +150,7 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 			nbErrors++;
 		}
 		else {
-			if (gLandType == 9 && gIsPatchModel) {
+			if (gLandType == 9 && gUsesPatches) {
 				BatchError(whichInputFile, -999, 0, "LandType");
 				batchLogOfs << "LandType may not be 9 for a patch-based model" << endl;
 				nbErrors++;
@@ -211,6 +204,43 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 	}
 
 	bool areInputFilesOk = true;
+
+	// Check simulation file
+	controlIfs >> paramName >> filename;
+	if (paramName == "SimFile" && !anyFormatError) {
+		pathToFile = inputDir + filename;
+		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
+		ifsSimFile.open(pathToFile.c_str());
+		if (ifsSimFile.is_open()) {
+			if (!CheckSimFile())
+				areInputFilesOk = false;
+			else {
+				FileOK(paramName, gSimNbs.size(), 0);
+				gSimFile = pathToFile;
+			}
+			ifsSimFile.close();
+		}
+		else {
+			OpenError(paramName, pathToFile);
+			areInputFilesOk = false;
+			cout << "Unable to open SimFile" << endl;
+		}
+		ifsSimFile.clear();
+		if (!areInputFilesOk) {
+			batchLogOfs << endl
+				<< "*** SimFile must be corrected before further input file checks are conducted"
+				<< endl;
+			batchLogOfs.close();
+			batchLogOfs.clear();
+			controlIfs.close();
+			controlIfs.clear();
+			return false;
+		}
+	}
+	else anyFormatError = true; // wrong control file format
+	if (ifsSimFile.is_open())
+		ifsSimFile.close();
+	ifsSimFile.clear();
 
 	// Check parameter file
 	controlIfs >> paramName >> filename;
@@ -533,6 +563,98 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 	return areInputFilesOk;
 }
 
+bool CheckSimFile() {
+	int nbErrors = 0;
+	string header;
+	ifsSimFile >> header; if (header != "Simulation") nbErrors++;
+	ifsSimFile >> header; if (header != "Replicates") nbErrors++;
+	ifsSimFile >> header; if (header != "Years") nbErrors++;
+	ifsSimFile >> header; if (header != "Absorbing") nbErrors++;
+	ifsSimFile >> header; if (header != "FixReplicateSeed") nbErrors++;
+
+	string whichFile = "SimFile";
+	if (nbErrors > 0) {
+		FormatError(whichFile, nbErrors);
+		batchLogOfs << "*** SimFile column headers are incorrect." << endl;
+		return false;
+	}
+
+	// Parse data lines
+	int whichLine = 1;
+	int nbSims = 0, prevSim;
+	const int errSimNb = -98765;
+	int simNb = errSimNb;
+	ifsSimFile >> simNb; // first simulation number
+	if (simNb == errSimNb) {
+		batchLogOfs << "*** Error in SimFile - first simulation number could not be read." << endl;
+		nbErrors++;
+	}
+	else if (simNb < 0) {
+		batchLogOfs << "*** Error in SimFile - first simulation number must be >= 0" << endl;
+		nbErrors++;
+	}
+	else {
+		prevSim = gFirstSimNb = simNb;
+		nbSims++;
+	}
+
+	int inReplicates, inYears, inAbsorb, inFixReplicateSeed;
+
+	while (simNb != -98765) {
+
+		// Record simulation numbers to cross-check other files
+		gSimNbs.insert(simNb);
+
+		// Initialise trait option map with simulation numbers
+		gTraitOptions.emplace(simNb, map<species_id, TraitInputOptions>());
+
+		ifsSimFile >> inReplicates;
+		if (inReplicates <= 0) {
+			BatchError(whichFile, whichLine, 11, "Replicates");
+			nbErrors++;
+		}
+		ifsSimFile >> inYears;
+		if (inYears <= 0) {
+			BatchError(whichFile, whichLine, 11, "Years");
+			nbErrors++;
+		}
+		ifsSimFile >> inAbsorb;
+		if (inAbsorb != 0 && inAbsorb != 1) {
+			BatchError(whichFile, whichLine, 1, "Absorbing");
+			nbErrors++;
+		}
+		ifsSimFile >> inFixReplicateSeed;
+		if (inFixReplicateSeed != 0 && inFixReplicateSeed != 1) {
+			BatchError(whichFile, whichLine, 1, "FixReplicateSeed");
+			nbErrors++;
+		}
+
+		whichLine++;
+		// read next simulation number
+		simNb = -98765;
+		ifsSimFile >> simNb;
+		if (ifsSimFile.eof()) {
+			simNb = -98765;
+		}
+		else { // check for valid simulation number
+			if (simNb != prevSim + 1) {
+				BatchError(whichFile, whichLine, 222, " ");
+				nbErrors++;
+			}
+			prevSim = simNb;
+			nbSims++;
+		}
+	} // end of while loop
+	if (!ifsSimFile.eof()) {
+		EOFerror(whichFile);
+		nbErrors++;
+	}
+
+	if (nbErrors > 0) return false;
+	else return nSimuls;
+
+}
+
 //---------------------------------------------------------------------------
 bool CheckParameterFile()
 {
@@ -556,9 +678,6 @@ bool CheckParameterFile()
 
 	// Parse header line;
 	ifsParamFile >> header; if (header != "Simulation") nbErrors++;
-	ifsParamFile >> header; if (header != "Replicates") nbErrors++;
-	ifsParamFile >> header; if (header != "Years") nbErrors++;
-	ifsParamFile >> header; if (header != "Absorbing") nbErrors++;
 	ifsParamFile >> header; if (header != "Gradient") nbErrors++;
 	ifsParamFile >> header; if (header != "GradSteep") nbErrors++;
 	ifsParamFile >> header; if (header != "Optimum") nbErrors++;
@@ -600,7 +719,6 @@ bool CheckParameterFile()
 	ifsParamFile >> header; if (header != "OutIntTraitRow") nbErrors++;
 	ifsParamFile >> header; if (header != "OutIntConn") nbErrors++;
 	ifsParamFile >> header; if (header != "SMSHeatMap") nbErrors++;
-	ifsParamFile >> header; if (header != "FixReplicateSeed") nbErrors++;
 
 	if (nbErrors > 0 || nbKerrors > 0) {
 		FormatError(whichFile, nbErrors);
@@ -628,30 +746,12 @@ bool CheckParameterFile()
 		prevsimul = gFirstSimNb = simNb; 
 	}
 	while (simNb != -98765) {
+		
+		// Initialise trait option map for each species
+		gTraitOptions.at(simNb).emplace(sp, TraitInputOptions());
 
-		// Record simulation numbers to cross-check other files
-		gSimNbs.insert(simNb);
-
-		// Initialise trait option map with simulation numbers
-		gTraitOptions.emplace(simNb, TraitInputOptions());
-
-		ifsParamFile >> inReplicates; 
-		if (inReplicates <= 0) { 
-			BatchError(whichFile, whichLine, 11, "Replicates"); 
-			nbErrors++; 
-		}
-		ifsParamFile >> inYears; 
-		if (inYears <= 0) {
-			BatchError(whichFile, whichLine, 11, "Years"); 
-			nbErrors++; 
-		}
-		ifsParamFile >> inAbsorb;
-		if (inAbsorb != 0 && inAbsorb != 1) { 
-			BatchError(whichFile, whichLine, 1, "Absorbing"); 
-			nbErrors++; 
-		}
 		ifsParamFile >> inGradient;
-		if (gIsPatchModel) {
+		if (gUsesPatches) {
 			if (inGradient != 0) {
 				BatchError(whichFile, whichLine, 0, " ");
 				batchLogOfs << "Gradient must be 0 for patch-based model" << endl;
@@ -710,7 +810,7 @@ bool CheckParameterFile()
 			nbErrors++;
 		}
 		ifsParamFile >> inEnvStoch;
-		if (gIsPatchModel == 0) { // cell-based model
+		if (gUsesPatches == 0) { // cell-based model
 			if (inEnvStoch != 0 && inEnvStoch != 1 && inEnvStoch != 2) {
 				BatchError(whichFile, whichLine, 0, " ");
 				batchLogOfs << "EnvStoch must be 0, 1 or 2 for cell-based model" << endl;
@@ -763,7 +863,7 @@ bool CheckParameterFile()
 			}
 		}
 		ifsParamFile >> inLocalExt;
-		if (gIsPatchModel == 0) { // cell-based model
+		if (gUsesPatches == 0) { // cell-based model
 			if (inLocalExt < 0 || inLocalExt > 1) {
 				BatchError(whichFile, whichLine, 1, "LocalExt");
 				nbErrors++;
@@ -786,11 +886,19 @@ bool CheckParameterFile()
 			}
 		}
 		ifsParamFile >> inLocalExtProb;
-		if (gIsPatchModel == 0 && inLocalExt == 1 && (inLocalExtProb <= 0.0 || inLocalExtProb >= 1.0))
+		if (gUsesPatches == 0 && inLocalExt == 1 && (inLocalExtProb <= 0.0 || inLocalExtProb >= 1.0))
 		{
 			BatchError(whichFile, whichLine, 20, "LocalExtProb"); 
 			nbErrors++;
 		}
+
+		ifsParamFile >> inRepro;
+		if (gReproType && (inPropMales <= 0.0 || inPropMales >= 1.0)) {
+			BatchError(whichFile, whichLine, 0, "");
+			batchLogOfs << "PropMales should be above 0 and below 1 for sexual models" << endl;
+			nbErrors++;
+		}
+
 		ifsParamFile >> inPropMales;
 		if (gReproType && (inPropMales <= 0.0 || inPropMales >= 1.0)) {
 			BatchError(whichFile, whichLine, 0, "");
@@ -922,7 +1030,7 @@ bool CheckParameterFile()
 			nbErrors++; 
 		}
 		else {
-			if (gIsPatchModel != 1 && inOutIntConn > 0) {
+			if (gUsesPatches != 1 && inOutIntConn > 0) {
 				BatchError(whichFile, whichLine, 0, " ");
 				batchLogOfs << "OutIntConn may be >0 only if PatchModel is 1" << endl;
 				nbErrors++;
@@ -932,11 +1040,6 @@ bool CheckParameterFile()
 		ifsParamFile >> inSMSHeatMap;
 		if (inSMSHeatMap != 0 && inSMSHeatMap != 1) {
 			BatchError(whichFile, whichLine, 1, "SMSHeatMap");
-			nbErrors++;
-		}
-		ifsParamFile >> inFixReplicateSeed;
-		if (inFixReplicateSeed != 0 && inFixReplicateSeed != 1) {
-			BatchError(whichFile, whichLine, 1, "FixReplicateSeed");
 			nbErrors++;
 		}
 
@@ -1042,13 +1145,13 @@ bool CheckLandFile(int landtype, string indir)
 			whichInputFile = "PatchFile";
 			ifsLandFile >> inputText;
 			if (inputText == "NULL") {
-				if (gIsPatchModel) {
+				if (gUsesPatches) {
 					BatchError(filetype, line, 0, " "); nbErrors++;
 					batchLogOfs << whichInputFile << gPatchReqdStr << endl;
 				}
 			}
 			else {
-				if (gIsPatchModel) {
+				if (gUsesPatches) {
 					fileName = indir + inputText;
 					patchraster = CheckRasterFile(fileName);
 					if (patchraster.ok) {
@@ -1415,13 +1518,13 @@ int CheckDynamicFile(string indir, string costfile) {
 		ftype = "PatchChangeFile";
 		ifsDynLandFile >> intext;
 		if (intext == "NULL") {
-			if (gIsPatchModel) {
+			if (gUsesPatches) {
 				BatchError(filetype, line, 0, " "); errors++;
 				batchLogOfs << ftype << gPatchReqdStr << endl;
 			}
 		}
 		else {
-			if (gIsPatchModel) {
+			if (gUsesPatches) {
 				fname = indir + intext;
 				patchchgraster = CheckRasterFile(fname);
 				if (patchchgraster.ok) {
@@ -4052,7 +4155,7 @@ int CheckInitFile(string indir)
 	ifsInitFile >> header; if (header != "SpType") errors++;
 	ifsInitFile >> header; if (header != "InitDens") errors++;
 	ifsInitFile >> header;
-	if (gIsPatchModel) { if (header != "IndsHa") errors++; }
+	if (gUsesPatches) { if (header != "IndsHa") errors++; }
 	else { if (header != "IndsCell") errors++; }
 	ifsInitFile >> header; if (header != "minX") errors++;
 	ifsInitFile >> header; if (header != "maxX") errors++;
@@ -4110,7 +4213,7 @@ int CheckInitFile(string indir)
 		prev = current;
 
 		ifsInitFile >> seedtype >> freetype >> sptype >> initdens >> inds_per_ha;
-		if (!gIsPatchModel) indscell = (int)inds_per_ha;
+		if (!gUsesPatches) indscell = (int)inds_per_ha;
 		if (seedtype < 0 || seedtype > 2) {
 			BatchError(filetype, line, 2, "SeedType"); errors++;
 		}
@@ -4139,7 +4242,7 @@ int CheckInitFile(string indir)
 		}
 		if (seedtype < 2) {
 			if (initdens == 2) { // specified density
-				if (gIsPatchModel) {
+				if (gUsesPatches) {
 					if (inds_per_ha <= 0.0) {
 						BatchError(filetype, line, 10, "IndsHa"); errors++;
 					}
@@ -4293,7 +4396,7 @@ int CheckInitIndsFile() {
 	if (header != "Year") errors++;
 	ifsInitIndsFile >> header; 
 	if (header != "Species") errors++;
-	if (gIsPatchModel) {
+	if (gUsesPatches) {
 		ifsInitIndsFile >> header; 
 		if (header != "PatchID") errors++;
 	}
@@ -4342,7 +4445,7 @@ int CheckInitIndsFile() {
 			BatchError(filetype, line, 0, " "); errors++;
 			batchLogOfs << "Species must be 0" << endl;
 		}
-		if (gIsPatchModel) {
+		if (gUsesPatches) {
 			ifsInitIndsFile >> patchID;
 			if (patchID < 1) {
 				BatchError(filetype, line, 11, "PatchID"); errors++;
@@ -6412,7 +6515,7 @@ void RunBatch()
 			return;
 		}
 		landParams paramsLand = pLandscape->getLandParams();
-		paramsLand.usesPatches = gIsPatchModel;
+		paramsLand.usesPatches = gUsesPatches;
 		paramsLand.resol = gResol;
 		paramsLand.rasterType = gLandType;
 		if (gLandType == 9) {
