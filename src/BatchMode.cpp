@@ -648,7 +648,7 @@ bool CheckSimFile() {
 		EOFerror(whichFile);
 		nbErrors++;
 	}
-	return nbErrors > 0;
+	return nbErrors == 0;
 }
 
 //---------------------------------------------------------------------------
@@ -1622,43 +1622,46 @@ int CheckDynamicFile(string indir, string costfile) {
 
 	if (errors > 0) return -111;
 	else return 0;
-
 }
 
 //---------------------------------------------------------------------------
 int CheckStageFile(string indir)
 {
-	string header, filename, fname, ftype2;
-	int simNb, i, err, fecdensdep, fecstagewts, devdensdep, devstagewts, survdensdep, survstagewts;
+	string header, fname;
+	int simNb, i, err, inFecDensDep;
+	int usesFecStgWeights, usesDevDensDep, usesDevStgWts, usesSurvDensDep, usesSurvStgWts;
+	int inPostDest, inPRep, inRepInt, inMaxAge, inSurvSched;
+	float inDevDensCoeff, inSurvDensDepCoeff;
 	float infloat;
-	int errors = 0;
-	int simuls = 0;
+	int nbErrors = 0;
+	int nbSims = 0;
 	int prevSim;
-	bool checkfile;
+	string inTrMatrixFile, fecStgWtFile, inDevStgWtsFile, inSurvWtsFile;
 	vector <string> transfiles, wtsfiles;
-	string filetype = "StageStructFile";
+	const string strStageFile = "StageStructFile";
+	const string strTrMatrix = "TransMatrixFile";
 
 	// Parse header line;
-	ifsStageStructFile >> header; if (header != "Simulation") errors++;
-	ifsStageStructFile >> header; if (header != "PostDestructn") errors++;
-	ifsStageStructFile >> header; if (header != "PRep") errors++;
-	ifsStageStructFile >> header; if (header != "RepInterval") errors++;
-	ifsStageStructFile >> header; if (header != "MaxAge") errors++;
-	ifsStageStructFile >> header; if (header != "TransMatrixFile") errors++;
-	ifsStageStructFile >> header; if (header != "SurvSched") errors++;
-	ifsStageStructFile >> header; if (header != "FecDensDep") errors++;
-	ifsStageStructFile >> header; if (header != "FecStageWts") errors++;
-	ifsStageStructFile >> header; if (header != "FecStageWtsFile") errors++;
-	ifsStageStructFile >> header; if (header != "DevDensDep") errors++;
-	ifsStageStructFile >> header; if (header != "DevDensCoeff") errors++;
-	ifsStageStructFile >> header; if (header != "DevStageWts") errors++;
-	ifsStageStructFile >> header; if (header != "DevStageWtsFile") errors++;
-	ifsStageStructFile >> header; if (header != "SurvDensDep") errors++;
-	ifsStageStructFile >> header; if (header != "SurvDensCoeff") errors++;
-	ifsStageStructFile >> header; if (header != "SurvStageWts") errors++;
-	ifsStageStructFile >> header; if (header != "SurvStageWtsFile") errors++;
-	if (errors > 0) {
-		FormatError(filetype, errors);
+	ifsStageStructFile >> header; if (header != "Simulation") nbErrors++;
+	ifsStageStructFile >> header; if (header != "PostDestructn") nbErrors++;
+	ifsStageStructFile >> header; if (header != "PRep") nbErrors++;
+	ifsStageStructFile >> header; if (header != "RepInterval") nbErrors++;
+	ifsStageStructFile >> header; if (header != "MaxAge") nbErrors++;
+	ifsStageStructFile >> header; if (header != "TransMatrixFile") nbErrors++;
+	ifsStageStructFile >> header; if (header != "SurvSched") nbErrors++;
+	ifsStageStructFile >> header; if (header != "FecDensDep") nbErrors++;
+	ifsStageStructFile >> header; if (header != "FecStageWts") nbErrors++;
+	ifsStageStructFile >> header; if (header != "FecStageWtsFile") nbErrors++;
+	ifsStageStructFile >> header; if (header != "DevDensDep") nbErrors++;
+	ifsStageStructFile >> header; if (header != "DevDensCoeff") nbErrors++;
+	ifsStageStructFile >> header; if (header != "DevStageWts") nbErrors++;
+	ifsStageStructFile >> header; if (header != "DevStageWtsFile") nbErrors++;
+	ifsStageStructFile >> header; if (header != "SurvDensDep") nbErrors++;
+	ifsStageStructFile >> header; if (header != "SurvDensCoeff") nbErrors++;
+	ifsStageStructFile >> header; if (header != "SurvStageWts") nbErrors++;
+	ifsStageStructFile >> header; if (header != "SurvStageWtsFile") nbErrors++;
+	if (nbErrors > 0) {
+		FormatError(strStageFile, nbErrors);
 		return -111;
 	}
 
@@ -1670,221 +1673,257 @@ int CheckStageFile(string indir)
 	prevSim = simNb;
 	while (simNb != -98765) {
 
+
 		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(sp);
 
 		if (!gSpInputOpt.contains(simNb)) {
-			BatchError(filetype, line, 0, " ");
+			BatchError(strStageFile, line, 0, " ");
 			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
-			errors++;
+			nbErrors++;
 		}
 
-		simuls++;
-		ifsStageStructFile >> simNb;
-		if (simNb < 0 || simNb > 1) { BatchError(filetype, line, 1, "PostDestructn"); errors++; }
-		ifsStageStructFile >> infloat;
-		if (infloat <= 0 || infloat > 1.0) { BatchError(filetype, line, 20, "PRep"); errors++; }
-		ifsStageStructFile >> simNb;
-		if (simNb < 0) { BatchError(filetype, line, 19, "RepInterval"); errors++; }
-		ifsStageStructFile >> simNb;
-		if (simNb < 2) { BatchError(filetype, line, 12, "MaxAge"); errors++; }
-
-		ifsStageStructFile >> filename;
+		nbSims++;
+		ifsStageStructFile >> inPostDest;
+		if (inPostDest < 0 || inPostDest > 1) {
+			BatchError(strStageFile, line, 1, "PostDestructn"); 
+			nbErrors++; 
+		}
+		ifsStageStructFile >> inPRep;
+		if (inPRep <= 0 || inPRep > 1.0) {
+			BatchError(strStageFile, line, 20, "PRep"); 
+			nbErrors++;
+		}
+		
+		ifsStageStructFile >> inRepInt;
+		if (inRepInt < 0) {
+			BatchError(strStageFile, line, 19, "RepInterval"); 
+			nbErrors++;
+		}
+		ifsStageStructFile >> inMaxAge;
+		if (inMaxAge < 2) {
+			BatchError(strStageFile, line, 12, "MaxAge"); 
+			nbErrors++; 
+		}
+		ifsStageStructFile >> inTrMatrixFile;
 		// transition matrix file - compulsory
-		ftype2 = "TransMatrixFile";
-		checkfile = true;
+		bool mustCheck = true;
 		for (i = 0; i < (int)transfiles.size(); i++) {
-			if (filename == transfiles[i]) { // file has already been checked
-				checkfile = false;
+			if (inTrMatrixFile == transfiles[i]) { // file has already been checked
+				mustCheck = false;
 			}
 		}
-		if (checkfile) {
-			if (filename == "NULL") {
-				batchLogOfs << "*** " << ftype2 << " is compulsory for stage-structured model" << endl;
-				errors++;
+		if (mustCheck) {
+			if (inTrMatrixFile == "NULL") {
+				batchLogOfs << "*** " << strTrMatrix << " is compulsory for stage-structured model" << endl;
+				nbErrors++;
 			}
 			else {
-				fname = indir + filename;
-				batchLogOfs << "Checking " << ftype2 << " " << fname << endl;
+				fname = indir + inTrMatrixFile;
+				batchLogOfs << "Checking " << strTrMatrix << " " << fname << endl;
 				ifsTransMatrix.open(fname.c_str());
 				if (ifsTransMatrix.is_open()) {
 					short nbSexesDem = inputOpt.reproType == 2 ? 2 : 1;
-					err = CheckTransitionFile(inputOpt.nbStages, nbSexesDem);
-					if (err == 0) FileHeadersOK(ftype2); else errors++;
+					if (CheckTransitionFile(inputOpt.nbStages, nbSexesDem)) 
+						FileHeadersOK(strTrMatrix);
+					else nbErrors++;
 					ifsTransMatrix.close();
 				}
 				else {
-					OpenError(ftype2, fname); 
-					errors++;
+					OpenError(strTrMatrix, fname); 
+					nbErrors++;
 				}
-				if (ifsTransMatrix.is_open()) ifsTransMatrix.close();
+				if (ifsTransMatrix.is_open()) 
+					ifsTransMatrix.close();
 				ifsTransMatrix.clear();
 			}
 		}
-		transfiles.push_back(filename);
+		transfiles.push_back(inTrMatrixFile);
 
-		ifsStageStructFile >> simNb;
-		if (simNb < 0 || simNb > 2) { BatchError(filetype, line, 2, "SurvSched"); errors++; }
-		ifsStageStructFile >> fecdensdep;
-		if (fecdensdep < 0 || fecdensdep > 1)
-		{
-			BatchError(filetype, line, 1, "FecDensDep"); errors++; fecdensdep = 1;
-		}
-		ifsStageStructFile >> fecstagewts;
-		if (fecdensdep) {
-			if (fecstagewts < 0 || fecstagewts > 1)
-			{
-				BatchError(filetype, line, 1, "FecStageWts"); errors++; fecstagewts = 1;
-			}
-		}
-		else {
-			if (fecstagewts != 0) {
-				BatchError(filetype, line, 0, " ");
-				batchLogOfs << "FecStageWts must be 0 if FecDensDep is 0" << endl; errors++;
-				errors++; fecstagewts = 1;
-			}
+		ifsStageStructFile >> inSurvSched;
+		if (inSurvSched < 0 || inSurvSched > 2) {
+			BatchError(strStageFile, line, 2, "SurvSched"); 
+			nbErrors++; 
 		}
 
+		ifsStageStructFile >> inFecDensDep;
+		if (inFecDensDep < 0 || inFecDensDep > 1) {
+			BatchError(strStageFile, line, 1, "FecDensDep"); 
+			nbErrors++; 
+			inFecDensDep = 1;
+		}
+		ifsStageStructFile >> usesFecStgWeights;
+		if (inFecDensDep) {
+			if (usesFecStgWeights < 0 || usesFecStgWeights > 1) {
+				BatchError(strStageFile, line, 1, "FecStageWts");
+				nbErrors++; 
+				usesFecStgWeights = 1;
+			}
+		}
+		else if (usesFecStgWeights != 0) {
+			BatchError(strStageFile, line, 0, " ");
+			batchLogOfs << "FecStageWts must be 0 if FecDensDep is 0" << endl; 
+			nbErrors++; 
+			usesFecStgWeights = 1;
+		}
 		// fecundity stage weights file - optional
-		ftype2 = "FecStageWtsFile";
-		ifsStageStructFile >> filename;
-		if (filename == "NULL") {
-			if (fecstagewts) {
-				BatchError(filetype, line, 0, " ");
-				batchLogOfs << ftype2 << " is compulsory unless FecStageWts is 0" << endl;
-				errors++;
+		const string strFecStgWt = "FecStageWtsFile";
+		ifsStageStructFile >> fecStgWtFile;
+		if (fecStgWtFile == "NULL") {
+			if (usesFecStgWeights) {
+				BatchError(strStageFile, line, 0, " ");
+				batchLogOfs << strFecStgWt << " is compulsory unless FecStageWts is 0" << endl;
+				nbErrors++;
 			}
 		}
 		else {
-			checkfile = true;
+			mustCheck = true;
 			for (i = 0; i < (int)wtsfiles.size(); i++) {
-				if (filename == wtsfiles[i]) checkfile = false; // file has already been checked
+				if (fecStgWtFile == wtsfiles[i])
+					mustCheck = false; // file has already been checked
 			}
-			if (checkfile) {
-				fname = indir + filename;
-				batchLogOfs << "Checking " << ftype2 << " " << fname << endl;
+			if (mustCheck) {
+				fname = indir + fecStgWtFile;
+				batchLogOfs << "Checking " << strTrMatrix << " " << fname << endl;
 				ifsStageWeightsFile.open(fname.c_str());
 				if (ifsStageWeightsFile.is_open()) {
-					err = CheckWeightsFile(ftype2);
-					if (err == 0) FileHeadersOK(ftype2); else errors++;
+					if (CheckWeightsFile(strTrMatrix)) 
+						FileHeadersOK(strTrMatrix);
+					else nbErrors++;
 					ifsStageWeightsFile.close();
 				}
 				else {
-					OpenError(ftype2, fname); errors++;
+					OpenError(strTrMatrix, fname); 
+					nbErrors++;
 				}
-				if (ifsStageWeightsFile.is_open()) ifsStageWeightsFile.close();
+				if (ifsStageWeightsFile.is_open()) 
+					ifsStageWeightsFile.close();
 				ifsStageWeightsFile.clear();
 			}
-			wtsfiles.push_back(filename);
+			wtsfiles.push_back(fecStgWtFile);
 		}
 
-		ifsStageStructFile >> devdensdep;
-		if (devdensdep < 0 || devdensdep > 1)
-		{
-			BatchError(filetype, line, 1, "DevDensDep"); errors++; devdensdep = 1;
+		ifsStageStructFile >> usesDevDensDep;
+		if (usesDevDensDep < 0 || usesDevDensDep > 1) {
+			BatchError(strStageFile, line, 1, "DevDensDep"); 
+			nbErrors++; 
+			usesDevDensDep = 1;
 		}
-		ifsStageStructFile >> infloat >> devstagewts;
-		if (devdensdep) {
-			if (infloat <= 0.0) {
-				BatchError(filetype, line, 10, "DevDensCoeff"); errors++;
+		ifsStageStructFile >> inDevDensCoeff >> usesDevStgWts;
+		if (usesDevDensDep) {
+			if (inDevDensCoeff <= 0.0) {
+				BatchError(strStageFile, line, 10, "DevDensCoeff"); 
+				nbErrors++;
 			}
-			if (devstagewts < 0 || devstagewts > 1) {
-				BatchError(filetype, line, 1, "DevStageWts"); errors++; devstagewts = 1;
+			if (usesDevStgWts < 0 || usesDevStgWts > 1) {
+				BatchError(strStageFile, line, 1, "DevStageWts");
+				nbErrors++; 
+				usesDevStgWts = 1;
 			}
 		}
-		else {
-			if (devstagewts != 0) {
-				BatchError(filetype, line, 0, " ");
-				batchLogOfs << "DevStageWts must be 0 if DevDensDep is 0" << endl; errors++;
-				errors++; devstagewts = 1;
-			}
+		else if (usesDevStgWts != 0) {
+			BatchError(strStageFile, line, 0, " ");
+			batchLogOfs << "DevStageWts must be 0 if DevDensDep is 0" << endl;
+			nbErrors++;
+			usesDevStgWts = 1;
 		}
 
 		// development stage weights file - optional
-		ftype2 = "DevStageWtsFile";
-		ifsStageStructFile >> filename;
-		if (filename == "NULL") {
-			if (devstagewts) {
-				BatchError(filetype, line, 0, " ");
-				batchLogOfs << ftype2 << " is compulsory unless DevStageWts is 0" << endl;
-				errors++;
+		const string strDevStgWts = "DevStageWtsFile";
+		ifsStageStructFile >> inDevStgWtsFile;
+		if (inDevStgWtsFile == "NULL") {
+			if (usesDevStgWts) {
+				BatchError(strStageFile, line, 0, " ");
+				batchLogOfs << strDevStgWts << " is compulsory unless DevStageWts is 0" << endl;
+				nbErrors++;
 			}
 		}
 		else {
-			checkfile = true;
+			mustCheck = true;
 			for (i = 0; i < (int)wtsfiles.size(); i++) {
-				if (filename == wtsfiles[i]) checkfile = false; // file has already been checked
+				if (inDevStgWtsFile == wtsfiles[i])
+					mustCheck = false; // file has already been checked
 			}
-			if (checkfile) {
-				fname = indir + filename;
-				batchLogOfs << "Checking " << ftype2 << " " << fname << endl;
+			if (mustCheck) {
+				fname = indir + inDevStgWtsFile;
+				batchLogOfs << "Checking " << strDevStgWts << " " << fname << endl;
 				ifsStageWeightsFile.open(fname.c_str());
 				if (ifsStageWeightsFile.is_open()) {
-					err = CheckWeightsFile(ftype2);
-					if (err == 0) FileHeadersOK(ftype2); else errors++;
+					if (CheckWeightsFile(strDevStgWts))
+						FileHeadersOK(strDevStgWts);
+					else nbErrors++;
 					ifsStageWeightsFile.close();
 				}
 				else {
-					OpenError(ftype2, fname); errors++;
+					OpenError(strDevStgWts, fname); 
+					nbErrors++;
 				}
-				if (ifsStageWeightsFile.is_open()) ifsStageWeightsFile.close();
+				if (ifsStageWeightsFile.is_open()) 
+					ifsStageWeightsFile.close();
 				ifsStageWeightsFile.clear();
 			}
-			wtsfiles.push_back(filename);
+			wtsfiles.push_back(inDevStgWtsFile);
 		}
 
-		ifsStageStructFile >> survdensdep;
-		if (survdensdep < 0 || survdensdep > 1)
-		{
-			BatchError(filetype, line, 1, "SurvDensDep"); errors++; survdensdep = 1;
-		}
-		ifsStageStructFile >> infloat >> survstagewts;
-		if (survdensdep) {
-			if (infloat <= 0.0) {
-				BatchError(filetype, line, 10, "SurvDensCoeff"); errors++;
-			}
-			if (survstagewts < 0 || survstagewts > 1) {
-				BatchError(filetype, line, 1, "SurvStageWts"); errors++; survstagewts = 1;
-			}
-		}
-		else {
-			if (survstagewts != 0) {
-				BatchError(filetype, line, 0, " ");
-				batchLogOfs << "SurvStageWts must be 0 if SurvDensDep is 0" << endl; errors++;
-				errors++; survstagewts = 1;
-			}
+		ifsStageStructFile >> usesSurvDensDep;
+		if (usesSurvDensDep < 0 || usesSurvDensDep > 1) {
+			BatchError(strStageFile, line, 1, "SurvDensDep"); 
+			nbErrors++; 
+			usesSurvDensDep = 1;
 		}
 
+		ifsStageStructFile >> inSurvDensDepCoeff >> usesSurvStgWts;
+		if (usesSurvDensDep) {
+			if (inSurvDensDepCoeff <= 0.0) {
+				BatchError(strStageFile, line, 10, "SurvDensCoeff"); 
+				nbErrors++;
+			}
+			if (usesSurvStgWts < 0 || usesSurvStgWts > 1) {
+				BatchError(strStageFile, line, 1, "SurvStageWts");
+				nbErrors++; 
+				usesSurvStgWts = 1;
+			}
+		}
+		else if (usesSurvStgWts != 0) {
+			BatchError(strStageFile, line, 0, " ");
+			batchLogOfs << "SurvStageWts must be 0 if SurvDensDep is 0" << endl; nbErrors++;
+			nbErrors++; 
+			usesSurvStgWts = 1;
+		}
 		// survival stage weights file - optional
-		ftype2 = "SurvStageWtsFile";
-		ifsStageStructFile >> filename;
-		if (filename == "NULL") {
-			if (survstagewts) {
-				BatchError(filetype, line, 0, " ");
-				batchLogOfs << ftype2 << " is compulsory unless SurvStageWts is 0" << endl;
-				errors++;
+		const string strSurvStgWts = "SurvStageWtsFile";
+		ifsStageStructFile >> inSurvWtsFile;
+		if (inSurvWtsFile == "NULL") {
+			if (usesSurvStgWts) {
+				BatchError(strStageFile, line, 0, " ");
+				batchLogOfs << strSurvStgWts << " is compulsory unless SurvStageWts is 0" << endl;
+				nbErrors++;
 			}
 		}
 		else {
-			checkfile = true;
+			mustCheck = true;
 			for (i = 0; i < (int)wtsfiles.size(); i++) {
-				if (filename == wtsfiles[i]) checkfile = false; // file has already been checked
+				if (inSurvWtsFile == wtsfiles[i])
+					mustCheck = false; // file has already been checked
 			}
-			if (checkfile) {
-				fname = indir + filename;
-				batchLogOfs << "Checking " << ftype2 << " " << fname << endl;
+			if (mustCheck) {
+				fname = indir + inSurvWtsFile;
+				batchLogOfs << "Checking " << strSurvStgWts << " " << fname << endl;
 				ifsStageWeightsFile.open(fname.c_str());
 				if (ifsStageWeightsFile.is_open()) {
-					err = CheckWeightsFile(ftype2);
-					if (err == 0) FileHeadersOK(ftype2); else errors++;
+					if (CheckWeightsFile(strSurvStgWts)) 
+						FileHeadersOK(strSurvStgWts);
+					else nbErrors++;
 					ifsStageWeightsFile.close();
 				}
 				else {
-					OpenError(ftype2, fname); errors++;
+					OpenError(strSurvStgWts, fname);
+					nbErrors++;
 				}
-				if (ifsStageWeightsFile.is_open()) ifsStageWeightsFile.close();
+				if (ifsStageWeightsFile.is_open()) 
+					ifsStageWeightsFile.close();
 				ifsStageWeightsFile.clear();
 			}
-			wtsfiles.push_back(filename);
+			wtsfiles.push_back(inSurvWtsFile);
 		}
 
 		// read next simulation
@@ -1896,28 +1935,27 @@ int CheckStageFile(string indir)
 		}
 		else { // check for valid simulation number
 			if (simNb != prevSim + 1) {
-				BatchError(filetype, line, 222, " ");
-				errors++;
+				BatchError(strStageFile, line, 222, " ");
+				nbErrors++;
 			}
 			prevSim = simNb;
 		}
 	}
 	if (!ifsStageStructFile.eof()) {
-		EOFerror(filetype);
-		errors++;
+		EOFerror(strStageFile);
+		nbErrors++;
 	}
 
 	transfiles.clear();
 	wtsfiles.clear();
 
-	if (errors > 0) return -111;
-	else return simuls;
-
+	if (nbErrors > 0) return -111;
+	else return nbSims;
 }
 
 //---------------------------------------------------------------------------
 // Check transition matrix file
-int CheckTransitionFile(short nstages, short nsexesDem)
+bool CheckTransitionFile(short nstages, short nsexesDem)
 {
 	string header, expectedHeader;
 	int iStage, iSex, stage, sex, line, minage;
@@ -2032,7 +2070,7 @@ int CheckTransitionFile(short nstages, short nsexesDem)
 		errors++;
 	}
 
-	return errors;
+	return errors == 0;
 
 }
 
@@ -2040,7 +2078,7 @@ int CheckTransitionFile(short nstages, short nsexesDem)
 
 //---------------------------------------------------------------------------
 // Check stage weights matrix file
-int CheckWeightsFile(string filetype)
+bool CheckWeightsFile(string filetype)
 {
 	string header, hhh;
 	int i, j, stage, sex, line;
@@ -2097,7 +2135,7 @@ int CheckWeightsFile(string filetype)
 		errors++;
 	}
 
-	return errors;
+	return errors == 0;
 
 }
 
