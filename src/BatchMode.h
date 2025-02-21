@@ -103,13 +103,13 @@ int CheckGeneticsFile(string);
 int CheckDynamicFile(string, string);
 int CheckStageFile(string);
 bool CheckTransitionFile(short, short);
-bool CheckWeightsFile(string);
+bool CheckWeightsFile(string, int nbStages, int nbSexes);
 int CheckEmigFile();
 int CheckTransferFile(string);
 int CheckSettleFile();
 int CheckInitFile(string);
 int CheckInitIndsFile();
-simCheck CheckStageSex(string, int, int, simCheck, int, int, int, int, int, bool, bool);
+simCheck CheckStageSex(string, int, int, species_id sp, simCheck, int, int, int, int, int, bool, bool);
 int CheckGeneticsFile(string inputDirectory);
 int CheckTraitsFile(string indir);
 

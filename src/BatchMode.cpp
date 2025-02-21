@@ -676,6 +676,7 @@ bool CheckParameterFile()
 
 	// Parse header line;
 	ifsParamFile >> header; if (header != "Simulation") nbErrors++;
+	ifsParamFile >> header; if (header != "Species") nbErrors++;
 	ifsParamFile >> header; if (header != "Gradient") nbErrors++;
 	ifsParamFile >> header; if (header != "GradSteep") nbErrors++;
 	ifsParamFile >> header; if (header != "Optimum") nbErrors++;
@@ -779,8 +780,8 @@ bool CheckParameterFile()
 			nbErrors++; 
 		}
 		ifsParamFile >> inLocalExtOpt;
-		if (inGradient == 4 && (inLocalExtOpt < 0.0 || inLocalExtOpt >= 1.0))
-		{
+		if (inGradient == 4 
+			&& (inLocalExtOpt < 0.0 || inLocalExtOpt >= 1.0)) {
 			BatchError(whichFile, whichLine, 20, "LocalExtOpt"); 
 			nbErrors++;
 		}
@@ -897,7 +898,8 @@ bool CheckParameterFile()
 		else gSpInputOpt.at(simNb).at(inSp).reproType = inRepro;
 		
 		ifsParamFile >> inPropMales;
-		if (inRepro > 0 && (inPropMales <= 0.0 || inPropMales >= 1.0)) {
+		if (inRepro > 0 
+			&& (inPropMales <= 0.0 || inPropMales >= 1.0)) {
 			BatchError(whichFile, whichLine, 0, "");
 			batchLogOfs << "PropMales should be above 0 and below 1 for sexual models" << endl;
 			nbErrors++;
@@ -1026,12 +1028,10 @@ bool CheckParameterFile()
 			BatchError(whichFile, whichLine, 19, "OutIntConn"); 
 			nbErrors++; 
 		}
-		else {
-			if (gUsesPatches != 1 && inOutIntConn > 0) {
-				BatchError(whichFile, whichLine, 0, " ");
-				batchLogOfs << "OutIntConn may be >0 only if PatchModel is 1" << endl;
-				nbErrors++;
-			}
+		else if (gUsesPatches != 1 && inOutIntConn > 0) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLogOfs << "OutIntConn may be >0 only if PatchModel is 1" << endl;
+			nbErrors++;
 		}
 		
 		ifsParamFile >> inSMSHeatMap;
@@ -1059,8 +1059,7 @@ bool CheckParameterFile()
 		EOFerror(whichFile);
 		nbErrors++;
 	}
-
-	return nbErrors > 0;
+	return nbErrors == 0;
 }
 
 bool CheckLandFile(int landtype, string indir)
@@ -1628,7 +1627,7 @@ int CheckDynamicFile(string indir, string costfile) {
 int CheckStageFile(string indir)
 {
 	string header, fname;
-	int simNb, i, err, inFecDensDep;
+	int simNb, inSp, i, inFecDensDep;
 	int usesFecStgWeights, usesDevDensDep, usesDevStgWts, usesSurvDensDep, usesSurvStgWts;
 	int inPostDest, inPRep, inRepInt, inMaxAge, inSurvSched;
 	float inDevDensCoeff, inSurvDensDepCoeff;
@@ -1643,6 +1642,7 @@ int CheckStageFile(string indir)
 
 	// Parse header line;
 	ifsStageStructFile >> header; if (header != "Simulation") nbErrors++;
+	ifsStageStructFile >> header; if (header != "Species") nbErrors++;
 	ifsStageStructFile >> header; if (header != "PostDestructn") nbErrors++;
 	ifsStageStructFile >> header; if (header != "PRep") nbErrors++;
 	ifsStageStructFile >> header; if (header != "RepInterval") nbErrors++;
@@ -1673,16 +1673,23 @@ int CheckStageFile(string indir)
 	prevSim = simNb;
 	while (simNb != -98765) {
 
-
-		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(sp);
-
 		if (!gSpInputOpt.contains(simNb)) {
 			BatchError(strStageFile, line, 0, " ");
 			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
 			nbErrors++;
 		}
-
 		nbSims++;
+
+		ifsStageStructFile >> inSp;
+		if (!gSpInputOpt.at(simNb).contains(inSp)) {
+			BatchError(strStageFile, line, 0, " ");
+			batchLogOfs << "Simulation number " << to_string(inSp) << " doesn't match those in SimFile" << endl;
+			nbErrors++;
+		}
+		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(inSp);
+		int nbStg = inputOpt.nbStages;
+		int nbSexDem = inputOpt.reproType == 2 ? 2 : 1;
+
 		ifsStageStructFile >> inPostDest;
 		if (inPostDest < 0 || inPostDest > 1) {
 			BatchError(strStageFile, line, 1, "PostDestructn"); 
@@ -1722,8 +1729,7 @@ int CheckStageFile(string indir)
 				batchLogOfs << "Checking " << strTrMatrix << " " << fname << endl;
 				ifsTransMatrix.open(fname.c_str());
 				if (ifsTransMatrix.is_open()) {
-					short nbSexesDem = inputOpt.reproType == 2 ? 2 : 1;
-					if (CheckTransitionFile(inputOpt.nbStages, nbSexesDem)) 
+					if (CheckTransitionFile(nbStg, nbSexDem)) 
 						FileHeadersOK(strTrMatrix);
 					else nbErrors++;
 					ifsTransMatrix.close();
@@ -1786,7 +1792,7 @@ int CheckStageFile(string indir)
 				batchLogOfs << "Checking " << strTrMatrix << " " << fname << endl;
 				ifsStageWeightsFile.open(fname.c_str());
 				if (ifsStageWeightsFile.is_open()) {
-					if (CheckWeightsFile(strTrMatrix)) 
+					if (CheckWeightsFile(strTrMatrix, nbStg, nbSexDem))
 						FileHeadersOK(strTrMatrix);
 					else nbErrors++;
 					ifsStageWeightsFile.close();
@@ -1848,7 +1854,7 @@ int CheckStageFile(string indir)
 				batchLogOfs << "Checking " << strDevStgWts << " " << fname << endl;
 				ifsStageWeightsFile.open(fname.c_str());
 				if (ifsStageWeightsFile.is_open()) {
-					if (CheckWeightsFile(strDevStgWts))
+					if (CheckWeightsFile(strDevStgWts, nbStg, nbSexDem))
 						FileHeadersOK(strDevStgWts);
 					else nbErrors++;
 					ifsStageWeightsFile.close();
@@ -1910,7 +1916,7 @@ int CheckStageFile(string indir)
 				batchLogOfs << "Checking " << strSurvStgWts << " " << fname << endl;
 				ifsStageWeightsFile.open(fname.c_str());
 				if (ifsStageWeightsFile.is_open()) {
-					if (CheckWeightsFile(strSurvStgWts)) 
+					if (CheckWeightsFile(strSurvStgWts, nbStg, nbSexDem))
 						FileHeadersOK(strSurvStgWts);
 					else nbErrors++;
 					ifsStageWeightsFile.close();
@@ -2009,15 +2015,12 @@ bool CheckTransitionFile(short nstages, short nsexesDem)
 		BatchError(filetype, line, 10, "Total fecundity"); errors++;
 	}
 	ifsTransMatrix >> minage;
-	//prevminage = minage;
-	//				batchlog << "MINAGE = " << minage << endl;
 	if (minage != 0) {
 		BatchError(filetype, line, 0, " ");
 		batchLogOfs << "MinAge must be zero for juvenile stage" << endl; errors++;
 	}
 
 	// one row for each stage/sex combination
-	//				batchlog << "HEADER = " << header << endl;
 	for (stage = 1; stage < nstages; stage++) {
 		for (sex = 0; sex < nsexesDem; sex++) {
 			line++;
@@ -2034,15 +2037,12 @@ bool CheckTransitionFile(short nstages, short nsexesDem)
 			for (iStage = 0; iStage < nstages; iStage++) {
 				for (iSex = 0; iSex < nsexesDem; iSex++) {
 					ifsTransMatrix >> infloat;
-					//				batchlog << "TRANS PROB = " << infloat << endl;
 					if (infloat < 0.0 || infloat > 1) {
 						BatchError(filetype, line, 20, "Transition probability"); errors++;
 					}
 				}
 			}
-			//		 prevminage = minage;
 			ifsTransMatrix >> minage;
-			//				batchlog << "MINAGE = " << minage << endl;
 			if (stage == 1 && minage != 0) {
 				BatchError(filetype, line, 0, " ");
 				batchLogOfs << "MinAge must be zero for stage 1" << endl; errors++;
@@ -2051,14 +2051,6 @@ bool CheckTransitionFile(short nstages, short nsexesDem)
 				if (minage < 0) {
 					BatchError(filetype, line, 19, "MinAge"); errors++;
 				}
-				// SCFP 30/9/13 - IDEALLY OUGHT TO TEST THAT MINAGE IS NO LESS THAN PREVIOUS MINAGE
-				// BUT WOULD NEED TO BE PREV MINAGE FOR THE SAME SEX
-				// HOWEVER, IT IS NOT CRITICAL, AS A MINAGE OF LESS THAN PREVIOUS CANNOT CAUSE ANY
-				// PROBLEM, AS PREVIOUS MINAGE GETS APPLIED EARLIER
-	//			if (minage < prevminage) {
-	//				BatchError(filetype,line,0," ");
-	//				batchlog << "MinAge may not be less than MinAge of previous stage" << endl; errors++;
-	//			}
 			}
 		}
 	}
@@ -2078,7 +2070,7 @@ bool CheckTransitionFile(short nstages, short nsexesDem)
 
 //---------------------------------------------------------------------------
 // Check stage weights matrix file
-bool CheckWeightsFile(string filetype)
+bool CheckWeightsFile(string filetype, int nbStages, int nbSexes)
 {
 	string header, hhh;
 	int i, j, stage, sex, line;
@@ -2087,10 +2079,10 @@ bool CheckWeightsFile(string filetype)
 
 	// check header records
 	ifsStageWeightsFile >> header; if (header != "StageWts") errors++;
-	for (i = 0; i < gNbStages; i++) {
-		for (j = 0; j < gNbSexesDem; j++) {
+	for (i = 0; i < nbStages; i++) {
+		for (j = 0; j < nbSexes; j++) {
 			ifsStageWeightsFile >> header;
-			if (gNbSexesDem == 1) hhh = to_string(i);
+			if (nbSexes == 1) hhh = to_string(i);
 			else {
 				if (j == 0) hhh = to_string(i) + "m"; else hhh = to_string(i) + "f";
 			}
@@ -2106,12 +2098,12 @@ bool CheckWeightsFile(string filetype)
 	// check matrix, including row headers
 	// one row for each stage/sex combination
 	line = 0;
-	for (stage = 0; stage < gNbStages; stage++) {
-		for (sex = 0; sex < gNbSexesDem; sex++) {
+	for (stage = 0; stage < nbStages; stage++) {
+		for (sex = 0; sex < nbSexes; sex++) {
 			line++;
 			// row header
 			ifsStageWeightsFile >> header;
-			if (gNbSexesDem == 1) hhh = to_string(stage);
+			if (nbSexes == 1) hhh = to_string(stage);
 			else {
 				if (sex == 0) hhh = to_string(stage) + "m"; else hhh = to_string(stage) + "f";
 			}
@@ -2119,8 +2111,8 @@ bool CheckWeightsFile(string filetype)
 				BatchError(filetype, line, 0, " ");
 				batchLogOfs << "Invalid row header" << endl; errors++;
 			}
-			for (i = 0; i < gNbStages; i++) {
-				for (j = 0; j < gNbSexesDem; j++) {
+			for (i = 0; i < nbStages; i++) {
+				for (j = 0; j < nbSexes; j++) {
 					ifsStageWeightsFile >> infloat;
 					// NOTE - any real number is acceptable - no check required
 				}
@@ -2145,7 +2137,7 @@ int CheckEmigFile()
 	string header;
 	int inDensDep, inUseFullKern, inStgDep, inSexDep, inIndVar, inEmigStg, inStage, inSex;
 	bool isDensDep, isIndVar;
-	float inEP, inD0, inAlpha, inBeta;
+	float inSp, inEP, inD0, inAlpha, inBeta;
 	int nbErrors = 0;
 	int nbSims = 0;
 	string whichInputFile = "EmigrationFile";
@@ -2156,6 +2148,7 @@ int CheckEmigFile()
 
 	// Parse header line;
 	ifsEmigrationFile >> header; if (header != "Simulation") nbErrors++;
+	ifsEmigrationFile >> header; if (header != "Species") nbErrors++;
 	ifsEmigrationFile >> header; if (header != "DensDep") nbErrors++;
 	ifsEmigrationFile >> header; if (header != "UseFullKern") nbErrors++;
 	ifsEmigrationFile >> header; if (header != "StageDep") nbErrors++;
@@ -2190,10 +2183,18 @@ int CheckEmigFile()
 			nbErrors++;
 		}
 
+		ifsEmigrationFile >> inSp;
+		if (!gSpInputOpt.at(simNb).contains(inSp)) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "Simulation number " << to_string(inSp) << " doesn't match those in SimFile" << endl;
+			nbErrors++;
+		}
+		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(inSp);
+
 		// read and validate columns relating to stage and sex-dependency and to IIV
 		ifsEmigrationFile >> inDensDep >> inUseFullKern >> inStgDep >> inSexDep;
 		ifsEmigrationFile >> inIndVar >> inEmigStg >> inStage >> inSex;
-		currentLine = CheckStageSex(whichInputFile, lineNb, simNb, prevLine, inStgDep, inSexDep, inStage, inSex, inIndVar, true, false);
+		currentLine = CheckStageSex(whichInputFile, lineNb, simNb, inSp, prevLine, inStgDep, inSexDep, inStage, inSex, inIndVar, true, false);
 		if (currentLine.isNewSim) nbSims++;
 		nbErrors += currentLine.errors;
 		prevLine = currentLine;
@@ -2204,7 +2205,7 @@ int CheckEmigFile()
 			nbErrors++;
 		}
 		else {
-			gTraitOptions.at(simNb).isEmigDensDep = (inDensDep == 1);
+			inputOpt.isEmigDensDep = (inDensDep == 1);
 		}
 
 		// validate individual variation
@@ -2213,9 +2214,8 @@ int CheckEmigFile()
 			nbErrors++;
 		}
 		else {
-			gTraitOptions.at(simNb).isEmigIndVar = (inIndVar == 1);
+			inputOpt.isEmigIndVar = (inIndVar == 1);
 		}
-
 
 		// validate use full kernel
 		if (inUseFullKern != 0 && inUseFullKern != 1) {
@@ -2230,17 +2230,17 @@ int CheckEmigFile()
 		// validate emigration stage
 		if (gUsesStageStruct && !inStgDep && inIndVar == 1
 			&& inStage == 0 && inSex == 0
-			&& (inEmigStg < 0 || inEmigStg >= gNbStages)) {
+			&& (inEmigStg < 0 || inEmigStg >= inputOpt.nbStages)) {
 			BatchError(whichInputFile, lineNb, 0, "EmigStage");
 			nbErrors++;
-			batchLogOfs << "EmigStage must be from 0 to " << to_string(gNbStages - 1) << endl;
+			batchLogOfs << "EmigStage must be from 0 to " << to_string(inputOpt.nbStages - 1) << endl;
 		}
 		if (inSexDep != 0 && inSexDep != 1) {
 			BatchError(whichInputFile, lineNb, 1, "SexDep");
 			nbErrors++;
 		} 
 		else {
-			gTraitOptions.at(simNb).isEmigSexDep = (inSexDep == 1);
+			inputOpt.isEmigSexDep = (inSexDep == 1);
 		}
 
 		if (inStage == 0 && inSex == 0) { // first line of a simulation
@@ -2252,7 +2252,7 @@ int CheckEmigFile()
 		// read remaining columns of the current record
 		ifsEmigrationFile >> inEP >> inD0 >> inAlpha >> inBeta;
 
-		if (gTraitOptions.at(simNb).isEmigIndVar) {
+		if (inputOpt.isEmigIndVar) {
 			if (inEP != gEmptyVal) {
 				batchLogOfs << "*** Error in " << whichInputFile << ": "
 					<< "if individual variability is enabled EP must be " << gEmptyVal << endl;
@@ -2312,7 +2312,9 @@ int CheckEmigFile()
 		const int errSimNb = -98765;
 		simNb = errSimNb;
 		ifsEmigrationFile >> simNb;
-		if (simNb == errSimNb || ifsEmigrationFile.eof()) readNextLine = false;
+		if (simNb == errSimNb || ifsEmigrationFile.eof()) 
+			readNextLine = false;
+
 	} // end of while loop
 
 	// check for correct number of lines for previous simulation
@@ -2334,7 +2336,7 @@ int CheckEmigFile()
 int CheckTransferFile(string indir)
 {
 	string header, colheader, intext, fname, ftype;
-	int i, simNb, inStageDep, inSexDep, inKernelType, inDistMort, inIndVar, inStage, inSex;
+	int i, simNb, inSp, inStageDep, inSexDep, inKernelType, inDistMort, inIndVar, inStage, inSex;
 	int	inPercRangeMethod, inSMType, inStraightenPath;
 	float inPerceptualRange, inDirPersistence, inSMConst;
 	int inGoalType, inMemSize, inBetaDispBias; float inGoalBias, inAlphaDispBias;
@@ -2356,6 +2358,8 @@ int CheckTransferFile(string indir)
 	// Parse header line;
 	ifsTransferFile >> header; 
 	if (header != "Simulation") errors++;
+	ifsTransferFile >> header; 
+	if (header != "Species") errors++;
 
 	switch (gTransferType) {
 
@@ -2463,13 +2467,21 @@ int CheckTransferFile(string indir)
 			errors++;
 		}
 
+		ifsTransferFile >> inSp;
+		if (!gSpInputOpt.at(simNb).contains(inSp)) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLogOfs << "Simulation number " << to_string(inSp) << " doesn't match those in SimFile" << endl;
+			errors++;
+		}
+		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(inSp);
+
 		switch (gTransferType) {
 
 		case 0: { // negative exponential dispersal kernel
 			// read and validate columns relating to stage and sex-dependency and to IIV
 			ifsTransferFile >> inStageDep >> inSexDep >> inKernelType >> inDistMort;
 			ifsTransferFile >> inIndVar >> inStage >> inSex;
-			current = CheckStageSex(whichFile, whichLine, simNb, prev, inStageDep, inSexDep, inStage, inSex, inIndVar, true, false);
+			current = CheckStageSex(whichFile, whichLine, simNb, inSp, prev, inStageDep, inSexDep, inStage, inSex, inIndVar, true, false);
 			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
@@ -2478,36 +2490,40 @@ int CheckTransferFile(string indir)
 				BatchError(whichFile, whichLine, 1, "KernelType"); errors++;
 			}
 			else {
-				gTraitOptions.at(simNb).usesTwoKernels = (inKernelType == 1);
+				inputOpt.usesTwoKernels = (inKernelType == 1);
 			}
 			// validate mortality
 			if (inDistMort != 0 && inDistMort != 1) {
-				BatchError(whichFile, whichLine, 1, "DistMort"); errors++;
+				BatchError(whichFile, whichLine, 1, "DistMort"); 
+				errors++;
 			}
 			// read remaining columns of the current record
 			ifsTransferFile >> meanDistI >> meanDistII >> ProbKernelI;
 			ifsTransferFile >> mortProb >> slope >> inflPoint;
 
 			if (inIndVar != 0 && inIndVar != 1) {
-				BatchError(whichFile, whichLine, 1, "IndVar"); errors++;
+				BatchError(whichFile, whichLine, 1, "IndVar"); 
+				errors++;
 			}
 			else {
-				gTraitOptions.at(simNb).isKernTransfIndVar = (inIndVar == 1);
+				inputOpt.isKernTransfIndVar = (inIndVar == 1);
 			}
 
 			if (inSexDep != 0 && inSexDep != 1) {
-				BatchError(whichFile, whichLine, 1, "SexDep"); errors++;
+				BatchError(whichFile, whichLine, 1, "SexDep"); 
+				errors++;
 			}
 			else {
-				gTraitOptions.at(simNb).isKernTransfSexDep = (inSexDep == 1);
+				inputOpt.isKernTransfSexDep = (inSexDep == 1);
 			}
 
 			// validate mortality
 			if (inDistMort != 0 && inDistMort != 1) {
-				BatchError(whichFile, whichLine, 1, "DistMort"); errors++;
+				BatchError(whichFile, whichLine, 1, "DistMort"); 
+				errors++;
 			}
 
-			if (gTraitOptions.at(simNb).isKernTransfIndVar) {
+			if (inputOpt.isKernTransfIndVar) {
 				if (meanDistI != gEmptyVal) {
 					batchLogOfs << "*** Error in " << whichFile << ": "
 						<< "if individual variability is enabled meanDistI must be " << gEmptyVal << endl;
@@ -2559,7 +2575,7 @@ int CheckTransferFile(string indir)
 			ifsTransferFile >> inIndVar;
 			ifsTransferFile >> inPerceptualRange >> inPercRangeMethod >> inDirPersistence;
 			ifsTransferFile >> inMemSize >> inGoalBias >> inGoalType >> inAlphaDispBias >> inBetaDispBias;
-			current = CheckStageSex(whichFile, whichLine, simNb, prev, 0, 0, 0, 0, 0, true, false);
+			current = CheckStageSex(whichFile, whichLine, simNb, inSp, prev, 0, 0, 0, 0, 0, true, false);
 			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
@@ -2568,7 +2584,7 @@ int CheckTransferFile(string indir)
 				BatchError(whichFile, whichLine, 1, "IndVar"); errors++;
 			}
 			else {
-				gTraitOptions.at(simNb).isSMSTransfIndVar = (inIndVar == 1);
+				inputOpt.isSMSTransfIndVar = (inIndVar == 1);
 			}
 
 			// validate SMS movement parameters
@@ -2578,7 +2594,7 @@ int CheckTransferFile(string indir)
 			if (inPercRangeMethod < 1 || inPercRangeMethod > 3) {
 				BatchError(whichFile, whichLine, 33, "PRmethod"); errors++;
 			}
-			if (gTraitOptions.at(simNb).isSMSTransfIndVar) {
+			if (inputOpt.isSMSTransfIndVar) {
 				if (inGoalBias != gEmptyVal) {
 					batchLogOfs << "*** Error in " << whichFile << ": "
 						<< "if individual variability is enabled GB must be " << gEmptyVal << endl;
@@ -2615,7 +2631,7 @@ int CheckTransferFile(string indir)
 				BatchError(whichFile, whichLine, 2, "GoalType"); errors++;
 			}
 			else {
-				gTraitOptions.at(simNb).usesSMSGoalBias = (inGoalType == 2);
+				inputOpt.usesSMSGoalBias = (inGoalType == 2);
 			}
 			ifsTransferFile >> inStraightenPath >> inSMType >> inSMConst;
 			if (inStraightenPath != 0 && inStraightenPath != 1) {
@@ -2697,7 +2713,7 @@ int CheckTransferFile(string indir)
 
 		case 2: { // CRW
 			ifsTransferFile >> inIndVar >> inStepLength >> inStepCorr >> inStraightenPath >> inSMType >> inSMConst;
-			current = CheckStageSex(whichFile, whichLine, simNb, prev, 0, 0, 0, 0, inIndVar, true, false);
+			current = CheckStageSex(whichFile, whichLine, simNb, inSp, prev, 0, 0, 0, 0, inIndVar, true, false);
 			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
@@ -2706,10 +2722,10 @@ int CheckTransferFile(string indir)
 				BatchError(whichFile, whichLine, 1, "IndVar"); errors++;
 			}
 			else {
-				gTraitOptions.at(simNb).isCRWTransfIndVar = (inIndVar == 1);
+				inputOpt.isCRWTransfIndVar = (inIndVar == 1);
 			}
 
-			if (gTraitOptions.at(simNb).isCRWTransfIndVar) {
+			if (inputOpt.isCRWTransfIndVar) {
 				if (inStepLength != gEmptyVal) {
 					batchLogOfs << "*** Error in " << whichFile << ": "
 						<< "if individual variability is enabled SL must be " << gEmptyVal << endl;
@@ -2775,7 +2791,8 @@ int CheckTransferFile(string indir)
 	// check for correct number of lines for previous simulation
 	if (gTransferType == 0 // no. of lines checked for dispersal kernel transfer method only
 		&& current.simLines != current.reqdSimLines) {
-		BatchError(whichFile, whichLine, 0, " "); errors++;
+		BatchError(whichFile, whichLine, 0, " "); 
+		errors++;
 		batchLogOfs << gNbLinesStr << current.simNb
 			<< gShouldBeStr << current.reqdSimLines << endl;
 	}
@@ -2794,7 +2811,7 @@ int CheckTransferFile(string indir)
 int CheckSettleFile()
 {
 	string header;
-	int simNb, inStageDep, inSexDep, inStage, inSex, inSettleType;
+	int simNb, inSp, inStageDep, inSexDep, inStage, inSex, inSettleType;
 	int inDensDep, inIndVar, inFindMate, inMinSteps, inMaxSteps, inMaxStepsYear;
 	float inS0, inAlphaS, inBetaS;
 	int nbErrors = 0;
@@ -2803,12 +2820,13 @@ int CheckSettleFile()
 
 	// Parse header line;
 	ifsSettlementFile >> header; if (header != "Simulation") nbErrors++;
+	ifsSettlementFile >> header; if (header != "Species") nbErrors++;
 	ifsSettlementFile >> header; if (header != "StageDep") nbErrors++;
 	ifsSettlementFile >> header; if (header != "SexDep") nbErrors++;
 	ifsSettlementFile >> header; if (header != "Stage") nbErrors++;
 	ifsSettlementFile >> header; if (header != "Sex") nbErrors++;
-	if (gTransferType == 0)
-	{ // dispersal kernel
+	if (gTransferType == 0) { 
+		// dispersal kernel
 		ifsSettlementFile >> header; if (header != "SettleType") nbErrors++;
 		ifsSettlementFile >> header; if (header != "FindMate") nbErrors++;
 	}
@@ -2845,11 +2863,20 @@ int CheckSettleFile()
 			nbErrors++;
 		}
 
-		if (gTransferType == 0)
-		{ // dispersal kernel
+		ifsSettlementFile >> inSp;
+		if (!gSpInputOpt.at(simNb).contains(inSp)) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLogOfs << "Simulation number " << to_string(inSp) << " doesn't match those in SimFile" << endl;
+			nbErrors++;
+		}
+		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(inSp);
+		int nbSexDisp = inputOpt.reproType == 0 ? 1 : 2;
+
+		if (gTransferType == 0) { 
+			// dispersal kernel
 			// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 			ifsSettlementFile >> inStageDep >> inSexDep >> inStage >> inSex >> inSettleType >> inFindMate;
-			current = CheckStageSex(whichFile, whichLine, simNb, prev, inStageDep, inSexDep, inStage, inSex, 0, true, false);
+			current = CheckStageSex(whichFile, whichLine, simNb, inSp, prev, inStageDep, inSexDep, inStage, inSex, 0, true, false);
 			if (current.isNewSim) nbSims++;
 			nbErrors += current.errors;
 			prev = current;
@@ -2860,16 +2887,17 @@ int CheckSettleFile()
 				BatchError(whichFile, whichLine, 0, " "); nbErrors++;
 				batchLogOfs << "Invalid SettleType for a non-stage-structured population" << endl;
 			}
-			if (gNbSexesDisp > 1) {
+			if (nbSexDisp > 1) {
 				if (inFindMate < 0 || inFindMate > 1) {
-					BatchError(whichFile, whichLine, 1, "FindMate"); nbErrors++;
+					BatchError(whichFile, whichLine, 1, "FindMate"); 
+					nbErrors++;
 				}
 			}
 		}
 		else { // movement method
 			// read and validate columns relating to stage and sex-dependency (IIV psossible)
 			ifsSettlementFile >> inStageDep >> inSexDep >> inStage >> inSex >> inDensDep >> inIndVar >> inFindMate;
-			current = CheckStageSex(whichFile, whichLine, simNb, prev, inStageDep, inSexDep, inStage, inSex, inIndVar, true, false);
+			current = CheckStageSex(whichFile, whichLine, simNb, inSp, prev, inStageDep, inSexDep, inStage, inSex, inIndVar, true, false);
 			if (current.isNewSim) nbSims++;
 			nbErrors += current.errors;
 			prev = current;
@@ -2889,7 +2917,7 @@ int CheckSettleFile()
 				batchLogOfs << "IndVar must be 0 if DensDep is 0" << endl;
 			}
 			else {
-				gTraitOptions.at(simNb).isSettIndVar = inIndVar == 1;
+				inputOpt.isSettIndVar = inIndVar == 1;
 			}
 
 			if (inSexDep != 0 && inSexDep != 1) {
@@ -2897,10 +2925,10 @@ int CheckSettleFile()
 				nbErrors++;
 			}
 			else {
-				gTraitOptions.at(simNb).isSettSexDep = inSexDep == 1;
+				inputOpt.isSettSexDep = inSexDep == 1;
 			}
 
-			if (gSpInputOpt.at(simNb).at(sp).reproType != 0 && gNbSexesDisp > 1) {
+			if (inputOpt.reproType != 0 && nbSexDisp > 1) {
 				if (inFindMate != 0 && inFindMate != 1) {
 					BatchError(whichFile, whichLine, 1, "FindMate"); 
 					nbErrors++;
@@ -2923,7 +2951,7 @@ int CheckSettleFile()
 			}
 			ifsSettlementFile >> inS0 >> inAlphaS >> inBetaS;
 
-			if (gTraitOptions.at(simNb).isSettIndVar) {
+			if (inputOpt.isSettIndVar) {
 					if (inS0 != gEmptyVal) {
 						batchLogOfs << "*** Error in " << whichFile << ": "
 							<< "if individual variability is enabled S0 must be " << gEmptyVal << endl;
@@ -2953,12 +2981,14 @@ int CheckSettleFile()
 		whichLine++;
 		simNb = -98765;
 		ifsSettlementFile >> simNb;
-		if (ifsSettlementFile.eof()) simNb = -98765;
+		if (ifsSettlementFile.eof())
+			simNb = -98765;
 	} // end of while loop
 	// check for correct number of lines for previous simulation
 
 	if (current.simLines != current.reqdSimLines) {
-		BatchError(whichFile, whichLine, 0, " "); nbErrors++;
+		BatchError(whichFile, whichLine, 0, " "); 
+		nbErrors++;
 		batchLogOfs << gNbLinesStr << current.simNb
 			<< gShouldBeStr << current.reqdSimLines << endl;
 	}
@@ -2969,7 +2999,6 @@ int CheckSettleFile()
 
 	if (nbErrors > 0) return -111;
 	else return nbSims;
-
 }
 
 //---------------------------------------------------------------------------
@@ -3038,7 +3067,7 @@ int CheckTraitsFile(string indir)
 			>> inIsInherited >> inMutationDist >> inMutationParams >> inDominanceDist >> inDominanceParams
 			>> inMutationRate >> inIsOutput;
 
-		current = CheckStageSex(whichInputFile, lineNb, simNb, prev, 0, 0, 0, 0, 0, true, false);
+		current = CheckStageSex(whichInputFile, lineNb, simNb, inSp, prev, 0, 0, 0, 0, 0, true, false);
 		if (current.isNewSim) nbSims++;
 		nbErrors += current.errors;
 		prev = current;
@@ -4214,7 +4243,7 @@ int CheckInitFile(string indir)
 			errors++;
 		}
 
-		current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, 0, true, false);
+		current = CheckStageSex(filetype, line, simNb, inSp, prev, 0, 0, 0, 0, 0, true, false);
 		if (current.isNewSim) simuls++;
 		errors += current.errors;
 		prev = current;
@@ -4505,13 +4534,16 @@ Check that the number of records for a simulation matches the stage-
 and sex-dependency settings (unless checklines is false).
 Validate the IIV field (if present).
 */
-simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, simCheck prev,
-	int isStageDep, int isSexDep, int stage, int sex, int isIndVar,
-	bool mustCheckLines, bool mustCheckStgDepWithIndVar)
+simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, species_id sp, 
+	simCheck prev, int isStageDep, int isSexDep, int stage, int sex, 
+	int isIndVar, bool mustCheckLines, bool mustCheckStgDepWithIndVar)
 {
 	simCheck current;
 	current.errors = 0;
 	int expectedStage;
+
+	int nbSexDisp = gSpInputOpt.at(simNb).at(sp).reproType == 0 ? 1 : 2;
+	int nbStg = gSpInputOpt.at(simNb).at(sp).nbStages;
 
 	// has there been a change of simulation number?;
 	if (simNb == prev.simNb) { // no
@@ -4523,11 +4555,13 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, simCheck
 		current.isNewSim = true; 
 		current.simLines = 1;
 		if (whichLine > 1 && simNb != prev.simNb + 1) {
-			BatchError(whichInputFile, whichLine, 222, " "); current.errors++;
+			BatchError(whichInputFile, whichLine, 222, " "); 
+			current.errors++;
 		}
 		// check for correct number of lines for previous simulation
 		if (mustCheckLines && !(prev.simLines >= prev.reqdSimLines)) {
-			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
+			BatchError(whichInputFile, whichLine, 0, " "); 
+			current.errors++;
 			batchLogOfs << "No. of lines for previous Simulation " << prev.simNb
 				<< gShouldBeStr << prev.reqdSimLines << endl;
 		}
@@ -4537,38 +4571,38 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, simCheck
 	// validate inStageDep
 	if (gUsesStageStruct) {
 		if (isStageDep != 0 && isStageDep != 1) {
-			BatchError(whichInputFile, whichLine, 1, "StageDep"); current.errors++;
+			BatchError(whichInputFile, whichLine, 1, "StageDep"); 
+			current.errors++;
 			isStageDep = 1; // to calculate required number of lines
 		}
 	}
-	else {
-		if (isStageDep != 0) {
-			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
-			batchLogOfs << "StageDep must be 0 for non-stage-structured model" << endl;
-			isStageDep = 0; // to calculate required number of lines
-		}
+	else if (isStageDep != 0) {
+		BatchError(whichInputFile, whichLine, 0, " ");
+		current.errors++;
+		batchLogOfs << "StageDep must be 0 for non-stage-structured model" << endl;
+		isStageDep = 0; // to calculate required number of lines
 	}
 	// validate inSexDep
-	if (gNbSexesDisp == 2) {
+	if (nbSexDisp == 2) {
 		if (isSexDep != 0 && isSexDep != 1) {
-			BatchError(whichInputFile, whichLine, 1, "SexDep"); current.errors++;
+			BatchError(whichInputFile, whichLine, 1, "SexDep"); 
+			current.errors++;
 			isSexDep = 1; // to calculate required number of lines
 		}
 	}
-	else {
-		if (isSexDep != 0) {
-			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
-			batchLogOfs << "SexDep must be 0 for asexual model" << endl;
-			isSexDep = 0; // to calculate required number of lines
-		}
+	else if (isSexDep != 0) {
+		BatchError(whichInputFile, whichLine, 0, " ");
+		current.errors++;
+		batchLogOfs << "SexDep must be 0 for asexual model" << endl;
+		isSexDep = 0; // to calculate required number of lines
 	}
 	if (current.isNewSim) { // set required number of lines
 		if (isStageDep) {
-			current.reqdSimLines = gNbStages;
-			if (isSexDep) current.reqdSimLines *= gNbSexesDisp;
+			current.reqdSimLines = nbStg;
+			if (isSexDep) current.reqdSimLines *= nbSexDisp;
 		}
 		else {
-			current.reqdSimLines = isSexDep ? gNbSexesDisp : 1;
+			current.reqdSimLines = isSexDep ? nbSexDisp : 1;
 		}
 	}
 	else current.reqdSimLines = prev.reqdSimLines;
@@ -4585,45 +4619,42 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, simCheck
 				batchLogOfs << "Stages must be sequentially numbered from 0" << endl;
 			}
 		}
-		else { // there must be 1 line for each stage
-			if (stage != current.simLines - 1) {
-				BatchError(whichInputFile, whichLine, 0, " "); 
-				current.errors++;
-				batchLogOfs << "Stages must be sequentially numbered from 0" << endl;
-			}
+		else if (stage != current.simLines - 1) {
+			BatchError(whichInputFile, whichLine, 0, " ");
+			current.errors++;
+			batchLogOfs << "Stages must be sequentially numbered from 0" << endl;
 		}
 	}
-	else { // no stage-dependent emigration
-		if (stage != 0) {
-			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
-			batchLogOfs << "Stage must be 0 for non-stage-structured model" << endl;
-		}
+	else if (stage != 0) {
+		BatchError(whichInputFile, whichLine, 0, " ");
+		current.errors++;
+		batchLogOfs << "Stage must be 0 for non-stage-structured model" << endl;
 	}
 	// validate sex
 	if (isSexDep) {
 		if (sex != (current.simLines + 1) % 2) {
-			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
+			BatchError(whichInputFile, whichLine, 0, " "); 
+			current.errors++;
 			batchLogOfs << "Sex must be alternately 0 and 1 if SexDep is 1" << endl;
 		}
 	}
-	else {
-		if (sex != 0) {
-			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
-			batchLogOfs << "Sex must be 0 if SexDep is 0" << endl;
-		}
+	else if (sex != 0) {
+		BatchError(whichInputFile, whichLine, 0, " ");
+		current.errors++;
+		batchLogOfs << "Sex must be 0 if SexDep is 0" << endl;
 	}
 
 	// validate inIndVar
 	if (isStageDep && !mustCheckStgDepWithIndVar) {
 		if (isIndVar != 0) {
-			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
+			BatchError(whichInputFile, whichLine, 0, " "); 
+			current.errors++;
 			batchLogOfs << "IndVar must be 0 if stage-dependent" << endl;
 		}
 	}
-	else {
-		if (isIndVar < 0 || isIndVar > 1) {
-			BatchError(whichInputFile, whichLine, 1, "IndVar"); current.errors++;
-		}
+	else if (isIndVar < 0 || isIndVar > 1) {
+		BatchError(whichInputFile, whichLine, 1, "IndVar");
+		current.errors++;
 	}
 	return current;
 }
