@@ -3933,7 +3933,7 @@ TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex) {
 int CheckGeneticsFile(string inputDirectory) {
 
 	string header;
-	int simNb, prevSimNb, errCode;
+	int simNb, inSp, prevSimNb, errCode;
 	string inChromosomeEnds, inRecombinationRate, inTraitsFile, inPatchList, inStages,
 		inOutGeneValues, inOutWeirCockerham, inOutWeirHill,
 		inOutStartGenetics, inOutputInterval, inNbrPatchesToSample, inNIndsToSample;
@@ -3947,6 +3947,7 @@ int CheckGeneticsFile(string inputDirectory) {
 
 	// Parse header line;
 	ifsGeneticsFile >> header; if (header != "Simulation") nbErrors++;
+	ifsGeneticsFile >> header; if (header != "Species") nbErrors++;
 	ifsGeneticsFile >> header; if (header != "GenomeSize") nbErrors++;
 	ifsGeneticsFile >> header; if (header != "ChromosomeEnds") nbErrors++;
 	ifsGeneticsFile >> header; if (header != "RecombinationRate") nbErrors++;
@@ -3977,6 +3978,14 @@ int CheckGeneticsFile(string inputDirectory) {
 			nbErrors++;
 		}
 
+		ifsGeneticsFile >> inSp;
+		if (!gSpInputOpt.at(simNb).contains(inSp)) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLogOfs << "Species number " << to_string(inSp) << " doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+		}
+		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(inSp);
+
 		ifsGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutWeirCockerham >>
 			inOutWeirHill >> inOutStartGenetics >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
 			>> inNIndsToSample >> inStages;
@@ -4005,7 +4014,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 
 		// Check RecombinationRate
-		if (gNbSexesDisp == 1 && inRecombinationRate != "#") {
+		if (inputOpt.reproType == 0 && inRecombinationRate != "#") {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLogOfs << "Do not specify a recombination rate for haploid/asexual systems." << endl;
 			nbErrors++;
@@ -4188,7 +4197,7 @@ int CheckGeneticsFile(string inputDirectory) {
 int CheckInitFile(string indir)
 {
 	string header, colheader;
-	int i, simNb;
+	int i, simNb, spNb;
 	int seedtype, freetype, sptype, initdens, indscell = 0, minX, maxX, minY, maxY;
 	int nCells, nSpCells, initAge;
 	int initFreezeYear, restrictRows, restrictFreq, finalFreezeYear;
@@ -4198,8 +4207,15 @@ int CheckInitFile(string indir)
 	int simuls = 0;
 	string filetype = "InitialisationFile";
 
+	int maxNbStages = 0;
+
+	for (auto& [sim, inputOptSp] : gSpInputOpt)
+		for (auto [sp, inputOpt] : inputOptSp)
+			maxNbStages = max(inputOpt.nbStages, maxNbStages);
+
 	// Parse header line;
 	ifsInitFile >> header; if (header != "Simulation") errors++;
+	ifsInitFile >> header; if (header != "Species") errors++;
 	ifsInitFile >> header; if (header != "SeedType") errors++;
 	ifsInitFile >> header; if (header != "FreeType") errors++;
 	ifsInitFile >> header; if (header != "SpType") errors++;
@@ -4218,12 +4234,10 @@ int CheckInitFile(string indir)
 	ifsInitFile >> header; if (header != "RestrictFreq") errors++;
 	ifsInitFile >> header; if (header != "FinalFreezeYear") errors++;
 	ifsInitFile >> header; if (header != "InitIndsFile") errors++;
-	if (gUsesStageStruct) {
-		ifsInitFile >> header; if (header != "InitAge") errors++;
-		for (i = 1; i < gNbStages; i++) {
-			colheader = "PropStage" + to_string(i);
-			ifsInitFile >> header; if (header != colheader) propnerrors++;
-		}
+	ifsInitFile >> header; if (header != "InitAge") errors++;
+	for (i = 1; i < maxNbStages; i++) {
+		colheader = "PropStage" + to_string(i);
+		ifsInitFile >> header; if (header != colheader) propnerrors++;
 	}
 	// report any errors in headers, and if so, terminate validation
 	if (errors > 0 || propnerrors > 0) {
@@ -4250,11 +4264,19 @@ int CheckInitFile(string indir)
 
 		if (!gSpInputOpt.contains(simNb)) {
 			BatchError(filetype, line, 0, " ");
-			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
+			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
 			errors++;
 		}
 
-		current = CheckStageSex(filetype, line, simNb, inSp, prev, 0, 0, 0, 0, 0, true, false);
+		if (!gSpInputOpt.at(simNb).contains(spNb)) {
+			BatchError(filetype, line, 0, " ");
+			batchLogOfs << "Species number " << to_string(spNb) << " doesn't match those in ParametersFile" << endl;
+			errors++;
+		}
+		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(spNb);
+
+
+		current = CheckStageSex(filetype, line, simNb, spNb, prev, 0, 0, 0, 0, 0, true, false);
 		if (current.isNewSim) simuls++;
 		errors += current.errors;
 		prev = current;
@@ -4269,7 +4291,7 @@ int CheckInitFile(string indir)
 			batchLogOfs << "SeedType must be 0 for an artificial landscape"
 				<< endl;
 		}
-		if (!gUseSpeciesDist && seedtype == 1) {
+		if (!inputOpt.useSpeciesDist && seedtype == 1) {
 			BatchError(filetype, line, 0, " "); errors++;
 			batchLogOfs << "SeedType may not be 1 if there is no initial species distribution map"
 				<< endl;
@@ -4368,38 +4390,43 @@ int CheckInitFile(string indir)
 					batchLogOfs << "Checking " << ftype2 << " " << fname << endl;
 					ifsInitIndsFile.open(fname.c_str());
 					if (ifsInitIndsFile.is_open()) {
-						err = CheckInitIndsFile();
-						if (err == 0) FileHeadersOK(ftype2); else errors++;
+						err = CheckInitIndsFile(simNb, spNb);
+						if (err == 0) FileHeadersOK(ftype2); 
+						else errors++;
 						ifsInitIndsFile.close();
 					}
 					else {
 						OpenError(ftype2, fname); errors++;
 					}
-					if (ifsInitIndsFile.is_open()) ifsInitIndsFile.close();
+					if (ifsInitIndsFile.is_open()) 
+						ifsInitIndsFile.close();
 					ifsInitIndsFile.clear();
 					indsfiles.push_back(filename);
 				}
 			}
 			else {
-				BatchError(filetype, line, 0, " "); errors++;
+				BatchError(filetype, line, 0, " "); 
+				errors++;
 				batchLogOfs << ftype2 << " must be NULL for SeedType "
 					<< seedtype << endl;
 			}
 		}
 
-		if (gUsesStageStruct) {
+		if (gUsesStageStruct && inputOpt.nbStages > 1) {
 			ifsInitFile >> initAge;
 			if (seedtype != 2 && (initAge < 0 || initAge > 2)) {
-				BatchError(filetype, line, 2, "initAge"); errors++;
+				BatchError(filetype, line, 2, "initAge"); 
+				errors++;
 			}
 			float propstage;
 			float cumprop = 0.0;
-			for (i = 1; i < gNbStages; i++) {
+			for (i = 1; i < maxNbStages; i++) {
 				ifsInitFile >> propstage;
 				cumprop += propstage;
 				if (seedtype != 2 && (propstage < 0.0 || propstage > 1.0)) {
 					colheader = "PropStage" + to_string(i);
-					BatchError(filetype, line, 20, colheader); errors++;
+					BatchError(filetype, line, 20, colheader); 
+					errors++;
 				}
 			}
 			if (seedtype != 2 && (cumprop < 0.99999 || cumprop > 1.00001)) {
@@ -4413,6 +4440,7 @@ int CheckInitFile(string indir)
 		simNb = -98765;
 		ifsInitFile >> simNb;
 		if (ifsInitFile.eof()) simNb = -98765;
+
 	} // end of while loop
 	// check for correct number of lines for previous simulation
 	if (current.simLines != current.reqdSimLines) {
@@ -4431,44 +4459,42 @@ int CheckInitFile(string indir)
 }
 
 //---------------------------------------------------------------------------
-int CheckInitIndsFile() {
+int CheckInitIndsFile(int simNb, species_id sp) {
 	string header;
 	int year, species, patchID, x, y, ninds, sex, age, stage, prevyear;
 
-	int errors = 0;
+	int nbErrors = 0;
 	string filetype = "InitIndsFile";
+	spInputOptions inputOpt = gSpInputOpt.at(simNb).at(sp);
 
 	// Parse header line
 	ifsInitIndsFile >> header; 
-	if (header != "Year") errors++;
+	if (header != "Year") nbErrors++;
 	ifsInitIndsFile >> header; 
-	if (header != "Species") errors++;
 	if (gUsesPatches) {
 		ifsInitIndsFile >> header; 
-		if (header != "PatchID") errors++;
+		if (header != "PatchID") nbErrors++;
 	}
 	else {
 		ifsInitIndsFile >> header; 
-		if (header != "X") errors++;
+		if (header != "X") nbErrors++;
 		ifsInitIndsFile >> header;
-		if (header != "Y") errors++;
+		if (header != "Y") nbErrors++;
 	}
 	ifsInitIndsFile >> header; 
-	if (header != "Ninds") errors++;
-	if (gReproType > 0) {
-		ifsInitIndsFile >> header; 
-		if (header != "Sex") errors++;
-	}
+	if (header != "Ninds") nbErrors++;
+	ifsInitIndsFile >> header;
+	if (header != "Sex") nbErrors++;
 	if (gUsesStageStruct) {
 		ifsInitIndsFile >> header; 
-		if (header != "Age") errors++;
+		if (header != "Age") nbErrors++;
 		ifsInitIndsFile >> header; 
-		if (header != "Stage") errors++;
+		if (header != "Stage") nbErrors++;
 	}
 
 	// Report any errors in headers, and if so, terminate validation
-	if (errors > 0) {
-		FormatError(filetype, errors);
+	if (nbErrors > 0) {
+		FormatError(filetype, nbErrors);
 		return -111;
 	}
 
@@ -4479,63 +4505,75 @@ int CheckInitIndsFile() {
 	ifsInitIndsFile >> year;
 	while (year != -98765) {
 		if (year < 0) {
-			BatchError(filetype, line, 19, "Year"); errors++;
+			BatchError(filetype, line, 19, "Year"); 
+			nbErrors++;
 		}
 		else {
 			if (year < prevyear) {
-				BatchError(filetype, line, 2, "Year", "previous Year"); errors++;
+				BatchError(filetype, line, 2, "Year", "previous Year"); 
+				nbErrors++;
 			}
 		}
 		prevyear = year;
 		ifsInitIndsFile >> species;
 		if (species != 0) {
-			BatchError(filetype, line, 0, " "); errors++;
+			BatchError(filetype, line, 0, " "); 
+			nbErrors++;
 			batchLogOfs << "Species must be 0" << endl;
 		}
 		if (gUsesPatches) {
 			ifsInitIndsFile >> patchID;
 			if (patchID < 1) {
-				BatchError(filetype, line, 11, "PatchID"); errors++;
+				BatchError(filetype, line, 11, "PatchID"); 
+				nbErrors++;
 			}
 		}
 		else {
 			ifsInitIndsFile >> x >> y;
 			if (x < 0 || y < 0) {
-				BatchError(filetype, line, 19, "X and Y"); errors++;
+				BatchError(filetype, line, 19, "X and Y"); 
+				nbErrors++;
 			}
 		}
 		ifsInitIndsFile >> ninds;
 		if (ninds < 1) {
-			BatchError(filetype, line, 11, "Ninds"); errors++;
+			BatchError(filetype, line, 11, "Ninds"); 
+			nbErrors++;
 		}
-		if (gReproType > 0) {
+		if (inputOpt.reproType > 0) {
 			ifsInitIndsFile >> sex;
 			if (sex < 0 || sex > 1) {
-				BatchError(filetype, line, 1, "Sex"); errors++;
+				BatchError(filetype, line, 1, "Sex"); 
+				nbErrors++;
 			}
 		}
 		if (gUsesStageStruct) {
 			ifsInitIndsFile >> age >> stage;
 			if (age < 1) {
-				BatchError(filetype, line, 11, "Age"); errors++;
+				BatchError(filetype, line, 11, "Age"); 
+				nbErrors++;
 			}
 			if (stage < 1) {
-				BatchError(filetype, line, 11, "Stage"); errors++;
+				BatchError(filetype, line, 11, "Stage");
+				nbErrors++;
 			}
-			if (stage >= gNbStages) {
-				BatchError(filetype, line, 4, "Stage", "no. of stages"); errors++;
+			if (stage >= inputOpt.nbStages) {
+				BatchError(filetype, line, 4, "Stage", "no. of stages"); 
+				nbErrors++;
 			}
 		}
 		line++;
 		year = -98765;
 		ifsInitIndsFile >> year;
-		if (ifsInitIndsFile.eof()) year = -98765;
+		if (ifsInitIndsFile.eof()) 
+			year = -98765;
+
 	} // end of while loop
 	if (!ifsInitIndsFile.eof()) {
 		EOFerror(filetype);
-		errors++;
+		nbErrors++;
 	}
-	return errors;
+	return nbErrors;
 }
 
 //---------------------------------------------------------------------------

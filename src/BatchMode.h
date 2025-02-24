@@ -60,12 +60,10 @@ using namespace std;
 struct spInputOptions {
 
 	int reproType;
-	int nbSexesDem;		// no. of explicit sexes for demographic model
-	int nbSexesDisp;	// no. of explicit sexes for dispersal model
+	int nbStages;
 
 	int useSpeciesDist;
 	int distResol;
-	int nbStages;
 
 	// Track trait-relevant options to check for coherency across input files, 
 	// e.g. if emig file says emigration is indvar, trait file should have d0 entry
@@ -108,7 +106,7 @@ int CheckEmigFile();
 int CheckTransferFile(string);
 int CheckSettleFile();
 int CheckInitFile(string);
-int CheckInitIndsFile();
+int CheckInitIndsFile(int simNb, species_id sp);
 simCheck CheckStageSex(string, int, int, species_id sp, simCheck, int, int, int, int, int, bool, bool);
 int CheckGeneticsFile(string inputDirectory);
 int CheckTraitsFile(string indir);
