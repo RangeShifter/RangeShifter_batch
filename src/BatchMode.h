@@ -86,7 +86,7 @@ struct spInputOptions {
 
 bool traitExists(const TraitType& tr, const vector<TraitType>& existingTraits);
 TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex);
-int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& simNb);
+int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& simNb, const species_id& sp);
 
 constexpr int gEmptyVal = -9;
 

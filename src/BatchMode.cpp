@@ -1683,7 +1683,7 @@ int CheckStageFile(string indir)
 		ifsStageStructFile >> inSp;
 		if (!gSpInputOpt.at(simNb).contains(inSp)) {
 			BatchError(strStageFile, line, 0, " ");
-			batchLogOfs << "Simulation number " << to_string(inSp) << " doesn't match those in SimFile" << endl;
+			batchLogOfs << "Species number " << to_string(inSp) << " doesn't match those in ParametersFile" << endl;
 			nbErrors++;
 		}
 		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(inSp);
@@ -2179,14 +2179,14 @@ int CheckEmigFile()
 
 		if (!gSpInputOpt.contains(simNb)) {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
+			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
 			nbErrors++;
 		}
 
 		ifsEmigrationFile >> inSp;
 		if (!gSpInputOpt.at(simNb).contains(inSp)) {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLogOfs << "Simulation number " << to_string(inSp) << " doesn't match those in SimFile" << endl;
+			batchLogOfs << "Species number " << to_string(inSp) << " doesn't match those in ParametersFile" << endl;
 			nbErrors++;
 		}
 		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(inSp);
@@ -2463,14 +2463,14 @@ int CheckTransferFile(string indir)
 
 		if (!gSpInputOpt.contains(simNb)) {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
+			batchLogOfs << "Simulation number doesn't match those in SimFile." << endl;
 			errors++;
 		}
 
 		ifsTransferFile >> inSp;
 		if (!gSpInputOpt.at(simNb).contains(inSp)) {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLogOfs << "Simulation number " << to_string(inSp) << " doesn't match those in SimFile" << endl;
+			batchLogOfs << "Species number " << to_string(inSp) << " doesn't match those in ParametersFile" << endl;
 			errors++;
 		}
 		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(inSp);
@@ -2859,14 +2859,14 @@ int CheckSettleFile()
 
 		if (!gSpInputOpt.contains(simNb)) {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
+			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
 			nbErrors++;
 		}
 
 		ifsSettlementFile >> inSp;
 		if (!gSpInputOpt.at(simNb).contains(inSp)) {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLogOfs << "Simulation number " << to_string(inSp) << " doesn't match those in SimFile" << endl;
+			batchLogOfs << "Species number " << to_string(inSp) << " doesn't match those in ParametersFile" << endl;
 			nbErrors++;
 		}
 		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(inSp);
@@ -3005,19 +3005,19 @@ int CheckSettleFile()
 int CheckTraitsFile(string indir)
 {
 	string header, colheader;
-	int simNb, nextLineSimNb;
-	string filename, inTraitType, inSex, inInitDist, inInitParams, inInitDomDist, inInitDomParams,
-		inDominanceDist, inDominanceParams, inIsInherited, inMutationDist, 
+	int simNb, inSp, nextLineSimNb, nextLineSp;
+	string filename, inTraitType, inSex, inInitDist, inInitParams, inInitDomDist, 
+		inInitDomParams, inDominanceDist, inDominanceParams, inIsInherited, inMutationDist, 
 		inMutationParams, inPositions, inNbPositions, inExpressionType, inMutationRate, inIsOutput;
 	int nbErrors = 0;
 	int nbSims = 0;
 	int nbGenLoadTraits = 0;
-	vector <string> archfiles;
 	const string whichInputFile = "TraitsFile";
-	vector <TraitType> allReadTraits;
+	vector<TraitType> allReadTraits;
 
 	// Parse header line
 	ifsTraitsFile >> header; if (header != "Simulation") nbErrors++;
+	ifsTraitsFile >> header; if (header != "Species") nbErrors++;
 	ifsTraitsFile >> header; if (header != "TraitType") nbErrors++;
 	ifsTraitsFile >> header; if (header != "ExprSex") nbErrors++;
 	ifsTraitsFile >> header; if (header != "Positions") nbErrors++;
@@ -3048,7 +3048,7 @@ int CheckTraitsFile(string indir)
 	prev.simNb = -999;
 	prev.simLines = prev.reqdSimLines = 0;
 
-	ifsTraitsFile >> simNb;
+	ifsTraitsFile >> simNb >> inSp;
 
 	bool stopReading = (simNb == simNbNotRead);
 	int nbRowsToRead = 0;
@@ -3057,9 +3057,16 @@ int CheckTraitsFile(string indir)
 
 		if (!gSpInputOpt.contains(simNb)) {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
+			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
 			nbErrors++;
 		}
+
+		if (!gSpInputOpt.at(simNb).contains(inSp)) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "Species number " << to_string(inSp) << " doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+		}
+		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(inSp);
 
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 		ifsTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions 
@@ -3537,23 +3544,25 @@ int CheckTraitsFile(string indir)
 
 		// Preview next line
 		nextLineSimNb = simNbNotRead;
-		ifsTraitsFile >> nextLineSimNb;
+		ifsTraitsFile >> nextLineSimNb >> nextLineSp;
+
 		if (nextLineSimNb == simNbNotRead
-			// Exit loop
 			|| ifsTraitsFile.eof()) {
+			// Exit loop
 			stopReading = true;
-			nbErrors += checkTraitSetCoherency(allReadTraits, simNb);
-			gNbTraitFileRows.push_back(nbRowsToRead);
+			nbErrors += checkTraitSetCoherency(allReadTraits, simNb, inSp);
+			inputOpt.nbTraitFileRows = nbRowsToRead;
 		}
-		else if (nextLineSimNb != simNb) {
-			// About to change sim, conduct checks of all read traits
-			nbErrors += checkTraitSetCoherency(allReadTraits, simNb);
+		else if (nextLineSimNb != simNb || nextLineSp != inSp) {
+			// About to change sim or species, conduct checks of all read traits
+			nbErrors += checkTraitSetCoherency(allReadTraits, simNb, inSp);
 			// Store nb of rows to help reading file later on
-			gNbTraitFileRows.push_back(nbRowsToRead);
-			nbRowsToRead = 0; // reset for next sim
+			inputOpt.nbTraitFileRows = nbRowsToRead;
+			nbRowsToRead = 0; // reset for next sim or species
 			nbGenLoadTraits = 0;
 			allReadTraits.clear();
 			simNb = nextLineSimNb;
+			inSp = nextLineSp;
 		} // else continue reading traits for same sim
 		lineNb++; 
 	} // end of while loop
@@ -3568,11 +3577,13 @@ int CheckTraitsFile(string indir)
 	else return 0;
 }
 
-int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& simNb) {
+int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& simNb, const species_id& sp) {
 	int nbErrors = 0;
 	const string whichInputFile = "TraitsFile";
 
-	if (gTraitOptions.at(simNb).anyNeutral && !traitExists(NEUTRAL, allReadTraits)) {
+	const spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(sp);
+
+	if (inputOpt.anyNeutral && !traitExists(NEUTRAL, allReadTraits)) {
 		BatchError(whichInputFile, -999, 0, " ");
 		batchLogOfs << "Neutral statistics enabled but neutral trait is missing." << endl;
 		nbErrors++;
@@ -3595,13 +3606,13 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& s
 	bool bothSexesEmigBeta = traitExists(E_BETA_F, allReadTraits) && traitExists(E_BETA_M, allReadTraits);
 	bool anyEmigSexDep = eitherSexD0 || eitherSexEmigAlpha || eitherSexEmigBeta;
 
-	if (gTraitOptions.at(simNb).isEmigIndVar) {
+	if (inputOpt.isEmigIndVar) {
 		if (!hasD0) {
 			BatchError(whichInputFile, -999, 0, " ");
 			batchLogOfs << "EP or d0 is missing." << endl;
 			nbErrors++;
 		}
-		if (gTraitOptions.at(simNb).isEmigSexDep) {
+		if (inputOpt.isEmigSexDep) {
 			if (anyEmigNeitherSex) {
 				BatchError(whichInputFile, -999, 0, " ");
 				batchLogOfs << "Emigration SexDep is on but a trait has been supplied without a sex." << endl;
@@ -3619,7 +3630,7 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& s
 			nbErrors++;
 		}
 
-		if (gTraitOptions.at(simNb).isEmigDensDep) {
+		if (inputOpt.isEmigDensDep) {
 			if (!hasEmigAlpha) {
 				BatchError(whichInputFile, -999, 0, " ");
 				batchLogOfs << "Emigration alpha is missing." << endl;
@@ -3630,7 +3641,7 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& s
 				batchLogOfs << "Emigration beta is missing." << endl;
 				nbErrors++;
 			}
-			if (gTraitOptions.at(simNb).isEmigSexDep) {
+			if (inputOpt.isEmigSexDep) {
 				if (!bothSexesEmigAlpha) {
 					BatchError(whichInputFile, -999, 0, " ");
 					batchLogOfs << "Either sex is missing for emigration alpha trait." << endl;
@@ -3677,13 +3688,13 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& s
 	bool bothSexesKernProb = traitExists(KERNEL_PROBABILITY_F, allReadTraits) && traitExists(KERNEL_PROBABILITY_M, allReadTraits);
 	bool anyKernelSexDep = eitherSexMeanDist1 || eitherSexMeanDist2 || eitherSexKernProb;
 
-	if (gTraitOptions.at(simNb).isKernTransfIndVar) {
+	if (inputOpt.isKernTransfIndVar) {
 		if (!hasKern1) {
 			BatchError(whichInputFile, -999, 0, " ");
 			batchLogOfs << "(First) kernel mean is missing." << endl;
 			nbErrors++;
 		}
-		if (gTraitOptions.at(simNb).isKernTransfSexDep) {
+		if (inputOpt.isKernTransfSexDep) {
 			if (anyKernelNeitherSex) {
 				BatchError(whichInputFile, -999, 0, " ");
 				batchLogOfs << "Kernel SexDep is on but a trait has been supplied without a sex." << endl;
@@ -3700,7 +3711,7 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& s
 			batchLogOfs << "Kernel SexDep is off but a trait has been supplied with a sex." << endl;
 			nbErrors++;
 		}
-		if (gTraitOptions.at(simNb).usesTwoKernels) {
+		if (inputOpt.usesTwoKernels) {
 			if (!hasKern2) {
 				BatchError(whichInputFile, -999, 0, " ");
 				batchLogOfs << "Second kernel mean is missing." << endl;
@@ -3711,7 +3722,7 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& s
 				batchLogOfs << "Kernel probability is missing." << endl;
 				nbErrors++;
 			}
-			if (gTraitOptions.at(simNb).isKernTransfSexDep) {
+			if (inputOpt.isKernTransfSexDep) {
 				if (!bothSexesMeanDist2) {
 					BatchError(whichInputFile, -999, 0, " ");
 					batchLogOfs << "Either sex is missing for second kernel mean trait." << endl;
@@ -3748,13 +3759,13 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& s
 	bool hasGB = traitExists(SMS_GB, allReadTraits);
 	bool hasSMSAlpha = traitExists(SMS_ALPHADB, allReadTraits);
 	bool hasSMSBeta = traitExists(SMS_BETADB, allReadTraits);
-	if (gTraitOptions.at(simNb).isSMSTransfIndVar) {
+	if (inputOpt.isSMSTransfIndVar) {
 		if (!hasDP) {
 			BatchError(whichInputFile, -999, 0, " ");
 			batchLogOfs << "SMS directional persistence trait is missing." << endl;
 			nbErrors++;
 		}
-		if (gTraitOptions.at(simNb).usesSMSGoalBias) {
+		if (inputOpt.usesSMSGoalBias) {
 			if (!hasGB) {
 				BatchError(whichInputFile, -999, 0, " ");
 				batchLogOfs << "SMS goal bias trait is missing." << endl;
@@ -3798,7 +3809,7 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& s
 	/// CRW
 	bool hasStepLen = traitExists(CRW_STEPLENGTH, allReadTraits);
 	bool hasRho = traitExists(CRW_STEPCORRELATION, allReadTraits);
-	if (gTraitOptions.at(simNb).isCRWTransfIndVar) {
+	if (inputOpt.isCRWTransfIndVar) {
 		if (!hasStepLen) {
 			BatchError(whichInputFile, -999, 0, " ");
 			batchLogOfs << "CRW step length trait is missing." << endl;
@@ -3830,13 +3841,13 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& s
 	bool bothSexesSettBeta = traitExists(S_BETA_F, allReadTraits) && traitExists(S_BETA_M, allReadTraits);
 	bool anySettSexDep = eitherSexS0 || eitherSexSettAlpha || eitherSexSettBeta;
 
-	if (gTraitOptions.at(simNb).isSettIndVar) {
+	if (inputOpt.isSettIndVar) {
 		if (!hasS0) {
 			BatchError(whichInputFile, -999, 0, " ");
 			batchLogOfs << "Settlement probability trait is missing." << endl;
 			nbErrors++;
 		}
-		if (gTraitOptions.at(simNb).isSettSexDep) {
+		if (inputOpt.isSettSexDep) {
 			if (anySettNeitherSex) {
 				BatchError(whichInputFile, -999, 0, " ");
 				batchLogOfs << "Settlement SexDep is on but a trait has been supplied without a sex." << endl;
@@ -3864,7 +3875,7 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& s
 			batchLogOfs << "Settlement beta trait is missing." << endl;
 			nbErrors++;
 		}
-		if (gTraitOptions.at(simNb).isSettSexDep) {
+		if (inputOpt.isSettSexDep) {
 			if (!bothSexesSettAlpha) {
 				BatchError(whichInputFile, -999, 0, " ");
 				batchLogOfs << "Either sex is missing for settlement alpha trait." << endl;
@@ -4024,10 +4035,10 @@ int CheckGeneticsFile(string inputDirectory) {
 			batchLogOfs << "OutputFstatsWeirHill must be either TRUE or FALSE" << endl;
 			nbErrors++;
 		}
-		gTraitOptions.at(simNb).anyNeutral = inOutWeirCockerham == "TRUE"
+		inputOpt.anyNeutral = inOutWeirCockerham == "TRUE"
 			|| inOutWeirHill == "TRUE";
 		bool anyGeneticsOutput = inOutGeneValues == "TRUE" 
-			|| gTraitOptions.at(simNb).anyNeutral;
+			|| inputOpt.anyNeutral;
 
 		if (anyGeneticsOutput) {
 			if (inOutStartGenetics == "#") {
