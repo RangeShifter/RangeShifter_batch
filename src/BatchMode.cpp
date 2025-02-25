@@ -1070,7 +1070,7 @@ bool CheckParameterFile()
 
 bool CheckLandFile(int landtype, string inputDir)
 {
-	string header, inSpLand, inLandscape, whichInputFile;
+	string header, inSpLand, inDynLand, inLandscape, whichInputFile;
 	int landNb, inNbHab, inint, whichLine;
 	float infloat;
 	rasterdata patchRaster, spdistraster, costraster;
@@ -1144,6 +1144,7 @@ bool CheckLandFile(int landtype, string inputDir)
 				else FormatError(pathToLandscape, landRaster.errors);
 			}
 
+			// Check species-specific landscape parameters
 			ifsLandFile >> inSpLand;
 			if (inSpLand == "NULL") {
 				if (gUsesPatches) {
@@ -1484,175 +1485,117 @@ bool CheckSpLandFile(string inputDir, bool isInitial) {
 		ifsSpLandFile >> spNb;
 		whichLine++;
 	};
+	return nbErrors == 0;
 }
 
-int CheckDynamicFile(string indir, string costfile) {
+int CheckDynamicFile(string inputDir, string costFile) {
 
-	string header, filename, fname, ftype, intext;
-	int change, prevchange, year, prevyear = 0;
-	rasterdata landchgraster, patchchgraster, costchgraster;
-	int errors = 0;
-	string filetype = "DynLandFile";
-	//int totlines = 0;
+	string header, inLandChgFile, inDynSpLand;
+	int change, prevChg, year, prevYr = 0;
+	rasterdata landChgRaster;
+	int nbErrors = 0;
+	string whichFile = "DynLandFile";
 
-	ifsDynLandFile >> header; if (header != "Change") errors++;
-	ifsDynLandFile >> header; if (header != "Year") errors++;
-	ifsDynLandFile >> header; if (header != "LandChangeFile") errors++;
-	ifsDynLandFile >> header; if (header != "PatchChangeFile") errors++;
-	ifsDynLandFile >> header; if (header != "CostChangeFile") errors++;
+	ifsDynLandFile >> header; if (header != "Change") nbErrors++;
+	ifsDynLandFile >> header; if (header != "Year") nbErrors++;
+	ifsDynLandFile >> header; if (header != "LandChangeFile") nbErrors++;
+	ifsDynLandFile >> header; if (header != "SpLandChangeFile") nbErrors++;
 
-	if (errors > 0) {
-		FormatError(filetype, errors);
+	if (nbErrors > 0) {
+		FormatError(whichFile, nbErrors);
 		return -111;
 	}
 
 	// Parse data lines
-	int line = 1;
+	int whichLine = 1;
 	change = -98765;
 	ifsDynLandFile >> change; // first change number
 	if (change != 1) {
 		batchLogOfs << "*** Error in DynLandFile - first change number must be 1" << endl;
-		errors++;
+		nbErrors++;
 	}
 	else {
-		prevchange = change;
+		prevChg = change;
 	}
 	while (change != -98765) {
 
-		ifsDynLandFile >> year; if (year <= 0) { BatchError(filetype, line, 10, "Year"); errors++; }
-		if (line > 1) {
-			if (year <= prevyear) {
-				BatchError(filetype, line, 1, "Year", "previous Year"); errors++;
+		ifsDynLandFile >> year; 
+		if (year <= 0) { 
+			BatchError(whichFile, whichLine, 10, "Year"); 
+			nbErrors++; 
+		}
+		if (whichLine > 1) {
+			if (year <= prevYr) {
+				BatchError(whichFile, whichLine, 1, "Year", "previous Year"); 
+				nbErrors++;
 			}
 		}
-		prevyear = year;
+		prevYr = year;
 
 		// check landscape filename
-		ftype = "LandChangeFile";
-		ifsDynLandFile >> intext;
-		//batchlog << "***** indir=" << indir << " intext=" << intext << endl;
-		fname = indir + intext;
-		landchgraster = CheckRasterFile(fname);
-		if (landchgraster.ok) {
-			if (landchgraster.cellsize == gResol)
-				if (landchgraster.ncols == landRaster.ncols
-					&& landchgraster.nrows == landRaster.nrows
-					&& landchgraster.cellsize == landRaster.cellsize
-					&& (int)landchgraster.xllcorner == (int)landRaster.xllcorner
-					&& (int)landchgraster.yllcorner == (int)landRaster.yllcorner) {
-					batchLogOfs << ftype << " headers OK: " << fname << endl;
+		string strLandChg = "LandChangeFile";
+		ifsDynLandFile >> inLandChgFile;
+		string pathToLandChg = inputDir + inLandChgFile;
+		landChgRaster = CheckRasterFile(pathToLandChg);
+		if (landChgRaster.ok) {
+			if (landChgRaster.cellsize == gResol)
+				if (landChgRaster.ncols == landRaster.ncols
+					&& landChgRaster.nrows == landRaster.nrows
+					&& landChgRaster.cellsize == landRaster.cellsize
+					&& (int)landChgRaster.xllcorner == (int)landRaster.xllcorner
+					&& (int)landChgRaster.yllcorner == (int)landRaster.yllcorner) {
+					batchLogOfs << strLandChg << " headers OK: " << pathToLandChg << endl;
 				}
 				else {
-					batchLogOfs << gHeadersOfStr << ftype << " " << fname
+					batchLogOfs << gHeadersOfStr << strLandChg << " " << pathToLandChg
 						<< gHeadersNotMatchStr << endl;
-					errors++;
+					nbErrors++;
 				}
 			else {
-				errors++;
-				batchLogOfs << gResolOfStr << ftype << " " << fname << gResolNotMatchStr << endl;
+				nbErrors++;
+				batchLogOfs << gResolOfStr << strLandChg << " " << pathToLandChg << gResolNotMatchStr << endl;
 			}
 		}
 		else {
-			errors++;
-			if (landchgraster.errors == -111)
-				OpenError(ftype, fname);
-			else
-				FormatError(fname, landchgraster.errors);
+			nbErrors++;
+			if (landChgRaster.errors == -111)
+				OpenError(strLandChg, pathToLandChg);
+			else FormatError(pathToLandChg, landChgRaster.errors);
 		}
 
-		// check patch filename
-		ftype = "PatchChangeFile";
-		ifsDynLandFile >> intext;
-		if (intext == "NULL") {
+		// Check changes in species-specific parameters
+		ifsDynLandFile >> inDynSpLand;
+		if (inDynSpLand == "NULL") {
 			if (gUsesPatches) {
-				BatchError(filetype, line, 0, " "); errors++;
-				batchLogOfs << ftype << gPatchReqdStr << endl;
+				BatchError(whichFile, whichLine, 0, " ");
+				nbErrors++;
+				batchLogOfs << "SpLandChangeFile is required for patch-based models." << endl;
 			}
-		}
-		else {
-			if (gUsesPatches) {
-				fname = indir + intext;
-				patchchgraster = CheckRasterFile(fname);
-				if (patchchgraster.ok) {
-					if (patchchgraster.cellsize == gResol) {
-						if (patchchgraster.ncols == landRaster.ncols
-							&& patchchgraster.nrows == landRaster.nrows
-							&& patchchgraster.cellsize == landRaster.cellsize
-							&& (int)patchchgraster.xllcorner == (int)landRaster.xllcorner
-							&& (int)patchchgraster.yllcorner == (int)landRaster.yllcorner) {
-							batchLogOfs << ftype << " headers OK: " << fname << endl;
-						}
-						else {
-							batchLogOfs << gHeadersOfStr << ftype << " " << fname
-								<< gHeadersNotMatchStr << endl;
-							errors++;
-						}
-					}
-					else {
-						batchLogOfs << gResolOfStr << ftype << " " << fname
-							<< gResolNotMatchStr << endl;
-						errors++;
-					}
-				}
-				else {
-					errors++;
-					if (patchchgraster.errors == -111)
-						OpenError(ftype, fname);
-					else
-						FormatError(fname, patchchgraster.errors);
-				}
-			}
-		}
+			if (gTransferType == 1 && gLandType == 2) { // SMS
+				BatchError(whichFile, whichLine, 0, " ");
+				nbErrors++;
+				batchLogOfs << "v is required to specify SMS costs for habitat quality landscapes." << endl;
 
-		// check costs change filename
-		ftype = "CostChangeFile";
-		ifsDynLandFile >> intext;
-		if (intext == "NULL") {
-			if (costfile != "NULL") {
-				BatchError(filetype, line, 0, " "); errors++;
-				batchLogOfs << ftype << " must be supplied " << endl;
 			}
 		}
 		else {
-			if (costfile == "NULL") {
-				BatchError(filetype, line, 0, " "); errors++;
-				batchLogOfs << ftype << " must be NULL to match LandFile " << endl;
+			string pathToSpLand = inputDir + inDynSpLand;
+			batchLogOfs << "Checking SpLandChangeFile " << pathToSpLand << endl;
+			ifsSpLandFile.open(pathToSpLand.c_str());
+			if (ifsSpLandFile.is_open()) {
+				if (!CheckSpLandFile(inputDir, false))
+					nbErrors++;
+				ifsSpLandFile.close();
+				ifsSpLandFile.clear();
 			}
 			else {
-				fname = indir + intext;
-				costchgraster = CheckRasterFile(fname);
-				if (costchgraster.ok) {
-					if (costchgraster.cellsize == gResol) {
-						if (costchgraster.ncols == landRaster.ncols
-							&& costchgraster.nrows == landRaster.nrows
-							&& costchgraster.cellsize == landRaster.cellsize
-							&& (int)costchgraster.xllcorner == (int)landRaster.xllcorner
-							&& (int)costchgraster.yllcorner == (int)landRaster.yllcorner) {
-							batchLogOfs << ftype << " headers OK: " << fname << endl;
-						}
-						else {
-							batchLogOfs << gHeadersOfStr << ftype << " " << fname
-								<< gHeadersNotMatchStr << endl;
-							errors++;
-						}
-					}
-					else {
-						batchLogOfs << gResolOfStr << ftype << " " << fname
-							<< gResolNotMatchStr << endl;
-						errors++;
-					}
-				}
-				else {
-					errors++;
-					if (costchgraster.errors == -111)
-						OpenError(ftype, fname);
-					else
-						FormatError(fname, costchgraster.errors);
-				}
+				ifsSpLandFile.clear();
+				nbErrors++;
+				OpenError("SpLandChangeFile", pathToSpLand);
 			}
 		}
 
-		line++;
+		whichLine++;
 		// read first field on next line
 		change = -98765;
 		ifsDynLandFile >> change;
@@ -1660,16 +1603,16 @@ int CheckDynamicFile(string indir, string costfile) {
 			change = -98765;
 		}
 		else { // check for valid change number
-			if (change != prevchange + 1) {
-				BatchError(filetype, line, 0, " ");
+			if (change != prevChg + 1) {
+				BatchError(whichFile, whichLine, 0, " ");
 				batchLogOfs << "Change numbers must be sequential integers" << endl;
-				errors++;
+				nbErrors++;
 			}
-			prevchange = change;
+			prevChg = change;
 		}
 	}
 
-	if (errors > 0) return -111;
+	if (nbErrors > 0) return -111;
 	else return 0;
 }
 
