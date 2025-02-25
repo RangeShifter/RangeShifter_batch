@@ -26,7 +26,7 @@
 //---------------------------------------------------------------------------
 
 // Note - all batch files are prefixed 'b' here for reasons concerned with RS v1.0
-ifstream ifsSimFile, ifsParamFile, ifsLandFile, ifsDynLandFile;
+ifstream ifsSimFile, ifsParamFile, ifsLandFile, ifsSpLandFile, ifsDynLandFile;
 ifstream ifsSpDistFile, ifsStageStructFile, ifsTransMatrix;
 ifstream ifsStageWeightsFile;
 ifstream ifsEmigrationFile, ifsTransferFile, ifsSettlementFile;
@@ -46,7 +46,7 @@ int gNbLandscapes = 0;
 // sim x species grid of parameters to check coherency between input files
 map<int, map<species_id, spInputOptions>> gSpInputOpt;
 
-rasterdata landraster;
+rasterdata landRaster;
 // ...including names of the input files
 string gSimFile, gParametersFile;
 string landFile;
@@ -1064,53 +1064,61 @@ bool CheckParameterFile()
 
 bool CheckLandFile(int landtype, string indir)
 {
-	string fileName, header, inputText, whichInputFile;
-	int j, inint, line;
+	string header, inSpLand, inLandscape, whichInputFile;
+	int landNb, inNbHab, inint, whichLine;
 	float infloat;
-	rasterdata patchraster, spdistraster, costraster;
+	rasterdata patchRaster, spdistraster, costraster;
 	int nbErrors = 0;
 	vector <int> landlist;
-	string filetype = "LandFile";
+	string whichFile = "LandFile";
+
+	bool anyUsesSpDist = false;
+	for (auto& [sim, inputOptSp] : gSpInputOpt)
+		for (auto [sp, inputOpt] : inputOptSp)
+			if (inputOpt.useSpeciesDist) 
+				anyUsesSpDist = true;
+
 
 	if (landtype == 0 || landtype == 2) { // real landscape
 		// Parse header line;
 		ifsLandFile >> header; if (header != "LandNum") nbErrors++;
 		ifsLandFile >> header; if (header != "Nhabitats") nbErrors++;
 		ifsLandFile >> header; if (header != "LandscapeFile") nbErrors++;
-		ifsLandFile >> header; if (header != "PatchFile") nbErrors++;
-		ifsLandFile >> header; if (header != "CostMapFile") nbErrors++;
+		ifsLandFile >> header; if (header != "LandSpeciesFile") nbErrors++;
 		ifsLandFile >> header; if (header != "DynLandFile") nbErrors++;
-		ifsLandFile >> header; if (header != "SpDistFile") nbErrors++;
 		if (nbErrors > 0) {
-			FormatError(filetype, 0);
+			FormatError(whichFile, 0);
 			batchLogOfs << "*** Ensure format is correct for real landscape" << endl;
 			return false;
 		}
 		// Parse data lines
-		line = 1;
+		whichLine = 1;
 		inint = -98765;
-		ifsLandFile >> inint;
-		while (inint != -98765) {
-			if (inint < 1) {
-				BatchError(filetype, line, 11, "LandNum"); 
+		ifsLandFile >> landNb;
+		while (landNb != -98765) {
+			if (landNb < 1) {
+				BatchError(whichFile, whichLine, 11, "LandNum"); 
 				nbErrors++;
 			}
 			else {
 				// landscape number must be unique - retain in list to check
-				for (j = 0; j < (int)landlist.size(); j++) {
-					if (inint == landlist[j]) {
-						BatchError(filetype, line, 666, "LandNum"); j = (int)landlist.size() + 1; nbErrors++;
+				for (int j = 0; j < (int)landlist.size(); j++) {
+					if (landNb == landlist[j]) {
+						BatchError(whichFile, whichLine, 666, "LandNum"); 
+						j = (int)landlist.size() + 1; 
+						nbErrors++;
 					}
 				}
 				landlist.push_back(inint);
 			}
-			ifsLandFile >> inint;
+			ifsLandFile >> inNbHab;
 			if (landtype == 0) { // raster map with unique habitat codes
-				if (inint < 0) {
-					BatchError(filetype, line, 10, "Nhabitats"); nbErrors++;
+				if (inNbHab < 0) {
+					BatchError(whichFile, whichLine, 10, "Nhabitats"); 
+					nbErrors++;
 				}
-				if (inint > gMaxNbHab) {
-					BatchError(filetype, line, 0, " ");
+				if (inNbHab > gMaxNbHab) {
+					BatchError(whichFile, whichLine, 0, " ");
 					batchLogOfs << "Nhabitats may not exceed MaxHabitats in Control file" << endl;
 					nbErrors++;
 				}
@@ -1118,127 +1126,68 @@ bool CheckLandFile(int landtype, string indir)
 
 			// check landscape filename
 			whichInputFile = "LandscapeFile";
-			ifsLandFile >> inputText;
-			fileName = indir + inputText;
-			landraster = CheckRasterFile(fileName);
-			if (landraster.ok) {
-				if (landraster.cellsize == gResol)
-					batchLogOfs << whichInputFile << " headers OK: " << fileName << endl;
+			ifsLandFile >> inLandscape;
+			string pathToLandscape = indir + inLandscape;
+			landRaster = CheckRasterFile(pathToLandscape);
+			if (landRaster.ok) {
+				if (landRaster.cellsize == gResol)
+					batchLogOfs << whichInputFile << " headers OK: " << pathToLandscape << endl;
 				else {
 					nbErrors++;
-					batchLogOfs << gResolOfStr << whichInputFile << " " << fileName
+					batchLogOfs << gResolOfStr << whichInputFile << " " << pathToLandscape
 						<< gResolNotMatchStr << endl;
 				}
 			}
 			else {
 				nbErrors++;
-				if (landraster.errors == -111)
-					OpenError(whichInputFile, fileName);
-				else FormatError(fileName, landraster.errors);
+				if (landRaster.errors == -111)
+					OpenError(whichInputFile, pathToLandscape);
+				else FormatError(pathToLandscape, landRaster.errors);
 			}
 
-			// check patch map filename
-			whichInputFile = "PatchFile";
-			ifsLandFile >> inputText;
-			if (inputText == "NULL") {
+			ifsLandFile >> inSpLand;
+			if (inSpLand == "NULL") {
 				if (gUsesPatches) {
-					BatchError(filetype, line, 0, " "); nbErrors++;
-					batchLogOfs << whichInputFile << gPatchReqdStr << endl;
+					BatchError(whichFile, whichLine, 0, " ");
+					nbErrors++;
+					batchLogOfs << whichInputFile << "SpLandFile is required for patch-based models." << endl;
+				}
+				if (gTransferType == 1) {// SMS
+					BatchError(whichFile, whichLine, 0, " ");
+					nbErrors++;
+					batchLogOfs << whichInputFile << "SpLandFile is required to specify costs for the SMS." << endl;
+
+				}
+				if (anyUsesSpDist) {
+					BatchError(whichFile, whichLine, 0, " ");
+					nbErrors++;
+					batchLogOfs << whichInputFile << "SpLandFile is required to use the initial species distribution option." << endl;
 				}
 			}
 			else {
-				if (gUsesPatches) {
-					fileName = indir + inputText;
-					patchraster = CheckRasterFile(fileName);
-					if (patchraster.ok) {
-						if (patchraster.cellsize == gResol) {
-							if (patchraster.ncols == landraster.ncols
-								&& patchraster.nrows == landraster.nrows
-								&& patchraster.cellsize == landraster.cellsize
-								&& (int)patchraster.xllcorner == (int)landraster.xllcorner
-								&& (int)patchraster.yllcorner == (int)landraster.yllcorner) {
-								batchLogOfs << whichInputFile << " headers OK: " << fileName << endl;
-							}
-							else {
-								batchLogOfs << gHeadersOfStr << whichInputFile << " " << fileName
-									<< gHeadersNotMatchStr << endl;
-								nbErrors++;
-							}
-						}
-						else {
-							batchLogOfs << gResolOfStr << whichInputFile << " " << fileName
-								<< gResolNotMatchStr << endl;
-							nbErrors++;
-						}
-					}
-					else {
+				string pathToSpLand = indir + inSpLand;
+				batchLogOfs << "Checking " << whichInputFile << " " << pathToSpLand << endl;
+				ifsSpLandFile.open(pathToSpLand.c_str());
+				if (ifsSpLandFile.is_open()) {
+					if (!CheckSpLandFile(true))
 						nbErrors++;
-						if (patchraster.errors == -111)
-							OpenError(whichInputFile, fileName);
-						else
-							FormatError(fileName, patchraster.errors);
-					}
-				}
-			}
-
-			// check cost map filename
-			whichInputFile = "CostMapFile";
-			ifsLandFile >> gNameCostFile;
-			if (gNameCostFile == "NULL") {
-				if (gTransferType == 1) { // SMS
-					if (landtype == 2) {
-						BatchError(filetype, line, 0, " "); 
-						nbErrors++;
-						batchLogOfs << whichInputFile << " is required for a habitat quality landscape" << endl;
-					}
-				}
-			}
-			else {
-				if (gTransferType == 1) { // SMS
-					fileName = indir + gNameCostFile;
-					costraster = CheckRasterFile(fileName);
-					if (costraster.ok) {
-						if (costraster.cellsize == gResol) {
-							if (costraster.ncols == landraster.ncols
-								&& costraster.nrows == landraster.nrows
-								&& costraster.cellsize == landraster.cellsize
-								&& (int)costraster.xllcorner == (int)landraster.xllcorner
-								&& (int)costraster.yllcorner == (int)landraster.yllcorner) {
-								batchLogOfs << whichInputFile << " headers OK: " << fileName << endl;
-							}
-							else {
-								batchLogOfs << gHeadersOfStr << whichInputFile << " " << fileName
-									<< gHeadersNotMatchStr << endl;
-								nbErrors++;
-							}
-						}
-						else {
-							batchLogOfs << gResolOfStr << whichInputFile << " " << fileName
-								<< gResolNotMatchStr << endl;
-							nbErrors++;
-						}
-					}
-					else {
-						nbErrors++;
-						if (costraster.errors == -111)
-							OpenError(whichInputFile, fileName);
-						else
-							FormatError(fileName, costraster.errors);
-					}
+					ifsSpLandFile.close();
+					ifsSpLandFile.clear();
 				}
 				else {
-					BatchError(filetype, line, 0, " "); nbErrors++;
-					batchLogOfs << whichInputFile << " must be NULL if transfer model is not SMS" << endl;
+					ifsSpLandFile.clear();
+					nbErrors++;
+					OpenError(whichInputFile, pathToSpLand);
 				}
 			}
-
+			
 			// check dynamic landscape filename
 			whichInputFile = "DynLandFile";
-			ifsLandFile >> inputText;
-			if (inputText != "NULL") { // landscape is dynamic
-				fileName = indir + inputText;
-				batchLogOfs << "Checking " << whichInputFile << " " << fileName << endl;
-				ifsDynLandFile.open(fileName.c_str());
+			ifsLandFile >> inDynLand;
+			if (inDynLand != "NULL") { // landscape is dynamic
+				string pathToDyn = indir + inDynLand;
+				batchLogOfs << "Checking " << whichInputFile << " " << pathToDyn << endl;
+				ifsDynLandFile.open(pathToDyn.c_str());
 				if (ifsDynLandFile.is_open()) {
 					int something = CheckDynamicFile(indir, gNameCostFile);
 					if (something < 0) {
@@ -1250,77 +1199,12 @@ bool CheckLandFile(int landtype, string indir)
 				else {
 					ifsDynLandFile.clear();
 					nbErrors++;
-					OpenError(whichInputFile, fileName);
+					OpenError(whichInputFile, pathToDyn);
 				}
 			}
 
-			// check initial distribution map filename
-			whichInputFile = "SpDistFile";
-			ifsLandFile >> inputText;
-			if (inputText == "NULL") {
-				if (gUseSpeciesDist) {
-					BatchError(filetype, line, 0, " "); 
-					nbErrors++;
-					batchLogOfs << whichInputFile << " is required as SpeciesDist is 1 in Control file" << endl;
-				}
-			}
-			else {
-				if (gUseSpeciesDist) {
-					fileName = indir + inputText;
-					spdistraster = CheckRasterFile(fileName);
-					if (spdistraster.ok) {
-						if (spdistraster.cellsize == gDistResol) {
-							if (spdistraster.cellsize == landraster.cellsize) {
-								// check that extent matches landscape extent
-								if (spdistraster.ncols != landraster.ncols
-									|| spdistraster.nrows != landraster.nrows) {
-									batchLogOfs << "*** Extent of " << whichInputFile
-										<< " does not match extent of LandscapeFile" << endl;
-									nbErrors++;
-								}
-								else {
-									// check origins match
-									if ((int)spdistraster.xllcorner == (int)landraster.xllcorner
-										&& (int)spdistraster.yllcorner == (int)landraster.yllcorner) {
-										batchLogOfs << whichInputFile << " headers OK: " << fileName << endl;
-									}
-									else {
-										batchLogOfs << "*** Origin co-ordinates of " << whichInputFile
-											<< " do not match those of LandscapeFile" << endl;
-										nbErrors++;
-									}
-								}
-							}
-							else { // not able to check extents match
-								// check origins match
-								if ((int)spdistraster.xllcorner == (int)landraster.xllcorner
-									&& (int)spdistraster.yllcorner == (int)landraster.yllcorner) {
-									batchLogOfs << whichInputFile << " headers OK: " << fileName << endl;
-								}
-								else {
-									batchLogOfs << "*** Origin co-ordinates of " << whichInputFile
-										<< " do not match those of LandscapeFile" << endl;
-									nbErrors++;
-								}
-							}
-						}
-						else {
-							batchLogOfs << "*** Resolution of " << whichInputFile << " " << fileName
-								<< " does not match DistResolution in Control file" << endl;
-							nbErrors++;
-						}
-					}
-					else {
-						nbErrors++;
-						if (spdistraster.errors == -111)
-							OpenError(whichInputFile, fileName);
-						else
-							FormatError(fileName, spdistraster.errors);
-					}
-				}
-			}
 			gNbLandscapes++; 
-			line++;
+			whichLine++;
 			// read first field on next line
 			inint = -98765;
 			ifsLandFile >> inint;
@@ -1342,82 +1226,82 @@ bool CheckLandFile(int landtype, string indir)
 			ifsLandFile >> header; if (header != "Psuit") nbErrors++;
 			ifsLandFile >> header; if (header != "H") nbErrors++;
 			if (nbErrors > 0) {
-				FormatError(filetype, 0);
+				FormatError(whichFile, 0);
 				batchLogOfs << "*** Ensure format is correct for artificial landscape" << endl;
 				return -111;
 			}
 			// Parse data lines
-			line = 1;
+			whichLine = 1;
 			inint = -98765;
 			ifsLandFile >> inint;
 			while (inint != -98765) {
 				for (j = 0; j < (int)landlist.size(); j++) {
 					if (inint < 1 || inint == landlist[j]) {
-						BatchError(filetype, line, 666, "LandNum"); j = (int)landlist.size() + 1; nbErrors++;
+						BatchError(whichFile, whichLine, 666, "LandNum"); j = (int)landlist.size() + 1; nbErrors++;
 					}
 				}
 				landlist.push_back(inint);
 				ifsLandFile >> fractal;
 				if (fractal < 0 || fractal > 1) {
-					BatchError(filetype, line, 1, "Fractal"); nbErrors++;
+					BatchError(whichFile, whichLine, 1, "Fractal"); nbErrors++;
 				}
 				ifsLandFile >> type;
 				if (type < 0 || type > 1) {
-					BatchError(filetype, line, 1, "Type"); nbErrors++;
+					BatchError(whichFile, whichLine, 1, "Type"); nbErrors++;
 				}
 				ifsLandFile >> Xdim >> Ydim;
 				if (fractal == 1) {
 					if (Xdim < 3) {
-						BatchError(filetype, line, 13, "Xdim"); nbErrors++;
+						BatchError(whichFile, whichLine, 13, "Xdim"); nbErrors++;
 					}
 					if (Ydim < 3) {
-						BatchError(filetype, line, 13, "Ydim"); nbErrors++;
+						BatchError(whichFile, whichLine, 13, "Ydim"); nbErrors++;
 					}
 				}
 				else {
 					if (Xdim < 1) {
-						BatchError(filetype, line, 11, "Xdim"); nbErrors++;
+						BatchError(whichFile, whichLine, 11, "Xdim"); nbErrors++;
 					}
 					if (Ydim < 1) {
-						BatchError(filetype, line, 11, "Ydim"); nbErrors++;
+						BatchError(whichFile, whichLine, 11, "Ydim"); nbErrors++;
 					}
 				}
 				if (fractal == 1) {
 					if (Ydim < Xdim) {
-						BatchError(filetype, line, 0, " ");
+						BatchError(whichFile, whichLine, 0, " ");
 						batchLogOfs << "Y dimension may not be less than X dimension" << endl; nbErrors++;
 					}
 					if ((Xdim > 2 && !isValidFractalDim(Xdim - 1))
 						|| (Ydim > 2 && !isValidFractalDim(Ydim - 1))) {
-						BatchError(filetype, line, 0, " ");
+						BatchError(whichFile, whichLine, 0, " ");
 						batchLogOfs << "X and Y dimensions must be a power of 2 plus 1" << endl; nbErrors++;
 					}
 				}
 				ifsLandFile >> minhab >> maxhab;
 				if (type == 1) { // continuous landscape
 					if (minhab <= 0.0 || minhab >= 100.0) {
-						BatchError(filetype, line, 100, "MinHab"); nbErrors++;
+						BatchError(whichFile, whichLine, 100, "MinHab"); nbErrors++;
 					}
 					if (maxhab <= 0.0 || maxhab > 100.0) {
-						BatchError(filetype, line, 100, "MaxHab"); nbErrors++;
+						BatchError(whichFile, whichLine, 100, "MaxHab"); nbErrors++;
 					}
 					if (maxhab <= minhab) {
-						BatchError(filetype, line, 0, " ");
+						BatchError(whichFile, whichLine, 0, " ");
 						batchLogOfs << "MaxHab must exceed MinHab" << endl; nbErrors++;
 					}
 				}
 				ifsLandFile >> infloat;
 				if (infloat < 0.0 || infloat > 1.0) {
-					BatchError(filetype, line, 20, "Psuit"); nbErrors++;
+					BatchError(whichFile, whichLine, 20, "Psuit"); nbErrors++;
 				}
 				ifsLandFile >> infloat;
 				if (fractal == 1) {
 					if (infloat <= 0.0 || infloat >= 1.0) {
-						BatchError(filetype, line, 20, "H"); nbErrors++;
+						BatchError(whichFile, whichLine, 20, "H"); nbErrors++;
 					}
 				}
 				gNbLandscapes++; 
-				line++;
+				whichLine++;
 				// read first field on next line
 				inint = -98765;
 				ifsLandFile >> inint;
@@ -1430,10 +1314,186 @@ bool CheckLandFile(int landtype, string indir)
 		}
 	}
 	if (!ifsLandFile.eof()) {
-		EOFerror(filetype);
+		EOFerror(whichFile);
 		nbErrors++;
 	}
 	return nbErrors > 0;
+}
+
+bool CheckSpLandFile(bool isInitial) {
+
+	string header;
+	int nbErrors = 0, whichLine = 1;
+
+	ifsSpLandFile >> header; if (header != "Species") nbErrors++;
+	ifsSpLandFile >> header; if (header != "PatchFile") nbErrors++;
+	ifsSpLandFile >> header; if (header != "CostMapFile") nbErrors++;
+	if (isInitial) { // column absent for dynamic input
+		ifsSpLandFile >> header; if (header != "SpDistFile") nbErrors++;
+	}
+	const int errSpNb = -978;
+	int spNb = errSpNb;
+	ifsSpLandFile >> spNb;
+	while (spNb != errSpNb) {
+
+		ifsSpLandFile >> spNb;
+		if (!gSpInputOpt.at(simNb).contains(spNb)) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "Species number " << to_string(spNb) << " doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+		}
+		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(spNb);
+
+
+		spNb = errSpNb;
+		ifsSpLandFile >> spNb;
+		whichLine++;
+	};
+
+		// check patch map filename
+		whichInputFile = "PatchFile";
+		ifsLandFile >> inputText;
+		if (inputText == "NULL") {
+			if (gUsesPatches) {
+				BatchError(whichFile, whichLine, 0, " ");
+				nbErrors++;
+				batchLogOfs << whichInputFile << gPatchReqdStr << endl;
+			}
+		}
+		else if (gUsesPatches) {
+				string pathToPatchFile = indir + inputText;
+				patchRaster = CheckRasterFile(pathToPatchFile);
+				if (patchRaster.ok) {
+					if (patchRaster.cellsize == gResol) {
+						if (patchRaster.ncols == landRaster.ncols
+							&& patchRaster.nrows == landRaster.nrows
+							&& patchRaster.cellsize == landRaster.cellsize
+							&& (int)patchRaster.xllcorner == (int)landRaster.xllcorner
+							&& (int)patchRaster.yllcorner == (int)landRaster.yllcorner) {
+							batchLogOfs << whichInputFile << " headers OK: " << pathToPatchFile << endl;
+						}
+						else {
+							batchLogOfs << gHeadersOfStr << whichInputFile << " " << pathToPatchFile
+								<< gHeadersNotMatchStr << endl;
+							nbErrors++;
+						}
+					}
+					else {
+						batchLogOfs << gResolOfStr << whichInputFile << " " << pathToPatchFile
+							<< gResolNotMatchStr << endl;
+						nbErrors++;
+					}
+				}
+				else {
+					nbErrors++;
+					if (patchRaster.errors == -111)
+						OpenError(whichInputFile, pathToPatchFile);
+					else FormatError(pathToPatchFile, patchRaster.errors);
+				}
+
+		}
+
+		// check cost map filename
+		whichInputFile = "CostMapFile";
+		ifsLandFile >> gNameCostFile;
+		if (gNameCostFile == "NULL") {
+			if (gTransferType == 1) { // SMS
+				if (landtype == 2) {
+					BatchError(whichFile, whichLine, 0, " ");
+					nbErrors++;
+					batchLogOfs << whichInputFile << " is required for a habitat quality landscape" << endl;
+				}
+			}
+		}
+		else {
+			if (gTransferType == 1) { // SMS
+				string pathToCosts = indir + gNameCostFile;
+				costraster = CheckRasterFile(pathToCosts);
+				if (costraster.ok) {
+					if (costraster.cellsize == gResol) {
+						if (costraster.ncols == landRaster.ncols
+							&& costraster.nrows == landRaster.nrows
+							&& costraster.cellsize == landRaster.cellsize
+							&& (int)costraster.xllcorner == (int)landRaster.xllcorner
+							&& (int)costraster.yllcorner == (int)landRaster.yllcorner) {
+							batchLogOfs << whichInputFile << " headers OK: " << pathToCosts << endl;
+						}
+						else {
+							batchLogOfs << gHeadersOfStr << whichInputFile << " " << pathToCosts
+								<< gHeadersNotMatchStr << endl;
+							nbErrors++;
+						}
+					}
+					else {
+						batchLogOfs << gResolOfStr << whichInputFile << " " << pathToCosts
+							<< gResolNotMatchStr << endl;
+						nbErrors++;
+					}
+				}
+				else {
+					nbErrors++;
+					if (costraster.errors == -111)
+						OpenError(whichInputFile, pathToCosts);
+					else FormatError(pathToCosts, costraster.errors);
+				}
+			}
+			else {
+				BatchError(whichFile, whichLine, 0, " ");
+				nbErrors++;
+				batchLogOfs << whichInputFile << " must be NULL if transfer model is not SMS" << endl;
+			}
+		}
+
+		// check initial distribution map filename
+		whichInputFile = "SpDistFile";
+		ifsLandFile >> inputText;
+		if (inputText == "NULL") {
+			if (gUseSpeciesDist) {
+				BatchError(whichFile, whichLine, 0, " ");
+				nbErrors++;
+				batchLogOfs << whichInputFile << " is required as SpeciesDist is 1 in Control file" << endl;
+			}
+		}
+		else {
+			if (gUseSpeciesDist) {
+				fileName = indir + inputText;
+				spdistraster = CheckRasterFile(fileName);
+				if (spdistraster.ok) {
+					if (spdistraster.cellsize == gDistResol) {
+						if (spdistraster.cellsize == landRaster.cellsize) {
+							// check that extent matches landscape extent
+							if (spdistraster.ncols != landRaster.ncols
+								|| spdistraster.nrows != landRaster.nrows) {
+								batchLogOfs << "*** Extent of " << whichInputFile
+									<< " does not match extent of LandscapeFile" << endl;
+								nbErrors++;
+							}
+						}
+						// check origins match
+						if ((int)spdistraster.xllcorner == (int)landRaster.xllcorner
+							&& (int)spdistraster.yllcorner == (int)landRaster.yllcorner) {
+							batchLogOfs << whichInputFile << " headers OK: " << fileName << endl;
+						}
+						else {
+							batchLogOfs << "*** Origin co-ordinates of " << whichInputFile
+								<< " do not match those of LandscapeFile" << endl;
+							nbErrors++;
+						}
+					}
+					else {
+						batchLogOfs << "*** Resolution of " << whichInputFile << " " << fileName
+							<< " does not match DistResolution in Control file" << endl;
+						nbErrors++;
+					}
+				}
+				else {
+					nbErrors++;
+					if (spdistraster.errors == -111)
+						OpenError(whichInputFile, fileName);
+					else FormatError(fileName, spdistraster.errors);
+				}
+			}
+		}
 }
 
 int CheckDynamicFile(string indir, string costfile) {
@@ -1485,11 +1545,11 @@ int CheckDynamicFile(string indir, string costfile) {
 		landchgraster = CheckRasterFile(fname);
 		if (landchgraster.ok) {
 			if (landchgraster.cellsize == gResol)
-				if (landchgraster.ncols == landraster.ncols
-					&& landchgraster.nrows == landraster.nrows
-					&& landchgraster.cellsize == landraster.cellsize
-					&& (int)landchgraster.xllcorner == (int)landraster.xllcorner
-					&& (int)landchgraster.yllcorner == (int)landraster.yllcorner) {
+				if (landchgraster.ncols == landRaster.ncols
+					&& landchgraster.nrows == landRaster.nrows
+					&& landchgraster.cellsize == landRaster.cellsize
+					&& (int)landchgraster.xllcorner == (int)landRaster.xllcorner
+					&& (int)landchgraster.yllcorner == (int)landRaster.yllcorner) {
 					batchLogOfs << ftype << " headers OK: " << fname << endl;
 				}
 				else {
@@ -1525,11 +1585,11 @@ int CheckDynamicFile(string indir, string costfile) {
 				patchchgraster = CheckRasterFile(fname);
 				if (patchchgraster.ok) {
 					if (patchchgraster.cellsize == gResol) {
-						if (patchchgraster.ncols == landraster.ncols
-							&& patchchgraster.nrows == landraster.nrows
-							&& patchchgraster.cellsize == landraster.cellsize
-							&& (int)patchchgraster.xllcorner == (int)landraster.xllcorner
-							&& (int)patchchgraster.yllcorner == (int)landraster.yllcorner) {
+						if (patchchgraster.ncols == landRaster.ncols
+							&& patchchgraster.nrows == landRaster.nrows
+							&& patchchgraster.cellsize == landRaster.cellsize
+							&& (int)patchchgraster.xllcorner == (int)landRaster.xllcorner
+							&& (int)patchchgraster.yllcorner == (int)landRaster.yllcorner) {
 							batchLogOfs << ftype << " headers OK: " << fname << endl;
 						}
 						else {
@@ -1573,11 +1633,11 @@ int CheckDynamicFile(string indir, string costfile) {
 				costchgraster = CheckRasterFile(fname);
 				if (costchgraster.ok) {
 					if (costchgraster.cellsize == gResol) {
-						if (costchgraster.ncols == landraster.ncols
-							&& costchgraster.nrows == landraster.nrows
-							&& costchgraster.cellsize == landraster.cellsize
-							&& (int)costchgraster.xllcorner == (int)landraster.xllcorner
-							&& (int)costchgraster.yllcorner == (int)landraster.yllcorner) {
+						if (costchgraster.ncols == landRaster.ncols
+							&& costchgraster.nrows == landRaster.nrows
+							&& costchgraster.cellsize == landRaster.cellsize
+							&& (int)costchgraster.xllcorner == (int)landRaster.xllcorner
+							&& (int)costchgraster.yllcorner == (int)landRaster.yllcorner) {
 							batchLogOfs << ftype << " headers OK: " << fname << endl;
 						}
 						else {

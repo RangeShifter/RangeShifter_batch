@@ -1065,7 +1065,7 @@ void Landscape::resetCosts() {
 	}
 }
 
-void Landscape::resetEffCosts(void) {
+void Landscape::resetEffCosts() {
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
 			if (cells[y][x] != 0) { // not a no-data cell
@@ -1085,7 +1085,7 @@ void Landscape::addLandChange(landChange c) {
 	landChanges.push_back(c);
 }
 
-int Landscape::numLandChanges(void) { return (int)landChanges.size(); }
+int Landscape::numLandChanges() { return (int)landChanges.size(); }
 
 landChange Landscape::getLandChange(short ix) {
 	landChange c; c.chgnum = c.chgyear = 0;
@@ -1095,7 +1095,7 @@ landChange Landscape::getLandChange(short ix) {
 	return c;
 }
 
-void Landscape::deleteLandChanges(void) {
+void Landscape::deleteLandChanges() {
 	while (landChanges.size() > 0) landChanges.pop_back();
 	landChanges.clear();
 }
@@ -1779,7 +1779,7 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 	// Open habitat file and optionally also patch file
 #if RS_RCPP
 	ifsHabMap.open(habfile, std::ios::binary);
-	if (landraster.utf) {
+	if (landRaster.utf) {
 		// apply BOM-sensitive UTF-16 facet
 		ifsHabMap.imbue(std::locale(ifsHabMap.getloc(), new std::codecvt_utf16<wchar_t, 0x10ffff, std::consume_header>));
 	}

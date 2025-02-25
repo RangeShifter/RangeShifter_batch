@@ -97,6 +97,7 @@ bool checkInputFiles(string, string, string);
 bool CheckSimFile();
 bool CheckParameterFile();
 bool CheckLandFile(int, string);
+bool CheckSpLandFile(bool isInitial);
 int CheckGeneticsFile(string);
 int CheckDynamicFile(string, string);
 int CheckStageFile(string);

@@ -382,7 +382,7 @@ void testLandscape();
 #endif
 
 #if RS_RCPP
-extern rasterdata landraster, patchraster, spdistraster, costsraster;
+extern rasterdata landRaster, patchraster, spdistraster, costsraster;
 extern void EOFerrorR(string);
 extern void StreamErrorR(string);
 #endif
