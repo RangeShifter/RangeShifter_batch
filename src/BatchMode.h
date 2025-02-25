@@ -55,15 +55,14 @@ using namespace std;
 #include "./RScore/SpeciesTrait.h"
 #include "./RScore/NeutralTrait.h"
 
+set<species_id> gSpeciesNames;
+
 // Global variables to check parameter
 // consistency across input files
 struct spInputOptions {
 
 	int reproType;
 	int nbStages;
-
-	int useSpeciesDist;
-	int distResol;
 
 	// Track trait-relevant options to check for coherency across input files, 
 	// e.g. if emig file says emigration is indvar, trait file should have d0 entry
@@ -82,6 +81,8 @@ struct spInputOptions {
 	int nbTraitFileRows; // how many lines to expect in traitsFile?
 };
 
+map<species_id, bool> gUseSpeciesDist;
+
 bool traitExists(const TraitType& tr, const vector<TraitType>& existingTraits);
 TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex);
 int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& simNb, const species_id& sp);
@@ -93,24 +94,24 @@ struct simCheck {
 	int simNb, simLines, reqdSimLines, errors;
 };
 
-bool checkInputFiles(string, string, string);
+bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir);
 bool CheckSimFile();
 bool CheckParameterFile();
-bool CheckLandFile(int, string);
-bool CheckSpLandFile(bool isInitial);
-int CheckGeneticsFile(string);
-int CheckDynamicFile(string, string);
-int CheckStageFile(string);
-bool CheckTransitionFile(short, short);
-bool CheckWeightsFile(string, int nbStages, int nbSexes);
+bool CheckLandFile(int landType, string inputDir);
+bool CheckSpLandFile(string inputDir, bool isInitial);
+int CheckGeneticsFile(string inputDir);
+int CheckDynamicFile(string inputDir, string costFile);
+int CheckStageFile(string inputDir);
+bool CheckTransitionFile(short, short nbSexesDemogr);
+bool CheckWeightsFile(string fileType, int nbStages, int nbSexes);
 int CheckEmigFile();
-int CheckTransferFile(string);
+int CheckTransferFile(string inputDir);
 int CheckSettleFile();
-int CheckInitFile(string);
+int CheckInitFile(string inputDir);
 int CheckInitIndsFile(int simNb, species_id sp);
 simCheck CheckStageSex(string, int, int, species_id sp, simCheck, int, int, int, int, int, bool, bool);
-int CheckGeneticsFile(string inputDirectory);
-int CheckTraitsFile(string indir);
+int CheckGeneticsFile(string inputDir);
+int CheckTraitsFile(string inputDir);
 
 void BatchError(
 	string,	// file name

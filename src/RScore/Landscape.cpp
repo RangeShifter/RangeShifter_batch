@@ -1776,7 +1776,7 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 	// Open habitat file and optionally also patch file
 #if RS_RCPP
 	ifsHabMap.open(habfile, std::ios::binary);
-	if (landRaster.utf) {
+	if (gLandRaster.utf) {
 		// apply BOM-sensitive UTF-16 facet
 		ifsHabMap.imbue(std::locale(ifsHabMap.getloc(), new std::codecvt_utf16<wchar_t, 0x10ffff, std::consume_header>));
 	}
