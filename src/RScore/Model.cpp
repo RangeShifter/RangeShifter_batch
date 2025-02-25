@@ -618,8 +618,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 		}
 	}
 	outPar << endl << "SPECIES DISTRIBUTION LOADED: \t";
-	if (ppLand.useSpDist)
-	{
+	if (ppLand.useSpDist) {
 		outPar << "yes" << endl;
 		outPar << "RESOLUTION (m)\t" << ppLand.spResol << endl;
 		outPar << "FILE NAME: ";

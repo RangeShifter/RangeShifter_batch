@@ -128,12 +128,16 @@ private:
 struct landParams {
 	bool usesPatches; bool useSpDist; bool generated;
 	bool dynamic;
-	int landNum; int resol; int spResol; int nHab; int nHabMax;
+	int landNum; 
+	int resol;
+	int nHab; 
+	int nHabMax;
 	int dimX, dimY, minX, minY, maxX, maxY;
 	short rasterType;
 };
 struct landData {
-	int resol; int dimX, dimY, minX, minY, maxX, maxY;
+	int resol; 
+	int dimX, dimY, minX, minY, maxX, maxY;
 };
 
 bool isInLandBounds(const int& x, const int& y, const landData& land);
@@ -282,7 +286,8 @@ public:
 	// Get co-ordinates of a specified cell in a specified initial distn
 	// Returns negative co-ordinates if the cell is not selected
 	locn getSelectedDistnCell(int dist, int ix);
-	
+	int getSpDistResol(species_id sp) const { return spDistResol.at(sp); }
+
 	// Functions to handle connectivity matrix
 	void createConnectMatrix(species_id sp);
 	void resetConnectMatrix();
@@ -318,7 +323,6 @@ private:
 	short rasterType;			// 0 = habitat codes 1 = % cover 2 = quality 9 = artificial landscape
 	int landNum;					// landscape number
 	int resol;						// cell size (m)
-	int spResol;					// species distribution cell size (m)
 	int nHab;							// no. of habitats
 	int nHabMax;					// max. no. of habitats (used for batch input only)
 	int dimX, dimY;				// dimensions
@@ -341,13 +345,9 @@ private:
 	// list of habitat codes
 	std::vector<int> habCodes;
 
-	// list of dynamic landscape changes
-	std::vector<landChange> landChanges;
-	map<species_id, vector<patchChange>> patchChanges;
-	map<species_id, vector<costChange>> costsChanges;
-
 	// list of initial individual species distributions
 	std::vector<InitDist> distns;
+	map<species_id, int> spDistResol;
 
 	// list of cells to be initialised for ALL species
 	std::vector<DistCell*> initcells;
@@ -355,12 +355,15 @@ private:
 	// patch connectivity matrices (one per species)
 	// indexed by [start patch seq num][end patch seq num]
 	map<species_id, int**> connectMatrices;
-
 	map<species_id, ofstream> outConnMatrices;
 
 	// global environmental stochasticity (epsilon)
 	float* epsGlobal;	// pointer to time-series	
-
+	
+	// list of dynamic landscape changes
+	std::vector<landChange> landChanges;
+	map<species_id, vector<patchChange>> patchChanges;
+	map<species_id, vector<costChange>> costsChanges;
 	// patch and costs change matrices (temporary - used when reading dynamic landscape)
 	// indexed by [descending y][x]
 	map<species_id, vector<vector<cellChange>>> patchChgMatrices;

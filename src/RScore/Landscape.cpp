@@ -238,7 +238,7 @@ Landscape::Landscape(const set<species_id>& speciesNames) {
 	continuous = false;
 	dynamic = false; 
 	habsAreIndexed = false;
-	resol = spResol = 1;
+	resol = 1;
 	landNum = 0;
 	rasterType = 0;
 	nHab = nHabMax = 0;
@@ -345,8 +345,6 @@ void Landscape::setLandParams(landParams ppp, bool batchMode) {
 	dynamic = ppp.dynamic;
 	landNum = ppp.landNum;
 	if (ppp.resol > 0) resol = ppp.resol;
-	if (ppp.spResol > 0 
-		&& ppp.spResol % ppp.resol == 0) spResol = ppp.spResol;
 	if ((ppp.rasterType >= 0 
 		&& ppp.rasterType <= 2) || ppp.rasterType == 9)
 		rasterType = ppp.rasterType;
@@ -394,7 +392,6 @@ landParams Landscape::getLandParams() {
 	ppp.dynamic = dynamic;
 	ppp.landNum = landNum;
 	ppp.resol = resol;
-	ppp.spResol = spResol;
 	ppp.rasterType = rasterType;
 	ppp.nHab = nHab; 
 	ppp.nHabMax = nHabMax;
@@ -2649,7 +2646,7 @@ landParams createDefaultLandParams(const int& dim) {
 	ls_params.dimX = ls_params.dimY = dim;
 	ls_params.minX = ls_params.minY = 0;
 	ls_params.maxX = ls_params.maxY = ls_params.dimX - 1;
-	ls_params.resol = ls_params.spResol = 1;
+	ls_params.resol = 1;
 	ls_params.rasterType = 0; // habitat types
  
 	ls_params.usesPatches = false;

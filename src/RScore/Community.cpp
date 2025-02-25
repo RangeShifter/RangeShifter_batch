@@ -68,7 +68,7 @@ Community::~Community() {
 }
 
 void Community::initialise(Species* pSpecies, int year) {
-	int npatches, ndistcells, spratio, patchnum, candidatePatch = 0;
+	int npatches, ndistcells, patchnum, candidatePatch = 0;
 	locn distloc;
 	patchData pch;
 	patchLimits limits = patchLimits();
@@ -79,8 +79,6 @@ void Community::initialise(Species* pSpecies, int year) {
 	landParams ppLand = pLandscape->getLandParams();
 	initParams init = pSpecies->getInitParams();
 	species_id sp = pSpecies->getID();
-
-	spratio = ppLand.spResol / ppLand.resol;
 
 	// Initialise (empty) matrix populations
 	matrixPops.emplace(sp,
@@ -163,53 +161,48 @@ void Community::initialise(Species* pSpecies, int year) {
 		break;
 
 	case 1:	// from species distribution
-		if (ppLand.useSpDist) {
-			// initialise from loaded species distribution
-			switch (init.spDistType) {
-			case 0: // all presence cells
-				pLandscape->setDistribution(pSpecies, 0); // activate all patches
-				break;
-			case 1: // some randomly selected presence cells
-				pLandscape->setDistribution(pSpecies, init.nSpDistPatches); // activate random patches
-				break;
-			}
+		// initialise from loaded species distribution
+		int spratio = pLandscape->getSpDistResol(sp) / ppLand.resol;
+		switch (init.spDistType) {
+		case 0: // all presence cells
+			pLandscape->setDistribution(pSpecies, 0); // activate all patches
+			break;
+		case 1: // some randomly selected presence cells
+			pLandscape->setDistribution(pSpecies, init.nSpDistPatches); // activate random patches
+			break;
+		}
 
-			ndistcells = pLandscape->distCellCount(0);
-			for (int i = 0; i < ndistcells; i++) {
-				distloc = pLandscape->getSelectedDistnCell(0, i);
-				if (distloc.x >= 0) { // distribution cell is selected
-					// process each landscape cell within the distribution cell
+		ndistcells = pLandscape->distCellCount(0);
+		for (int i = 0; i < ndistcells; i++) {
+			distloc = pLandscape->getSelectedDistnCell(0, i);
+			if (distloc.x >= 0) { // distribution cell is selected
+				// process each landscape cell within the distribution cell
 
-					for (int x = 0; x < spratio; x++) {
-						for (int y = 0; y < spratio; y++) {
-							pCell = pLandscape->findCell(distloc.x * spratio + x, distloc.y * spratio + y);
-							if (pCell != nullptr) { // not a no-data cell
-								pPatch = pCell->getPatch(sp);
-								if (pPatch != nullptr) {
-									if (!pPatch->isMatrix()) { // not the matrix patch
-										selectedPatches.insert(pPatch->getPatchNum());
-									}
+				for (int x = 0; x < spratio; x++) {
+					for (int y = 0; y < spratio; y++) {
+						pCell = pLandscape->findCell(distloc.x * spratio + x, distloc.y * spratio + y);
+						if (pCell != nullptr) { // not a no-data cell
+							pPatch = pCell->getPatch(sp);
+							if (pPatch != nullptr) {
+								if (!pPatch->isMatrix()) { // not the matrix patch
+									selectedPatches.insert(pPatch->getPatchNum());
 								}
 							}
 						}
 					}
-
 				}
-			}
 
-			for (auto pchNum : selectedPatches) {
-				Patch* pPatch = pLandscape->findPatch(sp, pchNum);
-				// Determine size of initial population
-				int nInds = pPatch->getInitNbInds(init, ppLand.usesPatches, ppLand.resol);
-				if (nInds > 0) {
-					Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
-					allPopns.at(pSpecies->getID()).push_back(pPop); // add new population to community list
-				}
 			}
 		}
-		else { // doesn't use species distribution
-			// WHAT HAPPENS IF INITIAL DISTRIBUTION IS NOT LOADED ??? ....
-			// should not occur - take no action - no initialisation will occur
+
+		for (auto pchNum : selectedPatches) {
+			Patch* pPatch = pLandscape->findPatch(sp, pchNum);
+			// Determine size of initial population
+			int nInds = pPatch->getInitNbInds(init, ppLand.usesPatches, ppLand.resol);
+			if (nInds > 0) {
+				Population* pPop = new Population(pSpecies, pPatch, nInds, ppLand.resol);
+				allPopns.at(pSpecies->getID()).push_back(pPop); // add new population to community list
+			}
 		}
 		break;
 
