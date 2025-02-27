@@ -51,6 +51,7 @@ rasterdata landRaster;
 string gSimFile, gParametersFile;
 string landFile;
 string gHabMapName, gPatchMapName, gDynLandFileName, gSpDistFileName, gNameCostFile;
+string gSpLandName;
 string stageStructFile, transMatrix;
 string emigrationFile, transferFile, settleFile, geneticsFile, traitsFile, initialFile;
 string prevInitialIndsFile = " ";
@@ -1208,7 +1209,7 @@ bool CheckLandFile(int landtype, string inputDir)
 	} // end of real landscape
 	else {
 		if (landtype == 9) { // artificial landscape
-			int fractal, type, Xdim, Ydim;
+			int isFractal, type, Xdim, Ydim;
 			float minhab, maxhab;
 			// Parse header line;
 			ifsLandFile >> header; if (header != "LandNum") nbErrors++;
@@ -1236,8 +1237,8 @@ bool CheckLandFile(int landtype, string inputDir)
 					}
 				}
 				landlist.push_back(inint);
-				ifsLandFile >> fractal;
-				if (fractal < 0 || fractal > 1) {
+				ifsLandFile >> isFractal;
+				if (isFractal < 0 || isFractal > 1) {
 					BatchError(whichFile, whichLine, 1, "Fractal"); nbErrors++;
 				}
 				ifsLandFile >> type;
@@ -1245,7 +1246,7 @@ bool CheckLandFile(int landtype, string inputDir)
 					BatchError(whichFile, whichLine, 1, "Type"); nbErrors++;
 				}
 				ifsLandFile >> Xdim >> Ydim;
-				if (fractal == 1) {
+				if (isFractal == 1) {
 					if (Xdim < 3) {
 						BatchError(whichFile, whichLine, 13, "Xdim"); nbErrors++;
 					}
@@ -1261,7 +1262,7 @@ bool CheckLandFile(int landtype, string inputDir)
 						BatchError(whichFile, whichLine, 11, "Ydim"); nbErrors++;
 					}
 				}
-				if (fractal == 1) {
+				if (isFractal == 1) {
 					if (Ydim < Xdim) {
 						BatchError(whichFile, whichLine, 0, " ");
 						batchLogOfs << "Y dimension may not be less than X dimension" << endl; nbErrors++;
@@ -1290,7 +1291,7 @@ bool CheckLandFile(int landtype, string inputDir)
 					BatchError(whichFile, whichLine, 20, "Psuit"); nbErrors++;
 				}
 				ifsLandFile >> infloat;
-				if (fractal == 1) {
+				if (isFractal == 1) {
 					if (infloat <= 0.0 || infloat >= 1.0) {
 						BatchError(whichFile, whichLine, 20, "H"); nbErrors++;
 					}
@@ -4901,16 +4902,16 @@ int ReadLandFile(Landscape* pLandscape)
 
 	if (gLandType == 9) { // artificial landscape
 		ppLand.rasterType = 9;
-		ifsLandFile >> ppLand.landNum >> ppGenLand.fractal >> ppGenLand.continuous
+		ifsLandFile >> ppLand.landNum >> ppGenLand.isFractal >> ppGenLand.isContinuous
 			>> ppLand.dimX >> ppLand.dimY >> ppGenLand.minPct >> ppGenLand.maxPct
 			>> ppGenLand.propSuit >> ppGenLand.hurst;
 		ppLand.maxX = ppLand.dimX - 1; 
 		ppLand.maxY = ppLand.dimY - 1;
 
-		if (ppGenLand.fractal && ppLand.maxX > ppLand.maxY) {
+		if (ppGenLand.isFractal && ppLand.maxX > ppLand.maxY) {
 			return -901;
 		}
-		if (ppGenLand.fractal) {
+		if (ppGenLand.isFractal) {
 			if ((ppLand.dimX < 3 || ppLand.dimX % 2 != 1)
 				|| (ppLand.dimY < 3 || ppLand.dimY % 2 != 1)) {
 				return -902;
@@ -4919,19 +4920,19 @@ int ReadLandFile(Landscape* pLandscape)
 		// SCFP 26/9/13 - min and max habitat percentages need to be set for all types of
 		// fractal landscape (including discrete), as they are passed to the fractal generator
 		// NOTE that will not have been checked for a discrete landscape
-		if (ppGenLand.fractal && !ppGenLand.continuous) { 
+		if (ppGenLand.isFractal && !ppGenLand.isContinuous) { 
 			ppGenLand.minPct = 1; 
 			ppGenLand.maxPct = 100;
 		}
-		if (ppGenLand.continuous)
+		if (ppGenLand.isContinuous)
 			ppLand.nHab = 2;
 		else 
 			ppLand.nHab = 1;
 	}
 	else { // imported raster map
 		string inNbHab;
-		ifsLandFile >> ppLand.landNum >> inNbHab >> gHabMapName >> gPatchMapName;
-		ifsLandFile >> gNameCostFile >> gDynLandFileName >> gSpDistFileName;
+		ifsLandFile >> ppLand.landNum >> inNbHab >> gHabMapName >> gSpLandName;
+		ifsLandFile >> gDynLandFileName;
 		if (gLandType == 2) 
 			ppLand.nHab = 1; // habitat quality landscape has one habitat class
 	}
@@ -4940,6 +4941,21 @@ int ReadLandFile(Landscape* pLandscape)
 	pLandscape->setGenLandParams(ppGenLand);
 
 	return ppLand.landNum;
+}
+
+void ReadSpLandFile(map<species_id, string>& pathsToPatchMaps,
+	map<species_id, string>& pathsToCostMaps,
+	map<species_id, string>& pathsToSpDistMaps
+) {
+	int nbSpecies = gSpeciesNames.size();
+	int inSp;
+	string patchMap, costMap, SpDistMap;
+	for (int i = 0; i < nbSpecies; i++) {
+		ifsSpLandFile >> inSp >> patchMap >> costMap >> SpDistMap;
+		pathsToPatchMaps.emplace(inSp, patchMap);
+		pathsToCostMaps.emplace(inSp, costMap);
+		pathsToSpDistMaps.emplace(inSp, SpDistMap);
+	}
 }
 
 //---------------------------------------------------------------------------
@@ -5487,13 +5503,13 @@ int ReadParameters(Landscape* pLandscape)
 		// landscape is discrete (the first is the matrix where K = 0) or as the first 
 		// (only) habitat if the landscape is continuous
 		genLandParams genland = pLandscape->getGenLandParams();
-		int nhab = genland.continuous ? 1 : 2;
+		int nhab = genland.isContinuous ? 1 : 2;
 
 		pSpecies->createHabK(nhab);
 		ifsParamFile >> k;
 		k *= (((float)paramsLand.resol * (float)paramsLand.resol)) / 10000.0f;
 
-		if (genland.continuous) {
+		if (genland.isContinuous) {
 			pSpecies->setHabK(0, k);
 		}
 		else {
@@ -6092,7 +6108,7 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 	trfr.habMort = (inSMType == 1);
 	move.straightenPath = (inStraightenPath == 1);
 
-	if (!paramsLand.generated) { // imported landscape
+	if (!paramsLand.isArtificial) { // imported landscape
 		if (paramsLand.rasterType == 0) { // habitat codes
 			if (trfr.habMort)
 			{ // habitat-dependent step mortality
@@ -6122,7 +6138,7 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 	}
 	trfr.costMap = (gNameCostFile != "NULL") ? true : false;
 
-	if (!paramsLand.generated) { // imported landscape
+	if (!paramsLand.isArtificial) { // imported landscape
 		if (paramsLand.rasterType == 0) { // habitat codes
 			if (trfr.costMap)
 			{
@@ -6177,7 +6193,7 @@ int ReadTransferCRW(transferRules trfr, const landParams& paramsLand) {
 	if (trfr.habMort && paramsLand.rasterType != 0)
 		error = 434;
 
-	if (!paramsLand.generated && paramsLand.rasterType == 0) { // imported habitat codes landscape
+	if (!paramsLand.isArtificial && paramsLand.rasterType == 0) { // imported habitat codes landscape
 		if (trfr.habMort)
 		{ // habitat-dependent step mortality
 			for (int i = 0; i < paramsLand.nHabMax; i++) {
@@ -6569,7 +6585,23 @@ void RunBatch()
 	bool areParamsOk;
 	simParams sim = paramsSim->getSim();
 
-	Landscape* pLandscape = nullptr;  		// pointer to landscape
+	// Create species
+	/*
+	speciesMap_t allSpecies;
+	for (species_id sp : gSpeciesNames) {
+		allSpecies.emplace(sp,
+			new Species(
+				//b.reproType,
+				//b.nbRepSeasons,
+				b.usesStageStruct == 1, // int to bool
+				//b.nbStages,
+				b.transferType == 1,
+				b.transferType
+			));
+	}
+	*/
+
+	Landscape* pLandscape = nullptr; 
 
 	// Open landscape batch file and read header record
 	ifsLandFile.open(landFile);
@@ -6600,12 +6632,12 @@ void RunBatch()
 		paramsLand.resol = gResol;
 		paramsLand.rasterType = gLandType;
 		if (gLandType == 9) {
-			paramsLand.generated = true;
+			paramsLand.isArtificial = true;
 			paramsLand.nHab = 2;
 		}
 		else {
-			paramsLand.generated = false;
-			paramsLand.dynamic = gDynLandFileName != "NULL";
+			paramsLand.isArtificial = false;
+			paramsLand.isDynamic = gDynLandFileName != "NULL";
 		}
 		paramsLand.nHabMax = gMaxNbHab;
 		paramsLand.useSpDist = gUseSpeciesDist;
@@ -6614,19 +6646,27 @@ void RunBatch()
 		if (gLandType != 9) { // imported landscape
 			string pathToHabMap = paramsSim->getDir(1) + gHabMapName;
 			int landcode;
+
+			string pathToSpLand;
+
 			string pathToCostMap;
-			if (gNameCostFile == "NULL" || gNameCostFile == "none") pathToCostMap = "NULL";
+			if (gNameCostFile == "NULL" || gNameCostFile == "none") 
+				pathToCostMap = "NULL";
 			else pathToCostMap = paramsSim->getDir(1) + gNameCostFile;
 
 			string pathToPatchMap = paramsLand.usesPatches ? 
 				paramsSim->getDir(1) + gPatchMapName : " ";
-			landcode = pLandscape->readLandscape(0, pathToHabMap, pathToPatchMap, pathToCostMap);
+
+			map<species_id, string> pathsToPatchMaps, pathsToCostMaps, pathsToSpDistMaps;
+			ReadSpLandFile(pathsToPatchMaps, pathsToCostMaps, pathsToSpDistMaps);
+
+			landcode = pLandscape->readLandscape(0, pathToHabMap, pathsToPatchMaps, pathsToCostMaps);
 			if (landcode != 0) {
 				cout << "Error reading landscape" << endl;
 				landOK = false;
 			}
 
-			if (paramsLand.dynamic) {
+			if (paramsLand.isDynamic) {
 				landcode = ReadDynLandFile(pLandscape);
 				if (landcode != 0) {
 					cout << "Error reading dynamic landscape" << endl;
@@ -6683,22 +6723,8 @@ void RunBatch()
 				}
 			}
 
-			// create species here?
-			speciesMap_t allSpecies;
-			for (species_id sp : gSpeciesNames) {
-				allSpecies.emplace(sp,
-					new Species(
-						//b.reproType,
-						//b.nbRepSeasons,
-						b.usesStageStruct == 1, // int to bool
-						//b.nbStages,
-						b.transferType == 1,
-						b.transferType
-					));
-			}
-
 			if (pSpecies->getTransferRules().usesMovtProc) {
-				int nbHab = paramsLand.generated ? 
+				int nbHab = paramsLand.isArtificial ? 
 					paramsLand.nHab : paramsLand.nHabMax;
 				pSpecies->createHabCostMort(nbHab);
 			}

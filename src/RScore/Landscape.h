@@ -126,8 +126,8 @@ private:
 //---------------------------------------------------------------------------
 
 struct landParams {
-	bool usesPatches; bool useSpDist; bool generated;
-	bool dynamic;
+	bool usesPatches; bool useSpDist; bool isArtificial;
+	bool isDynamic;
 	int landNum; 
 	int resol;
 	int nHab; 
@@ -143,7 +143,7 @@ struct landData {
 bool isInLandBounds(const int& x, const int& y, const landData& land);
 
 struct genLandParams {
-	bool fractal; bool continuous;
+	bool isFractal; bool isContinuous;
 	float minPct, maxPct; float propSuit; float hurst; int maxCells;
 };
 struct landOrigin {
@@ -302,8 +302,8 @@ public:
 		int filenum,		// fileNum == 0 for (first) habitat file and optional patch file
 							// fileNum > 0  for subsequent habitat files under the %cover option
 		string habitatFileName,
-		string patchFileName,
-		string costFileName
+		const map<species_id, string>& patchFileNames,
+		const map<species_id, string>& costFileNames
 	);
 	int readCosts(string costFileName);
 	void resetVisits();
@@ -313,27 +313,27 @@ public:
 #endif
 
 private:
-	bool generated;				// artificially generated?
-	bool usesPatches;			//
-	bool spDist;					// initial species distribution loaded
-	bool fractal;					//
-	bool continuous;			//
-	bool dynamic;					// landscape changes during simulation
-	bool habsAreIndexed;			// habitat codes have been converted to index numbers
-	short rasterType;			// 0 = habitat codes 1 = % cover 2 = quality 9 = artificial landscape
-	int landNum;					// landscape number
-	int resol;						// cell size (m)
-	int nHab;							// no. of habitats
-	int nHabMax;					// max. no. of habitats (used for batch input only)
-	int dimX, dimY;				// dimensions
-	int minX, minY;				// minimum available X and Y co-ordinates
-	int maxX, maxY;				// maximum available X and Y co-ordinates
-	float minPct, maxPct;  // min and max percentage of habitat in a cell
-	float propSuit;				// proportion of suitable cells
-	float hurst;					// Hurst exponent
-	int maxCells;					// max. cells per patch (artificial landscapes)
-	double minEast;				// ) real world min co-ordinates
-	double minNorth;			// ) read from habitat raster
+	bool isArtificial;
+	bool usesPatches;
+	bool spDist;			// initial species distribution loaded
+	bool isFractal;	
+	bool isContinuous;
+	bool isDynamic;			// landscape changes during simulation
+	bool habsAreIndexed;	// habitat codes have been converted to index numbers
+	short rasterType;		// 0 = habitat codes 1 = % cover 2 = quality 9 = artificial landscape
+	int landNum;			// landscape number
+	int resol;				// cell size (m)
+	int nHab;				// no. of habitats
+	int nHabMax;			// max. no. of habitats (used for batch input only)
+	int dimX, dimY;			// dimensions
+	int minX, minY;			// minimum available X and Y co-ordinates
+	int maxX, maxY;			// maximum available X and Y co-ordinates
+	float minPct, maxPct;	// min and max percentage of habitat in a cell
+	float propSuit;			// proportion of suitable cells
+	float hurst;			// Hurst exponent
+	int maxCells;			// max. cells per patch (artificial landscapes)
+	double minEast;			// real world min co-ordinates
+	double minNorth;		// read from habitat raster
 
 	// list of cells in the landscape
 	// cells MUST be loaded in the sequence ascending x within descending y

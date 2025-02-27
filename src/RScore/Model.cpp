@@ -56,7 +56,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		if (nbSeasons > maxNbSeasons) maxNbSeasons = nbSeasons;
 	}
 
-	if (!ppLand.generated) {
+	if (!ppLand.isArtificial) {
 		pComm = new Community(pLandscape, allSpecies);
 		// Allocate patches and sample patches
 		pLandscape->initialise(allSpecies, ppLand);
@@ -75,7 +75,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		Rcpp::Rcout << endl << "starting replicate " << rep << endl;
 #endif
 
-		if (anySavesVisits && !ppLand.generated) {
+		if (anySavesVisits && !ppLand.isArtificial) {
 			pLandscape->resetVisits();
 		}
 		if (sim.fixReplicateSeed) {
@@ -86,7 +86,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		int iCostChg = 0;
 		
 		// Create and select sampled patches for artifical landscapes
-		if (ppLand.generated) { // then need to initialise for every replicate
+		if (ppLand.isArtificial) { // then need to initialise for every replicate
 			if (pComm != nullptr) delete pComm;
 			pComm = new Community(pLandscape, allSpecies);
 			pLandscape->resetLand();
@@ -124,7 +124,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		bool updateland = false;
 		int chgNb = 0; // landscape change index
 		landChange landChg; 
-		if (ppLand.dynamic) {
+		if (ppLand.isDynamic) {
 			landChg = pLandscape->getLandChange(0); // get first change year
 		}
 
@@ -243,7 +243,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			}
 			
 			// Dynamic landscape
-			if (ppLand.dynamic && yr == landChg.chgyear) {
+			if (ppLand.isDynamic && yr == landChg.chgyear) {
 				chgNb = landChg.chgnum;
 				updateland = true;
 				for (auto& [sp, updateK] : mustUpdateK) updateK = true;
@@ -269,7 +269,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			
 			if (ppLand.usesPatches) pLandscape->resetConnectMatrix();
 
-			if (ppLand.dynamic && updateland) {
+			if (ppLand.isDynamic && updateland) {
 				if (trfr.usesMovtProc && trfr.moveType == 1) { // SMS
 					if (!trfr.costMap) pLandscape->resetCosts(); // in case habitats have changed
 				}
@@ -392,12 +392,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			pSpecies->liftRangeRestriction(ppLand.dimX, ppLand.dimY);
 		}
 		const int lastChange = 666666;
-		if (ppLand.usesPatches && ppLand.dynamic && iPatchChg > 0) {
+		if (ppLand.usesPatches && ppLand.isDynamic && iPatchChg > 0) {
 			// apply any patch changes to reset landscape to original configuration
 			// (provided that at least one has already occurred)
 			pLandscape->applyPatchChanges(lastChange, iPatchChg);
 		}
-		if (ppLand.dynamic) {
+		if (ppLand.isDynamic) {
 			transferRules trfr = pSpecies->getTransferRules();
 			if (trfr.usesMovtProc && trfr.moveType == 1) { // SMS
 				if (iCostChg > 0) {
@@ -554,15 +554,15 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 	outPar << endl;
 
 	outPar << "LANDSCAPE:\t";
-	if (ppLand.generated) {
+	if (ppLand.isArtificial) {
 		outPar << "artificially generated map" << endl;
 		outPar << "TYPE: \t";
-		if (ppGenLand.continuous) outPar << "continuous \t";
+		if (ppGenLand.isContinuous) outPar << "continuous \t";
 		else outPar << "discrete \t";
-		if (ppGenLand.fractal) outPar << "fractal";
+		if (ppGenLand.isFractal) outPar << "fractal";
 		else outPar << "random";
 		outPar << endl << "PROPORTION OF SUITABLE HABITAT (p)\t" << ppGenLand.propSuit << endl;
-		if (ppGenLand.fractal) outPar << "HURST EXPONENT\t" << ppGenLand.hurst << endl;
+		if (ppGenLand.isFractal) outPar << "HURST EXPONENT\t" << ppGenLand.hurst << endl;
 	}
 	else {
 		outPar << "imported map" << endl;
@@ -580,7 +580,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 		}
 		outPar << "FILE NAME: ";
 #if RS_RCPP
-		if (ppLand.dynamic) {
+		if (ppLand.isDynamic) {
 			outPar << gHabMapName << endl;
 		}
 		else {
@@ -601,7 +601,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 	outPar << "DIMENSIONS:  X " << ppLand.dimX << "  Y " << ppLand.dimY << endl;
 	outPar << "AVAILABLE:   min.X " << ppLand.minX << " min.Y " << ppLand.minY
 		<< "  max.X " << ppLand.maxX << " max.Y " << ppLand.maxY << endl;
-	if (!ppLand.generated && ppLand.dynamic) {
+	if (!ppLand.isArtificial && ppLand.isDynamic) {
 		landChange chg;
 		outPar << "DYNAMIC LANDSCAPE: " << endl;
 		int nchanges = pLandscape->numLandChanges();
@@ -842,7 +842,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 			outPar << "yes" << endl;
 			outPar << "PROBABILITY OF REPRODUCING IN SUBSEQUENT SEASONS\t" << sstruct.probRep << endl;
 			outPar << "No. OF REP. SEASONS BEFORE SUBSEQUENT REPRODUCTIONS\t" << sstruct.repInterval << endl;
-			if (!ppLand.generated && ppLand.dynamic) {
+			if (!ppLand.isArtificial && ppLand.isDynamic) {
 				outPar << "ACTION AFTER POPULATION DESTRUCTION: all individuals ";
 				if (sstruct.disperseOnLoss) outPar << "disperse" << endl;
 				else outPar << "die" << endl;
@@ -984,12 +984,12 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 			outPar << endl << "CARRYING CAPACITIES:" << endl;
 		}
 		int nhab = ppLand.nHab;
-		if (ppLand.generated) {
-			if (ppGenLand.continuous) nhab = 1;
+		if (ppLand.isArtificial) {
+			if (ppGenLand.isContinuous) nhab = 1;
 		}
 		for (int i = 0; i < nhab; i++) {
 			k = pSpecies->getHabK(i) * (10000.0 / (float)(ppLand.resol * ppLand.resol));
-			if (!ppLand.generated && ppLand.rasterType == 0) { // imported & habitat codes
+			if (!ppLand.isArtificial && ppLand.rasterType == 0) { // imported & habitat codes
 				outPar << "Habitat " << pLandscape->getHabCode(i) << ": \t";
 			}
 			else {
@@ -1111,7 +1111,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 				}
 				else {
 					outPar << "SMS\tcosts:" << endl;
-					if (!ppLand.generated && ppLand.rasterType == 0) {
+					if (!ppLand.isArtificial && ppLand.rasterType == 0) {
 						for (int i = 0; i < ppLand.nHab; i++)
 							outPar << "\thab. " << pLandscape->getHabCode(i) << "\t"
 							<< pSpecies->getHabCost(i) << endl;
@@ -1153,7 +1153,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 			if (trfr.habMort)
 			{
 				outPar << "habitat dependent:\t" << endl;
-				if (!ppLand.generated && ppLand.rasterType == 0) {
+				if (!ppLand.isArtificial && ppLand.rasterType == 0) {
 					for (int i = 0; i < ppLand.nHab; i++)
 						outPar << "\thab. " << pLandscape->getHabCode(i) << "\t"
 						<< pSpecies->getHabMort(i) << endl;
