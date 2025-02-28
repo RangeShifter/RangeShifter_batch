@@ -1055,7 +1055,7 @@ void Landscape::updateLocalStoch() {
 void Landscape::resetCosts() {
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
-			if (cells[y][x] != 0) { // not a no-data cell
+			if (cells[y][x] != nullptr) {
 				cells[y][x]->resetCost();
 			}
 		}
@@ -1065,7 +1065,7 @@ void Landscape::resetCosts() {
 void Landscape::resetEffCosts() {
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
-			if (cells[y][x] != 0) { // not a no-data cell
+			if (cells[y][x] != nullptr) {
 				cells[y][x]->resetEffCosts();
 			}
 		}
@@ -1627,7 +1627,7 @@ void Landscape::createCostsChgMatrix()
 				}
 				else {
 					// record initial cost
-					costChangeMatrix[y][x].originVal = costChangeMatrix[y][x].currentVal = pCell->getCost();
+					costChangeMatrix[y][x].originVal = costChangeMatrix[y][x].currentVal = pCell->getCost(sp);
 				}
 				costChangeMatrix[y][x].nextVal = 0;
 			}
@@ -1701,7 +1701,7 @@ int Landscape::applyCostChanges(const int& landChgNb, int iCostChg) {
 			costChange costChange = getCostChange(sp, iCostChg);
 			if (costChange.chgnum > landChgNb) break;
 			Cell* pCell = findCell(costChange.x, costChange.y);
-			if (pCell != nullptr) pCell->setCost(costChange.newcost);
+			if (pCell != nullptr) pCell->setCost(sp, costChange.newcost);
 		}
 		resetEffCosts();
 		return iCostChg;

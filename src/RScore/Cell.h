@@ -85,8 +85,8 @@ public:
 	void setCost(species_id sp, int costVal);
 	int getCost(species_id sp);
 	void resetCost();
-	array3x3f getEffCosts();
-	void setEffCosts(array3x3f effCostsNeighbours);
+	array3x3f getEffCosts(species_id sp);
+	void setEffCosts(species_id sp, array3x3f effCostsNeighbours);
 	void resetEffCosts(); // Reset the effective cost, but not the cost, of the cell
 	void resetVisits();
 	void incrVisits(species_id sp);
@@ -100,7 +100,7 @@ private:
 	float envDev;	// local environmental deviation (static, in range -1.0 to +1.0)
 	float eps;		// local environmental stochasticity (epsilon) (dynamic, from N(0,std))
 	map<species_id, unsigned long int> visits; // no. of times the cell is visited by each species
-	smscosts* smsData;
+	map<species_id, smscosts*> smsData;
 
 	vector <short> habIxx; 	// habitat indices (rasterType=0)
 							// initially, habitat codes are loaded, then converted to index nos.

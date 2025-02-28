@@ -41,13 +41,13 @@ Cell::Cell(int xx, int yy, Patch* patch, int hab, set<species_id> spLabels)
 	for (auto& sp : spLabels) {
 		patches.emplace(sp, nullptr);
 		visits.emplace(sp, 0);
+		smsData.emplace(sp, nullptr);
 	}
 	if (patch != nullptr) {
 		patches.at(patch->getSpeciesID()) = patch;
 	}
 	envDev = eps = 0.0;
 	habIxx.push_back(hab);
-	smsData = nullptr;
 }
 
 Cell::Cell(int xx, int yy, Patch* patch, float hab, set<species_id> spLabels)
@@ -59,22 +59,24 @@ Cell::Cell(int xx, int yy, Patch* patch, float hab, set<species_id> spLabels)
 	for (auto& sp : spLabels) {
 		patches.emplace(sp, nullptr);
 		visits.emplace(sp, 0);
+		smsData.emplace(sp, nullptr);
 	}
 	if (patch != nullptr) {
 		patches.at(patch->getSpeciesID()) = patch;
 	}
 	envDev = eps = 0.0;
 	habitats.push_back(hab);
-	smsData = nullptr;
 }
 
 Cell::~Cell() {
 	habIxx.clear();
 	habitats.clear();
-	if (smsData != nullptr) {
-		if (smsData->effcosts != nullptr) 
-			delete smsData->effcosts;
-		delete smsData;
+	for (auto& [sp, sms] : smsData) {
+		if (sms != nullptr) {
+			if (sms->effcosts != nullptr)
+				delete sms->effcosts;
+			delete sms;
+		}
 	}
 }
 
@@ -152,38 +154,44 @@ void Cell::setCost(species_id sp, int c) {
 
 // Reset the cost and the effective cost of the cell
 void Cell::resetCost() {
-	if (smsData != nullptr) {
-		resetEffCosts(); 
-		delete smsData; 
+	resetEffCosts();
+	for (auto& [sp, sms] : smsData) {
+		if (sms != nullptr) {
+			delete sms;
+		}
+		sms = nullptr;
 	}
-	smsData = nullptr;
 }
 
-array3x3f Cell::getEffCosts() {
+array3x3f Cell::getEffCosts(species_id sp) {
 	array3x3f a;
-	if (smsData == nullptr || smsData->effcosts == nullptr) { // effective costs have not been calculated
+	auto& sms = smsData.at(sp);
+	if (sms == nullptr || sms->effcosts == nullptr) { // effective costs have not been calculated
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
 				a.cell[i][j] = -1.0;
 			}
 		}
 	}
-	else a = *smsData->effcosts;
+	else a = *sms->effcosts;
 	return a;
 }
 
-void Cell::setEffCosts(array3x3f a) {
-	if (smsData->effcosts == nullptr)
-		smsData->effcosts = new array3x3f;
-	*smsData->effcosts = a;
+void Cell::setEffCosts(species_id sp, array3x3f a) {
+	auto& sms = smsData.at(sp);
+	if (sms->effcosts == nullptr)
+		sms->effcosts = new array3x3f;
+	*sms->effcosts = a;
 }
 
 // Reset the effective cost, but not the cost, of the cell
 void Cell::resetEffCosts() {
-	if (smsData != nullptr) {
-		if (smsData->effcosts != nullptr) {
-			delete smsData->effcosts;
-			smsData->effcosts = nullptr;
+	for (auto& [sp, sms] : smsData) {
+		if (sms != nullptr) {
+			if (sms->effcosts != nullptr) {
+				delete sms->effcosts;
+				sms->effcosts = nullptr;
+			}
 		}
 	}
 }

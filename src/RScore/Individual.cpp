@@ -1096,13 +1096,13 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 	goalBiasWeights = getGoalBias(currLoc.x, currLoc.y, movt.goalType, gb);
 
 	// Get habitat-dependent weights (mean effective costs, given perceptual range)
-	habDepWeights = pCurrCell->getEffCosts();
+	habDepWeights = pCurrCell->getEffCosts(pSpecies->getID());
 	if (habDepWeights.cell[0][0] >= 0.0) { 
 		// already calculated in previous step, skip
 	} else { 
 		habDepWeights = getHabMatrix(pLand, currLoc.x, currLoc.y, movt.pr, movt.prMethod,
 			landIx, absorbing);
-		pCurrCell->setEffCosts(habDepWeights);
+		pCurrCell->setEffCosts(pSpecies->getID(), habDepWeights);
 	}
 
 	// Determine effective costs for the 8 neighbours
@@ -1172,7 +1172,7 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 
 	// Draw direction from selection probabilities
 	// landscape boundaries and no-data cells may be reflective or absorbing
-	cellcost = pCurrCell->getCost();
+	cellcost = pCurrCell->getCost(pSpecies->getID());
 	int loopsteps = 0;
 	constexpr int maxLoopSteps = 1000;
 	do {
@@ -1217,7 +1217,7 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 		if (pNewCell == nullptr) pCurrCell = pNewCell;
 	}
 	else {
-		newcellcost = pNewCell->getCost();
+		newcellcost = pNewCell->getCost(pSpecies->getID());
 		move.cost = move.dist * 0.5 * (cellcost + newcellcost);
 		// make the selected move
 		if (memory.size() == movt.memSize) {
@@ -1490,12 +1490,12 @@ array3x3f Individual::getHabMatrix(Landscape* pLand,
 								cost = nodatacost;
 							}
 							else {
-								cost = pCell->getCost();
+								cost = pCell->getCost(pSpecies->getID());
 								if (cost < 0) cost = nodatacost;
 								else if (cost == 0) { // cost not yet set for the cell
 									h = pCell->getHabIndex(landIx);
 									cost = pSpecies->getHabCost(h);
-									pCell->setCost(cost);
+									pCell->setCost(pSpecies->getID(), cost);
 								}
 							}
 						}
@@ -1533,12 +1533,12 @@ array3x3f Individual::getHabMatrix(Landscape* pLand,
 				// record cost if not already recorded
 				// has effect of preparing for storing effective costs for the cell
 				pCell = pLand->findCell(currCellX, currCellY);
-				cost = pCell->getCost();
+				cost = pCell->getCost(pSpecies->getID());
 				if (cost < 0) cost = nodatacost;
 				else if (cost == 0) { // cost not yet set for the cell
 					h = pCell->getHabIndex(landIx);
 					cost = pSpecies->getHabCost(h);
-					pCell->setCost(cost);
+					pCell->setCost(pSpecies->getID(), cost);
 				}
 			}
 
