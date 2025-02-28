@@ -82,8 +82,8 @@ public:
 	float getEnvDev();
 	void updateEps(float ac, float randpart); // Update local environmental stochasticity (epsilon)
 	float getEps();
-	void setCost(int costVal);
-	int getCost();
+	void setCost(species_id sp, int costVal);
+	int getCost(species_id sp);
 	void resetCost();
 	array3x3f getEffCosts();
 	void setEffCosts(array3x3f effCostsNeighbours);

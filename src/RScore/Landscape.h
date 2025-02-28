@@ -302,10 +302,9 @@ public:
 		int filenum,		// fileNum == 0 for (first) habitat file and optional patch file
 							// fileNum > 0  for subsequent habitat files under the %cover option
 		string habitatFileName,
-		const map<species_id, string>& patchFileNames,
-		const map<species_id, string>& costFileNames
+		const map<species_id, string>& patchFileNames
 	);
-	int readCosts(string costFileName);
+	int readCosts(const map<species_id, string>& costFiles);
 	void resetVisits();
 	void outVisits(species_id sp, int rep, int landNb);	// save SMS path visits map to raster text file
 #if RS_RCPP

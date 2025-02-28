@@ -1747,8 +1747,7 @@ locn Landscape::getSelectedDistnCell(int dist, int ix) {
 // Returns error code or zero if read correctly
 
 int Landscape::readLandscape(int fileNum, string habfile, 
-	const map<species_id, string>& patchFileNames, 
-	const map<species_id, string>& costFiles)
+	const map<species_id, string>& patchFileNames)
 {
 	// fileNum == 0 for (first) habitat file and optional patch file
 	// fileNum > 0  for subsequent habitat files under the %cover option
@@ -2276,14 +2275,6 @@ int Landscape::readLandscape(int fileNum, string habfile,
 			ifsPch.clear();
 		}
 	}
-
-	if (sim.batchMode) {
-		if (costfile != "NULL") {
-			int retcode = readCosts(costfile);
-			if (retcode < 0) return 54;
-		}
-	}
-
 	return 0;
 }
 
@@ -2293,124 +2284,126 @@ int Landscape::readLandscape(int fileNum, string habfile,
 
 //---------------------------------------------------------------------------
 
-int Landscape::readCosts(string fname)
-{
+int Landscape::readCosts(const map<species_id, string>& pathsToCostFiles) {
 
 #if RS_RCPP
-	wifstream usesCosts; // cost map file input stream
-#else
-	ifstream costs; // cost map file input stream
-#endif
-
-	//int hc,maxYcost,maxXcost,NODATACost,hab;
-	int hc, maxYcost, maxXcost, NODATACost;
-	float minLongCost, minLatCost; int resolCost;
-	float fcost;
-#if RS_RCPP
+	wifstream ifsCosts; // cost map file input stream
 	wstring header;
 #else
+	ifstream ifsCosts; // cost map file input stream
 	string header;
 #endif
+
+	int costInt, maxYcost, maxXcost, NODATACost;
+	float minLongCost, minLatCost; 
+	int resolCost;
+	float costFloat;
 	Cell* pCell;
 
 	int maxcost = 0;
 
-	// open cost file
+	for (auto& [sp, costFile] : pathsToCostFiles) {
+
+		// Open cost file
 #if RS_RCPP
-	usesCosts.open(fname, std::ios::binary);
-	if (costsraster.utf) {
-		// apply BOM-sensitive UTF-16 facet
-		usesCosts.imbue(std::locale(usesCosts.getloc(), new std::codecvt_utf16<wchar_t, 0x10ffff, std::consume_header>));
-	}
-#else
-	costs.open(fname.c_str());
-#endif
-	// read headers and check that they correspond to the landscape ones
-	costs >> header;
-#if RS_RCPP
-	if (!usesCosts.good()) {
-		// corrupt file stream
-		StreamErrorR(fname);
-		usesCosts.close();
-		usesCosts.clear();
-		return -181;
-	}
-	if (header != L"ncols" && header != L"NCOLS") {
-#else
-	if (header != "ncols" && header != "NCOLS") {
-#endif
-	costs.close(); costs.clear();
-	return -1;
-}
-double tmpresolCost;
-costs >> maxXcost >> header >> maxYcost >> header >> minLongCost;
-costs >> header >> minLatCost >> header >> tmpresolCost >> header >> NODATACost;
-resolCost = (int) tmpresolCost;
-
-	for (int y = maxYcost - 1; y > -1; y--) {
-		for (int x = 0; x < maxXcost; x++) {
-#if RS_RCPP
-			if (usesCosts >> fcost) {
-#else
-			costs >> fcost;
-#endif
-			hc = (int)fcost; // read as float and convert to int
-#if RS_RCPP
-			}
-	else {
-		// corrupt file stream
-#if RS_RCPP && !R_CMD
-		Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
-#endif
-		StreamErrorR(fname);
-		usesCosts.close();
-		usesCosts.clear();
-		return -181;
-	}
-#endif
-			if (hc < 1 && hc != NODATACost) {
-
-#if RS_RCPP && !R_CMD
-		Rcpp::Rcout << "Cost map may only contain values of 1 or higher, but found " << fcost << "." << endl;
-#endif
-		// error - zero / negative cost not allowed
-		costs.close(); 
-		costs.clear();
-		return -999;
-	}
-
-	pCell = findCell(x, y);
-	if (pCell != nullptr) { // not no-data cell
-	    if (hc > 0){ // only if cost value is  above 0 in a data cell
-	        pCell->setCost(hc);
-		    if (hc > maxcost) maxcost = hc;
-	    } else { // if cost value is below 0
-
-#if RS_RCPP && !R_CMD
-	    Rcpp::Rcout << "Cost map may only contain values of 1 or higher in habitat cells, but found " << hc << " in cell x: " << x << " y: " << y << "." << endl;
-#endif
-		throw runtime_error("Found negative- or zero-cost habitat cell.");
-	    }
-
-	} // end not no data cell
+		ifsCosts.open(costFile, std::ios::binary);
+		if (costsraster.utf) {
+			// apply BOM-sensitive UTF-16 facet
+			ifsCosts.imbue(std::locale(ifsCosts.getloc(), new std::codecvt_utf16<wchar_t, 0x10ffff, std::consume_header>));
 		}
-	}
+		// read headers and check that they correspond to the landscape ones
+		ifsCosts >> header;
+
+		if (!ifsCosts.good()) {
+			// corrupt file stream
+			StreamErrorR(costFile);
+			ifsCosts.close();
+			ifsCosts.clear();
+			return -181;
+		}
+		if (header != L"ncols" && header != L"NCOLS") {
+			ifsCosts.close();
+			ifsCosts.clear();
+			return -1;
+		}
+#else
+		ifsCosts.open(costFile.c_str());
+		// read headers and check that they correspond to the landscape ones
+		ifsCosts >> header;
+		if (header != "ncols" && header != "NCOLS") {
+			ifsCosts.close();
+			ifsCosts.clear();
+			return -1;
+		}
+#endif
+
+		ifsCosts >> maxXcost >> header >> maxYcost >> header >> minLongCost;
+		ifsCosts >> header >> minLatCost >> header >> resolCost >> header >> NODATACost;
+
+		for (int y = maxYcost - 1; y > -1; y--) {
+			for (int x = 0; x < maxXcost; x++) {
+#if RS_RCPP
+				if (ifsCosts >> costFloat) {
+					costInt = (int)costFloat; // read as float and convert to int
+				}
+				else {
+					// corrupt file stream
+#if RS_RCPP && !R_CMD
+					Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
+#endif
+					StreamErrorR(fname);
+					ifsCosts.close();
+					ifsCosts.clear();
+					return -181;
+				}
+#else
+				ifsCosts >> costFloat;
+				costInt = (int)costFloat; // read as float and convert to int
+#endif
+
+				if (costInt < 1 && costInt != NODATACost) {
+
+#if RS_RCPP && !R_CMD
+					Rcpp::Rcout << "Cost map may only contain values of 1 or higher, but found " << costFloat << "." << endl;
+#endif
+					// error - zero / negative cost not allowed
+					ifsCosts.close();
+					ifsCosts.clear();
+					return -999;
+				}
+
+				pCell = findCell(x, y);
+				if (pCell != nullptr) { // not no-data cell
+					if (costInt > 0) { // only if cost value is  above 0 in a data cell
+						pCell->setCost(sp, costInt);
+						if (costInt > maxcost) maxcost = costInt;
+					}
+					else { // if cost value is below 0
+
+#if RS_RCPP && !R_CMD
+						Rcpp::Rcout << "Cost map may only contain values of 1 or higher in habitat cells, but found " << costInt << " in cell x: " << x << " y: " << y << "." << endl;
+#endif
+						throw runtime_error("Found negative- or zero-cost habitat cell.");
+					}
+
+				} // end not no data cell
+			}
+		}
 
 #if RS_RCPP
-	usesCosts >> fcost;
-	if (usesCosts.eof()) {
+		ifsCosts >> costFile;
+		if (ifsCosts.eof()) {
 #if !R_CMD
-		Rcpp::Rcout << "Costs map loaded." << endl;
+			Rcpp::Rcout << "Costs map loaded." << endl;
 #endif
+		}
+		else EOFerrorR(costFile);
+#endif
+
+		ifsCosts.close();
+		ifsCosts.clear();
 	}
-	else EOFerrorR(fname);
-#endif
-
-	costs.close(); 
-	costs.clear();
-
 	return maxcost;
-
 }
 
 //---------------------------------------------------------------------------

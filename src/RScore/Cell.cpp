@@ -137,19 +137,17 @@ float Cell::getEps() { return eps; }
 
 // Functions to handle costs for SMS
 
-int Cell::getCost() {
-	int c;
-	if (smsData == 0) c = 0; // costs not yet set up
-	else c = smsData->cost;
-	return c;
+int Cell::getCost(species_id sp) {
+	return smsData.at(sp) == nullptr ? 
+		0 : smsData.at(sp)->cost;
 }
 
-void Cell::setCost(int c) {
-	if (smsData == nullptr) {
-		smsData = new smscosts;
-		smsData->effcosts = nullptr;
+void Cell::setCost(species_id sp, int c) {
+	if (smsData.at(sp) == nullptr) {
+		smsData.at(sp) = new smscosts;
+		smsData.at(sp)->effcosts = nullptr;
 	}
-	smsData->cost = c;
+	smsData.at(sp)->cost = c;
 }
 
 // Reset the cost and the effective cost of the cell
@@ -170,8 +168,7 @@ array3x3f Cell::getEffCosts() {
 			}
 		}
 	}
-	else
-		a = *smsData->effcosts;
+	else a = *smsData->effcosts;
 	return a;
 }
 
