@@ -165,10 +165,10 @@ void Community::initialise(Species* pSpecies, int year) {
 		int spratio = pLandscape->getSpDistResol(sp) / ppLand.resol;
 		switch (init.spDistType) {
 		case 0: // all presence cells
-			pLandscape->setDistribution(pSpecies, 0); // activate all patches
+			pLandscape->setDistribution(sp, 0); // activate all patches
 			break;
 		case 1: // some randomly selected presence cells
-			pLandscape->setDistribution(pSpecies, init.nSpDistPatches); // activate random patches
+			pLandscape->setDistribution(sp, init.nSpDistPatches); // activate random patches
 			break;
 		}
 

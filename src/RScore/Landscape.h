@@ -99,7 +99,7 @@ constexpr species_id gSingleSpeciesID = 0;
 
 class InitDist {
 public:
-	InitDist(Species*);
+	InitDist();
 	~InitDist();
 
 	int readDistribution(string filename);
@@ -112,11 +112,10 @@ public:
 	locn getSelectedCell(int cellIndex);
 
 private:
-	Species* pSpecies;		// pointer to species
-	int resol;						// species distribution cell size (m)
-	int maxX, maxY;				// dimensions
-	double minEast;				// ) real world min co-ordinates
-	double minNorth;			// ) read from raster file
+	int resol;			// species distribution cell size (m)
+	int maxX, maxY;		// dimensions
+	double minEast;		// real world min co-ordinates
+	double minNorth;	// read from raster file
 
 	// list of cells in the initial distribution
 	// cells MUST be loaded in the sequence ascending x within descending y
@@ -126,7 +125,9 @@ private:
 //---------------------------------------------------------------------------
 
 struct landParams {
-	bool usesPatches; bool useSpDist; bool isArtificial;
+	bool usesPatches; 
+	bool useSpDist; 
+	bool isArtificial;
 	bool isDynamic;
 	int landNum; 
 	int resol;
@@ -277,15 +278,15 @@ public:
 	int applyCostChanges(const int& landChgNb, int iCostChg);
 
 	// Species distributions
-	int newDistribution(Species* pSpecies, string distFileName);
-	void setDistribution(Species* pSpecies, int nInit);
+	int newDistribution(species_id sp, string distFileName);
+	void setDistribution(species_id sp, int nInit);
 	// Specified cell matches one of the distn cells to be initialised?
 	int distnCount();	// Return no. of initial distributions in the Landscape
 	// Return no. of distribution cells in an initial distribution
-	int distCellCount(int dist);
+	int distCellCount(species_id sp);
 	// Get co-ordinates of a specified cell in a specified initial distn
 	// Returns negative co-ordinates if the cell is not selected
-	locn getSelectedDistnCell(int dist, int ix);
+	locn getSelectedDistnCell(species_id sp, int ix);
 	int getSpDistResol(species_id sp) const { return spDistResol.at(sp); }
 
 	// Functions to handle connectivity matrix
@@ -345,7 +346,7 @@ private:
 	std::vector<int> habCodes;
 
 	// list of initial individual species distributions
-	std::vector<InitDist> distns;
+	map<species_id, InitDist> distns;
 	map<species_id, int> spDistResol;
 
 	// list of cells to be initialised for ALL species

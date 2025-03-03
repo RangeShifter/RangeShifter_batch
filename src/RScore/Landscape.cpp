@@ -34,9 +34,8 @@ ofstream outMovePaths;
 
 // Initial species distribution functions
 
-InitDist::InitDist(Species* pSp)
+InitDist::InitDist()
 {
-	pSpecies = pSp;
 	resol = 1;
 	maxX = 0;
 	maxY = 0;
@@ -61,7 +60,8 @@ void InitDist::setDistribution(int nInit) {
 	}
 	else { // set specified number of cells at random to be initialised
 		if (nInit > ncells / 2) { // use backwards selection method
-			for (int i = 0; i < ncells; i++) cells[i]->setCell(true);
+			for (int i = 0; i < ncells; i++) 
+				cells[i]->setCell(true);
 			for (int i = 0; i < (ncells - nInit); i++) {
 				do {
 					rr = pRandom->IRandom(0, ncells - 1);
@@ -70,7 +70,8 @@ void InitDist::setDistribution(int nInit) {
 			}
 		}
 		else { // use forwards selection method
-			for (int i = 0; i < ncells; i++) cells[i]->setCell(false);
+			for (int i = 0; i < ncells; i++) 
+				cells[i]->setCell(false);
 			for (int i = 0; i < nInit; i++) {
 				do {
 					rr = pRandom->IRandom(0, ncells - 1);
@@ -1712,18 +1713,18 @@ int Landscape::applyCostChanges(const int& landChgNb, int iCostChg) {
 
 // Species distribution functions
 
-int Landscape::newDistribution(Species* pSpecies, string distname) {
+int Landscape::newDistribution(species_id sp, string distname) {
 	int ndistns = distns.size();
-	distns.push_back(InitDist(pSpecies));
-	int readcode = distns[ndistns].readDistribution(distname);
+	distns.emplace(sp, InitDist());
+	int readcode = distns.at(sp).readDistribution(distname);
 	if (readcode != 0) { // error encountered
-		distns.pop_back();
+		distns.erase(sp);
 	}
 	return readcode;
 }
 
-void Landscape::setDistribution(Species* pSpecies, int nInit) {
-	distns[gSingleSpeciesID].setDistribution(nInit);
+void Landscape::setDistribution(species_id sp, int nInit) {
+	distns.at(sp).setDistribution(nInit);
 }
 
 // Return no. of initial distributions
@@ -1731,14 +1732,14 @@ int Landscape::distnCount() {
 	return (int)distns.size();
 }
 
-int Landscape::distCellCount(int dist) {
-	return distns[dist].cellCount();
+int Landscape::distCellCount(species_id sp) {
+	return distns.at(sp).cellCount();
 }
 
 // Get the co-ordinates of a specified cell in a specified initial distribution
 // Returns negative co-ordinates if the cell is not selected
-locn Landscape::getSelectedDistnCell(int dist, int ix) {
-	return distns[dist].getSelectedCell(ix);
+locn Landscape::getSelectedDistnCell(species_id sp, int ix) {
+	return distns[sp].getSelectedCell(ix);
 }
 
 //---------------------------------------------------------------------------

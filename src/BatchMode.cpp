@@ -6679,10 +6679,9 @@ void RunBatch()
 			if (gLandType == 0) pLandscape->updateHabitatIndices();
 
 			// Species Distribution
-			if (paramsLand.useSpDist) { // read initial species distribution
-				string distname = paramsSim->getDir(1) + gSpDistFileName;
-				landcode = pLandscape->newDistribution(pSpecies, distname);
-				if (landcode != 0) {
+			for (auto& [sp, pathToMap] : pathsToSpDistMaps) {
+				string distname = paramsSim->getDir(1) + pathToMap;
+				if (pLandscape->newDistribution(sp, distname) != 0) {
 					cout << endl << "Error reading initial distribution for landscape "
 						<< land_nr << " - aborting" << endl;
 					landOK = false;
