@@ -126,7 +126,6 @@ private:
 
 struct landParams {
 	bool usesPatches; 
-	bool useSpDist; 
 	bool isArtificial;
 	bool isDynamic;
 	int landNum; 

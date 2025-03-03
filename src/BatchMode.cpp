@@ -6619,7 +6619,6 @@ void RunBatch()
 			paramsLand.isDynamic = gDynLandFileName != "NULL";
 		}
 		paramsLand.nHabMax = gMaxNbHab;
-		paramsLand.useSpDist = gUseSpeciesDist;
 		pLandscape->setLandParams(paramsLand, true);
 
 		if (gLandType != 9) { // imported landscape

@@ -1112,7 +1112,7 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 	costNoData = 0;
 	patchNoData = 0;
 #endif
-	int habCode = 0, costCode = 0;
+	int habCode = 0;
 	float habFloat, patchFloat, costFloat;
 	simParams sim = paramsSim->getSim();
 
@@ -1142,7 +1142,7 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 	map<species_id, string> pathsToPatchMaps, pathsToCostsMaps;
 	ReadSpLandFile(ifsDynHabFile, pathsToPatchMaps, pathsToCostsMaps, patchesList.size());
 	map<species_id, ifstream> ifsPatches, ifsCosts;
-	map<species_id, int> patchCodes;
+	map<species_id, int> patchCodes, costCodes;
 
 	int patchSeq = 0;
 	if (usesPatches) {
@@ -1176,6 +1176,7 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 		for (int i = 0; i < 5; i++) 
 			ifsCosts.at(sp) >> header >> costFloat;
 		ifsCosts.at(sp) >> header >> costNoData;
+		costCodes.emplace(sp, 0);
 	}
 #endif
 
@@ -1234,10 +1235,10 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 						}
 					}
 				}
-				if (usesCosts) {
+				for (auto& [sp, ifsCost] : ifsCosts) {
 					costFloat = badCostFloat;
-					if (ifsDynCostFile >> costFloat) {
-						costCode = (int)costFloat;
+					if (ifsCost >> costFloat) {
+						costCodes.at(sp) = (int)costFloat;
 					}
 					else {
 						// corrupt file stream
@@ -1264,10 +1265,10 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 						patchCodes.at(sp) = static_cast<int>(patchFloat);
 					}
 				}
-				if (usesCosts) {
+				for (auto& [sp, ifsCost] : ifsCosts) {
 					costFloat = badCostFloat;
-					ifsDynCostFile >> costFloat;
-					costCode = static_cast<int>(costFloat);
+					ifsCost >> costFloat;
+					costCodes.at(sp) = static_cast<int>(costFloat);
 
 				}
 #endif
@@ -1318,16 +1319,18 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 							}
 						}
 					}
-					if (usesCosts) {
+					for (auto& [sp, costCode] : costCodes) {
 						if (costCode < 1) { // invalid cost
 #if RS_RCPP
 							Rcpp::Rcout << "Found invalid cost value of " << changeIndex << " in cell x " << x << " and y  " << y << std::endl;
 #endif
 							ifsDynHabFile.close();
 							ifsDynHabFile.clear();
-							if (ifsDynPatchFile.is_open()) {
-								ifsDynPatchFile.close();
-								ifsDynPatchFile.clear();
+							for (auto& [sp, ifsPatch] : ifsPatches) {
+								if (ifsPatch.is_open()) {
+									ifsPatch.close();
+									ifsPatch.clear();
+								}
 							}
 							return 38;
 						}
@@ -1349,9 +1352,9 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 				if (!ifsPatch.eof()) EOFerrorR("patchchgfile");
 			}
 		}
-		if (usesCosts) {
-			ifsDynCostFile >> costFloat;
-			if (!ifsDynCostFile.eof()) EOFerrorR("costchgfile");
+		for (auto& [sp, ifsCost] : ifsCosts) {
+			ifsCost >> costFloat;
+			if (!ifsCost.eof()) EOFerrorR("costchgfile");
 		}
 #endif
 		break;
@@ -1400,10 +1403,10 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 						}
 					}
 				}
-				if (usesCosts) {
+				for (auto& [sp, ifsCost] : ifsCosts) {
 					costFloat = badCostFloat;
-					if (ifsDynCostFile >> costFloat) {
-						costCode = (int)costFloat;
+					if (ifsCost >> costFloat) {
+						costCode.at(sp) = (int)costFloat;
 					}
 					else {
 						// corrupt file stream
@@ -1430,10 +1433,10 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 						patchCodes.at(sp) = static_cast<int>(patchFloat);
 					}
 				}
-				if (usesCosts) {
+				for (auto& [sp, ifsCost] : ifsCosts) {
 					costFloat = badCostFloat;
-					ifsDynCostFile >> costFloat;
-					costCode = static_cast<int>(costFloat);
+					ifsCost >> costFloat;
+					costCodes.at(sp) = static_cast<int>(costFloat);
 				}
 #endif
 				if (cells[y][x] != nullptr) { // not a no data cell (in initial landscape)
@@ -1488,16 +1491,18 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 							}
 						}
 					}
-					if (usesCosts) {
+					for (auto& [sp, costCode] : costCodes) {
 						if (costCode < 1) { // invalid cost
 #if RS_RCPP
 							Rcpp::Rcout << "Found invalid cost value of " << changeIndex << "in cell x " << x << " and y  " << y << std::endl;
 #endif
 							ifsDynHabFile.close(); 
 							ifsDynHabFile.clear();
-							if (ifsDynPatchFile.is_open()) {
-								ifsDynPatchFile.close(); 
-								ifsDynPatchFile.clear();
+							for (auto& [sp, ifsPatch] : ifsPatches) {
+								if (ifsPatch.is_open()) {
+									ifsPatch.close();
+									ifsPatch.clear();
+								}
 							}
 							return 38;
 						}
@@ -1519,9 +1524,9 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 				if (!ifsPatch.eof()) EOFerrorR("patchchgfile");
 			}
 		}
-		if (usesCosts) {
-			ifsDynCostFile >> costFloat;
-			if (!ifsDynCostFile.eof()) EOFerrorR("costchgfile");
+		for (auto& [sp, ifsCost] : ifsCosts) {
+			ifsCost >> costFloat;
+			if (!ifsCost.eof()) EOFerrorR("costchgfile");
 		}
 #endif
 		break;
