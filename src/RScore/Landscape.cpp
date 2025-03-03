@@ -944,14 +944,14 @@ Cell* Landscape::findCell(int x, int y) {
 	else return 0;
 }
 
-int Landscape::patchCount(species_id id) const {
+int Landscape::getPatchCount(species_id id) const {
 	return static_cast<int>(patchesList.at(id).size());
 }
 
 int Landscape::allPatchCount() const {
 	int count = 0;
 	for (const species_id& sp : views::keys(patchesList))
-		count += patchCount(sp);
+		count += getPatchCount(sp);
 	return count;
 }
 
@@ -1099,9 +1099,9 @@ void Landscape::deleteLandChanges() {
 }
 
 #if RS_RCPP && !R_CMD
-int Landscape::readLandChange(int filenum, bool usesCosts, wifstream& ifsHabMap, wifstream& ifsPatchMap, wifstream& ifsDynCostFile, int noDataHabCode, int noDataPatch, int costNoData) {
+int Landscape::readLandChange(int changeIndex, bool usesCosts, wifstream& ifsHabMap, wifstream& ifsPatchMap, wifstream& ifsDynCostFile, int noDataHabCode, int noDataPatch, int costNoData) {
 #else
-int Landscape::readLandChange(int filenum, bool usesCosts) {
+int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 #endif
 
 #if RS_RCPP
@@ -1112,61 +1112,70 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 	costNoData = 0;
 	patchNoData = 0;
 #endif
-	int habCode = 0, patchCode = 0, costCode = 0;
+	int habCode = 0, costCode = 0;
 	float habFloat, patchFloat, costFloat;
 	simParams sim = paramsSim->getSim();
 
-	if (filenum < 0) return 19;
-	const species_id sp = gSingleSpeciesID; // only one species for now
-	int patchSeq = usesPatches ? patchCount(sp) : 0;
+	if (changeIndex < 0) return 19;
 
 #if !RS_RCPP || R_CMD
 	ifstream ifsDynHabFile; // habitat file input stream
-	ifstream ifsDynPatchFile; // patch file input stream
-	ifstream ifsDynCostFile; // costs file input stream
+	ifstream ifsSpLandFile; 
 
 	// open habitat file and optionally also patch and costs files
-	ifsDynHabFile.open(landChanges[filenum].habfile.c_str());
+	ifsDynHabFile.open(landChanges[changeIndex].habfile.c_str());
 	if (!ifsDynHabFile.is_open()) return 30;
+
+	ifsSpLandFile.open(landChanges[changeIndex].spLandFile.c_str());
+	if (!ifsDynHabFile.is_open()) return 30;
+
+	// read header records of habitat
+	// NB headers of all files have already been compared
+	ifsDynHabFile
+		>> header >> ncols
+		>> header >> nrows
+		>> header >> habFloat
+		>> header >> habFloat
+		>> header >> habFloat
+		>> header >> habNoData;
+
+	map<species_id, string> pathsToPatchMaps, pathsToCostsMaps;
+	ReadSpLandFile(ifsDynHabFile, pathsToPatchMaps, pathsToCostsMaps, patchesList.size());
+	map<species_id, ifstream> ifsPatches, ifsCosts;
+	map<species_id, int> patchCodes;
+
+	int patchSeq = 0;
 	if (usesPatches) {
-		ifsDynPatchFile.open(landChanges[filenum].pchfile.c_str());
-		if (!ifsDynPatchFile.is_open()) {
-			ifsDynHabFile.close(); 
-			ifsDynHabFile.clear();
-			return 31;
-		}
-	}
-	if (usesCosts) {
-		ifsDynCostFile.open(landChanges[filenum].costfile.c_str());
-		if (!ifsDynCostFile.is_open()) {
-			ifsDynHabFile.close(); ifsDynHabFile.clear();
-			if (ifsDynPatchFile.is_open()) {
-				ifsDynPatchFile.close(); ifsDynPatchFile.clear();
+		for (auto& [sp, path] : pathsToPatchMaps) {
+			ifsPatches.emplace(sp, ifstream());
+			ifsPatches.at(sp).open(path);
+			if (!ifsPatches.at(sp).is_open()) {
+				ifsPatches.at(sp).close();
+				ifsPatches.at(sp).clear();
+				return 31;
 			}
-			return 32;
+			// Sink headers and read no data values
+			for (int i = 0; i < 5; i++) 
+				ifsPatches.at(sp) >> header >> patchFloat;
+			ifsPatches.at(sp) >> header >> patchNoData;
+			patchCodes.emplace(sp, 0);
+			patchSeq += getPatchCount(sp);
 		}
 	}
 
-	// read header records of habitat (and patch) file(s)
-	// NB headers of all files have already been compared
-	ifsDynHabFile
-		>> header >> ncols 
-		>> header >> nrows 
-		>> header >> habFloat 
-		>> header >> habFloat
-		>> header >> habFloat 
-		>> header >> habNoData;
-	if (usesPatches) {
-		for (int i = 0; i < 5; i++) ifsDynPatchFile 
-			>> header >> patchFloat;
-		ifsDynPatchFile 
-			>> header >> patchNoData;
-	}
-	if (usesCosts) {
-		for (int i = 0; i < 5; i++) ifsDynCostFile 
-			>> header >> costFloat;
-		ifsDynCostFile 
-			>> header >> costNoData;
+	for (auto& [sp, path] : pathsToCostsMaps) {
+		// pathsToCostsMaps only has entries for species using costs
+		ifsCosts.emplace(sp, ifstream());
+		ifsCosts.at(sp).open(path);
+		if (!ifsCosts.at(sp).is_open()) {
+			ifsCosts.at(sp).close();
+			ifsCosts.at(sp).clear();
+			return 32;
+		}
+		// Sink headers and read no data values
+		for (int i = 0; i < 5; i++) 
+			ifsCosts.at(sp) >> header >> costFloat;
+		ifsCosts.at(sp) >> header >> costNoData;
 	}
 #endif
 
@@ -1181,8 +1190,10 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 	switch (rasterType) {
 
 	case 0: // raster with habitat codes - 100% habitat each cell
+		
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
+
 				habFloat = badHabFloat;
 #if RS_RCPP
 				if (ifsHabMap >> habFloat) {
@@ -1196,29 +1207,32 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 					StreamErrorR("habitatchgfile");
 					ifsHabMap.close();
 					ifsHabMap.clear();
-					ifsPatchMap.close();
-					ifsPatchMap.clear();
+					for (auto& [sp, ifsPatch] : ifsPatches) {
+						ifsPatch.close();
+						ifsPatch.clear();
+					}
 					return 171;
 				}
 
 				if (usesPatches) {
-					patchFloat = badPatchFloat;
-					if (ifsPatchMap >> patchFloat) {
-						patchCode = static_cast<int>(patchFloat);
-					}
-					else {
-						// corrupt file stream
+					for (auto& [sp, ifsPatch] : ifsPatches) {
+						patchFloat = badPatchFloat;
+						if (ifsPatch >> patchFloat) {
+							patchCode = static_cast<int>(patchFloat);
+						}
+						else {
+							// corrupt file stream
 #if !R_CMD
-						Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
+							Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
 #endif
-						StreamErrorR("patchchgfile");
-						ifsHabMap.close();
-						ifsHabMap.clear();
-						ifsPatchMap.close();
-						ifsPatchMap.clear();
-						return 172;
+							StreamErrorR("patchchgfile");
+							ifsHabMap.close();
+							ifsHabMap.clear();
+							ifsPatch.close();
+							ifsPatch.clear();
+							return 172;
+						}
 					}
-
 				}
 				if (usesCosts) {
 					costFloat = badCostFloat;
@@ -1233,8 +1247,10 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 						StreamErrorR("costchgfile");
 						ifsHabMap.close();
 						ifsHabMap.clear();
-						ifsPatchMap.close();
-						ifsPatchMap.clear();
+						for (auto& [sp, ifsPatch] : ifsPatches) {
+							ifsPatch.close();
+							ifsPatch.clear();
+						}
 						return 173;
 					}
 				}
@@ -1242,11 +1258,12 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 				ifsDynHabFile >> habFloat;
 				habCode = static_cast<int>(habFloat);
 				if (usesPatches) {
-					patchFloat = badPatchFloat;
-					ifsDynPatchFile >> patchFloat;
-					patchCode = static_cast<int>(patchFloat);
-
+					for (auto& [sp, ifsPatch] : ifsPatches) {
+						patchFloat = badPatchFloat;
+						ifsPatch >> patchFloat;
+						patchCodes.at(sp) = static_cast<int>(patchFloat);
 					}
+				}
 				if (usesCosts) {
 					costFloat = badCostFloat;
 					ifsDynCostFile >> costFloat;
@@ -1266,8 +1283,10 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 						ifsDynHabFile.close();
 						ifsDynHabFile.clear();
 						if (usesPatches) {
-							ifsDynPatchFile.close();
-							ifsDynPatchFile.clear();
+							for (auto& [sp, ifsPatch] : ifsPatches) {
+								ifsPatch.close();
+								ifsPatch.clear();
+							}
 						}
 						return 33;
 					}
@@ -1277,22 +1296,25 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 					}
 
 					if (usesPatches) {
-						if (patchCode < 0 || patchCode == patchNoData) { // invalid patch code
+						for (auto& [sp, ifsPatch] : ifsPatches) {
+							int patchCode = patchCodes.at(sp);
+							if (patchCode < 0 || patchCode == patchNoData) { // invalid patch code
 #if RS_RCPP && !R_CMD
-							if (patchCode == noDataPatch) Rcpp::Rcout << "Found patch NA in valid habitat cell." << std::endl;
-							else Rcpp::Rcout << "Found negative patch ID in valid habitat cell." << std::endl;
+								if (patchCode == noDataPatch) Rcpp::Rcout << "Found patch NA in valid habitat cell." << std::endl;
+								else Rcpp::Rcout << "Found negative patch ID in valid habitat cell." << std::endl;
 #endif
-							ifsDynHabFile.close();
-							ifsDynHabFile.clear();
-							ifsDynPatchFile.close();
-							ifsDynPatchFile.clear();
-							return 34;
-						}
-						else {
-							patchChgMatrices.at(sp)[y][x].nextVal = patchCode;
-							if (patchCode > 0 && !existsPatch(sp, patchCode)) {
-								patchesList.at(sp).push_back(new Patch(patchSeq, patchCode, sp));
-								patchSeq++;
+								ifsDynHabFile.close();
+								ifsDynHabFile.clear();
+								ifsPatch.close();
+								ifsPatch.clear();
+								return 34;
+							}
+							else {
+								patchChgMatrices.at(sp)[y][x].nextVal = patchCodes.at(sp);
+								if (patchCode > 0 && !existsPatch(sp, patchCode)) {
+									patchesList.at(sp).push_back(new Patch(patchSeq, patchCode, sp));
+									patchSeq++;
+								}
 							}
 						}
 					}
@@ -1322,8 +1344,10 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 		ifsHabMap >> habFloat;
 		if (!ifsHabMap.eof()) EOFerrorR("habitatchgfile");
 		if (usesPatches) {
-			ifsPatchMap >> patchFloat;
-			if (!ifsPatchMap.eof()) EOFerrorR("patchchgfile");
+			for (auto& [sp, ifsPatch] : ifsPatches) {
+				ifsPatch >> patchFloat;
+				if (!ifsPatch.eof()) EOFerrorR("patchchgfile");
+			}
 		}
 		if (usesCosts) {
 			ifsDynCostFile >> costFloat;
@@ -1333,6 +1357,7 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 		break;
 
 	case 2: // habitat quality
+
 		for (int y = dimY - 1; y >= 0; y--) {
 			for (int x = 0; x < dimX; x++) {
 
@@ -1349,26 +1374,30 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 					StreamErrorR("habitatchgfile");
 					ifsHabMap.close();
 					ifsHabMap.clear();
-					ifsPatchMap.close();
-					ifsPatchMap.clear();
+					for (auto& [sp, ifsPatch] : ifsPatches) {
+						ifsPatch.close();
+						ifsPatch.clear();
+					}
 					return 172;
 				}
 				if (usesPatches) {
-					patchFloat = badPatchFloat;
-					if (ifsPatchMap >> patchFloat) {
-						patchCode = static_cast<int>(patchFloat);
-					}
-					else {
-						// corrupt file stream
+					for (auto& [sp, ifsPatch] : ifsPatches) {
+						patchFloat = badPatchFloat;
+						if (ifsPatch >> patchFloat) {
+							patchCode = static_cast<int>(patchFloat);
+						}
+						else {
+							// corrupt file stream
 #if !R_CMD
-						Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
+							Rcpp::Rcout << "At (x,y) = " << x << "," << y << " :" << std::endl;
 #endif
-						StreamErrorR("patchchgfile");
-						ifsHabMap.close();
-						ifsHabMap.clear();
-						ifsPatchMap.close();
-						ifsPatchMap.clear();
-						return 175;
+							StreamErrorR("patchchgfile");
+							ifsHabMap.close();
+							ifsHabMap.clear();
+							ifsPatch.close();
+							ifsPatch.clear();
+							return 175;
+						}
 					}
 				}
 				if (usesCosts) {
@@ -1384,8 +1413,10 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 						StreamErrorR("costchgfile");
 						ifsHabMap.close();
 						ifsHabMap.clear();
-						ifsPatchMap.close();
-						ifsPatchMap.clear();
+						for (auto& [sp, ifsPatch] : ifsPatches) {
+							ifsPatch.close();
+							ifsPatch.clear();
+						}
 						return 173;
 					}
 				}
@@ -1393,9 +1424,11 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 				ifsDynHabFile >> habFloat;
 				habCode = static_cast<int>(habFloat);
 				if (usesPatches) {
-					patchFloat = badPatchFloat;
-					ifsDynPatchFile >> patchFloat;
-					patchCode = static_cast<int>(patchFloat);
+					for (auto& [sp, ifsPatch] : ifsPatches) {
+						patchFloat = badPatchFloat;
+						ifsPatch >> patchFloat;
+						patchCodes.at(sp) = static_cast<int>(patchFloat);
+					}
 				}
 				if (usesCosts) {
 					costFloat = badCostFloat;
@@ -1408,8 +1441,10 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 						ifsDynHabFile.close();
 						ifsDynHabFile.clear();
 						if (usesPatches) {
-							ifsDynPatchFile.close();
-							ifsDynPatchFile.clear();
+							for (auto& [sp, ifsPatch] : ifsPatches) {
+								ifsPatch.close();
+								ifsPatch.clear();
+							}
 						}
 						return 36;
 					}
@@ -1418,8 +1453,10 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 							ifsDynHabFile.close();
 							ifsDynHabFile.clear();
 							if (usesPatches) {
-								ifsDynPatchFile.close();
-								ifsDynPatchFile.clear();
+								for (auto& [sp, ifsPatch] : ifsPatches) {
+									ifsPatch.close();
+									ifsPatch.clear();
+								}
 							}
 							return 37;
 						}
@@ -1428,23 +1465,26 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 						}
 					}
 					if (usesPatches) {
-						if (patchCode < 0 || patchCode == patchNoData) { // invalid patch code
+						for (auto& [sp, ifsPatch] : ifsPatches) {
+							int patchCode = patchCodes.at(sp);
+							if (patchCode < 0 || patchCode == patchNoData) { // invalid patch code
 #if RS_RCPP && !R_CMD
-							if (patchCode == noDataPatch) Rcpp::Rcout << "Found patch NA in valid habitat cell." << std::endl;
-							else Rcpp::Rcout << "Found negative patch ID in valid habitat cell." << std::endl;
+								if (patchCode == noDataPatch) Rcpp::Rcout << "Found patch NA in valid habitat cell." << std::endl;
+								else Rcpp::Rcout << "Found negative patch ID in valid habitat cell." << std::endl;
 #endif
-							ifsDynHabFile.close();
-							ifsDynHabFile.clear();
-							ifsDynPatchFile.close();
-							ifsDynPatchFile.clear();
-							return 34;
-						}
-						else {
-							patchChgMatrices.at(sp)[y][x].nextVal = patchCode;
-							if (patchCode > 0 && !existsPatch(sp, patchCode)) {
-								// Create the patch if it doesn't exist already
-								patchesList.at(sp).push_back(new Patch(patchSeq, patchCode, sp));
-								patchSeq++;
+								ifsDynHabFile.close();
+								ifsDynHabFile.clear();
+								ifsPatch.close();
+								ifsPatch.clear();
+								return 34;
+							}
+							else {
+								patchChgMatrices.at(sp)[y][x].nextVal = patchCode;
+								if (patchCode > 0 && !existsPatch(sp, patchCode)) {
+									// Create the patch if it doesn't exist already
+									patchesList.at(sp).push_back(new Patch(patchSeq, patchCode, sp));
+									patchSeq++;
+								}
 							}
 						}
 					}
@@ -1466,14 +1506,18 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 						}
 					}
 				}
+
 			} // end x
 		} // end y
+
 #if RS_RCPP
 		ifsHabMap >> habFloat;
 		if (!ifsHabMap.eof()) EOFerrorR("habitatchgfile");
 		if (usesPatches) {
-			ifsPatchMap >> patchFloat;
-			if (!ifsPatchMap.eof()) EOFerrorR("patchchgfile");
+			for (auto& [sp, ifsPatch] : ifsPatches) {
+				ifsPatch >> patchFloat;
+				if (!ifsPatch.eof()) EOFerrorR("patchchgfile");
+			}
 		}
 		if (usesCosts) {
 			ifsDynCostFile >> costFloat;
@@ -1486,9 +1530,22 @@ int Landscape::readLandChange(int filenum, bool usesCosts) {
 		break;
 	}
 
-	if (ifsDynHabFile.is_open()) { ifsDynHabFile.close(); ifsDynHabFile.clear(); }
-	if (ifsDynPatchFile.is_open()) { ifsDynPatchFile.close(); ifsDynPatchFile.clear(); }
-	if (ifsDynCostFile.is_open()) { ifsDynCostFile.close(); ifsDynCostFile.clear(); }
+	if (ifsDynHabFile.is_open()) { 
+		ifsDynHabFile.close(); 
+		ifsDynHabFile.clear(); 
+	}
+	for (auto& [sp, ifsPatch] : ifsPatches) {
+		if (ifsPatch.is_open()) {
+			ifsPatch.close();
+			ifsPatch.clear();
+		}
+	}
+	for (auto& [sp, ifsCost] : ifsCosts) {
+		if (ifsCost.is_open()) {
+			ifsCost.close();
+			ifsCost.clear();
+		}
+	}
 	return 0;
 
 }
@@ -1576,7 +1633,7 @@ void Landscape::recordPatchChanges(int chgIndex) {
 	}
 }
 
-int Landscape::numPatchChanges(species_id sp) { return static_cast<int>(patchChanges.at(sp).size()); }
+int Landscape::getNbPatchChanges(species_id sp) { return static_cast<int>(patchChanges.at(sp).size()); }
 
 patchChange Landscape::getPatchChange(species_id sp, int i) {
 	return patchChanges.at(sp)[i];
@@ -1586,7 +1643,7 @@ int Landscape::applyPatchChanges(const int& landChgNb, int iPatchChg) {
 	Patch* pPatch;
 	for (const species_id sp : views::keys(patchesList)) {
 
-		int nbPatchChanges = numPatchChanges(sp);
+		int nbPatchChanges = getNbPatchChanges(sp);
 
 		for (; iPatchChg < nbPatchChanges; iPatchChg++) {
 
@@ -2281,9 +2338,54 @@ int Landscape::readLandscape(int fileNum, string habfile,
 
 //---------------------------------------------------------------------------
 
-//---------------------------------------------------------------------------
+void ReadSpLandFile(ifstream& ifsSpLand,
+	map<species_id, string>& pathsToPatchMaps,
+	map<species_id, string>& pathsToCostMaps,
+	map<species_id, string>& pathsToSpDistMaps,
+	const int& nbSpecies
+) {
+	int inSp;
+	string patchMap, costMap, SpDistMap;
+	for (int i = 0; i < nbSpecies; i++) {
 
-//---------------------------------------------------------------------------
+		ifsSpLand >> inSp >> patchMap >> costMap >> SpDistMap;
+
+		patchMap = patchMap == "NULL" ? " " :
+			paramsSim->getDir(1) + patchMap;
+		pathsToPatchMaps.emplace(inSp, patchMap);
+
+		if (!(costMap == "NULL" || costMap == "none")) {
+			// only populate with species for which costs apply
+			costMap = paramsSim->getDir(1) + costMap;
+			pathsToCostMaps.emplace(inSp, costMap);
+		}
+
+		pathsToSpDistMaps.emplace(inSp, SpDistMap);
+	}
+}
+
+void ReadSpLandFile(ifstream& ifsSpLand,
+	map<species_id, string>& pathsToPatchMaps,
+	map<species_id, string>& pathsToCostMaps,
+	const int& nbSpecies
+) {
+	int inSp;
+	string patchMap, costMap, SpDistMap;
+	for (int i = 0; i < nbSpecies; i++) {
+
+		ifsSpLand >> inSp >> patchMap >> costMap;
+
+		patchMap = patchMap == "NULL" ? " " :
+			paramsSim->getDir(1) + patchMap;
+		pathsToPatchMaps.emplace(inSp, patchMap);
+
+		if (!(costMap == "NULL" || costMap == "none")) {
+			// only populate with species for which costs apply
+			costMap = paramsSim->getDir(1) + costMap;
+			pathsToCostMaps.emplace(inSp, costMap);
+		}
+	}
+}
 
 int Landscape::readCosts(const map<species_id, string>& pathsToCostFiles) {
 

@@ -170,7 +170,7 @@ struct cellChange {
 
 struct landChange {
 	int chgnum = 0, chgyear = 999999;
-	string habfile, pchfile, costfile;
+	string habfile, spLandFile;
 };
 struct patchChange {
 	int chgNb, x, y, oldPatch, newPatch;
@@ -227,7 +227,7 @@ public:
 	void resetPatchPopns();
 	void updateCarryingCapacity(Species* pSpecies, int year, short landIx);
 	Cell* findCell(int x, int y);
-	int patchCount(species_id id) const;
+	int getPatchCount(species_id id) const;
 	int allPatchCount() const;
 	void updateHabitatIndices();
 
@@ -267,7 +267,7 @@ public:
 	void createPatchChgMatrix();
 	void resetPatchChanges();
 	void recordPatchChanges(int landIx);
-	int numPatchChanges(species_id sp);
+	int getNbPatchChanges(species_id sp);
 	patchChange getPatchChange(species_id sp, int changeIx);
 	int applyPatchChanges(const int& landChgNb, int iPatchChg);
 	void createCostsChgMatrix();
@@ -374,6 +374,20 @@ private:
 // NOTE: the following function is not a behaviour of Landscape, as it is run by the
 // batch routine to check raster files before any Landscape has been initiated
 rasterdata CheckRasterFile(string);
+
+void ReadSpLandFile(
+	ifstream& ifsSpLand,
+	map<species_id, string>& pathsToPatchMaps,
+	map<species_id, string>& pathsToCostMaps,
+	map<species_id, string>& pathsToSpDistMaps,
+	const int& nbSpecies
+);
+void ReadSpLandFile(
+	ifstream& ifsSpLand,
+	map<species_id, string>& pathsToPatchMaps,
+	map<species_id, string>& pathsToCostMaps,
+	const int& nbSpecies
+);
 
 extern paramStoch* paramsStoch;
 extern paramSim* paramsSim;

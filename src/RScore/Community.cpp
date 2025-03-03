@@ -95,7 +95,7 @@ void Community::initialise(Species* pSpecies, int year) {
 			// determine no. of patches / cells within the specified initialisation limits
 			// and record their corresponding sub-communities in a list
 			// parallel list records which have been selected
-			npatches = pLandscape->patchCount(sp);
+			npatches = pLandscape->getPatchCount(sp);
 			limits.xMin = init.minSeedX;
 			limits.xMax = init.maxSeedX;
 			limits.yMin = init.minSeedY;
@@ -129,7 +129,7 @@ void Community::initialise(Species* pSpecies, int year) {
 			break;
 
 		case 1:	// all suitable patches/cells
-			npatches = pLandscape->patchCount(sp);
+			npatches = pLandscape->getPatchCount(sp);
 			limits.xMin = init.minSeedX;
 			limits.xMax = init.maxSeedX;
 			limits.yMin = init.minSeedY;

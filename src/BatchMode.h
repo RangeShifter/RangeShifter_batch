@@ -176,11 +176,6 @@ void SimulnCountError(string);
 void RunBatch();
 int ReadParameters(Landscape*);
 int ReadLandFile(Landscape*);
-void ReadSpLandFile(
-	map<species_id, string>& pathsToPatchMaps, 
-	map<species_id, string>& pathsToCostMaps,
-	map<species_id, string>& pathsToSpDistMaps
-	);
 int ReadDynLandFile(Landscape*);
 int ReadStageStructure();
 int ReadTransitionMatrix(

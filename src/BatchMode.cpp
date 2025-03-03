@@ -4943,46 +4943,21 @@ int ReadLandFile(Landscape* pLandscape)
 	return ppLand.landNum;
 }
 
-void ReadSpLandFile(map<species_id, string>& pathsToPatchMaps,
-	map<species_id, string>& pathsToCostMaps,
-	map<species_id, string>& pathsToSpDistMaps
-) {
-	int nbSpecies = gSpeciesNames.size();
-	int inSp;
-	string patchMap, costMap, SpDistMap;
-	for (int i = 0; i < nbSpecies; i++) {
-
-		ifsSpLandFile >> inSp >> patchMap >> costMap >> SpDistMap;
-
-		patchMap = patchMap == "NULL" ? " " :
-			paramsSim->getDir(1) + patchMap;
-		pathsToPatchMaps.emplace(inSp, patchMap);
-
-		if (!(costMap == "NULL" || costMap == "none")) {
-			// only populate with species for which costs apply
-			costMap = paramsSim->getDir(1) + costMap;
-			pathsToCostMaps.emplace(inSp, costMap);
-		}
-
-		pathsToSpDistMaps.emplace(inSp, SpDistMap);
-	}
-}
-
 //---------------------------------------------------------------------------
 int ReadDynLandFile(Landscape* pLandscape) {
 
-	string landchangefile, patchchangefile, costchangefile;
+	string landChgMap, spLandFile;
 	int change, imported;
 	int nbChanges = 0;
 	bool usesCosts = false;
 	landChange chg;
 	landParams ppLand = pLandscape->getLandParams();
-	string fname = paramsSim->getDir(1) + gDynLandFileName;
+	string pathToDynLandFile = paramsSim->getDir(1) + gDynLandFileName;
 
-	ifsDynLandFile.open(fname.c_str());
+	ifsDynLandFile.open(pathToDynLandFile.c_str());
 	if (ifsDynLandFile.is_open()) {
 		string header;
-		int nheaders = 5;
+		int nheaders = 4;
 		for (int i = 0; i < nheaders; i++) 
 			ifsDynLandFile >> header;
 	}
@@ -4997,21 +4972,17 @@ int ReadDynLandFile(Landscape* pLandscape) {
 
 	while (change != -98765) {
 		chg.chgnum = change;
-		ifsDynLandFile >> chg.chgyear >> landchangefile >> patchchangefile >> costchangefile;
-		chg.habfile = paramsSim->getDir(1) + landchangefile;
-		chg.pchfile = paramsSim->getDir(1) + patchchangefile;
-		usesCosts = costchangefile != "NULL";
-		chg.costfile = usesCosts ? paramsSim->getDir(1) + costchangefile : "none";
-
+		ifsDynLandFile >> chg.chgyear >> landChgMap >> spLandFile;
+		chg.habfile = paramsSim->getDir(1) + landChgMap;
+		chg.spLandFile = paramsSim->getDir(1) + spLandFile;
+		
 		nbChanges++;
 		pLandscape->addLandChange(chg);
 
 		// read first field on next line
 		change = -98765;
 		ifsDynLandFile >> change;
-		if (ifsDynLandFile.eof()) {
-			change = -98765;
-		}
+		if (ifsDynLandFile.eof()) change = -98765;
 	}
 
 	ifsDynLandFile.close();
@@ -5027,9 +4998,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	for (int chgIndex = 0; chgIndex < nbChanges; chgIndex++) {
 		
 		imported = pLandscape->readLandChange(chgIndex, usesCosts);
-		if (imported != 0) {
-			return imported;
-		}
+		if (imported != 0) return imported;
 
 		if (ppLand.usesPatches) {
 			pLandscape->recordPatchChanges(chgIndex + 1);
@@ -6656,7 +6625,7 @@ void RunBatch()
 		if (gLandType != 9) { // imported landscape
 			string pathToHabMap = paramsSim->getDir(1) + gHabMapName;			
 			map<species_id, string> pathsToPatchMaps, pathsToCostMaps, pathsToSpDistMaps;
-			ReadSpLandFile(pathsToPatchMaps, pathsToCostMaps, pathsToSpDistMaps);
+			ReadSpLandFile(ifsSpLandFile, pathsToPatchMaps, pathsToCostMaps, pathsToSpDistMaps);
 
 			if (pLandscape->readLandscape(0, pathToHabMap, pathsToPatchMaps) != 0) {
 				cout << "Error reading landscape" << endl;
@@ -6670,8 +6639,7 @@ void RunBatch()
 			}
 
 			if (paramsLand.isDynamic) {
-				landcode = ReadDynLandFile(pLandscape);
-				if (landcode != 0) {
+				if (ReadDynLandFile(pLandscape) != 0) {
 					cout << "Error reading dynamic landscape" << endl;
 					landOK = false;
 				}
