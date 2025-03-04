@@ -271,6 +271,7 @@ public:
 	// Environmental stochasticity
 	void setMinMax(float min, float max);
 	float getMinMax(short option); //0 = return minimum, otherwise = return maximum
+	float getLocalExtProb() const { return localExtProb; }
 
 	// Patch sampling for genetics output
 	string getSamplingOption() const { return patchSamplingOption; }
@@ -470,8 +471,9 @@ private:
 	short ddwtFecDim;	// dimension of density-dependent weights matrix for fecundity
 	short ddwtDevDim;	// dimension of density-dependent weights matrix for fecundity
 	short ddwtSurvDim;	// dimension of density-dependent weights matrix for fecundity
-	float minRK; 		// minimum ) growth rate OR carrying capacity
-	float maxRK; 		// maximum ) (under environmental stochasticity)
+	float minRK; 		// minimum growth rate OR carrying capacity
+	float maxRK; 		// maximum (under environmental stochasticity)
+	float localExtProb; // probability of any population to go extinct on a given year
 	envGradParams grad;
 
 	// Genome parameters

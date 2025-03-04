@@ -175,13 +175,11 @@ public:
 	envStochParams getStoch();
 
 private:
-	bool usesStoch;			// stochasticity applied
-	bool stochIsLocal;			// applied locally (if not, application is global)
-	bool stochInK;			// in carrying capacity (if not, in growth rate)
-	bool usesLocalExt;	// local extinction applied
+	bool usesStoch;		// stochasticity applied
+	bool stochIsLocal;	// applied locally (if not, application is global)
+	bool stochInK;		// in carrying capacity (if not, in growth rate)
 	float ac;			// temporal autocorrelation coefficient		
 	float std;			// amplitude of fluctuations: sampled from N(0,std)
-	float locExtProb;	// local extinction probability
 };
 
 //---------------------------------------------------------------------------

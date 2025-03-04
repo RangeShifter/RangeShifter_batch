@@ -19,11 +19,7 @@
  *
  --------------------------------------------------------------------------*/
 
-
- //---------------------------------------------------------------------------
-
 #include "Species.h"
-//---------------------------------------------------------------------------
 
 Species::Species(
 	const short& repro, 
@@ -74,6 +70,7 @@ Species::Species(
 	habDimK = 0;
 	minRK = 1.0; 
 	maxRK = 2.0;
+	localExtProb = 0.0;
 
 	// initialise emigration parameters
 	densDepEmig = false; 
@@ -394,23 +391,26 @@ float Species::getDDwtFec(short row, short col) {
 	else return 0.0;
 }
 
-void Species::deleteDDwtFec(void) {
-	if (ddwtFec != 0) {
-		for (int i = 0; i < ddwtFecDim; i++) if (ddwtFec[i] != 0) {
+void Species::deleteDDwtFec() {
+	if (ddwtFec != nullptr) {
+		for (int i = 0; i < ddwtFecDim; i++) 
+			if (ddwtFec[i] != nullptr) {
 			delete[] ddwtFec[i];
 		}
-		delete[] ddwtFec; ddwtFec = 0;
+		delete[] ddwtFec; 
+		ddwtFec = nullptr;
 	}
 }
 
 void Species::createDDwtDev(short mSize) {
 	if (mSize >= 0 && mSize < (gMaxNbStages * gMaxNbSexes)) {
-		if (ddwtDev != 0) deleteDDwtDev();
+		if (ddwtDev != nullptr) deleteDDwtDev();
 		ddwtDevDim = mSize;
 		ddwtDev = new float* [mSize];
 		for (int i = 0; i < mSize; i++) {
 			ddwtDev[i] = new float[mSize];
-			for (int j = 0; j < mSize; j++) ddwtDev[i][j] = 1.0;
+			for (int j = 0; j < mSize; j++) 
+				ddwtDev[i][j] = 1.0;
 		}
 	}
 }
@@ -426,18 +426,20 @@ float Species::getDDwtDev(short row, short col) {
 	else return 0.0;
 }
 
-void Species::deleteDDwtDev(void) {
+void Species::deleteDDwtDev() {
 	if (ddwtDev != 0) {
-		for (int i = 0; i < ddwtDevDim; i++) if (ddwtDev[i] != 0) {
+		for (int i = 0; i < ddwtDevDim; i++) 
+			if (ddwtDev[i] != nullptr) {
 			delete[] ddwtDev[i];
 		}
-		delete[] ddwtDev; ddwtDev = 0;
+		delete[] ddwtDev; 
+		ddwtDev = nullptr;
 	}
 }
 
 void Species::createDDwtSurv(short mSize) {
 	if (mSize >= 0 && mSize < (gMaxNbStages * gMaxNbSexes)) {
-		if (ddwtSurv != 0) deleteDDwtSurv();
+		if (ddwtSurv != nullptr) deleteDDwtSurv();
 		ddwtSurvDim = mSize;
 		ddwtSurv = new float* [mSize];
 		for (int i = 0; i < mSize; i++) {
@@ -458,20 +460,24 @@ float Species::getDDwtSurv(short row, short col) {
 	else return 0.0;
 }
 
-void Species::deleteDDwtSurv(void) {
-	if (ddwtSurv != 0) {
-		for (int i = 0; i < ddwtSurvDim; i++) if (ddwtSurv[i] != 0) {
+void Species::deleteDDwtSurv() {
+	if (ddwtSurv != nullptr) {
+		for (int i = 0; i < ddwtSurvDim; i++)
+			if (ddwtSurv[i] != nullptr) {
 			delete[] ddwtSurv[i];
 		}
-		delete[] ddwtSurv; ddwtSurv = 0;
+		delete[] ddwtSurv; 
+		ddwtSurv = nullptr;
 	}
 }
 //void Species::setMinMax(float min,float max) {
 void Species::setMinMax(float min, float max) {
 	if (min >= 0.0 && max > min) {
-		minRK = min; maxRK = max;
+		minRK = min; 
+		maxRK = max;
 	}
 }
+
 float Species::getMinMax(short opt) {
 	if (opt == 0) return minRK;
 	else return maxRK;

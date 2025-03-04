@@ -293,6 +293,8 @@ void Community::disableInactiveSpecies(int gen) {
 
 void Community::applyRandLocExt(const float& probExt) {
 	for (auto& sp : activeSpecies) {
+		const float probExt = speciesMap.at(sp)->getLocalExtProb();
+		if (probExt == 0.0) continue;
 		for (auto pop : allPopns.at(sp)) {
 			if (pRandom->Bernoulli(probExt))
 				pop->extirpate();
@@ -328,13 +330,7 @@ void Community::reproduction(int yr)
 {
 	float eps = 0.0; // epsilon for environmental stochasticity
 	landParams land = pLandscape->getLandParams();
-	envStochParams env = paramsStoch->getStoch();
-
-	if (env.usesStoch) {
-		if (!env.stochIsLocal) { // global stochasticty
-			eps = pLandscape->getGlobalStoch(yr);
-		}
-	}
+	
 	for (auto& sp : activeSpecies) {
 		for (auto pop : allPopns.at(sp)) {
 			Patch* pPatch = pop->getPatch();

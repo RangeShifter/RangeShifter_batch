@@ -1024,7 +1024,7 @@ void Landscape::updateEnvGradient(Species* pSpecies)
 
 void Landscape::setGlobalStoch(int nyears) {
 	envStochParams env = paramsStoch->getStoch();
-	if (epsGlobal != 0) delete[] epsGlobal;
+	if (epsGlobal != nullptr) delete[] epsGlobal;
 	epsGlobal = new float[nyears];
 	epsGlobal[0] = (float)(pRandom->Normal(0.0, env.std) * sqrt(1.0 - (env.ac * env.ac)));
 	for (int i = 1; i < nyears; i++) {

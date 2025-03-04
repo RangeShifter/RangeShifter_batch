@@ -6658,7 +6658,7 @@ void RunBatch()
 
 		if (landOK) {
 
-			// Open all other batch files and read header records
+			// Open all other batch files and read headers
 			{
 				ifsParamFile.open(gParametersFile);
 				if (!ifsParamFile.is_open()) {
@@ -6692,7 +6692,7 @@ void RunBatch()
 				}
 			}
 
-			if (pSpecies->getTransferRules().usesMovtProc) {
+			if (gTransferType > 0) {
 				int nbHab = paramsLand.isArtificial ? 
 					paramsLand.nHab : paramsLand.nHabMax;
 				pSpecies->createHabCostMort(nbHab);
