@@ -574,6 +574,10 @@ bool CheckSimFile() {
 	ifsSimFile >> header; if (header != "Years") nbErrors++;
 	ifsSimFile >> header; if (header != "Absorbing") nbErrors++;
 	ifsSimFile >> header; if (header != "FixReplicateSeed") nbErrors++;
+	ifsParamFile >> header; if (header != "EnvStoch") nbErrors++;
+	ifsParamFile >> header; if (header != "EnvStochType") nbErrors++;
+	ifsParamFile >> header; if (header != "ac") nbErrors++;
+	ifsParamFile >> header; if (header != "std") nbErrors++;
 
 	string whichFile = "SimFile";
 	if (nbErrors > 0) {
@@ -602,6 +606,7 @@ bool CheckSimFile() {
 	}
 
 	int inReplicates, inYears, inAbsorb, inFixReplicateSeed;
+	float inStochAC, inStochStD;
 
 	while (simNb != -98765) {
 
@@ -626,6 +631,36 @@ bool CheckSimFile() {
 		ifsSimFile >> inFixReplicateSeed;
 		if (inFixReplicateSeed != 0 && inFixReplicateSeed != 1) {
 			BatchError(whichFile, whichLine, 1, "FixReplicateSeed");
+			nbErrors++;
+		}
+		ifsParamFile >> gEnvStochType;
+		if (gUsesPatches == 0) { // cell-based model
+			if (gEnvStochType != 0 && gEnvStochType != 1 && gEnvStochType != 2) {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLogOfs << "EnvStoch must be 0, 1 or 2 for cell-based model" << endl;
+				nbErrors++;
+			}
+		}
+		else { // patch-based model
+			if (gEnvStochType != 0 && gEnvStochType != 1) {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLogOfs << "EnvStoch must be 0 or 1 for patch-based model" << endl;
+				nbErrors++;
+			}
+		}
+		ifsParamFile >> gStochInK;
+		if (gEnvStochType && (gStochInK < 0 || gStochInK > 1)) {
+			BatchError(whichFile, whichLine, 1, "EnvStochType");
+			nbErrors++;
+		}
+		ifsParamFile >> inStochAC;
+		if (gEnvStochType && (inStochAC < 0.0 || inStochAC >= 1.0)) {
+			BatchError(whichFile, whichLine, 20, "ac");
+			nbErrors++;
+		}
+		ifsParamFile >> inStochStD;
+		if (gEnvStochType && (inStochStD <= 0.0 || inStochStD > 1.0)) {
+			BatchError(whichFile, whichLine, 20, "std");
 			nbErrors++;
 		}
 
@@ -658,15 +693,13 @@ bool CheckParameterFile()
 	string header, Kheader, intext;
 	int i, simNb, inReplicates, inYears;
 	species_id inSp;
-	int inAbsorb, inGradient, inShifting, inShiftStart, inShiftEnd, inEnvStoch, inStochType;
-	int inOptimum;
-	int inLocalExt, inSaveMaps;
+	int inAbsorb, inGradient, inShifting, inShiftStart, inShiftEnd;
+	int inOptimum, inSaveMaps;
 	int prevsimul = 0;
 	int inRepro, inNbStages, inRepSeasons;
 	float inMinR, inMaxR, inMinK, inMaxK, sum_K, min_K, max_K;
 	float inGradSteep, inGradScalingFactor, inLocalExtOpt, inShiftRate;
-	float inStochAC, inStochStD, inLocalExtProb, inPropMales, inHarem;
-	float inBc, inRmax, inK;
+	float inBc, inRmax, inK, inLocalExtProb, inPropMales, inHarem;
 	int inOutStartPop, inOutStartInd, inOutStartTraitCell, inOutStartTraitRow;
 	int inOutStartConn, inOutIntRange, inOutIntOcc, inOutIntPop, inOutIntInd;
 	int inOutIntTraitCell, inOutIntTraitRow, inOutIntConn, inMapsInterval;
@@ -687,15 +720,10 @@ bool CheckParameterFile()
 	ifsParamFile >> header; if (header != "ShiftRate") nbErrors++;
 	ifsParamFile >> header; if (header != "ShiftStart") nbErrors++;
 	ifsParamFile >> header; if (header != "ShiftEnd") nbErrors++;
-	ifsParamFile >> header; if (header != "EnvStoch") nbErrors++;
-	ifsParamFile >> header; if (header != "EnvStochType") nbErrors++;
-	ifsParamFile >> header; if (header != "ac") nbErrors++;
-	ifsParamFile >> header; if (header != "std") nbErrors++;
 	ifsParamFile >> header; if (header != "minR") nbErrors++;
 	ifsParamFile >> header; if (header != "maxR") nbErrors++;
 	ifsParamFile >> header; if (header != "minK") nbErrors++;
 	ifsParamFile >> header; if (header != "maxK") nbErrors++;
-	ifsParamFile >> header; if (header != "LocalExt") nbErrors++;
 	ifsParamFile >> header; if (header != "LocalExtProb") nbErrors++;
 	ifsParamFile >> header; if (header != "PropMales") nbErrors++;
 	ifsParamFile >> header; if (header != "Harem") nbErrors++;
@@ -813,49 +841,19 @@ bool CheckParameterFile()
 			batchLogOfs << "ShiftEnd must be greater than ShiftStart" << endl;
 			nbErrors++;
 		}
-		ifsParamFile >> inEnvStoch;
-		if (gUsesPatches == 0) { // cell-based model
-			if (inEnvStoch != 0 && inEnvStoch != 1 && inEnvStoch != 2) {
-				BatchError(whichFile, whichLine, 0, " ");
-				batchLogOfs << "EnvStoch must be 0, 1 or 2 for cell-based model" << endl;
-				nbErrors++;
-			}
-		}
-		else { // patch-based model
-			if (inEnvStoch != 0 && inEnvStoch != 1) {
-				BatchError(whichFile, whichLine, 0, " ");
-				batchLogOfs << "EnvStoch must be 0 or 1 for patch-based model" << endl;
-				nbErrors++;
-			}
-		}
-		ifsParamFile >> inStochType;
-		if (inEnvStoch && (inStochType < 0 || inStochType > 1)) {
-			BatchError(whichFile, whichLine, 1, "EnvStochType"); 
-			nbErrors++;
-		}
-		ifsParamFile >> inStochAC;
-		if (inEnvStoch && (inStochAC < 0.0 || inStochAC >= 1.0)) {
-			BatchError(whichFile, whichLine, 20, "ac"); 
-			nbErrors++; 
-		}
-		ifsParamFile >> inStochStD;
-		if (inEnvStoch && (inStochStD <= 0.0 || inStochStD > 1.0)) {
-			BatchError(whichFile, whichLine, 20, "std"); 
-			nbErrors++; 
-		}
 		ifsParamFile >> inMinR;
-		if (inEnvStoch && inStochType == 0 && inMinR <= 0.0) { 
+		if (gEnvStochType > 0 && !gStochInK && inMinR <= 0.0) {
 			BatchError(whichFile, whichLine, 10, "minR"); 
 			nbErrors++; 
 		}
 		ifsParamFile >> inMaxR;
-		if (inEnvStoch && inStochType == 0 && inMaxR <= inMinR) {
+		if (gEnvStochType > 0 && !gStochInK && inMaxR <= inMinR) {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLogOfs << "maxR must be greater than minR" << endl;
 			nbErrors++;
 		}
 		ifsParamFile >> inMinK >> inMaxK;
-		if (inEnvStoch && inStochType == 1) {
+		if (gEnvStochType > 0 && gStochInK) {
 			if (inMinK <= 0.0) { 
 				BatchError(whichFile, whichLine, 10, "minK"); 
 				nbErrors++; 
@@ -865,36 +863,6 @@ bool CheckParameterFile()
 				batchLogOfs << "maxK must be greater than minK" << endl;
 				nbErrors++;
 			}
-		}
-		ifsParamFile >> inLocalExt;
-		if (gUsesPatches == 0) { // cell-based model
-			if (inLocalExt < 0 || inLocalExt > 1) {
-				BatchError(whichFile, whichLine, 1, "LocalExt");
-				nbErrors++;
-			}
-			else {
-				if (inGradient == 4) { // gradient in local extinction probability
-					if (inLocalExt != 0) {
-						BatchError(whichFile, whichLine, 0, " ");
-						batchLogOfs << "LocalExt must be zero if Gradient is 4" << endl;
-						nbErrors++;
-					}
-				}
-			}
-		}
-		else { // patch-based model
-			if (inLocalExt != 0) {
-				BatchError(whichFile, whichLine, 0, "null");
-				batchLogOfs << "LocalExt must be 0 for patch-based model" << endl;
-				nbErrors++;
-			}
-		}
-		ifsParamFile >> inLocalExtProb;
-		if (gUsesPatches == 0 
-			&& inLocalExt == 1 
-			&& (inLocalExtProb <= 0.0 || inLocalExtProb >= 1.0)) {
-			BatchError(whichFile, whichLine, 20, "LocalExtProb"); 
-			nbErrors++;
 		}
 
 		ifsParamFile >> inRepro;
@@ -950,7 +918,7 @@ bool CheckParameterFile()
 			batchLogOfs << "At least one K column must be non-zero" << endl;
 		}
 		else {
-			if (inEnvStoch && inStochType == 1) { // environmental stochasticity in K
+			if (gEnvStochType > 0 && gStochInK) { // environmental stochasticity in K
 				if (min_K < inMinK || max_K > inMaxK) {
 					BatchError(whichFile, whichLine, 0, " "); 
 					nbErrors++;

@@ -82,6 +82,8 @@ struct spInputOptions {
 };
 
 map<species_id, bool> gUseSpeciesDist;
+int gEnvStochType;
+bool gStochInK;
 
 bool traitExists(const TraitType& tr, const vector<TraitType>& existingTraits);
 TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex);
