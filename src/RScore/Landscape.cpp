@@ -342,7 +342,6 @@ void Landscape::initialise(speciesMap_t& allSpecies, landParams land) {
 void Landscape::setLandParams(landParams ppp, bool batchMode) {
 	isArtificial = ppp.isArtificial; 
 	usesPatches = ppp.usesPatches; 
-	spDist = ppp.useSpDist;
 	isDynamic = ppp.isDynamic;
 	landNum = ppp.landNum;
 	if (ppp.resol > 0) resol = ppp.resol;
@@ -389,7 +388,6 @@ landParams Landscape::getLandParams() {
 	landParams ppp;
 	ppp.isArtificial = isArtificial; 
 	ppp.usesPatches = usesPatches; 
-	ppp.useSpDist = spDist;
 	ppp.isDynamic = isDynamic;
 	ppp.landNum = landNum;
 	ppp.resol = resol;
@@ -1140,7 +1138,7 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 		>> header >> habNoData;
 
 	map<species_id, string> pathsToPatchMaps, pathsToCostsMaps;
-	ReadSpLandFile(ifsDynHabFile, pathsToPatchMaps, pathsToCostsMaps, patchesList.size());
+	ReadDynSpLandFile(ifsDynHabFile, pathsToPatchMaps, pathsToCostsMaps, patchesList.size());
 	map<species_id, ifstream> ifsPatches, ifsCosts;
 	map<species_id, int> patchCodes, costCodes;
 
@@ -2343,33 +2341,7 @@ int Landscape::readLandscape(int fileNum, string habfile,
 
 //---------------------------------------------------------------------------
 
-void ReadSpLandFile(ifstream& ifsSpLand,
-	map<species_id, string>& pathsToPatchMaps,
-	map<species_id, string>& pathsToCostMaps,
-	map<species_id, string>& pathsToSpDistMaps,
-	const int& nbSpecies
-) {
-	int inSp;
-	string patchMap, costMap, SpDistMap;
-	for (int i = 0; i < nbSpecies; i++) {
-
-		ifsSpLand >> inSp >> patchMap >> costMap >> SpDistMap;
-
-		patchMap = patchMap == "NULL" ? " " :
-			paramsSim->getDir(1) + patchMap;
-		pathsToPatchMaps.emplace(inSp, patchMap);
-
-		if (!(costMap == "NULL" || costMap == "none")) {
-			// only populate with species for which costs apply
-			costMap = paramsSim->getDir(1) + costMap;
-			pathsToCostMaps.emplace(inSp, costMap);
-		}
-
-		pathsToSpDistMaps.emplace(inSp, SpDistMap);
-	}
-}
-
-void ReadSpLandFile(ifstream& ifsSpLand,
+void ReadSpDynLandFile(ifstream& ifsSpLand,
 	map<species_id, string>& pathsToPatchMaps,
 	map<species_id, string>& pathsToCostMaps,
 	const int& nbSpecies

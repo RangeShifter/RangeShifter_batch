@@ -272,6 +272,7 @@ public:
 	void setMinMax(float min, float max);
 	float getMinMax(short option); //0 = return minimum, otherwise = return maximum
 	float getLocalExtProb() const { return localExtProb; }
+	void setLocalExtProb(float p) { localExtProb = p; }
 
 	// Patch sampling for genetics output
 	string getSamplingOption() const { return patchSamplingOption; }
@@ -289,6 +290,7 @@ public:
 	int getNbPatchesToSample() { return nPatchesToSample; }
 
 	// Environmmental gradient
+	void setEnvGrad(const envGradParams& envGrad) { grad = envGrad; }
 	envGradParams getEnvGradient() const { return grad; }
 	bool usesGradient() const { return grad.usesGradient; }
 	bool isGradientShifting(int year) {

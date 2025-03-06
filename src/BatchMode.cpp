@@ -4911,6 +4911,33 @@ int ReadLandFile(Landscape* pLandscape)
 	return ppLand.landNum;
 }
 
+void ReadSpLandFile(ifstream& ifsSpLand,
+	map<species_id, string>& pathsToPatchMaps,
+	map<species_id, string>& pathsToCostMaps,
+	map<species_id, string>& pathsToSpDistMaps,
+	const int& nbSpecies
+) {
+	int inSp;
+	string patchMap, costMap, SpDistMap;
+	for (int i = 0; i < nbSpecies; i++) {
+
+		ifsSpLand >> inSp >> patchMap >> costMap >> SpDistMap;
+
+		patchMap = patchMap == "NULL" ? " " :
+			paramsSim->getDir(1) + patchMap;
+		pathsToPatchMaps.emplace(inSp, patchMap);
+
+		if (!(costMap == "NULL" || costMap == "none")) {
+			// only populate with species for which costs apply
+			costMap = paramsSim->getDir(1) + costMap;
+			pathsToCostMaps.emplace(inSp, costMap);
+		}
+
+		pathsToSpDistMaps.emplace(inSp, SpDistMap);
+	}
+}
+
+
 //---------------------------------------------------------------------------
 int ReadDynLandFile(Landscape* pLandscape) {
 
@@ -5376,15 +5403,39 @@ GenParamType strToGenParamType(const string& str) {
 	else return INVALID;
 }
 
+void ReadSimParameters() {
+
+	string inAbsorbing, inFixRepSeed;
+	string inEnvStoch, inEnvStochType;
+
+	simParams sim = paramsSim->getSim();
+
+	ifsSimFile >> sim.simulation >> sim.reps >> sim.years;
+	ifsSimFile >> inAbsorbing;
+	sim.absorbing = (inAbsorbing == "1");
+
+	ifsSimFile >> inFixRepSeed;
+	sim.fixReplicateSeed = inFixRepSeed == "1";
+
+	paramsSim->setSim(sim);
+
+	// Environmental Stochasticity
+	envStochParams env;
+	ifsSimFile >> inEnvStoch;
+	env.usesStoch = inEnvStoch == "1" || inEnvStoch == "2";
+	env.stochIsLocal = inEnvStoch == "2";
+	ifsSimFile >> inEnvStochType;
+	env.inK = (inEnvStochType == "1");
+	ifsSimFile >> env.ac >> env.std;
+	paramsStoch->setStoch(env);
+}
+
 //---------------------------------------------------------------------------
-int ReadParameters(Landscape* pLandscape)
+int ReadParameters(Landscape* pLandscape, speciesMap_t& allSpecies)
 {
 	int errorCode = 0;
 	landParams paramsLand = pLandscape->getLandParams();
-
-	envStochParams env = paramsStoch->getStoch();
 	demogrParams dem = pSpecies->getDemogrParams();
-	simParams sim = paramsSim->getSim();
 
 	if (!ifsParamFile.is_open()) {
 		cout << endl << "ReadParameters(): ERROR - ParameterFile is not open" << endl;
@@ -5393,38 +5444,29 @@ int ReadParameters(Landscape* pLandscape)
 
 	int gradType, shiftBegin, shiftStop;
 	float k, grad_inc, opt_y, f, optExt, shift_rate;
-	string inAbsorbing, inShifting, inEnvStoch, inEnvStochType, inLocalExt,
-		inSaveMaps, inHeatMaps, inDrawLoaded, inFixRepSeed;
+	string inAbsorbing, inShifting, inLocalExt, inHeatMaps;
+	species_id sp;
 
-	ifsParamFile >> sim.simulation >> sim.reps >> sim.years;
-	ifsParamFile >> inAbsorbing;
-	sim.absorbing = (inAbsorbing == "1");
+	ifsParamFile >> sp;
+	Species* pSpecies = allSpecies.at(sp);
 
 	// Environmental gradient
-	ifsParamFile >> gradType;
-	ifsParamFile >> grad_inc >> opt_y >> f >> optExt >> inShifting >> shift_rate;
+	envGradParams paramsGrad;
 
-	bool isShifting = (inShifting == "1" && gradType != 0);
-	ifsParamFile >> shiftBegin >> shiftStop;
-	paramGrad paramsGrad;
-	// also set grad.optY0 for species
-	paramsGrad.setGradient(gradType, grad_inc, opt_y, f, optExt);
-	if (isShifting) paramsGrad.setShifting(shift_rate, shiftBegin, shiftStop);
-	else paramsGrad.noShifting();
-	pSpecies->setGrad(paramsGrad);
+	ifsParamFile >> paramsGrad.gradType;
+	ifsParamFile >> paramsGrad.gradIncr >> paramsGrad.optY 
+		>> paramsGrad.factor >> paramsGrad.extProbOpt >> inShifting;
+	ifsParamFile >> shift_rate >> shiftBegin >> shiftStop;
+	paramsGrad.doesShift = (inShifting == "1" && gradType != 0);
+	paramsGrad.shiftRate = paramsGrad.doesShift ? shift_rate : 0;
+	paramsGrad.shiftBegin = paramsGrad.doesShift ? shiftBegin : 0;
+	paramsGrad.shiftStop = paramsGrad.doesShift ? shiftStop : 0;
+	paramsGrad.optY0 = paramsGrad.optY; // reset between replicates
+	pSpecies->setEnvGrad(paramsGrad);
 
-	// Environmental Stochasticity
-	envStochParams env;
-	ifsParamFile >> inEnvStoch;
-	env.usesStoch = inEnvStoch == "1" || inEnvStoch == "2";
-	env.stochIsLocal = inEnvStoch == "2";
-	if (paramsLand.usesPatches && env.stochIsLocal) errorCode = 101;
-
-	ifsParamFile >> inEnvStochType;
-	env.inK = (inEnvStochType == "1");
 	float minR, maxR, minK, maxK;
-	ifsParamFile >> env.ac >> env.std >> minR >> maxR >> minK >> maxK;
-	if (env.inK) {
+	ifsParamFile >> minR >> maxR >> minK >> maxK;
+	if (paramsStoch->getStoch().inK) {
 		float minKK, maxKK;
 		minKK = minK * (((float)paramsLand.resol * (float)paramsLand.resol) / 10000.0f);
 		maxKK = maxK * (((float)paramsLand.resol * (float)paramsLand.resol) / 10000.0f);
@@ -5433,12 +5475,9 @@ int ReadParameters(Landscape* pLandscape)
 	else pSpecies->setMinMax(minR, maxR);
 
 	// Local extinction
-	ifsParamFile >> inLocalExt;
-	env.usesLocalExt = (inLocalExt == "1");
-	if (paramsLand.usesPatches && env.usesLocalExt) errorCode = 102;
-
-	ifsParamFile >> env.locExtProb;
-	pSpecies->setStoch(env);
+	float locExtProb;
+	ifsParamFile >> locExtProb;
+	pSpecies->setLocalExtProb(locExtProb);
 
 	// Demographic parameters
 	ifsParamFile >> dem.propMales >> dem.harem >> dem.bc >> dem.lambda;
@@ -5475,12 +5514,12 @@ int ReadParameters(Landscape* pLandscape)
 
 	// Output parameters
 	outputParams spParams;
-	ifsParamFile	>> spParams.outStartPop	>> spParams.outStartInd
-				>> spParams.outStartTraitCell >> spParams.outStartTraitRow 
-				>> spParams.outStartConn >> spParams.outIntRange 
-				>> spParams.outIntOcc >> spParams.outIntPop 
-				>> spParams.outIntInd >> spParams.outIntTraitCell 
-				>> spParams.outIntTraitRow >> spParams.outIntConn;
+	ifsParamFile >> spParams.outStartPop	>> spParams.outStartInd
+				 >> spParams.outStartTraitCell >> spParams.outStartTraitRow 
+				 >> spParams.outStartConn >> spParams.outIntRange 
+				 >> spParams.outIntOcc >> spParams.outIntPop 
+				 >> spParams.outIntInd >> spParams.outIntTraitCell 
+				 >> spParams.outIntTraitRow >> spParams.outIntConn;
 
 	spParams.outRange = spParams.outIntRange > 0;
 	spParams.outOccup = spParams.outIntOcc > 0;
@@ -5490,7 +5529,6 @@ int ReadParameters(Landscape* pLandscape)
 	spParams.outTraitsRows = spParams.outIntTraitRow > 0;
 	spParams.outConnect = spParams.outIntConn > 0;
 
-	if (spParams.outOccup && sim.reps < 2) errorCode = 103;
 	if (paramsLand.usesPatches) {
 		if (spParams.outTraitsRows) errorCode = 104;
 	}
@@ -5499,11 +5537,8 @@ int ReadParameters(Landscape* pLandscape)
 	}
 	ifsParamFile >> inHeatMaps;
 	spParams.saveVisits = inHeatMaps == "1";
-	pSpecies->setSpeciesParams(spParams);
+	pSpecies->setOutputParams(spParams);
 
-	ifsParamFile >> inFixRepSeed;
-	sim.fixReplicateSeed = inFixRepSeed == "1";
-	paramsSim->setSim(sim);
 	return errorCode;
 }
 
@@ -6533,7 +6568,6 @@ void RunBatch()
 	simParams sim = paramsSim->getSim();
 
 	// Create species
-	/*
 	speciesMap_t allSpecies;
 	for (species_id sp : gSpeciesNames) {
 		allSpecies.emplace(sp,
@@ -6546,7 +6580,6 @@ void RunBatch()
 				b.transferType
 			));
 	}
-	*/
 
 	Landscape* pLandscape = nullptr; 
 
@@ -6628,6 +6661,14 @@ void RunBatch()
 
 			// Open all other batch files and read headers
 			{
+				ifsSimFile.open(gSimFile);
+				if (!ifsSimFile.is_open()) {
+					cout << endl << "Error opening SimFile - aborting batch run" << endl;
+					return;
+				}
+				flushHeaders(ifsSimFile);
+
+				flushHeaders(ifsParamFile);
 				ifsParamFile.open(gParametersFile);
 				if (!ifsParamFile.is_open()) {
 					cout << endl << "Error opening ParameterFile - aborting batch run" << endl;
@@ -6665,29 +6706,36 @@ void RunBatch()
 					paramsLand.nHab : paramsLand.nHabMax;
 				pSpecies->createHabCostMort(nbHab);
 			}
-
-			for (int i = 0; i < gSimNbs.size(); i++) {
+			
+			for (auto& thisSimulation : gSpInputOpt) {
 
 				// Load parameters for this simulation
 				areParamsOk = true;
-				read_error = ReadParameters(pLandscape);
-				if (read_error) areParamsOk = false;
-				if (gUsesStageStruct)
-					ReadStageStructure();
-				read_error = ReadEmigration();
-				if (read_error) areParamsOk = false;
-				read_error = ReadTransferFile(pLandscape);
-				if (read_error) areParamsOk = false; 
-				read_error = ReadSettlement();
-				if (read_error) areParamsOk = false;
-				read_error = ReadInitialisation(pLandscape);
-				if (read_error) areParamsOk = false;
+				ReadSimParameters();
 
-				if (gAnyUsesGenetics) {
-					read_error = ReadGeneticsFile(ifsGeneticsFile, pLandscape);
-					if (read_error) areParamsOk = false; 
-					read_error = ReadTraitsFile(ifsTraitsFile, gNbTraitFileRows[i]);
+				// Read one line of input per simulation and species
+				int nbSpecies = thisSimulation.second.size();
+				for (int s = 0; s < nbSpecies; s++) {
+					
+					read_error = ReadParameters(pLandscape);
 					if (read_error) areParamsOk = false;
+					if (gUsesStageStruct)
+						ReadStageStructure();
+					read_error = ReadEmigration();
+					if (read_error) areParamsOk = false;
+					read_error = ReadTransferFile(pLandscape);
+					if (read_error) areParamsOk = false;
+					read_error = ReadSettlement();
+					if (read_error) areParamsOk = false;
+					read_error = ReadInitialisation(pLandscape);
+					if (read_error) areParamsOk = false;
+
+					if (gAnyUsesGenetics) {
+						read_error = ReadGeneticsFile(ifsGeneticsFile, pLandscape);
+						if (read_error) areParamsOk = false;
+						read_error = ReadTraitsFile(ifsTraitsFile, gNbTraitFileRows[i]);
+						if (read_error) areParamsOk = false;
+					}
 				}
 				
 				if (areParamsOk) {
@@ -6709,6 +6757,8 @@ void RunBatch()
 			} // end of loop through simulations
 
 			// close input files
+			ifsSimFile.close();
+			ifsSimFile.clear();
 			ifsParamFile.close();
 			ifsParamFile.clear();
 			if (gUsesStageStruct) {

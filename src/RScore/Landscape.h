@@ -374,14 +374,7 @@ private:
 // batch routine to check raster files before any Landscape has been initiated
 rasterdata CheckRasterFile(string);
 
-void ReadSpLandFile(
-	ifstream& ifsSpLand,
-	map<species_id, string>& pathsToPatchMaps,
-	map<species_id, string>& pathsToCostMaps,
-	map<species_id, string>& pathsToSpDistMaps,
-	const int& nbSpecies
-);
-void ReadSpLandFile(
+void ReadSpDynLandFile(
 	ifstream& ifsSpLand,
 	map<species_id, string>& pathsToPatchMaps,
 	map<species_id, string>& pathsToCostMaps,
