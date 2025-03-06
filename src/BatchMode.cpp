@@ -66,8 +66,8 @@ const string gPatchReqdStr = " is required for patch-based model";
 const string gSpecMustMatchStr = " must match the specification exactly";
 const string gCaseSensitiveStr = " case-sensitive parameter names";
 
-float** matrix = nullptr;	// temporary matrix used in batch mode
-int matrixsize = 0; 		// size of temporary matrix
+float** gMatrix = nullptr;	// temporary matrix used in batch mode
+int gMatrixSize = 0; 		// size of temporary matrix
 
 //---------------------------------------------------------------------------
 // Fractal dimensions must be some power of two, plus one
@@ -5543,44 +5543,52 @@ int ReadParameters(Landscape* pLandscape, speciesMap_t& allSpecies)
 }
 
 //---------------------------------------------------------------------------
-int ReadStageStructure()
+int ReadStageStructure(speciesMap_t& allSpecies)
 {
-	string name;
 	int simulation, postDestructn;
+	string inputDir = paramsSim->getDir(1);
+	species_id sp;
+
+	ifsStageStructFile >> sp;
+	Species* pSpecies = allSpecies.at(sp);
 	stageParams sstruct = pSpecies->getStageParams();
-	string Inputs = paramsSim->getDir(1);
 
 	ifsStageStructFile >> simulation;
 	ifsStageStructFile >> postDestructn >> sstruct.probRep >> sstruct.repInterval >> sstruct.maxAge;
 	if (postDestructn == 1) sstruct.disperseOnLoss = true;
 	else sstruct.disperseOnLoss = false;
 
-	ifsStageStructFile >> name;
-	// 'name' is TransMatrixFile
-	ifsTransMatrix.open((Inputs + name).c_str());
-	ReadTransitionMatrix(sstruct.nStages, gNbSexesDem, 0, 0);
-	ifsTransMatrix.close(); ifsTransMatrix.clear();
+	string StgStructFile;
+	ifsStageStructFile >> StgStructFile;
+	ifsTransMatrix.open((inputDir + StgStructFile).c_str());
+	int nbSexesDem = pSpecies->getDemogrParams().repType == 2 ? 2 : 1;
+	ReadTransitionMatrix(pSpecies, sstruct.nStages, nbSexesDem, 0, 0);
+	ifsTransMatrix.close(); 
+	ifsTransMatrix.clear();
 	ifsStageStructFile >> sstruct.survival;
 
 	float devCoeff, survCoeff;
-	ifsStageStructFile >> sstruct.fecDens >> sstruct.fecStageDens >> name; // 'name' is FecStageWtsFile
-	if (name != "NULL") {
-		ifsFecDens.open((Inputs + name).c_str());
-		ReadStageWeights(1);
+	string fecStgWtsFile;
+	ifsStageStructFile >> sstruct.fecDens >> sstruct.fecStageDens >> fecStgWtsFile;
+	if (fecStgWtsFile != "NULL") {
+		ifsFecDens.open((inputDir + fecStgWtsFile).c_str());
+		ReadStageWeights(pSpecies, 1);
 		ifsFecDens.close(); 
 		ifsFecDens.clear();
 	}
-	ifsStageStructFile >> sstruct.devDens >> devCoeff >> sstruct.devStageDens >> name; // 'name' is DevStageWtsFile
-	if (name != "NULL") {
-		ifsDevDens.open((Inputs + name).c_str());
-		ReadStageWeights(2);
+	string devStgWtsFile;
+	ifsStageStructFile >> sstruct.devDens >> devCoeff >> sstruct.devStageDens >> devStgWtsFile;
+	if (devStgWtsFile != "NULL") {
+		ifsDevDens.open((inputDir + devStgWtsFile).c_str());
+		ReadStageWeights(pSpecies, 2);
 		ifsDevDens.close(); 
 		ifsDevDens.clear();
 	}
-	ifsStageStructFile >> sstruct.survDens >> survCoeff >> sstruct.survStageDens >> name; // 'name' is SurvStageWtsFile
-	if (name != "NULL") {
-		ifsSurvDens.open((Inputs + name).c_str());
-		ReadStageWeights(3);
+	string survStgWtsFile;
+	ifsStageStructFile >> sstruct.survDens >> survCoeff >> sstruct.survStageDens >> survStgWtsFile;
+	if (survStgWtsFile != "NULL") {
+		ifsSurvDens.open((inputDir + survStgWtsFile).c_str());
+		ReadStageWeights(pSpecies, 3);
 		ifsSurvDens.close(); 
 		ifsSurvDens.clear();
 	}
@@ -5595,71 +5603,64 @@ int ReadStageStructure()
 }
 
 //---------------------------------------------------------------------------
-int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season)
+int ReadTransitionMatrix(Species* pSpecies, short nstages, short nsexesDem, short hab, short season)
 {
 	int ii;
 	int minAge;
 	float ss, dd;
 	string header;
-	demogrParams dem = pSpecies->getDemogrParams();
 
 	// read header line
-	for (int i = 0; i < (nstages * nsexesDem) + 2; i++)
-	{
+	for (int i = 0; i < (nstages * nsexesDem) + 2; i++) {
 		ifsTransMatrix >> header;
 	}
 
-	if (matrix != NULL) {
-		for (int j = 0; j < matrixsize; j++) delete[] matrix[j];
-		delete[] matrix;
-		matrix = NULL; matrixsize = 0;
+	if (gMatrix != nullptr) {
+		for (int j = 0; j < gMatrixSize; j++) delete[] gMatrix[j];
+		delete[] gMatrix;
+		gMatrix = nullptr; 
+		gMatrixSize = 0;
 	}
 
-	if (dem.repType != 2) { // asexual or implicit sexual model
+	if (nsexesDem != 2) { // asexual or implicit sexual model
 	// create a temporary matrix
-		matrix = new float* [nstages];
-		matrixsize = nstages;
+		gMatrix = new float* [nstages];
+		gMatrixSize = nstages;
 		for (int i = 0; i < nstages; i++)
-			matrix[i] = new float[nstages];
+			gMatrix[i] = new float[nstages];
 
-		for (int i = 0; i < nstages; i++)
-		{ // i = row; j = coloumn
+		for (int i = 0; i < nstages; i++) { 
 			ifsTransMatrix >> header;
-			for (int j = 0; j < nstages; j++)
-			{
-				ifsTransMatrix >> matrix[j][i];
+			for (int j = 0; j < nstages; j++) {
+				ifsTransMatrix >> gMatrix[j][i];
 			}
-			ifsTransMatrix >> minAge; pSpecies->setMinAge(i, 0, minAge);
+			ifsTransMatrix >> minAge; 
+			pSpecies->setMinAge(i, 0, minAge);
 		}
 
 		for (int j = 1; j < nstages; j++)
-			pSpecies->setFec(j, 0, matrix[j][0]);
-		for (int j = 0; j < nstages; j++)
-		{
+			pSpecies->setFec(j, 0, gMatrix[j][0]);
+
+		for (int j = 0; j < nstages; j++) {
 			ss = 0.0; dd = 0.0;
-			for (int i = 0; i < nstages; i++)
-			{
-				if (i == j) ss = matrix[j][i];
-				if (i == (j + 1)) dd = matrix[j][i];
+			for (int i = 0; i < nstages; i++) {
+				if (i == j) ss = gMatrix[j][i];
+				if (i == (j + 1)) dd = gMatrix[j][i];
 			}
 			pSpecies->setSurv(j, 0, ss + dd);
-			if ((ss + dd) > 0.0f)
-				pSpecies->setDev(j, 0, dd / (ss + dd));
-			else
-				pSpecies->setDev(j, 0, 0.0);
+			pSpecies->setDev(j, 0, (ss + dd) > 0.0f ? dd / (ss + dd) : 0.0);
 		}
 	}
 	else { // complex sexual model
-		matrix = new float* [nstages * 2];
-		matrixsize = nstages * 2;
+		gMatrix = new float* [nstages * 2];
+		gMatrixSize = nstages * 2;
 		for (int j = 0; j < nstages * 2; j++)
-			matrix[j] = new float[nstages * 2 - 1];
+			gMatrix[j] = new float[nstages * 2 - 1];
 
-		for (int i = 0; i < nstages * 2 - 1; i++)
-		{ // i = row; j = coloumn
+		for (int i = 0; i < nstages * 2 - 1; i++) {
 			ifsTransMatrix >> header;
 			for (int j = 0; j < nstages * 2; j++) 
-				ifsTransMatrix >> matrix[j][i];
+				ifsTransMatrix >> gMatrix[j][i];
 			if (i == 0) {
 				ifsTransMatrix >> minAge; 
 				pSpecies->setMinAge(i, 0, minAge); 
@@ -5675,38 +5676,35 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 		}
 
 		ii = 1;
-		for (int j = 2; j < nstages * 2; j++)
-		{
+		for (int j = 2; j < nstages * 2; j++) {
 			if (j % 2 == 0)
-				pSpecies->setFec(ii, 1, matrix[j][0]);
+				pSpecies->setFec(ii, 1, gMatrix[j][0]);
 			else {
-				pSpecies->setFec(ii, 0, matrix[j][0]);
+				pSpecies->setFec(ii, 0, gMatrix[j][0]);
 				ii++;
 			}
 		}
 		// survival and development of male juveniles
-		pSpecies->setSurv(0, 1, (matrix[0][0] + matrix[0][1]));
-		if ((matrix[0][0] + matrix[0][1]) > 0.0)
-			pSpecies->setDev(0, 1, (matrix[0][1] / (matrix[0][0] + matrix[0][1])));
+		pSpecies->setSurv(0, 1, (gMatrix[0][0] + gMatrix[0][1]));
+		if ((gMatrix[0][0] + gMatrix[0][1]) > 0.0)
+			pSpecies->setDev(0, 1, (gMatrix[0][1] / (gMatrix[0][0] + gMatrix[0][1])));
 		else
 			pSpecies->setDev(0, 1, 0.0);
 		// survival and development of female juveniles
-		pSpecies->setSurv(0, 0, (matrix[1][0] + matrix[1][2]));
-		if ((matrix[1][0] + matrix[1][2]) > 0.0)
-			pSpecies->setDev(0, 0, (matrix[1][2] / (matrix[1][0] + matrix[1][2])));
+		pSpecies->setSurv(0, 0, (gMatrix[1][0] + gMatrix[1][2]));
+		if ((gMatrix[1][0] + gMatrix[1][2]) > 0.0)
+			pSpecies->setDev(0, 0, (gMatrix[1][2] / (gMatrix[1][0] + gMatrix[1][2])));
 		else
 			pSpecies->setDev(0, 0, 0.0);
 		// survival and development of stages 1+
 		ii = 1;
-		//	for (int j = 2; j < sstruct.nStages*2; j++) 
-		for (int j = 2; j < nstages * 2; j++)
-		{
+		for (int j = 2; j < nstages * 2; j++) {
 			ss = 0.0; dd = 0.0;
 			if (j % 2 == 0) { // males
 				for (int i = 0; i < nstages * 2 - 1; i++)
 				{
-					if (j == i + 1) ss = matrix[j][i];
-					if (j == i - 1) dd = matrix[j][i];
+					if (j == i + 1) ss = gMatrix[j][i];
+					if (j == i - 1) dd = gMatrix[j][i];
 				}
 				pSpecies->setSurv(ii, 1, (ss + dd));
 				if ((ss + dd) > 0.0)
@@ -5715,10 +5713,9 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 					pSpecies->setDev(ii, 1, 0.0);
 			}
 			else { // females
-				for (int i = 0; i < nstages * 2; i++)
-				{
-					if (j == i + 1) ss = matrix[j][i];
-					if (j == i - 1) dd = matrix[j][i];
+				for (int i = 0; i < nstages * 2; i++) {
+					if (j == i + 1) ss = gMatrix[j][i];
+					if (j == i - 1) dd = gMatrix[j][i];
 				}
 				pSpecies->setSurv(ii, 0, (ss + dd));
 				if ((ss + dd) > 0.0)
@@ -5730,19 +5727,19 @@ int ReadTransitionMatrix(short nstages, short nsexesDem, short hab, short season
 		}
 	}
 
-	if (matrix != NULL) {
-		for (int j = 0; j < matrixsize; j++)
-			delete[] matrix[j];
-		delete[] matrix;
-		matrix = NULL; 
-		matrixsize = 0;
+	if (gMatrix != nullptr) {
+		for (int j = 0; j < gMatrixSize; j++)
+			delete[] gMatrix[j];
+		delete[] gMatrix;
+		gMatrix = nullptr;
+		gMatrixSize = 0;
 	}
 
 	return 0;
 }
 
 //---------------------------------------------------------------------------
-int ReadStageWeights(int option)
+int ReadStageWeights(Species* pSpecies, int option)
 {
 	string header;
 	int i, j, n;
@@ -5750,22 +5747,22 @@ int ReadStageWeights(int option)
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
 
-	if (dem.repType != 2) 
-		n = sstruct.nStages;
-	else 
-		n = sstruct.nStages * gMaxNbSexes;
-
+	int n = sstruct.nStages;
+	if (dem.repType == 2) n *= 2;
+	
 	switch (option) {
 
 	case 1: { // fecundity
 		// create stage weights matrix
 		pSpecies->createDDwtFec(n);
-		for (i = 0; i < n + 1; i++) ifsFecDens >> header;
+		for (i = 0; i < n + 1; i++) 
+			ifsFecDens >> header;
 		// read coefficients
 		for (i = 0; i < n; i++) {
 			ifsFecDens >> header;
 			for (j = 0; j < n; j++) {
-				ifsFecDens >> f; pSpecies->setDDwtFec(j, i, f);
+				ifsFecDens >> f; 
+				pSpecies->setDDwtFec(j, i, f);
 			}
 		}
 		break;
@@ -5774,12 +5771,14 @@ int ReadStageWeights(int option)
 	case 2: { // development
 		//create stage weights matrix
 		pSpecies->createDDwtDev(n);
-		for (i = 0; i < n + 1; i++) ifsDevDens >> header;
+		for (i = 0; i < n + 1; i++) 
+			ifsDevDens >> header;
 		//read coefficients
 		for (i = 0; i < n; i++) {
 			ifsDevDens >> header;
 			for (j = 0; j < n; j++) {
-				ifsDevDens >> f; pSpecies->setDDwtDev(j, i, f);
+				ifsDevDens >> f; 
+				pSpecies->setDDwtDev(j, i, f);
 			}
 		}
 		break;
@@ -5794,7 +5793,8 @@ int ReadStageWeights(int option)
 		for (i = 0; i < n; i++) {
 			ifsSurvDens >> header;
 			for (j = 0; j < n; j++) {
-				ifsSurvDens >> f; pSpecies->setDDwtSurv(j, i, f);
+				ifsSurvDens >> f;
+				pSpecies->setDDwtSurv(j, i, f);
 			}
 		}
 		break;

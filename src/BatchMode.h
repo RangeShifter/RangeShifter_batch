@@ -176,7 +176,7 @@ void FileHeadersOK(string);
 void SimulnCountError(string);
 
 void RunBatch();
-int ReadParameters(Landscape*);
+int ReadParameters(Landscape*, speciesMap_t& allSpecies);
 int ReadLandFile(Landscape*);
 void ReadSpLandFile(
 	ifstream& ifsSpLand,
@@ -186,14 +186,15 @@ void ReadSpLandFile(
 	const int& nbSpecies
 );
 int ReadDynLandFile(Landscape*);
-int ReadStageStructure();
+int ReadStageStructure(speciesMap_t& allSpecies);
 int ReadTransitionMatrix(
-	short,	// no. of stages
-	short,	// no. of sexes represented for demography 
-	short,	// habitat index
-	short		// season
+	Species* pSpecies,
+	short nstages, 
+	short nsexesDem, 
+	short hab, 
+	short season
 );
-int ReadStageWeights(int);
+int ReadStageWeights(Species* pSpecies, int option);
 int ReadEmigration();
 int ReadTransferFile(Landscape*);
 int ReadTransferKernels(transferRules, const landParams&);
