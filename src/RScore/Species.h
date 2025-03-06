@@ -237,6 +237,7 @@ public:
 	float getMaxK(); // return highest carrying capacity over all habitats
 	void deleteHabK();
 
+	void setNbStages(const int nbStg) { nStages = nbStg; }
 	void setStage(const stageParams stgPar);
 	stageParams getStageParams();
 	void setDemogr(const demogrParams dem);

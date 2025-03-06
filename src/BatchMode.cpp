@@ -869,15 +869,23 @@ bool CheckParameterFile()
 		}
 
 		ifsParamFile >> inLocalExtProb;
-		if ((gUsesPatches || inGradient == 4) && inLocalExtProb != 0.0) {
+		if (gUsesPatches && inLocalExtProb != 0.0) {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLogOfs << "localExtProb must be zero for patch-based models or if Gradient is set to 4." << endl;
+			batchLogOfs << "LocalExtProb must be zero for patch-based models." << endl;
 			nbErrors++;
 		}
 		else if (inLocalExtProb < 0.0 || inLocalExtProb > 1.0) {
 			BatchError(whichFile, whichLine, 20, "LocalExtProb");
 			nbErrors++;
 		}
+
+
+		ifsParamFile >> inNbStages;
+		if (inNbStages < 1) {
+			BatchError(whichFile, whichLine, 21, "NbStages");
+			nbErrors++;
+		}
+		else gSpInputOpt.at(simNb).at(inSp).nbStages = inNbStages;
 
 		ifsParamFile >> inRepro;
 		if (!(inRepro == 0 || inRepro == 1 || inRepro == 2)) {
@@ -886,6 +894,12 @@ bool CheckParameterFile()
 		}
 		else gSpInputOpt.at(simNb).at(inSp).reproType = inRepro;
 		
+		ifsParamFile >> inRepSeasons;
+		if (inRepSeasons < 1) {
+			BatchError(whichFile, whichLine, 21, "RepSeasons");
+			nbErrors++;
+		}
+
 		ifsParamFile >> inPropMales;
 		if (inRepro > 0 
 			&& (inPropMales <= 0.0 || inPropMales >= 1.0)) {
@@ -5502,9 +5516,11 @@ int ReadParameters(Landscape* pLandscape, speciesMap_t& allSpecies)
 	pSpecies->setLocalExtProb(locExtProb);
 
 	// Demographic parameters
-	//ifsParamFile >> dem.;
+	int nbStg;
+	ifsParamFile >> nbStg >> dem.repType >> dem.repSeasons;
 	ifsParamFile >> dem.propMales >> dem.harem >> dem.bc >> dem.lambda;
 	pSpecies->setDemogr(dem);
+	if (gUsesStageStruct) pSpecies->setNbStages(nbStg);
 
 	// Artificial landscape
 	if (gLandType == 9) {
