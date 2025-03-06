@@ -289,13 +289,19 @@ void Species::setStage(const stageParams s) {
 	disperseOnLoss = s.disperseOnLoss;
 }
 
-stageParams Species::getStageParams(void) {
+stageParams Species::getStageParams() {
 	stageParams s;
-	s.nStages = nStages; s.repInterval = repInterval; s.maxAge = maxAge;
-	s.survival = survival; s.probRep = probRep;
-	s.fecDens = fecDens; s.fecStageDens = fecStageDens;
-	s.devDens = devDens; s.devStageDens = devStageDens;
-	s.survDens = survDens; s.survStageDens = survStageDens;
+	s.nStages = nStages; 
+	s.repInterval = repInterval; 
+	s.maxAge = maxAge;
+	s.survival = survival; 
+	s.probRep = probRep;
+	s.fecDens = fecDens; 
+	s.fecStageDens = fecStageDens;
+	s.devDens = devDens; 
+	s.devStageDens = devStageDens;
+	s.survDens = survDens; 
+	s.survStageDens = survStageDens;
 	s.disperseOnLoss = disperseOnLoss;
 	return s;
 }

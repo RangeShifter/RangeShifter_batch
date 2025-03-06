@@ -725,6 +725,9 @@ bool CheckParameterFile()
 	ifsParamFile >> header; if (header != "minK") nbErrors++;
 	ifsParamFile >> header; if (header != "maxK") nbErrors++;
 	ifsParamFile >> header; if (header != "LocalExtProb") nbErrors++;
+	ifsParamFile >> header; if (header != "NbStages") nbErrors++;
+	ifsParamFile >> header; if (header != "Reproduction") nbErrors++;
+	ifsParamFile >> header; if (header != "RepSeasons") nbErrors++;
 	ifsParamFile >> header; if (header != "PropMales") nbErrors++;
 	ifsParamFile >> header; if (header != "Harem") nbErrors++;
 	ifsParamFile >> header; if (header != "bc") nbErrors++;
@@ -863,6 +866,17 @@ bool CheckParameterFile()
 				batchLogOfs << "maxK must be greater than minK" << endl;
 				nbErrors++;
 			}
+		}
+
+		ifsParamFile >> inLocalExtProb;
+		if ((gUsesPatches || inGradient == 4) && inLocalExtProb != 0.0) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLogOfs << "localExtProb must be zero for patch-based models or if Gradient is set to 4." << endl;
+			nbErrors++;
+		}
+		else if (inLocalExtProb < 0.0 || inLocalExtProb > 1.0) {
+			BatchError(whichFile, whichLine, 20, "LocalExtProb");
+			nbErrors++;
 		}
 
 		ifsParamFile >> inRepro;
@@ -4253,10 +4267,18 @@ int CheckInitFile(string indir)
 			batchLogOfs << "SeedType must be 0 for an artificial landscape"
 				<< endl;
 		}
-		if (!gUseSpeciesDist.at(spNb) && seedtype == 1) {
-			BatchError(filetype, line, 0, " "); 
+		if (!gUseSpeciesDist.at(spNb)) {
+			if (seedtype == 1) {
+				BatchError(filetype, line, 0, " ");
+				errors++;
+				batchLogOfs << "SeedType is 1 but there is no species distribution map in the SpeciesLandFile"
+					<< endl;
+			}
+		}
+		else if (seedtype != 1) {
+			BatchError(filetype, line, 0, " ");
 			errors++;
-			batchLogOfs << "SeedType is 1 but there is no species distribution map in the SpeciesLandFile"
+			batchLogOfs << "Species distribution map specified in SpeciesLandFile, but SeedType is not 1."
 				<< endl;
 		}
 		if (seedtype == 0) {
@@ -5435,7 +5457,6 @@ int ReadParameters(Landscape* pLandscape, speciesMap_t& allSpecies)
 {
 	int errorCode = 0;
 	landParams paramsLand = pLandscape->getLandParams();
-	demogrParams dem = pSpecies->getDemogrParams();
 
 	if (!ifsParamFile.is_open()) {
 		cout << endl << "ReadParameters(): ERROR - ParameterFile is not open" << endl;
@@ -5449,6 +5470,7 @@ int ReadParameters(Landscape* pLandscape, speciesMap_t& allSpecies)
 
 	ifsParamFile >> sp;
 	Species* pSpecies = allSpecies.at(sp);
+	demogrParams dem = pSpecies->getDemogrParams();
 
 	// Environmental gradient
 	envGradParams paramsGrad;
@@ -5480,6 +5502,7 @@ int ReadParameters(Landscape* pLandscape, speciesMap_t& allSpecies)
 	pSpecies->setLocalExtProb(locExtProb);
 
 	// Demographic parameters
+	//ifsParamFile >> dem.;
 	ifsParamFile >> dem.propMales >> dem.harem >> dem.bc >> dem.lambda;
 	pSpecies->setDemogr(dem);
 
@@ -6394,20 +6417,25 @@ int ReadSettlement()
 }
 
 //---------------------------------------------------------------------------
-int ReadInitialisation(Landscape* pLandscape)
+int ReadInitialisation(Landscape* pLandscape, speciesMap_t& allSpecies)
 {
 	landParams paramsLand = pLandscape->getLandParams();
-	demogrParams dem = pSpecies->getDemogrParams();
-	stageParams sstruct = pSpecies->getStageParams();
 	string inputDir = paramsSim->getDir(1);
 
 	int simNb, maxcells;
 	float totalProps;
 	int errorCode = 0;
 
+	species_id sp;
+	ifsInitFile >> sp;
+	Species* pSpecies = allSpecies.at(sp);
+	demogrParams dem = pSpecies->getDemogrParams();
+	stageParams sstruct = pSpecies->getStageParams();
+
+	initParams init;
 	ifsInitFile >> simNb >> init.seedType >> init.freeType >> init.spDistType;
 
-	if (init.seedType == 1 && !paramsLand.useSpDist) 
+	if (init.seedType == 1 && !gUseSpeciesDist.at(sp)) 
 		errorCode = 601;
 
 	if (paramsLand.usesPatches) 
@@ -6717,10 +6745,9 @@ void RunBatch()
 				int nbSpecies = thisSimulation.second.size();
 				for (int s = 0; s < nbSpecies; s++) {
 					
-					read_error = ReadParameters(pLandscape);
+					read_error = ReadParameters(pLandscape, allSpecies);
 					if (read_error) areParamsOk = false;
-					if (gUsesStageStruct)
-						ReadStageStructure();
+					if (gUsesStageStruct) ReadStageStructure(allSpecies);
 					read_error = ReadEmigration();
 					if (read_error) areParamsOk = false;
 					read_error = ReadTransferFile(pLandscape);
