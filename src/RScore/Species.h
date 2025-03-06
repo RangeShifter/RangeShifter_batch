@@ -419,6 +419,7 @@ public:
 	bool doesOutputPaths() const { return output.outPaths; }
 #endif
 
+	void setInitParams(initParams initPars) { init = initPars; }
 	initParams getInitParams() const { return init; }
 	initInd getInitInd(int ix);
 	void addInitInd(initInd iind);

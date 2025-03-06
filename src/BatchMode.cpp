@@ -6131,10 +6131,8 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 
 	if (!paramsLand.isArtificial) { // imported landscape
 		if (paramsLand.rasterType == 0) { // habitat codes
-			if (trfr.habMort)
-			{ // habitat-dependent step mortality
-				for (int i = 0; i < paramsLand.nHabMax; i++)
-				{
+			if (trfr.habMort) { // habitat-dependent step mortality
+				for (int i = 0; i < paramsLand.nHabMax; i++) {
 					ifsTransferFile >> inHabMort;
 					pSpecies->setHabMort(i, inHabMort);
 				}
@@ -6474,9 +6472,9 @@ int ReadInitialisation(Landscape* pLandscape, speciesMap_t& allSpecies)
 		totalProps = 0.0;
 		for (int stg = 1; stg < sstruct.nStages; stg++) {
 			ifsInitFile >> propStage;
-			if(init.seedType!=2){
+			if (init.seedType != 2) {
 				totalProps += propStage;
-				paramsInit->setProp(stg, propStage);
+				pSpecies->setProp(stg, propStage);
 			}
 		}
 		if (init.seedType!=2 && totalProps != 1.0) { 
@@ -6484,7 +6482,7 @@ int ReadInitialisation(Landscape* pLandscape, speciesMap_t& allSpecies)
 		}
 	}
 
-	paramsInit->setInit(init);
+	pSpecies->setInitParams(init);
 
 	switch (init.seedType) {
 	case 0: // free initialisation
@@ -6509,8 +6507,10 @@ int ReadInitialisation(Landscape* pLandscape, speciesMap_t& allSpecies)
 		break;
 
 	case 1: // from species distribution
-		// Nothing, initialisation takes place in Community::initialise()
+		
+		// Nothing, input is processed in ReadSpLand()
 		break;
+
 	case 2: // from initial individuals file
 		if (init.indsFile != prevInitialIndsFile) {
 			// read and store the list of individuals to be initialised
@@ -6526,11 +6526,11 @@ int ReadInitialisation(Landscape* pLandscape, speciesMap_t& allSpecies)
 }
 
 //---------------------------------------------------------------------------
-int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
+int ReadInitIndsFile(Species* pSpecies, int option, Landscape* pLandscape, string indsfile) {
 	string header;
 	landParams paramsLand = pLandscape->getLandParams();
 	demogrParams dem = pSpecies->getDemogrParams();
-	initParams init = paramsInit->getInit();
+	initParams init = pSpecies->getInitParams();
 
 	if (option == 0) { // open file and read header line
 		ifsInitIndsFile.open(indsfile.c_str());
@@ -6541,7 +6541,7 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 		if (dem.repType > 0) nheaders++;
 		if (dem.stageStruct) nheaders += 2;
 		for (int i = 0; i < nheaders; i++) ifsInitIndsFile >> header;
-		paramsInit->resetInitInds();
+		pSpecies->resetInitInds();
 		//	return 0;
 	}
 
@@ -6588,13 +6588,14 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 		}
 		for (int i = 0; i < ninds; i++) {
 			totinds++;
-			paramsInit->addInitInd(iind);
+			pSpecies->addInitInd(iind);
 		}
 
 		iind.year = gEmptyVal;
 		ifsInitIndsFile >> iind.year;
 		if (iind.year == gEmptyVal || ifsInitIndsFile.eof())
 			must_stop = true;
+
 	} // end of while loop
 
 	if (ifsInitIndsFile.is_open()) ifsInitIndsFile.close();

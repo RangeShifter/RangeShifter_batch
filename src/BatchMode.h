@@ -202,7 +202,12 @@ void ReadTransferSMS(transferRules, const landParams&);
 int ReadTransferCRW(transferRules, const landParams&);
 int ReadSettlement();
 int ReadInitialisation(Landscape*);
-int ReadInitIndsFile(int, Landscape*, string);
+int ReadInitIndsFile(
+	Species* pSpecies, 
+	int option, 
+	Landscape* pLandscape, 
+	string indsfile
+);
 int ReadGeneticsFile(ifstream& ifs, Landscape*);
 int ReadTraitsFile(ifstream& ifs, const int& whichSim);
 
