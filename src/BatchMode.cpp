@@ -5123,30 +5123,37 @@ int ReadGeneticsFile(speciesMap_t& allSpecies, ifstream& ifs, Landscape* pLandsc
 	return 0;
 }
 
-int ReadTraitsFile(ifstream& ifs, const int& nbRowsToRead) {
+int ReadTraitsFile(speciesMap_t& allSpecies, ifstream& ifs, map<species_id, spInputOptions> simOptionsMap) {
 
-	pSpecies->clearTraitTable();
+	Species* pSpecies;
 	int prevsimNb = -998;
 
 	if (ifs.is_open()) {
+
 		//read first header line
 		string strLine, entry;
 
+		int nbRowsToRead = 1; // need to read species to get correct number
 		for (int i = 0; i < nbRowsToRead; i++) {
 			
 			// Read input row
 			std::getline(ifs, strLine);
-
+			
 			// Read input parameters as strings
 			stringstream inLine(strLine);
 			vector<string> parameters;
-			while (std::getline(inLine, entry, '	'))
-			{
+			while (std::getline(inLine, entry, '	')) {
 				parameters.push_back(entry);
+			}
+			if (i == 0) {
+				species_id sp = stoi(parameters[1]);
+				nbRowsToRead = simOptionsMap.at(sp).nbTraitFileRows;
+				pSpecies = allSpecies.at(sp);
+				pSpecies->clearTraitTable();
 			}
 
 			// Create trait from parameters 
-			setUpSpeciesTrait(parameters);
+			setUpSpeciesTrait(pSpecies, parameters);
 		}
 	}
 	else {
@@ -5156,49 +5163,49 @@ int ReadTraitsFile(ifstream& ifs, const int& nbRowsToRead) {
 }
 
 // Set up a trait from input parameters and add it Species
-void setUpSpeciesTrait(vector<string> parameters) {
+void setUpSpeciesTrait(Species* pSpecies, vector<string> parameters) {
 	// Assumes all input is correct, errors have been handled by CheckTraits
 
 	const int genomeSize = pSpecies->getGenomeSize();
-	TraitType traitType = stringToTraitType(parameters[1]);
-	const sex_t sex = stringToSex(parameters[2]);
+	TraitType traitType = stringToTraitType(parameters[2]);
+	const sex_t sex = stringToSex(parameters[3]);
 	if (sex != NA) traitType = addSexDepToTrait(traitType, sex);
-	const set<int> positions = stringToLoci(parameters[3], parameters[4], genomeSize);
-	const ExpressionType expressionType = stringToExpressionType(parameters[5]);
+	const set<int> positions = stringToLoci(parameters[4], parameters[5], genomeSize);
+	const ExpressionType expressionType = stringToExpressionType(parameters[6]);
 
 	// Initial allele distribution parameters
-	const DistributionType initDist = stringToDistributionType(parameters[6]);
-	const map<GenParamType, float> initParams = stringToParameterMap(parameters[7]);
+	const DistributionType initDist = stringToDistributionType(parameters[7]);
+	const map<GenParamType, float> initParams = stringToParameterMap(parameters[8]);
 
 	// Initial dominance distribution parameters
-	const DistributionType initDomDist = stringToDistributionType(parameters[8]);
-	const map<GenParamType, float> initDomParams = stringToParameterMap(parameters[9]);
+	const DistributionType initDomDist = stringToDistributionType(parameters[9]);
+	const map<GenParamType, float> initDomParams = stringToParameterMap(parameters[10]);
 
 	// Mutation parameters
-	bool isInherited = (parameters[10] == "TRUE");
+	bool isInherited = (parameters[11] == "TRUE");
 	DistributionType mutationDistribution = isInherited ? 
-		stringToDistributionType(parameters[11]) : 
+		stringToDistributionType(parameters[12]) : 
 		DistributionType::NONE;
 	map<GenParamType, float> mutationParameters;
 	if (isInherited) {
-		mutationParameters = stringToParameterMap(parameters[12]);
+		mutationParameters = stringToParameterMap(parameters[13]);
 	}
 
 	// Dominance distribution parameters
-	const DistributionType dominanceDist = stringToDistributionType(parameters[13]);
-	const map<GenParamType, float> dominanceParams = stringToParameterMap(parameters[14]);
+	const DistributionType dominanceDist = stringToDistributionType(parameters[14]);
+	const map<GenParamType, float> dominanceParams = stringToParameterMap(parameters[15]);
 
-	float mutationRate = isInherited ? stof(parameters[15]) : 0.0;
+	float mutationRate = isInherited ? stof(parameters[16]) : 0.0;
 	
-	parameters[16].erase(
+	parameters[17].erase(
 		// send windows line endings to hell where they belong
-		remove(parameters[16].begin(), parameters[16].end(), '\r'),
-		parameters[16].end()
+		remove(parameters[17].begin(), parameters[17].end(), '\r'),
+		parameters[17].end()
 	);
-	const bool isOutput = parameters[16] == "TRUE";
+	const bool isOutput = parameters[18] == "TRUE";
+	int ploidy = pSpecies->getDemogrParams().repType == 0 ? 1 : 2;
 
 	// Create species trait
-	int ploidy = gNbSexesDisp;
 	unique_ptr<SpeciesTrait> trait(new SpeciesTrait(
 		traitType, sex, 
 		positions, expressionType, 
@@ -6715,7 +6722,7 @@ void RunBatch()
 					if (gAnyUsesGenetics) {
 						read_error = ReadGeneticsFile(allSpecies, ifsGeneticsFile, pLandscape);
 						if (read_error) areParamsOk = false;
-						read_error = ReadTraitsFile(allSpecies, ifsTraitsFile, gNbTraitFileRows[i]);
+						read_error = ReadTraitsFile(allSpecies, ifsTraitsFile, simOptionsMap);
 						if (read_error) areParamsOk = false;
 					}
 				}

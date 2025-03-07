@@ -212,7 +212,7 @@ int ReadGeneticsFile(speciesMap_t& allSpecies, ifstream& ifs, Landscape*);
 int ReadTraitsFile(speciesMap_t& allSpecies, ifstream& ifs, const int& whichSim);
 
 // Helper functions to ReadGenetics and ReadTraits
-void setUpSpeciesTrait(vector<string>);
+void setUpSpeciesTrait(Species* pSpecies, vector<string>);
 DistributionType stringToDistributionType(const std::string& str);
 ExpressionType stringToExpressionType(const std::string& str);
 map<GenParamType, float> stringToParameterMap(string parameters);
