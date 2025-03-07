@@ -183,7 +183,7 @@ void ReadSpLandFile(
 	map<species_id, string>& pathsToPatchMaps,
 	map<species_id, string>& pathsToCostMaps,
 	map<species_id, string>& pathsToSpDistMaps,
-	const int& nbSpecies
+	map<species_id, bool>& whichUseSpDist
 );
 int ReadDynLandFile(Landscape*);
 int ReadStageStructure(speciesMap_t& allSpecies);
@@ -196,10 +196,10 @@ int ReadTransitionMatrix(
 );
 int ReadStageWeights(Species* pSpecies, int option);
 int ReadEmigration(speciesMap_t& allSpecies);
-int ReadTransferFile(speciesMap_t& allSpecies, Landscape*);
-int ReadTransferKernels(transferRules, const landParams&);
-void ReadTransferSMS(transferRules, const landParams&);
-int ReadTransferCRW(transferRules, const landParams&);
+int ReadTransferFile(speciesMap_t& allSpecies, landParams paramsLand, int transferType, map<species_id, bool>& useSpDist);
+int ReadTransferKernels(speciesMap_t& allSpecies, landParams paramsLand);
+void ReadTransferSMS(speciesMap_t& allSpecies, const landParams&, map<species_id, bool>& useSpDist);
+int ReadTransferCRW(speciesMap_t& allSpecies, const landParams&);
 int ReadSettlement(speciesMap_t& allSpecies);
 int ReadInitialisation(Landscape* pLandscape, speciesMap_t& allSpecies);
 int ReadInitIndsFile(
@@ -208,8 +208,8 @@ int ReadInitIndsFile(
 	Landscape* pLandscape, 
 	string indsfile
 );
-int ReadGeneticsFile(ifstream& ifs, Landscape*);
-int ReadTraitsFile(ifstream& ifs, const int& whichSim);
+int ReadGeneticsFile(speciesMap_t& allSpecies, ifstream& ifs, Landscape*);
+int ReadTraitsFile(speciesMap_t& allSpecies, ifstream& ifs, const int& whichSim);
 
 // Helper functions to ReadGenetics and ReadTraits
 void setUpSpeciesTrait(vector<string>);

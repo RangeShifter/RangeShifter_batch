@@ -126,7 +126,7 @@ struct transferRules {
 	bool twinKern;
 	bool habMort;
 	short moveType;
-	bool costMap;
+	bool usesCosts;
 	short movtTrait[2];
 };
 struct trfrKernelParams {
@@ -539,7 +539,7 @@ private:
 	float rho;				// CRW correlation coefficient
 	short habDimTrfr;		// dimension of habitat-dependent step mortality and costs matrices
 	int* habCost;			// habitat costs
-	bool costMap;			// import cost map from file?
+	bool usesCosts;			// import cost map from file?
 	bool straightenPath;	// straighten path after decision not to settle
 	bool fullKernel;		// used to indicate special case when density-independent emigration
 	// is 1.0, and kernel-based movement within the natal cell is used

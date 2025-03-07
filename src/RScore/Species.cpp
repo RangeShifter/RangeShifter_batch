@@ -92,7 +92,7 @@ Species::Species(
 	indVarTrfr = false;
 	twinKern = false;
 	habMort = false;
-	costMap = false;
+	usesCosts = false;
 	for (int i = 0; i < gMaxNbStages; i++) {
 		for (int j = 0; j < gMaxNbSexes; j++) {
 			meanDist1[i][j] = 100.0f; 
@@ -662,16 +662,20 @@ void Species::setTrfrRules(const transferRules t) {
 	twinKern = t.twinKern;
 	habMort = t.habMort;
 	moveType = t.moveType; 
-	costMap = t.costMap;
+	usesCosts = t.usesCosts;
 }
 
-transferRules Species::getTransferRules(void) {
+transferRules Species::getTransferRules() {
 	transferRules t;
-	t.usesMovtProc = usesMovtProcess; t.stgDep = stgDepTrfr; t.sexDep = sexDepTrfr;
-	t.distMort = distMort; t.indVar = indVarTrfr;
+	t.usesMovtProc = usesMovtProcess; 
+	t.stgDep = stgDepTrfr;
+	t.sexDep = sexDepTrfr;
+	t.distMort = distMort; 
+	t.indVar = indVarTrfr;
 	t.twinKern = twinKern;
 	t.habMort = habMort;
-	t.moveType = moveType; t.costMap = costMap;
+	t.moveType = moveType; 
+	t.usesCosts = usesCosts;
 	return t;
 }
 

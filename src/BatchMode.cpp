@@ -4951,25 +4951,28 @@ void ReadSpLandFile(ifstream& ifsSpLand,
 	map<species_id, string>& pathsToPatchMaps,
 	map<species_id, string>& pathsToCostMaps,
 	map<species_id, string>& pathsToSpDistMaps,
-	const int& nbSpecies
+	map<species_id, bool>& whichUseSpDist
 ) {
 	int inSp;
-	string patchMap, costMap, SpDistMap;
+	string patchMap, usesCosts, SpDistMap;
+	int nbSpecies = whichUseSpDist.size();
+
 	for (int i = 0; i < nbSpecies; i++) {
 
-		ifsSpLand >> inSp >> patchMap >> costMap >> SpDistMap;
+		ifsSpLand >> inSp >> patchMap >> usesCosts >> SpDistMap;
 
 		patchMap = patchMap == "NULL" ? " " :
 			paramsSim->getDir(1) + patchMap;
 		pathsToPatchMaps.emplace(inSp, patchMap);
 
-		if (!(costMap == "NULL" || costMap == "none")) {
+		if (!(usesCosts == "NULL" || usesCosts == "none")) {
 			// only populate with species for which costs apply
-			costMap = paramsSim->getDir(1) + costMap;
-			pathsToCostMaps.emplace(inSp, costMap);
+			usesCosts = paramsSim->getDir(1) + usesCosts;
+			pathsToCostMaps.emplace(inSp, usesCosts);
 		}
 
-		pathsToSpDistMaps.emplace(inSp, SpDistMap);
+		if (whichUseSpDist.at(inSp))
+			pathsToSpDistMaps.emplace(inSp, SpDistMap);
 	}
 }
 
@@ -5057,15 +5060,10 @@ void flushHeaders(ifstream& ifs) {
 	// ... and do nothing with it 
 }
 
-int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
+int ReadGeneticsFile(speciesMap_t& allSpecies, ifstream& ifs, Landscape* pLandscape) {
 
 	string indir = paramsSim->getDir(1);
-	bool outputGeneValues, outputWeirCockerham, outputWeirHill;
-	int outputStartGenetics, outputGeneticInterval;
 	set<int> patchList;
-
-	//not ideal to reset these in here 
-	pSpecies->resetGeneticParameters();
 
 	if (ifs.is_open()) {
 		string line, value;
@@ -5080,16 +5078,24 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 			parameters.push_back(value);
 
 		// Assumes all input is correct after errors being handled by CheckGenetics
-		int genomeSize = stoi(parameters[1]);
-		set<int> chrEnds = stringToChromosomeEnds(parameters[2], genomeSize);
-		float recombinationRate = parameters[3] == "#" ? 0.0 : stof(parameters[3]);
-		outputGeneValues = (parameters[4] == "TRUE");
-		outputWeirCockerham = (parameters[5] == "TRUE");
-		outputWeirHill = (parameters[6] == "TRUE");
-		outputStartGenetics = stoi(parameters[7]);
-		outputGeneticInterval = stoi(parameters[8]);
+		species_id sp = stoi(parameters[1]);
+		Species* pSpecies = allSpecies.at(sp);
+		// not ideal to reset these in here 
+		pSpecies->resetGeneticParameters();
 
-		string inPatches = parameters[9];
+		int genomeSize = stoi(parameters[2]);
+		set<int> chrEnds = stringToChromosomeEnds(parameters[3], genomeSize);
+		float recombinationRate = parameters[3] == "#" ? 0.0 : stof(parameters[4]);
+
+		outputParams out = pSpecies->getOutputParams();
+		out.outputGenes = (parameters[5] == "TRUE");
+		out.outputWeirCockerham = (parameters[6] == "TRUE");
+		out.outputWeirHill = (parameters[7] == "TRUE");
+		out.outputStartGenetics = stoi(parameters[8]);
+		out.outputGeneticInterval = stoi(parameters[9]);
+		pSpecies->setOutputParams(out);
+
+		string inPatches = parameters[10];
 		string patchSamplingOption;
 		int nPatchesToSample = 0;
 		if (inPatches != "all" && inPatches != "random" && inPatches != "random_occupied") {
@@ -5101,16 +5107,15 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		else {
 			patchSamplingOption = inPatches;
 			if (inPatches == "random" || inPatches == "random_occupied")
-				nPatchesToSample = stoi(parameters[10]);
+				nPatchesToSample = stoi(parameters[11]);
 			// patchList remains empty, filled when patches are sampled every gen
 		}
-		const string strNbInds = parameters[11];
+		const string strNbInds = parameters[12];
 		const int nbStages = pSpecies->getStageParams().nStages;
-		set<int> stagesToSampleFrom = stringToStages(parameters[12], nbStages);
+		set<int> stagesToSampleFrom = stringToStages(parameters[13], nbStages);
 
-		pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate,
+		pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate, patchSamplingOption,
 			patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
-		paramsSim->setGeneticSim(patchSamplingOption, outputGeneValues, outputWeirCockerham, outputWeirHill, outputStartGenetics, outputGeneticInterval);
 	}
 	else {
 		throw runtime_error("GeneticsFile is not open.");
@@ -5863,7 +5868,7 @@ int ReadEmigration(speciesMap_t& allSpecies)
 	int nbLinesToRead = 1; // need to read first line to set correct value
 	for (int line = 0; line < nbLinesToRead; line++) {
 
-		ifsEmigrationFile >> sp >> simulationNb >> inDensDep >> inFullKernel
+		ifsEmigrationFile >> simulationNb >> sp >> inDensDep >> inFullKernel
 			>> inStgDep >> inSexDep >> inIndVar >> inEmigstage;
 
 		if (isFirstLine) {
@@ -5921,27 +5926,21 @@ int ReadEmigration(speciesMap_t& allSpecies)
 }
 
 //---------------------------------------------------------------------------
-int ReadTransferFile(Landscape* pLandscape)
+int ReadTransferFile(speciesMap_t& allSpecies, landParams paramsLand, int transferType, map<species_id, bool>& useSpDist)
 {
 	int error = 0;
-	landParams paramsLand = pLandscape->getLandParams();
-	transferRules trfr = pSpecies->getTransferRules();
-
-	// new local variable to replace former global variable
-	int TransferType = trfr.usesMovtProc ? trfr.moveType : 0; 
-
-	switch (TransferType) {
+	switch (transferType) {
 
 	case 0: // negative exponential dispersal kernel
-		error = ReadTransferKernels(trfr, paramsLand);
+		error = ReadTransferKernels(allSpecies, paramsLand);
 		break; // end of negative exponential dispersal kernel
 
 	case 1: // SMS
-		ReadTransferSMS(trfr, paramsLand);
+		ReadTransferSMS(allSpecies, paramsLand, useSpDist);
 		break; // end of SMS
 
 	case 2: // CRW
-		error = ReadTransferCRW(trfr, paramsLand);
+		error = ReadTransferCRW(allSpecies, paramsLand);
 		break; // end of CRW
 
 	default:
@@ -5952,39 +5951,45 @@ int ReadTransferFile(Landscape* pLandscape)
 	return error;
 }
 
-int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
+int ReadTransferKernels(speciesMap_t& allSpecies, landParams paramsLand) {
 
 	int inKernelType, inDistMort, inIndVar, simNb, inStageDep, inSexDep, inStage, inSex;
 	float flushMort;
 	int simNbFirstLine = 0;
-	stageParams stageStruct = pSpecies->getStageParams();
-	demogrParams dem = pSpecies->getDemogrParams();
+	stageParams stageStruct;
+	demogrParams dem;
+	transferRules trfr;
 	trfrKernelParams kernParams;
 	int sexKernels = 0;
+	species_id sp;
+	Species* pSpecies;
 	bool isFirstLine = true;
 	int errorCode = 0;
 
-	// set no.of lines assuming maximum stage- and sex-dependency
-	int Nlines = stageStruct.nStages == 0 ? gNbSexesDisp : gNbSexesDisp * stageStruct.nStages;
+	int nbLinesToRead = 1;
+	for (int line = 0; line < nbLinesToRead; line++) {
 
-	for (int line = 0; line < Nlines; line++) {
-
-		ifsTransferFile >> simNb >> inStageDep >> inSexDep >> inKernelType >> inDistMort >> inIndVar;
+		ifsTransferFile >> simNb >> sp >> inStageDep >> inSexDep 
+			>> inKernelType >> inDistMort >> inIndVar;
+		
 		if (isFirstLine) {
 			simNbFirstLine = simNb;
+			pSpecies = allSpecies.at(sp);
+			stageStruct = pSpecies->getStageParams();
+			dem = pSpecies->getDemogrParams();
+			trfr = pSpecies->getTransferRules();
+
 			trfr.twinKern = (inKernelType == 1);
 			trfr.distMort = (inDistMort == 1);
 			sexKernels = 2 * inStageDep + inSexDep;
 			trfr.indVar = (inIndVar == 1);
 			trfr.sexDep = (inSexDep == 1);
-			// update no.of lines according to known stage- and sex-dependency
 			trfr.stgDep = (inStageDep == 1);
-			if (trfr.stgDep) {
-				Nlines = inSexDep ? stageStruct.nStages * gNbSexesDisp : stageStruct.nStages;
-			}
-			else {
-				Nlines = inSexDep ? gNbSexesDisp : 1;
-			}
+
+			// Set expected nb of lines of input
+			if (trfr.stgDep) nbLinesToRead *= stageStruct.nStages;
+			if (trfr.sexDep) nbLinesToRead *= dem.repType == 0 ? 1 : 2;
+			
 			pSpecies->setTrfrRules(trfr);
 		}
 		if (simNb != simNbFirstLine) { // serious problem
@@ -5996,10 +6001,8 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 			if (sexKernels == 1 || sexKernels == 3) 
 				errorCode = 401;
 		}
-		else {
-			if (sexKernels == 2 || sexKernels == 3) 
+		else if (sexKernels == 2 || sexKernels == 3) 
 				errorCode = 403;
-		}
 
 		switch (sexKernels) {
 
@@ -6009,33 +6012,31 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 			break;
 
 		case 1: // sex-dependent
-			if (trfr.twinKern)
-			{
+			if (trfr.twinKern) {
 				ifsTransferFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
 			}
 			else {
-				ifsTransferFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
+				ifsTransferFile >> kernParams.meanDist1; 
+				kernParams.meanDist2 = kernParams.meanDist1; 
 				kernParams.probKern1 = 1.0;
 			}
 			pSpecies->setSpKernTraits(0, inSex, kernParams, paramsLand.resol);
-
 			break;
 
 		case 2: // stage-dependent
-			if (trfr.twinKern)
-			{
+			if (trfr.twinKern) {
 				ifsTransferFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
 			}
 			else {
-				ifsTransferFile >> kernParams.meanDist1; kernParams.meanDist2 = kernParams.meanDist1; 
+				ifsTransferFile >> kernParams.meanDist1;
+				kernParams.meanDist2 = kernParams.meanDist1; 
 				kernParams.probKern1 = 1.0;
 			}
 			pSpecies->setSpKernTraits(inStage, 0, kernParams, paramsLand.resol);
 			break;
 
 		case 3: // sex- & stage-dependent
-			if (trfr.twinKern)
-			{
+			if (trfr.twinKern) {
 				ifsTransferFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
 			}
 			else {
@@ -6057,20 +6058,25 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 
 		if (isFirstLine) pSpecies->setTrfrRules(trfr);
 		isFirstLine = false;
+
 	} // end of lines for loop
+
 	return errorCode;
 }
 
-void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
+void ReadTransferSMS(speciesMap_t& allSpecies, const landParams& paramsLand, map<species_id, bool>& useSpDist) {
 
 	int inIndVar, inSMType, inAlphaDB, inBetaDB, inStraightenPath, simNb;
 	float inHabMort, flushHabMort, inMortHabitat, inMortMatrix;
 	int inCostHab, flushCostHab, inCostMatrix;
 	trfrMovtParams move;
+	species_id sp;
 
-	ifsTransferFile >> simNb >> inIndVar >> move.pr >> move.prMethod >> move.dp
+	ifsTransferFile >> simNb >> sp >> inIndVar >> move.pr >> move.prMethod >> move.dp
 		>> move.memSize >> move.gb >> move.goalType >> inAlphaDB >> inBetaDB
 		>> inStraightenPath >> inSMType >> move.stepMort;
+	Species* pSpecies = allSpecies.at(sp);
+	transferRules trfr = pSpecies->getTransferRules();
 
 	trfr.indVar = (inIndVar == 1);
 	if (move.goalType == 2) { // dispersal bias
@@ -6095,8 +6101,7 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 		}
 	}
 	else { // artificial landscape
-		if (trfr.habMort)
-		{ // habitat-dependent step mortality
+		if (trfr.habMort) { // habitat-dependent step mortality
 			// values are for habitat (hab=1) then for matrix (hab=0)
 			ifsTransferFile >> inMortHabitat >> inMortMatrix;
 			pSpecies->setHabMort(1, inMortHabitat);
@@ -6106,12 +6111,12 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 			ifsTransferFile >> flushHabMort >> flushHabMort;
 		}
 	}
-	trfr.costMap = (gNameCostFile != "NULL") ? true : false;
+
+	trfr.usesCosts = useSpDist.at(sp);
 
 	if (!paramsLand.isArtificial) { // imported landscape
 		if (paramsLand.rasterType == 0) { // habitat codes
-			if (trfr.costMap)
-			{
+			if (trfr.usesCosts) {
 				for (int i = 0; i < paramsLand.nHabMax; i++) 
 					ifsTransferFile >> flushCostHab;
 			}
@@ -6124,8 +6129,7 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 		}
 	}
 	else { // artificial landscape
-		if (trfr.costMap) // should not occur 
-		{
+		if (trfr.usesCosts) { // should not occur 
 			ifsTransferFile >> flushCostHab >> flushCostHab;
 		}
 		else { // not costMap
@@ -6139,33 +6143,30 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 	pSpecies->setSpMovtTraits(move);
 }
 
-int ReadTransferCRW(transferRules trfr, const landParams& paramsLand) {
+int ReadTransferCRW(speciesMap_t& allSpecies, const landParams& paramsLand) {
 
 	int inIndVar, inStraightenPath, inSMconst, simNb;
 	float inHabMort, flushHabMort;
-
+	species_id sp;
 	int error = 0;
 	trfrMovtParams move;
-	ifsTransferFile >> simNb >> inIndVar;
-	if (inIndVar == 0) trfr.indVar = false;
-	else trfr.indVar = true;
+	ifsTransferFile >> simNb >> sp >> inIndVar;
+	Species* pSpecies = allSpecies.at(sp);
+	transferRules trfr = pSpecies->getTransferRules();
+	trfr.indVar = inIndVar != 0;
 
 	ifsTransferFile >> move.stepLength >> move.rho;
 	ifsTransferFile >> inStraightenPath >> inSMconst >> move.stepMort;
 
-	if (inSMconst == 0) trfr.habMort = false;
-	else trfr.habMort = true;
-
-	if (inStraightenPath == 0) move.straightenPath = false;
-	else move.straightenPath = true;
+	trfr.habMort = inSMconst != 0;
+	move.straightenPath = inStraightenPath != 0;
 
 	//Habitat-dependent per step mortality
 	if (trfr.habMort && paramsLand.rasterType != 0)
 		error = 434;
 
 	if (!paramsLand.isArtificial && paramsLand.rasterType == 0) { // imported habitat codes landscape
-		if (trfr.habMort)
-		{ // habitat-dependent step mortality
+		if (trfr.habMort) { // habitat-dependent step mortality
 			for (int i = 0; i < paramsLand.nHabMax; i++) {
 				ifsTransferFile >> inHabMort;
 				pSpecies->setHabMort(i, inHabMort);
@@ -6182,32 +6183,31 @@ int ReadTransferCRW(transferRules trfr, const landParams& paramsLand) {
 }
 
 //---------------------------------------------------------------------------
-int ReadSettlement()
+int ReadSettlement(speciesMap_t& allSpecies)
 {
-	int Nlines, simNb, simNbFirstLine = 0, inStageDep, inSexDep, inStage, inSex;
+	int simNb, simNbFirstLine = 0, inStageDep, inSexDep, inStage, inSex;
 	bool isFirstline = true;
 	bool mustFindMate;
 	int errorCode = 0;
-	demogrParams dem = pSpecies->getDemogrParams();
-	stageParams sstruct = pSpecies->getStageParams();
-	transferRules trfr = pSpecies->getTransferRules();
-	settleType sett = pSpecies->getSettle();
+	demogrParams dem;
+	stageParams sstruct;
+	transferRules trfr;
+	settleType sett;
 	settleRules srules;
 	settleSteps ssteps;
 	settleTraits settleDD;
 	int sexSettle = 0, inSettleType = 0, inDensDep, inIndVar, inFindMate;
+	species_id sp;
+	Species* pSpecies;
 
 	isFirstline = true;
 
-	// set no.of lines assuming maximum stage- and sex-dependency
-	if (sstruct.nStages == 0) Nlines = gNbSexesDisp;
-	else Nlines = sstruct.nStages * gNbSexesDisp;
+	int nbLinesToRead = 1;
+	for (int line = 0; line < nbLinesToRead; line++) {
 
-	for (int line = 0; line < Nlines; line++) {
-
-		ifsSettlementFile >> simNb >> inStageDep >> inSexDep >> inStage >> inSex;
-		if (!trfr.usesMovtProc)
-		{ // dispersal kernel
+		ifsSettlementFile >> simNb >> sp >> inStageDep >> inSexDep >> inStage >> inSex;
+		
+		if (!trfr.usesMovtProc) { // dispersal kernel
 			ifsSettlementFile >> inSettleType >> inFindMate;
 		}
 		else {
@@ -6216,20 +6216,23 @@ int ReadSettlement()
 		mustFindMate = (inFindMate == 1);
 
 		if (isFirstline) {
+
 			simNbFirstLine = simNb;
+			pSpecies = allSpecies.at(sp);
+			dem = pSpecies->getDemogrParams();
+			sstruct = pSpecies->getStageParams();
+			trfr = pSpecies->getTransferRules();
+			sett = pSpecies->getSettle();
+
 			sett.stgDep = (inStageDep == 1);
 			sett.sexDep = (inSexDep == 1);
-			if (trfr.usesMovtProc) {// no ind var for kernels
-				sett.indVar = (inIndVar == 1);
-			}
-			else {
-				sett.indVar = false;
-			}
+			sett.indVar = trfr.usesMovtProc ? inIndVar == 1 : false; // no ind var for kernels
 			pSpecies->setSettle(sett);
 
 			// update no.of lines according to known stage- and sex-dependency
-			Nlines = sett.sexDep ? gNbSexesDisp : 1;
-			if (sett.stgDep) Nlines *= sstruct.nStages;
+			int nbSexesDisp = dem.repType == 0 ? 1 : 2;
+			if (sett.sexDep) nbLinesToRead *= nbSexesDisp;
+			if (sett.stgDep) nbLinesToRead *= sstruct.nStages;
 		}
 
 		if (simNb != simNbFirstLine) { // serious problem
@@ -6255,6 +6258,7 @@ int ReadSettlement()
 
 			pSpecies->setSettRules(stageToSet, sexToSet, srules);
 			pSpecies->setSteps(stageToSet, sexToSet, ssteps);
+
 			if (srules.densDep) {
 				pSpecies->setSpSettTraits(stageToSet, sexToSet, settleDD);
 			}
@@ -6323,28 +6327,11 @@ int ReadSettlement()
 			int sexToSet = sett.sexDep ? inSex : 0;
 			srules = pSpecies->getSettRules(stageToSet, sexToSet);
 
-			switch (inSettleType) {
-			case 0:
-				srules.wait = false;
-				srules.goToNeighbourLocn = false;
-				break;
-			case 1:
-				srules.wait = true;
-				srules.goToNeighbourLocn = false;
-				break;
-			case 2:
-				srules.wait = false;
-				srules.goToNeighbourLocn = true;
-				break;
-			case 3:
-				srules.wait = true;
-				srules.goToNeighbourLocn = true;
-				break;
-			}
+			srules.wait = inSettleType == 1 || inSettleType == 3;
+			srules.goToNeighbourLocn = inSettleType == 2 || inSettleType == 3;
 			srules.findMate = mustFindMate;
 			pSpecies->setSettRules(stageToSet, sexToSet, srules);
 
-			// Surely this can be simplified further
 			if (!sett.stgDep && dem.stageStruct) {
 				// Must set other stages
 				if (!sett.sexDep) {
@@ -6361,16 +6348,8 @@ int ReadSettlement()
 					}
 				}
 			}
-			if (!sett.sexDep && hasMales) {
-				// Must set males
-				if (!sett.stgDep) {
-					pSpecies->setSettRules(0, 1, srules);
-					// males of other stages already set above
-					// actually stage 0 males too?
-				}
-				else {
-					pSpecies->setSettRules(stageToSet, 1, srules);
-				}
+			if (!sett.sexDep && hasMales) { // Must set males
+				pSpecies->setSettRules(sett.stgDep ? stageToSet : 0, 1, srules);
 			}
 		} // end of dispersal kernel
 
@@ -6621,7 +6600,13 @@ void RunBatch()
 		if (gLandType != 9) { // imported landscape
 			string pathToHabMap = paramsSim->getDir(1) + gHabMapName;			
 			map<species_id, string> pathsToPatchMaps, pathsToCostMaps, pathsToSpDistMaps;
-			ReadSpLandFile(ifsSpLandFile, pathsToPatchMaps, pathsToCostMaps, pathsToSpDistMaps);
+			ReadSpLandFile(
+				ifsSpLandFile,
+				pathsToPatchMaps,
+				pathsToCostMaps,
+				pathsToSpDistMaps,
+				gUseSpeciesDist
+			);
 
 			if (pLandscape->readLandscape(0, pathToHabMap, pathsToPatchMaps) != 0) {
 				cout << "Error reading landscape" << endl;
@@ -6720,17 +6705,17 @@ void RunBatch()
 					if (gUsesStageStruct) ReadStageStructure(allSpecies);
 					read_error = ReadEmigration(allSpecies);
 					if (read_error) areParamsOk = false;
-					read_error = ReadTransferFile(pLandscape);
+					read_error = ReadTransferFile(allSpecies, pLandscape->getLandParams(), gTransferType, gUseSpeciesDist);
 					if (read_error) areParamsOk = false;
-					read_error = ReadSettlement();
+					read_error = ReadSettlement(allSpecies);
 					if (read_error) areParamsOk = false;
-					read_error = ReadInitialisation(pLandscape);
+					read_error = ReadInitialisation(pLandscape, allSpecies);
 					if (read_error) areParamsOk = false;
 
 					if (gAnyUsesGenetics) {
-						read_error = ReadGeneticsFile(ifsGeneticsFile, pLandscape);
+						read_error = ReadGeneticsFile(allSpecies, ifsGeneticsFile, pLandscape);
 						if (read_error) areParamsOk = false;
-						read_error = ReadTraitsFile(ifsTraitsFile, gNbTraitFileRows[i]);
+						read_error = ReadTraitsFile(allSpecies, ifsTraitsFile, gNbTraitFileRows[i]);
 						if (read_error) areParamsOk = false;
 					}
 				}

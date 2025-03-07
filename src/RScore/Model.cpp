@@ -271,7 +271,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 			if (ppLand.isDynamic && updateland) {
 				if (trfr.usesMovtProc && trfr.moveType == 1) { // SMS
-					if (!trfr.costMap) pLandscape->resetCosts(); // in case habitats have changed
+					if (!trfr.usesCosts) pLandscape->resetCosts(); // in case habitats have changed
 				}
 				// apply effects of landscape change to species present in changed patches
 				for (auto& [sp, pSpecies] : allSpecies)
@@ -405,7 +405,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					// (provided that at least one has already occurred)
 					pLandscape->applyCostChanges(lastChange, iCostChg);
 				}
-				if (!trfr.costMap) pLandscape->resetCosts(); // in case habitats have changed
+				if (!trfr.usesCosts) pLandscape->resetCosts(); // in case habitats have changed
 			}
 		}
 
@@ -589,7 +589,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 		if (ppLand.usesPatches) {
 			outPar << "PATCH FILE: " << gPatchMapName << endl;
 		}
-		if (trfr.costMap) {
+		if (trfr.usesCosts) {
 			outPar << "COSTS FILE: " << name_costfile << endl;
 		}
 #else
@@ -1106,7 +1106,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 			if (trfr.moveType == 1) { // SMS
 				trfrSMSTraits move = pSpecies->getSpSMSTraits();
 				straightenPath = move.straightenPath;
-				if (trfr.costMap) {
+				if (trfr.usesCosts) {
 					outPar << "SMS\tcosts from imported cost map" << endl;
 				}
 				else {
