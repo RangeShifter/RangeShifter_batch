@@ -195,13 +195,13 @@ int ReadTransitionMatrix(
 	short season
 );
 int ReadStageWeights(Species* pSpecies, int option);
-int ReadEmigration();
-int ReadTransferFile(Landscape*);
+int ReadEmigration(speciesMap_t& allSpecies);
+int ReadTransferFile(speciesMap_t& allSpecies, Landscape*);
 int ReadTransferKernels(transferRules, const landParams&);
 void ReadTransferSMS(transferRules, const landParams&);
 int ReadTransferCRW(transferRules, const landParams&);
-int ReadSettlement();
-int ReadInitialisation(Landscape*);
+int ReadSettlement(speciesMap_t& allSpecies);
+int ReadInitialisation(Landscape* pLandscape, speciesMap_t& allSpecies);
 int ReadInitIndsFile(
 	Species* pSpecies, 
 	int option, 

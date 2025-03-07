@@ -5845,49 +5845,50 @@ int ReadStageWeights(Species* pSpecies, int option)
 }
 
 //---------------------------------------------------------------------------
-int ReadEmigration()
+int ReadEmigration(speciesMap_t& allSpecies)
 {
 	int errorCode = 0;
 	int inFullKernel, inDensDep, inStgDep, inSexDep, inIndVar;
-	int Nlines, simulationNb, simNbFirstLine = 0, inStage, inSex, inEmigstage;
+	int simulationNb, simNbFirstLine = 0, inStage, inSex, inEmigstage;
 	float inEp, inD0, inAlpha, inBeta;
 	bool isFirstLine = true;
-	demogrParams dem = pSpecies->getDemogrParams();
-	stageParams sstruct = pSpecies->getStageParams();
-	emigRules emig = pSpecies->getEmigRules();
+	int nbSexesDisp;
 	emigTraits emigrationTraits;
+	species_id sp;
+	Species* pSpecies;
+	demogrParams dem;
+	stageParams sstruct;
+	emigRules emig;
 
-	// set no.of lines assuming maximum stage- and sex-dependency
-	if (sstruct.nStages == 0) Nlines = gNbSexesDisp;
-	else Nlines = sstruct.nStages * gNbSexesDisp;
+	int nbLinesToRead = 1; // need to read first line to set correct value
+	for (int line = 0; line < nbLinesToRead; line++) {
 
-	for (int line = 0; line < Nlines; line++) {
-
-		ifsEmigrationFile >> simulationNb >> inDensDep >> inFullKernel 
-				 >> inStgDep >> inSexDep >> inIndVar >> inEmigstage;
+		ifsEmigrationFile >> sp >> simulationNb >> inDensDep >> inFullKernel
+			>> inStgDep >> inSexDep >> inIndVar >> inEmigstage;
 
 		if (isFirstLine) {
+			pSpecies = allSpecies.at(sp);
+			dem = pSpecies->getDemogrParams();
+			sstruct = pSpecies->getStageParams();
+			emig = pSpecies->getEmigRules();
+
 			simNbFirstLine = simulationNb;
 			emig.densDep = (inDensDep == 1);
 			emig.stgDep = (inStgDep == 1);
 			emig.indVar = (inIndVar == 1);
 			emig.sexDep = (inSexDep == 1);
+
 			if (inEmigstage >= 0 && inEmigstage < sstruct.nStages)
 				emig.emigStage = inEmigstage;
 			else emig.emigStage = 0;
-			// update no.of lines according to known stage- and sex-dependency
-			if (emig.stgDep) {
-				if (emig.sexDep) Nlines = sstruct.nStages * gNbSexesDisp;
-				else Nlines = sstruct.nStages;
-			}
-			else {
-				if (emig.sexDep) Nlines = gNbSexesDisp;
-				else Nlines = 1;
-			}
 
-			if (inFullKernel == 0) pSpecies->setFullKernel(false); 
-			else pSpecies->setFullKernel(true);
+			// Set nb lines to correct value
+			if (emig.stgDep) nbLinesToRead *= sstruct.nStages;
+			if (emig.sexDep) nbLinesToRead *= nbSexesDisp;
+
+			pSpecies->setFullKernel(inFullKernel != 0);
 			pSpecies->setEmigRules(emig);
+			isFirstLine = false;
 		}
 
 		if (simulationNb != simNbFirstLine) { // serious problem
@@ -5898,7 +5899,7 @@ int ReadEmigration()
 		// ERROR MESSAGES SHOULD NEVER BE ACTIVATED ---------------------------------
 		if (dem.repType == 0 && emig.sexDep) {
 			errorCode = 301;
-		}
+		} 
 		if (!dem.stageStruct && emig.stgDep) {
 			errorCode = 303;
 		}
@@ -5906,64 +5907,14 @@ int ReadEmigration()
 
 		ifsEmigrationFile >> inEp >> inD0 >> inAlpha >> inBeta;
 
-		if (emig.sexDep) {
-			if (emig.stgDep) {
-				if (emig.densDep) {
-					emigrationTraits.d0 = inD0; 
-					emigrationTraits.alpha = inAlpha;
-					emigrationTraits.beta = inBeta;
-				}
-				else {
-					emigrationTraits.d0 = inEp; 
-					emigrationTraits.alpha = emigrationTraits.beta = 0.0;
-				}
-				pSpecies->setSpEmigTraits(inStage, inSex, emigrationTraits);
-			}
-			else { // !emig.stgDep
-
-				if (emig.densDep) {
-					emigrationTraits.d0 = inD0;
-					emigrationTraits.alpha = inAlpha; 
-					emigrationTraits.beta = inBeta;
-				}
-				else {
-					emigrationTraits.d0 = inEp; 
-					emigrationTraits.alpha = emigrationTraits.beta = 0.0;
-				}
-				pSpecies->setSpEmigTraits(0, inSex, emigrationTraits);
-
-			}
-		}
-		else { // !emig.sexDep
-			if (emig.stgDep) {
-				if (emig.densDep) {
-					emigrationTraits.d0 = inD0; 
-					emigrationTraits.alpha = inAlpha; 
-					emigrationTraits.beta = inBeta;
-					pSpecies->setSpEmigTraits(inStage, 0, emigrationTraits);
-				}
-				else {
-					emigrationTraits.d0 = inEp; 
-					emigrationTraits.alpha = emigrationTraits.beta = 0.0;
-					pSpecies->setSpEmigTraits(inStage, 0, emigrationTraits);
-				}
-			}
-			else { // !emig.stgDep
-				if (emig.densDep) {
-					emigrationTraits.d0 = inD0; 
-					emigrationTraits.alpha = inAlpha; 
-					emigrationTraits.beta = inBeta;
-				}
-				else {
-					emigrationTraits.d0 = inEp; 
-					emigrationTraits.alpha = emigrationTraits.beta = 0.0;
-				}
-				pSpecies->setSpEmigTraits(0, 0, emigrationTraits);
-			}
-		}
-
-		isFirstLine = false;
-
+		emigrationTraits.d0 = emig.densDep ? inD0 : inEp;
+		emigrationTraits.alpha = emig.densDep ? inAlpha : 0.0;
+		emigrationTraits.beta = emig.densDep ? inBeta : 0.0;
+		pSpecies->setSpEmigTraits(
+			emig.stgDep ? inStage : 0,
+			emig.sexDep ? inSex : 0,
+			emigrationTraits
+		);
 	} // end of Nlines for loop
 
 	return errorCode;
@@ -6759,13 +6710,15 @@ void RunBatch()
 				ReadSimParameters();
 
 				// Read one line of input per simulation and species
-				int nbSpecies = thisSimulation.second.size();
+				auto& simOptionsMap = thisSimulation.second;
+				int nbSpecies = simOptionsMap.size();
+
 				for (int s = 0; s < nbSpecies; s++) {
 					
 					read_error = ReadParameters(pLandscape, allSpecies);
 					if (read_error) areParamsOk = false;
 					if (gUsesStageStruct) ReadStageStructure(allSpecies);
-					read_error = ReadEmigration();
+					read_error = ReadEmigration(allSpecies);
 					if (read_error) areParamsOk = false;
 					read_error = ReadTransferFile(pLandscape);
 					if (read_error) areParamsOk = false;
