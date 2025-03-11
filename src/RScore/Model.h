@@ -61,9 +61,9 @@ using namespace std::filesystem;
 #endif
 
 #if RS_RCPP && !R_CMD
-Rcpp::List int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies);
+Rcpp::List int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies);
 #else
-int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies);
+int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies);
 #endif // RS_RCPP && !R_CMD
 
 bool CheckDirectory(const string& pathToProjDir);

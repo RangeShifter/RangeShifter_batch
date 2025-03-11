@@ -5060,7 +5060,7 @@ void flushHeaders(ifstream& ifs) {
 	// ... and do nothing with it 
 }
 
-int ReadGeneticsFile(speciesMap_t& allSpecies, ifstream& ifs) {
+int ReadGeneticsFile(speciesMap_t& simSpecies, ifstream& ifs) {
 
 	string indir = paramsSim->getDir(1);
 	set<int> patchList;
@@ -5079,7 +5079,7 @@ int ReadGeneticsFile(speciesMap_t& allSpecies, ifstream& ifs) {
 
 		// Assumes all input is correct after errors being handled by CheckGenetics
 		species_id sp = stoi(parameters[1]);
-		Species* pSpecies = allSpecies.at(sp);
+		Species* pSpecies = simSpecies.at(sp);
 		// not ideal to reset these in here 
 		pSpecies->resetGeneticParameters();
 
@@ -5123,7 +5123,7 @@ int ReadGeneticsFile(speciesMap_t& allSpecies, ifstream& ifs) {
 	return 0;
 }
 
-int ReadTraitsFile(speciesMap_t& allSpecies, ifstream& ifs, map<species_id, spInputOptions> simOptionsMap) {
+int ReadTraitsFile(speciesMap_t& simSpecies, ifstream& ifs, map<species_id, spInputOptions> simOptionsMap) {
 
 	Species* pSpecies;
 	int prevsimNb = -998;
@@ -5148,7 +5148,7 @@ int ReadTraitsFile(speciesMap_t& allSpecies, ifstream& ifs, map<species_id, spIn
 			if (i == 0) {
 				species_id sp = stoi(parameters[1]);
 				nbRowsToRead = simOptionsMap.at(sp).nbTraitFileRows;
-				pSpecies = allSpecies.at(sp);
+				pSpecies = simSpecies.at(sp);
 				pSpecies->clearTraitTable();
 			}
 
@@ -5479,7 +5479,7 @@ void ReadSimParameters() {
 }
 
 //---------------------------------------------------------------------------
-int ReadParameters(const Landscape* pLandscape, speciesMap_t& allSpecies)
+int ReadParameters(const Landscape* pLandscape, speciesMap_t& simSpecies)
 {
 	int errorCode = 0;
 	landParams paramsLand = pLandscape->getLandParams();
@@ -5495,7 +5495,7 @@ int ReadParameters(const Landscape* pLandscape, speciesMap_t& allSpecies)
 	species_id sp;
 
 	ifsParamFile >> sp;
-	Species* pSpecies = allSpecies.at(sp);
+	Species* pSpecies = simSpecies.at(sp);
 	demogrParams dem = pSpecies->getDemogrParams();
 
 	// Environmental gradient
@@ -5594,14 +5594,14 @@ int ReadParameters(const Landscape* pLandscape, speciesMap_t& allSpecies)
 }
 
 //---------------------------------------------------------------------------
-int ReadStageStructure(speciesMap_t& allSpecies)
+int ReadStageStructure(speciesMap_t& simSpecies)
 {
 	int simulation, postDestructn;
 	string inputDir = paramsSim->getDir(1);
 	species_id sp;
 
 	ifsStageStructFile >> sp;
-	Species* pSpecies = allSpecies.at(sp);
+	Species* pSpecies = simSpecies.at(sp);
 	stageParams sstruct = pSpecies->getStageParams();
 
 	ifsStageStructFile >> simulation;
@@ -5857,7 +5857,7 @@ int ReadStageWeights(Species* pSpecies, int option)
 }
 
 //---------------------------------------------------------------------------
-int ReadEmigration(speciesMap_t& allSpecies)
+int ReadEmigration(speciesMap_t& simSpecies)
 {
 	int errorCode = 0;
 	int inFullKernel, inDensDep, inStgDep, inSexDep, inIndVar;
@@ -5879,7 +5879,7 @@ int ReadEmigration(speciesMap_t& allSpecies)
 			>> inStgDep >> inSexDep >> inIndVar >> inEmigstage;
 
 		if (isFirstLine) {
-			pSpecies = allSpecies.at(sp);
+			pSpecies = simSpecies.at(sp);
 			dem = pSpecies->getDemogrParams();
 			sstruct = pSpecies->getStageParams();
 			emig = pSpecies->getEmigRules();
@@ -5933,21 +5933,21 @@ int ReadEmigration(speciesMap_t& allSpecies)
 }
 
 //---------------------------------------------------------------------------
-int ReadTransferFile(speciesMap_t& allSpecies, landParams paramsLand, int transferType, map<species_id, bool>& useSpDist)
+int ReadTransferFile(speciesMap_t& simSpecies, landParams paramsLand, int transferType, map<species_id, bool>& useSpDist)
 {
 	int error = 0;
 	switch (transferType) {
 
 	case 0: // negative exponential dispersal kernel
-		error = ReadTransferKernels(allSpecies, paramsLand);
+		error = ReadTransferKernels(simSpecies, paramsLand);
 		break; // end of negative exponential dispersal kernel
 
 	case 1: // SMS
-		ReadTransferSMS(allSpecies, paramsLand, useSpDist);
+		ReadTransferSMS(simSpecies, paramsLand, useSpDist);
 		break; // end of SMS
 
 	case 2: // CRW
-		error = ReadTransferCRW(allSpecies, paramsLand);
+		error = ReadTransferCRW(simSpecies, paramsLand);
 		break; // end of CRW
 
 	default:
@@ -5958,7 +5958,7 @@ int ReadTransferFile(speciesMap_t& allSpecies, landParams paramsLand, int transf
 	return error;
 }
 
-int ReadTransferKernels(speciesMap_t& allSpecies, landParams paramsLand) {
+int ReadTransferKernels(speciesMap_t& simSpecies, landParams paramsLand) {
 
 	int inKernelType, inDistMort, inIndVar, simNb, inStageDep, inSexDep, inStage, inSex;
 	float flushMort;
@@ -5981,7 +5981,7 @@ int ReadTransferKernels(speciesMap_t& allSpecies, landParams paramsLand) {
 		
 		if (isFirstLine) {
 			simNbFirstLine = simNb;
-			pSpecies = allSpecies.at(sp);
+			pSpecies = simSpecies.at(sp);
 			stageStruct = pSpecies->getStageParams();
 			dem = pSpecies->getDemogrParams();
 			trfr = pSpecies->getTransferRules();
@@ -6071,7 +6071,7 @@ int ReadTransferKernels(speciesMap_t& allSpecies, landParams paramsLand) {
 	return errorCode;
 }
 
-void ReadTransferSMS(speciesMap_t& allSpecies, const landParams& paramsLand, map<species_id, bool>& useSpDist) {
+void ReadTransferSMS(speciesMap_t& simSpecies, const landParams& paramsLand, map<species_id, bool>& useSpDist) {
 
 	int inIndVar, inSMType, inAlphaDB, inBetaDB, inStraightenPath, simNb;
 	float inHabMort, flushHabMort, inMortHabitat, inMortMatrix;
@@ -6082,7 +6082,7 @@ void ReadTransferSMS(speciesMap_t& allSpecies, const landParams& paramsLand, map
 	ifsTransferFile >> simNb >> sp >> inIndVar >> move.pr >> move.prMethod >> move.dp
 		>> move.memSize >> move.gb >> move.goalType >> inAlphaDB >> inBetaDB
 		>> inStraightenPath >> inSMType >> move.stepMort;
-	Species* pSpecies = allSpecies.at(sp);
+	Species* pSpecies = simSpecies.at(sp);
 	transferRules trfr = pSpecies->getTransferRules();
 
 	trfr.indVar = (inIndVar == 1);
@@ -6150,7 +6150,7 @@ void ReadTransferSMS(speciesMap_t& allSpecies, const landParams& paramsLand, map
 	pSpecies->setSpMovtTraits(move);
 }
 
-int ReadTransferCRW(speciesMap_t& allSpecies, const landParams& paramsLand) {
+int ReadTransferCRW(speciesMap_t& simSpecies, const landParams& paramsLand) {
 
 	int inIndVar, inStraightenPath, inSMconst, simNb;
 	float inHabMort, flushHabMort;
@@ -6158,7 +6158,7 @@ int ReadTransferCRW(speciesMap_t& allSpecies, const landParams& paramsLand) {
 	int error = 0;
 	trfrMovtParams move;
 	ifsTransferFile >> simNb >> sp >> inIndVar;
-	Species* pSpecies = allSpecies.at(sp);
+	Species* pSpecies = simSpecies.at(sp);
 	transferRules trfr = pSpecies->getTransferRules();
 	trfr.indVar = inIndVar != 0;
 
@@ -6190,7 +6190,7 @@ int ReadTransferCRW(speciesMap_t& allSpecies, const landParams& paramsLand) {
 }
 
 //---------------------------------------------------------------------------
-int ReadSettlement(speciesMap_t& allSpecies)
+int ReadSettlement(speciesMap_t& simSpecies)
 {
 	int simNb, simNbFirstLine = 0, inStageDep, inSexDep, inStage, inSex;
 	bool isFirstline = true;
@@ -6225,7 +6225,7 @@ int ReadSettlement(speciesMap_t& allSpecies)
 		if (isFirstline) {
 
 			simNbFirstLine = simNb;
-			pSpecies = allSpecies.at(sp);
+			pSpecies = simSpecies.at(sp);
 			dem = pSpecies->getDemogrParams();
 			sstruct = pSpecies->getStageParams();
 			trfr = pSpecies->getTransferRules();
@@ -6368,7 +6368,7 @@ int ReadSettlement(speciesMap_t& allSpecies)
 }
 
 //---------------------------------------------------------------------------
-int ReadInitialisation(const landParams& paramsLand, speciesMap_t& allSpecies)
+int ReadInitialisation(const landParams& paramsLand, speciesMap_t& simSpecies)
 {
 	string inputDir = paramsSim->getDir(1);
 
@@ -6378,7 +6378,7 @@ int ReadInitialisation(const landParams& paramsLand, speciesMap_t& allSpecies)
 
 	species_id sp;
 	ifsInitFile >> sp;
-	Species* pSpecies = allSpecies.at(sp);
+	Species* pSpecies = simSpecies.at(sp);
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
 
@@ -6696,33 +6696,37 @@ void RunBatch()
 
 			for (auto& thisSimulation : gSpInputOpt) {
 
+				int simNb = thisSimulation.first;
+				auto& simOptionsMap = thisSimulation.second;
+				// Subset species that are used in this simulation
+				speciesMap_t simSpecies;
+				for (auto& sp : views::keys(simOptionsMap)) {
+					simSpecies.emplace(sp, allSpecies.at(sp));
+				}
+
 				// Load parameters for this simulation
 				areParamsOk = true;
 				ReadSimParameters();
 
 				// Read one line of input per simulation and species
-				int simNb = thisSimulation.first;
-				auto& simOptionsMap = thisSimulation.second;
-				int nbSpecies = simOptionsMap.size();
-
-				for (int s = 0; s < nbSpecies; s++) {
-
-					read_error = ReadParameters(pLandscape, allSpecies);
+				for (int s = 0; s < simSpecies.size(); s++) {
+					// species don't have to be read in order
+					read_error = ReadParameters(pLandscape, simSpecies);
 					if (read_error) areParamsOk = false;
-					if (gUsesStageStruct) ReadStageStructure(allSpecies);
-					read_error = ReadEmigration(allSpecies);
+					if (gUsesStageStruct) ReadStageStructure(simSpecies);
+					read_error = ReadEmigration(simSpecies);
 					if (read_error) areParamsOk = false;
-					read_error = ReadTransferFile(allSpecies, paramsLand, gTransferType, gUseSpeciesDist);
+					read_error = ReadTransferFile(simSpecies, paramsLand, gTransferType, gUseSpeciesDist);
 					if (read_error) areParamsOk = false;
-					read_error = ReadSettlement(allSpecies);
+					read_error = ReadSettlement(simSpecies);
 					if (read_error) areParamsOk = false;
-					read_error = ReadInitialisation(paramsLand, allSpecies);
+					read_error = ReadInitialisation(paramsLand, simSpecies);
 					if (read_error) areParamsOk = false;
 
 					if (gAnyUsesGenetics) {
-						read_error = ReadGeneticsFile(allSpecies, ifsGeneticsFile);
+						read_error = ReadGeneticsFile(simSpecies, ifsGeneticsFile);
 						if (read_error) areParamsOk = false;
-						read_error = ReadTraitsFile(allSpecies, ifsTraitsFile, simOptionsMap);
+						read_error = ReadTraitsFile(simSpecies, ifsTraitsFile, simOptionsMap);
 						if (read_error) areParamsOk = false;
 					}
 				}
@@ -6734,9 +6738,9 @@ void RunBatch()
 						<< " on landscape no. " << to_string(land_nr) << endl;
 
 					// for batch processing, include landscape number in parameter file name
-					OutParameters(pLandscape, allSpecies);
+					OutParameters(pLandscape, simSpecies);
 
-					RunModel(pLandscape, simNb, allSpecies);
+					RunModel(pLandscape, simNb, simSpecies);
 
 				}
 				else {

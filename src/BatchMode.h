@@ -176,7 +176,7 @@ void FileHeadersOK(string);
 void SimulnCountError(string);
 
 void RunBatch();
-int ReadParameters(Landscape*, speciesMap_t& allSpecies);
+int ReadParameters(Landscape*, speciesMap_t& simSpecies);
 int ReadLandFile(Landscape*);
 void ReadSpLandFile(
 	ifstream& ifsSpLand,
@@ -186,7 +186,7 @@ void ReadSpLandFile(
 	map<species_id, bool>& whichUseSpDist
 );
 int ReadDynLandFile(Landscape*);
-int ReadStageStructure(speciesMap_t& allSpecies);
+int ReadStageStructure(speciesMap_t& simSpecies);
 int ReadTransitionMatrix(
 	Species* pSpecies,
 	short nstages, 
@@ -195,21 +195,21 @@ int ReadTransitionMatrix(
 	short season
 );
 int ReadStageWeights(Species* pSpecies, int option);
-int ReadEmigration(speciesMap_t& allSpecies);
-int ReadTransferFile(speciesMap_t& allSpecies, landParams paramsLand, int transferType, map<species_id, bool>& useSpDist);
-int ReadTransferKernels(speciesMap_t& allSpecies, landParams paramsLand);
-void ReadTransferSMS(speciesMap_t& allSpecies, const landParams&, map<species_id, bool>& useSpDist);
-int ReadTransferCRW(speciesMap_t& allSpecies, const landParams&);
-int ReadSettlement(speciesMap_t& allSpecies);
-int ReadInitialisation(const landParams& paramsLand, speciesMap_t& allSpecies);
+int ReadEmigration(speciesMap_t& simSpecies);
+int ReadTransferFile(speciesMap_t& simSpecies, landParams paramsLand, int transferType, map<species_id, bool>& useSpDist);
+int ReadTransferKernels(speciesMap_t& simSpecies, landParams paramsLand);
+void ReadTransferSMS(speciesMap_t& simSpecies, const landParams&, map<species_id, bool>& useSpDist);
+int ReadTransferCRW(speciesMap_t& simSpecies, const landParams&);
+int ReadSettlement(speciesMap_t& simSpecies);
+int ReadInitialisation(const landParams& paramsLand, speciesMap_t& simSpecies);
 int ReadInitIndsFile(
 	Species* pSpecies, 
 	int option, 
 	const landParams& paramsLand,
 	string indsfile
 );
-int ReadGeneticsFile(speciesMap_t& allSpecies, ifstream& ifs);
-int ReadTraitsFile(speciesMap_t& allSpecies, ifstream& ifs, const int& whichSim);
+int ReadGeneticsFile(speciesMap_t& simSpecies, ifstream& ifs);
+int ReadTraitsFile(speciesMap_t& simSpecies, ifstream& ifs, const int& whichSim);
 
 // Helper functions to ReadGenetics and ReadTraits
 void setUpSpeciesTrait(Species* pSpecies, vector<string>);

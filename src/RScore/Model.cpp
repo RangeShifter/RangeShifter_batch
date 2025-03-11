@@ -29,9 +29,9 @@ using namespace std::chrono;
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #if RS_RCPP && !R_CMD
-Rcpp::List RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
+Rcpp::List RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 #else
-int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
+int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 #endif
 {
 	int yr, totalInds;
@@ -45,7 +45,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 	bool anyUsesGradient = false, anySavesVisits = false;
 	set<species_id> speciesNames;
-	for (auto& [sp, pSpecies] : allSpecies) {
+	for (auto& [sp, pSpecies] : simSpecies) {
 		if (pSpecies->usesGradient()) anyUsesGradient = true;
 		if (pSpecies->savesVisits()) anySavesVisits = true;
 		speciesNames.insert(sp);
@@ -53,15 +53,15 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	bool hasMultipleReplicates = sim.reps > 1;
 
 	int maxNbSeasons = 0;
-	for (auto& [sp, pSpecies] : allSpecies) {
+	for (auto& [sp, pSpecies] : simSpecies) {
 		int nbSeasons = pSpecies->getDemogrParams().repSeasons;
 		if (nbSeasons > maxNbSeasons) maxNbSeasons = nbSeasons;
 	}
 
 	if (!ppLand.isArtificial) {
-		pComm = new Community(pLandscape, allSpecies);
+		pComm = new Community(pLandscape, simSpecies);
 		// Allocate patches and sample patches
-		pLandscape->initialise(allSpecies, ppLand);
+		pLandscape->initialise(simSpecies, ppLand);
 	}
 
 #if RS_RCPP && !R_CMD
@@ -90,10 +90,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		// Create and select sampled patches for artifical landscapes
 		if (ppLand.isArtificial) { // then need to initialise for every replicate
 			if (pComm != nullptr) delete pComm;
-			pComm = new Community(pLandscape, allSpecies);
+			pComm = new Community(pLandscape, simSpecies);
 			pLandscape->resetLand();
 			// Generate patches, sample patches
-			pLandscape->initialise(allSpecies, ppLand);
+			pLandscape->initialise(simSpecies, ppLand);
 		}
 
 		if (rep == 0) {
@@ -115,7 +115,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		if (anyUsesGradient) pLandscape->drawGradientDev();
 
 		if (ppLand.usesPatches) {
-			for (auto& [sp, pSpecies] : allSpecies) 
+			for (auto& [sp, pSpecies] : simSpecies) 
 				if (pSpecies->doesOutputConnect()) {
 					pLandscape->createConnectMatrix(sp);
 					pLandscape->outConnectHeaders(sp);
@@ -131,7 +131,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 
 		// Set up populations in the community
-		for (auto& [sp, pSpecies] : allSpecies) {
+		for (auto& [sp, pSpecies] : simSpecies) {
 			pLandscape->updateCarryingCapacity(pSpecies, 0, 0);
 			pComm->initialise(pSpecies, -1);
 		}
@@ -140,7 +140,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		Rcpp::Rcout << "RunModel(): completed initialisation " << endl;
 #endif
 
-		for (auto& [sp, pSpecies] : allSpecies) {
+		for (auto& [sp, pSpecies] : simSpecies) {
 
 			initParams init = pSpecies->getInitParams();
 			if (init.seedType == 0 && init.initFrzYr > 0)
@@ -191,7 +191,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			map<species_id, bool> mustUpdateK; 
 				// track which species should have their K re-calculated
 
-			for (auto& [sp, pSpecies] : allSpecies) {
+			for (auto& [sp, pSpecies] : simSpecies) {
 
 				mustUpdateK.emplace(sp, false);
 
@@ -234,7 +234,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			}
 
 			// Environmental gradient
-			for (auto& [sp, pSpecies] : allSpecies) {
+			for (auto& [sp, pSpecies] : simSpecies) {
 				if (pSpecies->usesGradient()) {
 					if (pSpecies->isGradientShifting(yr)) {
 						pSpecies->incrementGradOptY();
@@ -266,7 +266,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 			}
 
 			for (auto& [sp, updateK] : mustUpdateK) {
-				if (updateK) pLandscape->updateCarryingCapacity(allSpecies.at(sp), yr, chgNb);
+				if (updateK) pLandscape->updateCarryingCapacity(simSpecies.at(sp), yr, chgNb);
 			}
 			
 			if (ppLand.usesPatches) pLandscape->resetConnectMatrix();
@@ -276,12 +276,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 					if (!trfr.usesCosts) pLandscape->resetCosts(); // in case habitats have changed
 				}
 				// apply effects of landscape change to species present in changed patches
-				for (auto& [sp, pSpecies] : allSpecies)
+				for (auto& [sp, pSpecies] : simSpecies)
 					pComm->scanUnsuitablePatches(pSpecies);
 				pComm->dispersal(chgNb, yr);
 			}
 
-			for (auto& [sp, pSpecies] : allSpecies) {
+			for (auto& [sp, pSpecies] : simSpecies) {
 				if (pSpecies->isRestrictYear(yr))
 					// Extirpate populations beyond the new limits
 					pComm->scanUnsuitablePatches(pSpecies);
@@ -356,7 +356,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				}
 				// Apply age
 				pComm->ageIncrement();
-				for (auto& [sp, pSpecies] : allSpecies) {
+				for (auto& [sp, pSpecies] : simSpecies) {
 					if (pSpecies->isIndOutputYear(yr))
 						// list any individuals dying having reached maximum age
 						pComm->outInds(sp, rep, yr, -1);
@@ -373,7 +373,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 			// Connectivity Matrix
 			if (ppLand.usesPatches) {
-				for (auto& [sp, pSpecies] : allSpecies) {
+				for (auto& [sp, pSpecies] : simSpecies) {
 					if (pSpecies->isConnectOutputYear(yr))
 						pLandscape->outConnect(sp, rep, yr);
 				}
@@ -387,7 +387,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		pComm->resetPopns();
 
 		// Reset the gradient optimum
-		for (auto& [sp, pSpecies] : allSpecies) {
+		for (auto& [sp, pSpecies] : simSpecies) {
 			if (pSpecies->usesGradient())
 				pSpecies->resetOptY();
 			pSpecies->liftRangeRestriction(ppLand.dimX, ppLand.dimY);
@@ -409,7 +409,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 
 		if (ppLand.usesPatches) {
-			for (auto& [sp, pSpecies] : allSpecies) {
+			for (auto& [sp, pSpecies] : simSpecies) {
 				if (pSpecies->doesOutputConnect())
 					pLandscape->resetConnectMatrix();
 			}
@@ -417,7 +417,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		
 		pComm->closeYearlyOutputFiles();
 		
-		for (auto& [sp, pSpecies] : allSpecies) {
+		for (auto& [sp, pSpecies] : simSpecies) {
 			if (pSpecies->savesVisits())
 				pLandscape->outVisits(sp, rep, ppLand.landNum);
 		}
@@ -431,7 +431,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	} // end of the replicates loop
 
 	if (ppLand.usesPatches) {
-		for (auto& [sp, pSpecies] : allSpecies) {
+		for (auto& [sp, pSpecies] : simSpecies) {
 			if (pSpecies->doesOutputConnect()) {
 				pLandscape->deleteConnectMatrix(sp);
 				pLandscape->closeConnectOfs(sp);
@@ -440,7 +440,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	}
 
 	if (hasMultipleReplicates) {
-		for (auto& [sp, pSpecies] : allSpecies) {
+		for (auto& [sp, pSpecies] : simSpecies) {
 			if (pSpecies->doesOutputOccup()) {
 				pComm->outOccupancy(pSpecies);
 				pComm->outOccSuit(pSpecies);
@@ -503,7 +503,7 @@ bool CheckDirectory(const string& pathToProjDir)
 }
 
 //---------------------------------------------------------------------------
-void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
+void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 	double k;
 	int nsexes, nstages;
 
@@ -631,7 +631,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t allSpecies) {
 
 	outPar << endl << "SPECIES PARAMETERS" << endl;
 
-	for (auto& [sp, pSpecies] : allSpecies) {
+	for (auto& [sp, pSpecies] : simSpecies) {
 
 		outPar << endl << "SPECIES " << to_string(sp) << endl;
 
