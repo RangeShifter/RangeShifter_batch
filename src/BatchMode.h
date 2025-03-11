@@ -201,14 +201,14 @@ int ReadTransferKernels(speciesMap_t& allSpecies, landParams paramsLand);
 void ReadTransferSMS(speciesMap_t& allSpecies, const landParams&, map<species_id, bool>& useSpDist);
 int ReadTransferCRW(speciesMap_t& allSpecies, const landParams&);
 int ReadSettlement(speciesMap_t& allSpecies);
-int ReadInitialisation(Landscape* pLandscape, speciesMap_t& allSpecies);
+int ReadInitialisation(const landParams& paramsLand, speciesMap_t& allSpecies);
 int ReadInitIndsFile(
 	Species* pSpecies, 
 	int option, 
-	Landscape* pLandscape, 
+	const landParams& paramsLand,
 	string indsfile
 );
-int ReadGeneticsFile(speciesMap_t& allSpecies, ifstream& ifs, Landscape*);
+int ReadGeneticsFile(speciesMap_t& allSpecies, ifstream& ifs);
 int ReadTraitsFile(speciesMap_t& allSpecies, ifstream& ifs, const int& whichSim);
 
 // Helper functions to ReadGenetics and ReadTraits

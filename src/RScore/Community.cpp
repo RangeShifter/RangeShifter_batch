@@ -30,6 +30,7 @@ Community::Community(Landscape* pLand, speciesMap_t allSpecies) {
 	pLandscape = pLand;
 	speciesMap = allSpecies;
 	indIx = 0;
+	resetActiveSpecies(); // all species are active by default
 
 	// Populate species maps
 	for (auto& [sp, pSpecies] : allSpecies) {

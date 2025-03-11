@@ -189,10 +189,10 @@ public:
 
 	// Landscape parameters
 	void setLandParams(landParams ppp, bool batchmode);
-	landParams getLandParams();
+	landParams getLandParams() const;
 	landData getLandData();
 	void setGenLandParams(genLandParams ppp);
-	genLandParams getGenLandParams();
+	genLandParams getGenLandParams() const;
 	landOrigin getOrigin();
 
 	// Habitat codes

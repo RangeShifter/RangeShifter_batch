@@ -39,8 +39,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 	landParams ppLand = pLandscape->getLandParams();
 	envStochParams env = paramsStoch->getStoch();
-	stageParams sstruct = pSpecies->getStageParams();
-	transferRules trfr = pSpecies->getTransferRules();
+	//stageParams sstruct = pSpecies->getStageParams();
+	//transferRules trfr = pSpecies->getTransferRules();
 	simParams sim = paramsSim->getSim();
 
 	bool anyUsesGradient = false, anySavesVisits = false;
@@ -290,9 +290,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				}
 			}
 
-			// Keep track of which species are 
-			pComm->resetActiveSpecies();
-
 			// Generation loop
 			for (int gen = 0; gen < maxNbSeasons; gen++) {
 
@@ -347,6 +344,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 
 			} // end of the generation loop
 
+			pComm->resetActiveSpecies();
+
 			if (sim.usesStageStruct) {
 				if (sstruct.survival == 2) {
 					// Draw survival for all stages
@@ -393,16 +392,14 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		}
 		const int lastChange = 666666;
 		if (ppLand.usesPatches && ppLand.isDynamic && iPatchChg > 0) {
-			// apply any patch changes to reset landscape to original configuration
-			// (provided that at least one has already occurred)
+			// reset landscape patches to original configuration
 			pLandscape->applyPatchChanges(lastChange, iPatchChg);
 		}
 		if (ppLand.isDynamic) {
-			transferRules trfr = pSpecies->getTransferRules();
+			//transferRules trfr = pSpecies->getTransferRules();
 			if (trfr.usesMovtProc && trfr.moveType == 1) { // SMS
 				if (iCostChg > 0) {
-					// apply any cost changes to reset landscape to original configuration
-					// (provided that at least one has already occurred)
+					// reset landscape costs to original configuration
 					pLandscape->applyCostChanges(lastChange, iCostChg);
 				}
 				if (!trfr.usesCosts) pLandscape->resetCosts(); // in case habitats have changed

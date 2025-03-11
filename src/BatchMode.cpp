@@ -5060,7 +5060,7 @@ void flushHeaders(ifstream& ifs) {
 	// ... and do nothing with it 
 }
 
-int ReadGeneticsFile(speciesMap_t& allSpecies, ifstream& ifs, Landscape* pLandscape) {
+int ReadGeneticsFile(speciesMap_t& allSpecies, ifstream& ifs) {
 
 	string indir = paramsSim->getDir(1);
 	set<int> patchList;
@@ -5479,7 +5479,7 @@ void ReadSimParameters() {
 }
 
 //---------------------------------------------------------------------------
-int ReadParameters(Landscape* pLandscape, speciesMap_t& allSpecies)
+int ReadParameters(const Landscape* pLandscape, speciesMap_t& allSpecies)
 {
 	int errorCode = 0;
 	landParams paramsLand = pLandscape->getLandParams();
@@ -6368,9 +6368,8 @@ int ReadSettlement(speciesMap_t& allSpecies)
 }
 
 //---------------------------------------------------------------------------
-int ReadInitialisation(Landscape* pLandscape, speciesMap_t& allSpecies)
+int ReadInitialisation(const landParams& paramsLand, speciesMap_t& allSpecies)
 {
-	landParams paramsLand = pLandscape->getLandParams();
 	string inputDir = paramsSim->getDir(1);
 
 	int simNb, maxcells;
@@ -6451,7 +6450,7 @@ int ReadInitialisation(Landscape* pLandscape, speciesMap_t& allSpecies)
 	case 2: // from initial individuals file
 		if (init.indsFile != prevInitialIndsFile) {
 			// read and store the list of individuals to be initialised
-			ReadInitIndsFile(0, pLandscape, (inputDir + init.indsFile));
+			ReadInitIndsFile(pSpecies, 0, paramsLand, (inputDir + init.indsFile));
 			prevInitialIndsFile = init.indsFile;
 		}
 		break;
@@ -6463,9 +6462,8 @@ int ReadInitialisation(Landscape* pLandscape, speciesMap_t& allSpecies)
 }
 
 //---------------------------------------------------------------------------
-int ReadInitIndsFile(Species* pSpecies, int option, Landscape* pLandscape, string indsfile) {
+int ReadInitIndsFile(Species* pSpecies, int option, const landParams& paramsLand, string indsfile) {
 	string header;
-	landParams paramsLand = pLandscape->getLandParams();
 	demogrParams dem = pSpecies->getDemogrParams();
 	initParams init = pSpecies->getInitParams();
 
@@ -6589,6 +6587,7 @@ void RunBatch()
 			ifsLandFile.clear();
 			return;
 		}
+
 		landParams paramsLand = pLandscape->getLandParams();
 		paramsLand.usesPatches = gUsesPatches;
 		paramsLand.resol = gResol;
@@ -6690,11 +6689,11 @@ void RunBatch()
 			}
 
 			if (gTransferType > 0) {
-				int nbHab = paramsLand.isArtificial ? 
+				int nbHab = paramsLand.isArtificial ?
 					paramsLand.nHab : paramsLand.nHabMax;
 				pSpecies->createHabCostMort(nbHab);
 			}
-			
+
 			for (auto& thisSimulation : gSpInputOpt) {
 
 				// Load parameters for this simulation
@@ -6702,41 +6701,42 @@ void RunBatch()
 				ReadSimParameters();
 
 				// Read one line of input per simulation and species
+				int simNb = thisSimulation.first;
 				auto& simOptionsMap = thisSimulation.second;
 				int nbSpecies = simOptionsMap.size();
 
 				for (int s = 0; s < nbSpecies; s++) {
-					
+
 					read_error = ReadParameters(pLandscape, allSpecies);
 					if (read_error) areParamsOk = false;
 					if (gUsesStageStruct) ReadStageStructure(allSpecies);
 					read_error = ReadEmigration(allSpecies);
 					if (read_error) areParamsOk = false;
-					read_error = ReadTransferFile(allSpecies, pLandscape->getLandParams(), gTransferType, gUseSpeciesDist);
+					read_error = ReadTransferFile(allSpecies, paramsLand, gTransferType, gUseSpeciesDist);
 					if (read_error) areParamsOk = false;
 					read_error = ReadSettlement(allSpecies);
 					if (read_error) areParamsOk = false;
-					read_error = ReadInitialisation(pLandscape, allSpecies);
+					read_error = ReadInitialisation(paramsLand, allSpecies);
 					if (read_error) areParamsOk = false;
 
 					if (gAnyUsesGenetics) {
-						read_error = ReadGeneticsFile(allSpecies, ifsGeneticsFile, pLandscape);
+						read_error = ReadGeneticsFile(allSpecies, ifsGeneticsFile);
 						if (read_error) areParamsOk = false;
 						read_error = ReadTraitsFile(allSpecies, ifsTraitsFile, simOptionsMap);
 						if (read_error) areParamsOk = false;
 					}
 				}
-				
+
 				if (areParamsOk) {
 
-					cout << endl << "Running simulation nr. " 
+					cout << endl << "Running simulation nr. "
 						<< to_string(paramsSim->getSim().simulation)
 						<< " on landscape no. " << to_string(land_nr) << endl;
 
 					// for batch processing, include landscape number in parameter file name
 					OutParameters(pLandscape, allSpecies);
 
-					RunModel(pLandscape, i, allSpecies);
+					RunModel(pLandscape, simNb, allSpecies);
 
 				}
 				else {
@@ -6745,31 +6745,32 @@ void RunBatch()
 
 			} // end of loop through simulations
 
-			// close input files
-			ifsSimFile.close();
-			ifsSimFile.clear();
-			ifsParamFile.close();
-			ifsParamFile.clear();
-			if (gUsesStageStruct) {
-				ifsStageStructFile.close(); 
-				ifsStageStructFile.clear();
-			}
-			ifsEmigrationFile.close(); 
-			ifsEmigrationFile.clear();
-			ifsTransferFile.close(); 
-			ifsTransferFile.clear();
-			ifsSettlementFile.close();
-			ifsSettlementFile.clear();
-			ifsInitFile.close(); 
-			ifsInitFile.clear();
+			// Close input files
+			{
+				ifsSimFile.close();
+				ifsSimFile.clear();
+				ifsParamFile.close();
+				ifsParamFile.clear();
+				if (gUsesStageStruct) {
+					ifsStageStructFile.close();
+					ifsStageStructFile.clear();
+				}
+				ifsEmigrationFile.close();
+				ifsEmigrationFile.clear();
+				ifsTransferFile.close();
+				ifsTransferFile.clear();
+				ifsSettlementFile.close();
+				ifsSettlementFile.clear();
+				ifsInitFile.close();
+				ifsInitFile.clear();
 
-			if (gAnyUsesGenetics) {
-				ifsGeneticsFile.close();
-				ifsGeneticsFile.clear();
-				ifsTraitsFile.close();
-				ifsTraitsFile.clear();
+				if (gAnyUsesGenetics) {
+					ifsGeneticsFile.close();
+					ifsGeneticsFile.clear();
+					ifsTraitsFile.close();
+					ifsTraitsFile.clear();
+				}
 			}
-
 			if (pLandscape != nullptr) {
 				delete pLandscape; 
 				pLandscape = nullptr;

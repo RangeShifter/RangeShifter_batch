@@ -284,7 +284,6 @@ Landscape::~Landscape() {
 		patches.clear();
 	}
 	
-	int ndistns = static_cast<int>(distns.size());
 	distns.clear();
 
 	int ninitcells = static_cast<int>(initcells.size());
@@ -384,7 +383,7 @@ void Landscape::setLandParams(landParams ppp, bool batchMode) {
 	}
 }
 
-landParams Landscape::getLandParams() {
+landParams Landscape::getLandParams() const {
 	landParams ppp;
 	ppp.isArtificial = isArtificial; 
 	ppp.usesPatches = usesPatches; 
@@ -426,7 +425,7 @@ void Landscape::setGenLandParams(genLandParams ppp)
 	if (ppp.maxCells > 0) maxCells = ppp.maxCells;
 }
 
-genLandParams Landscape::getGenLandParams()
+genLandParams Landscape::getGenLandParams() const
 {
 	genLandParams ppp;
 	ppp.isFractal = isFractal;
@@ -1138,7 +1137,7 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 		>> header >> habNoData;
 
 	map<species_id, string> pathsToPatchMaps, pathsToCostsMaps;
-	ReadDynSpLandFile(ifsDynHabFile, pathsToPatchMaps, pathsToCostsMaps, patchesList.size());
+	ReadSpDynLandFile(ifsDynHabFile, pathsToPatchMaps, pathsToCostsMaps, patchesList.size());
 	map<species_id, ifstream> ifsPatches, ifsCosts;
 	map<species_id, int> patchCodes, costCodes;
 
@@ -1629,7 +1628,6 @@ void Landscape::recordPatchChanges(int chgIndex) {
 					chg.newPatch = patchChangeMatrix[y][x].nextVal;
 					patchChanges.at(sp).push_back(chg);
 				}
-				// reset cell for next landscape change
 				patchChangeMatrix[y][x].currentVal = patchChangeMatrix[y][x].nextVal;
 			}
 		}
@@ -1714,7 +1712,6 @@ void Landscape::resetCostChanges() {
 					chg.newcost = costChangeMatrix[y][x].originVal;
 					costsChanges.at(sp).push_back(chg);
 				}
-				// reset cell for next landscape change
 				costChangeMatrix[y][x].currentVal = costChangeMatrix[y][x].nextVal;
 			}
 		}
@@ -1774,7 +1771,6 @@ int Landscape::applyCostChanges(const int& landChgNb, int iCostChg) {
 // Species distribution functions
 
 int Landscape::newDistribution(species_id sp, string distname) {
-	int ndistns = distns.size();
 	distns.emplace(sp, InitDist());
 	int readcode = distns.at(sp).readDistribution(distname);
 	if (readcode != 0) { // error encountered
@@ -2140,7 +2136,8 @@ int Landscape::readLandscape(int fileNum, string habfile,
 								if (patchCode != 0) { // not matrix cell
 									pPatch = findPatch(sp, patchCode);
 									if (pPatch == nullptr) // doesn't exist yet
-										pPatch = addNewPatch(sp, seq++, patchCode);
+										pPatch = pComm->resetActiveSpecies();
+									(sp, seq++, patchCode);
 								}
 								addNewCellToPatch(pPatch, x, y, habFloat);
 							}
