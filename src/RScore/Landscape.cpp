@@ -254,6 +254,7 @@ Landscape::Landscape(const set<species_id>& speciesNames) {
 
 	// Initialise maps for species-dependent members
 	for (auto& sp : speciesNames) {
+		patchesList.emplace(sp, nullptr);
 		patchChgMatrices.emplace(sp, vector<vector<cellChange>>());
 		costsChgMatrices.emplace(sp, vector<vector<cellChange>>());
 		connectMatrices.emplace(sp, nullptr);
