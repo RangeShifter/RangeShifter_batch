@@ -698,7 +698,7 @@ void testIndividual() {
 		const float recombinationRate = 0.01;
 		const int genomeSz = 10;
 
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz-2, genomeSz - 1}, // two chromosomes
 			genomeSz,
@@ -755,7 +755,7 @@ void testIndividual() {
 
 		// Species-level paramters
 		const int genomeSz = 6;
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // one chromosome
 			genomeSz,
@@ -847,7 +847,7 @@ void testIndividual() {
 
 		// Species-level paramters
 		const int genomeSz = 1;
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // one chromosome
 			genomeSz,
@@ -917,7 +917,7 @@ void testIndividual() {
 
 		// Species-level paramters
 		const int genomeSz = 1;
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // one chromosome
 			genomeSz,
@@ -970,7 +970,7 @@ void testIndividual() {
 
 		// Species-level paramters
 		const int genomeSz = 1;
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // one chromosome
 			genomeSz,
@@ -1032,7 +1032,7 @@ void testIndividual() {
 			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 			// Genome-level settings
-			Species* pSpecies = createDefaultSpecies();
+			Species* pSpecies = new Species;
 			pSpecies->setGeneticParameters(
 				set<int>{genomeSz - 1}, // one chromosome
 				genomeSz,
@@ -1154,7 +1154,7 @@ void testIndividual() {
 			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 			// Genome-level settings
-			Species* pSpecies = createDefaultSpecies();
+			Species* pSpecies = new Species;
 			pSpecies->setGeneticParameters(
 				set<int>{genomeSz - 1}, // one chromosome
 				genomeSz,
@@ -1236,7 +1236,7 @@ void testIndividual() {
 			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 
 			// Genome-level settings
-			Species* pSpecies = createDefaultSpecies();
+			Species* pSpecies = new Species;
 			pSpecies->setGeneticParameters(
 				set<int>{genomeSz - 1}, // one chromosome
 				genomeSz,

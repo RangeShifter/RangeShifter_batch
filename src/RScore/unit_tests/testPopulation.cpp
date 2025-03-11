@@ -36,7 +36,7 @@ void testPopulation()
 			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 			pPatch->addCell(pCell, 0, 0);
 
-			Species* pSpecies = createDefaultSpecies();
+			Species* pSpecies = new Species;
 			pSpecies->setDemogr(createDefaultHaploidDemogrParams());
 			pSpecies->setGeneticParameters(
 				set<int>{genomeSz - 1}, // single chromosome
@@ -95,7 +95,7 @@ void testPopulation()
 			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 			pPatch->addCell(pCell, 0, 0);
 
-			Species* pSpecies = createDefaultSpecies();
+			Species* pSpecies = new Species;
 			emigRules emig;
 			emig.indVar = true;
 			emig.sexDep = false;
@@ -177,7 +177,7 @@ void testPopulation()
 		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 		pPatch->addCell(pCell, 0, 0);
 
-		Species* pSpecies = new Species();
+		Species* pSpecies = new Species;
 		pSpecies->setDemogr(createDefaultDiploidDemogrParams());
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // single chromosome
@@ -251,7 +251,7 @@ void testPopulation()
 		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
 		pPatch->addCell(pCell, 0, 0);
 
-		Species* pSpecies = new Species();
+		Species* pSpecies = new Species;
 		pSpecies->setDemogr(createDefaultDiploidDemogrParams());
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // single chromosome

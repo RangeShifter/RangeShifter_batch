@@ -18,7 +18,7 @@ void testNeutralStats() {
 
 		// Create genetic structure
 		const int genomeSz = 4;
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setDemogr(createDefaultHaploidDemogrParams());
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // single chromosome
@@ -65,7 +65,7 @@ void testNeutralStats() {
 
 		// Create genetic structure
 		const int genomeSz = 4;
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setDemogr(createDefaultDiploidDemogrParams());
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // single chromosome
@@ -112,7 +112,7 @@ void testNeutralStats() {
 
 		// Create genetic structure
 		const int genomeSz = 4;
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setDemogr(createDefaultDiploidDemogrParams());
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // single chromosome
@@ -174,7 +174,7 @@ void testNeutralStats() {
 		}
 		
 		// Create species trait structure
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setDemogr(createDefaultDiploidDemogrParams());
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // single chromosome
@@ -220,7 +220,7 @@ void testNeutralStats() {
 				patchList.insert(patches[i]->getPatchNum());
 			}
 			// Create species trait structure
-			Species* pSpecies = createDefaultSpecies();
+			Species* pSpecies = new Species;
 			const bool isDiploid = true;
 			const set<int> genePositions = { 0 };
 			const float maxAlleleVal = 0;
@@ -276,7 +276,7 @@ void testNeutralStats() {
 			const set<int> stgToSample = { 1 };
 
 			// Create species trait structure
-			Species* pSpecies = createDefaultSpecies();
+			Species* pSpecies = new Species;
 			pSpecies->setDemogr(createDefaultDiploidDemogrParams());
 			pSpecies->setGeneticParameters(
 				set<int>{genomeSz - 1}, // single chromosome
@@ -350,7 +350,7 @@ void testNeutralStats() {
 			const set<int> stgToSample = { 1 };
 
 			// Create species trait structure
-			Species* pSpecies = createDefaultSpecies();
+			Species* pSpecies = new Species;
 			pSpecies->setDemogr(createDefaultDiploidDemogrParams());
 			pSpecies->setGeneticParameters(
 				set<int>{genomeSz - 1}, // single chromosome
@@ -424,7 +424,7 @@ void testNeutralStats() {
 		const set<int> stgToSample = { 1 };
 
 		// Create species trait structure
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setDemogr(createDefaultDiploidDemogrParams());
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // single chromosome
@@ -526,7 +526,7 @@ void testNeutralStats() {
 			const set<int> stgToSample = { 1 };
 
 			// Create species trait structure
-			Species* pSpecies = createDefaultSpecies();
+			Species* pSpecies = new Species;
 			pSpecies->setDemogr(createDefaultDiploidDemogrParams());
 			pSpecies->setGeneticParameters(
 				set<int>{genomeSz - 1}, // single chromosome
@@ -629,7 +629,7 @@ void testNeutralStats() {
 			const set<int> stgToSample = { 1 };
 
 			// Create species trait structure
-			Species* pSpecies = createDefaultSpecies();
+			Species* pSpecies = new Species;
 			pSpecies->setDemogr(createDefaultDiploidDemogrParams());
 			pSpecies->setGeneticParameters(
 				set<int>{genomeSz - 1}, // single chromosome
@@ -725,7 +725,7 @@ void testNeutralStats() {
 		const set<int> stgToSample = { 1 };
 
 		// Create species trait structure
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setDemogr(createDefaultDiploidDemogrParams());
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // single chromosome
@@ -836,7 +836,7 @@ void testNeutralStats() {
 		const set<int> stgToSample = { 1 };
 
 		// Create species trait structure
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setDemogr(createDefaultDiploidDemogrParams());
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // single chromosome
@@ -924,7 +924,7 @@ void testNeutralStats() {
 		const set<int> stgToSample = { 1 };
 
 		// Create species trait structure
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setDemogr(createDefaultHaploidDemogrParams());
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // single chromosome
@@ -1010,7 +1010,7 @@ void testNeutralStats() {
 		const set<int> stgToSample = { 1 };
 
 		// Create species trait structure
-		Species* pSpecies = createDefaultSpecies();
+		Species* pSpecies = new Species;
 		pSpecies->setDemogr(createDefaultDiploidDemogrParams());
 		pSpecies->setGeneticParameters(
 			set<int>{genomeSz - 1}, // single chromosome

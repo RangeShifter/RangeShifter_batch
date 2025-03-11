@@ -6550,15 +6550,7 @@ void RunBatch()
 	// Create species
 	speciesMap_t allSpecies;
 	for (species_id sp : gSpeciesNames) {
-		allSpecies.emplace(sp,
-			new Species(
-				//b.reproType,
-				//b.nbRepSeasons,
-				b.usesStageStruct == 1, // int to bool
-				//b.nbStages,
-				b.transferType == 1,
-				b.transferType
-			));
+		allSpecies.emplace(sp, new Species);
 	}
 
 	Landscape* pLandscape = nullptr; 

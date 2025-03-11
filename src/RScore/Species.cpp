@@ -21,21 +21,7 @@
 
 #include "Species.h"
 
-Species::Species(
-	const short& repro, 
-	const short& nbRepSeasons, 
-	const bool& hasStgStruct, 
-	const short& nStg, 
-	const bool& usesMovtProc, 
-	const short& movementType
-) :
-	repType{repro},
-	repSeasons{nbRepSeasons},
-	stageStruct{hasStgStruct},
-	nStages{nStg},
-	usesMovtProcess{usesMovtProc},
-	moveType{movementType}
-{
+Species::Species() {
 
 	ID = 0; // overwritten later
 
@@ -119,6 +105,7 @@ Species::Species(
 	habDimTrfr = 0;
 	straightenPath = false;
 	fullKernel = false;
+
 	// initialise settlement parameters
 	stgDepSett = false; 
 	sexDepSett = false; 
@@ -913,18 +900,6 @@ void Species::setSamplePatchList(const set<int>& samplePatchList) {
 
 #ifndef NDEBUG
 // For testing purposes only
-
-Species* createDefaultSpecies() {
-	short repType = 0;
-	short repSeasons = 1;
-	bool stagestruct = false;
-	int nStages = 2;
-	bool usesMovtProc = false;
-	short movtType = 1;
-	Species* pSpecies = new Species(repType, repSeasons, stagestruct, nStages, usesMovtProc, movtType);
-	return pSpecies;
-}
-
 demogrParams createDefaultHaploidDemogrParams() {
 	demogrParams d;
 	d.repType = 0;

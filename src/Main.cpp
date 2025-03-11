@@ -126,19 +126,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	string outdir = paramsSim->getDir(2);
 	bool areInputsOk = checkInputFiles(pathToControlFile, indir, outdir);
 	if (areInputsOk) {
-		// Set up species
-		/*
-		allSpecies.emplace(0,
-			new Species(
-				//b.reproType,
-				//b.nbRepSeasons,
-				b.usesStageStruct == 1, // int to bool
-				//b.nbStages,
-				b.transferType == 1,
-				b.transferType
-			));
-			*/
-		// create species later, after reading parameters
 		cout << endl << "Batch input files OK" << endl;
 	}
 	else {

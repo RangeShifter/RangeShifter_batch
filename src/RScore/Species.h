@@ -214,14 +214,7 @@ typedef short species_id;
 class Species {
 
 public:
-	Species(
-		const short& repro = 0, 
-		const short& nbRepSeasons = 1, 
-		const bool& hasStgStruct = false, 
-		const short& nStg = 2, 
-		const bool& usesMovtProc = false, 
-		const short& movementType = 1
-	);
+	Species();
 	~Species();
 	species_id getID();
 
@@ -581,7 +574,6 @@ typedef map<species_id, Species*> speciesMap_t;
 
 #ifndef NDEBUG
 // For testing purposes only
-Species* createDefaultSpecies();
 demogrParams createDefaultHaploidDemogrParams();
 demogrParams createDefaultDiploidDemogrParams();
 #endif // NDEBUG
