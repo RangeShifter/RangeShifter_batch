@@ -44,9 +44,11 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 	simParams sim = paramsSim->getSim();
 
 	bool anyUsesGradient = false, anySavesVisits = false;
+	set<species_id> speciesNames;
 	for (auto& [sp, pSpecies] : allSpecies) {
 		if (pSpecies->usesGradient()) anyUsesGradient = true;
 		if (pSpecies->savesVisits()) anySavesVisits = true;
+		speciesNames.insert(sp);
 	}
 	bool hasMultipleReplicates = sim.reps > 1;
 
@@ -249,11 +251,11 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 				for (auto& [sp, updateK] : mustUpdateK) updateK = true;
 
 				if (ppLand.usesPatches) {
-					iPatchChg = pLandscape->applyPatchChanges(chgNb, iPatchChg);
+					iPatchChg = pLandscape->applyPatchChanges(speciesNames, chgNb, iPatchChg);
 					// index used after years loop to reset between replicates
 				}
 				if (landChg.costfile != "none") {
-					pLandscape->applyCostChanges(chgNb, iCostChg);
+					pLandscape->applyCostChanges(speciesNames, chgNb, iCostChg);
 				}
 				if (chgNb < pLandscape->numLandChanges()) { // get next change
 					landChg = pLandscape->getLandChange(chgNb);
@@ -393,14 +395,14 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t allSpecies)
 		const int lastChange = 666666;
 		if (ppLand.usesPatches && ppLand.isDynamic && iPatchChg > 0) {
 			// reset landscape patches to original configuration
-			pLandscape->applyPatchChanges(lastChange, iPatchChg);
+			pLandscape->applyPatchChanges(speciesNames, lastChange, iPatchChg);
 		}
 		if (ppLand.isDynamic) {
 			//transferRules trfr = pSpecies->getTransferRules();
 			if (trfr.usesMovtProc && trfr.moveType == 1) { // SMS
 				if (iCostChg > 0) {
 					// reset landscape costs to original configuration
-					pLandscape->applyCostChanges(lastChange, iCostChg);
+					pLandscape->applyCostChanges(speciesNames, lastChange, iCostChg);
 				}
 				if (!trfr.usesCosts) pLandscape->resetCosts(); // in case habitats have changed
 			}

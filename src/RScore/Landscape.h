@@ -110,6 +110,7 @@ public:
 	// cell if it has been selected
 	// otherwise return negative co-ordinates
 	locn getSelectedCell(int cellIndex);
+	int getResol() const { return resol; }
 
 private:
 	int resol;			// species distribution cell size (m)
@@ -268,13 +269,13 @@ public:
 	void recordPatchChanges(int landIx);
 	int getNbPatchChanges(species_id sp);
 	patchChange getPatchChange(species_id sp, int changeIx);
-	int applyPatchChanges(const int& landChgNb, int iPatchChg);
+	int applyPatchChanges(const set<species_id>& whichSpecies, const int& landChgNb, int iPatchChg);
 	void createCostsChgMatrix();
 	void resetCostChanges();
 	void recordCostChanges(int landIx);
 	int getNbCostChanges(species_id sp);
 	costChange getCostChange(species_id sp, int i);
-	int applyCostChanges(const int& landChgNb, int iCostChg);
+	int applyCostChanges(const set<species_id>& whichSpecies, const int& landChgNb, int iCostChg);
 
 	// Species distributions
 	int newDistribution(species_id sp, string distFileName);
@@ -286,7 +287,7 @@ public:
 	// Get co-ordinates of a specified cell in a specified initial distn
 	// Returns negative co-ordinates if the cell is not selected
 	locn getSelectedDistnCell(species_id sp, int ix);
-	int getSpDistResol(species_id sp) const { return spDistResol.at(sp); }
+	int getSpDistResol(species_id sp) const { return distns.at(sp).getResol(); }
 
 	// Functions to handle connectivity matrix
 	void createConnectMatrix(species_id sp);
@@ -346,7 +347,6 @@ private:
 
 	// list of initial individual species distributions
 	map<species_id, InitDist> distns;
-	map<species_id, int> spDistResol;
 
 	// list of cells to be initialised for ALL species
 	std::vector<DistCell*> initcells;

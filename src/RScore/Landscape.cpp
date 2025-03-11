@@ -328,8 +328,9 @@ void Landscape::resetLand() {
 void Landscape::initialise(speciesMap_t& allSpecies, landParams land) {
 
 	// Create patches if not done in ReadLandscape
-	if (land.isArtificial) generatePatches(allSpecies); // artificial landscape
-	else if (!land.usesPatches) allocatePatches(allSpecies); // cell-based import landscape
+	if (land.isArtificial) generatePatches(allSpecies);
+	else if (!land.usesPatches) allocatePatches(allSpecies);
+	// otherwise (patch-based + imported) patches have been read already
 
 	// Random patch sampling is done once per landscape
 	for (auto& [sp, pSpecies] : allSpecies) {
@@ -769,10 +770,8 @@ void Landscape::addNewCellToLand(int x, int y, float q) {
 	if (q < 0.0) // no-data cell - no Cell created
 		cells[y][x] = nullptr;
 	else {
-		set<species_id> spLabels;
-		for (const species_id& sp : views::keys(patchesList)) {
-			spLabels.insert(sp);
-		}
+		auto kv = std::views::keys(patchesList);
+		set<species_id> spLabels = { kv.begin(), kv.end() };
 		cells[y][x] = new Cell(x, y, nullptr, q, spLabels);
 	}
 }
@@ -781,10 +780,8 @@ void Landscape::addNewCellToLand(int x, int y, int hab) {
 	if (hab < 0) // no-data cell - no Cell created
 		cells[y][x] = nullptr;
 	else {
-		set<species_id> spLabels;
-		for (const species_id& sp : views::keys(patchesList)) {
-			spLabels.insert(sp);
-		}
+		auto kv = std::views::keys(patchesList);
+		set<species_id> spLabels = { kv.begin(), kv.end() };
 		cells[y][x] = new Cell(x, y, nullptr, hab, spLabels);
 	}
 }
@@ -800,10 +797,8 @@ void Landscape::addCellToLand(Cell* c) {
 void Landscape::addNewCellToPatch(Patch* pPatch, int x, int y, float q) {
 	if (q < 0.0) throw logic_error("Attempt to add a cell with negative habitat quality.");
 	else { // create the new cell
-		set<species_id> spLabels;
-		for (const species_id& sp : views::keys(patchesList)) {
-			spLabels.insert(sp);
-		}
+		auto kv = std::views::keys(patchesList);
+		set<species_id> spLabels = { kv.begin(), kv.end() };
 		cells[y][x] = new Cell(x, y, pPatch, q, spLabels);
 		if (pPatch != nullptr) { // not the matrix patch
 			// add the cell to the patch
@@ -815,10 +810,8 @@ void Landscape::addNewCellToPatch(Patch* pPatch, int x, int y, float q) {
 void Landscape::addNewCellToPatch(Patch* pPatch, int x, int y, int hab) {
 	if (hab < 0) throw logic_error("Attempt to add a cell with negative habitat code.");
 	else { // create the new cell
-		set<species_id> spLabels;
-		for (const species_id& sp : views::keys(patchesList)) {
-			spLabels.insert(sp);
-		}
+		auto kv = std::views::keys(patchesList);
+		set<species_id> spLabels = { kv.begin(), kv.end() };
 		cells[y][x] = new Cell(x, y, pPatch, hab, spLabels);
 		if (pPatch != nullptr) { // not the matrix patch
 			// add the cell to the patch
@@ -1640,9 +1633,11 @@ patchChange Landscape::getPatchChange(species_id sp, int i) {
 	return patchChanges.at(sp)[i];
 }
 
-int Landscape::applyPatchChanges(const int& landChgNb, int iPatchChg) {
+int Landscape::applyPatchChanges(const set<species_id>& whichSpecies, const int& landChgNb, int iPatchChg) {
+	// species must be specified because species for this simulation
+	// could be a subset of species in landscape object
 	Patch* pPatch;
-	for (const species_id sp : views::keys(patchesList)) {
+	for (const species_id sp : whichSpecies) {
 
 		int nbPatchChanges = getNbPatchChanges(sp);
 
@@ -1750,9 +1745,10 @@ costChange Landscape::getCostChange(species_id sp, int i) {
 	return costsChanges.at(sp)[i];
 }
 
-int Landscape::applyCostChanges(const int& landChgNb, int iCostChg) {
-
-	for (const species_id sp : views::keys(patchesList)) {
+int Landscape::applyCostChanges(const set<species_id>& whichSpecies, const int& landChgNb, int iCostChg) {
+	// species must be specified because species for this simulation
+	// could be a subset of species in landscape object
+	for (const species_id sp : whichSpecies) {
 
 		int ncostchanges = getNbCostChanges(sp);
 		for (; iCostChg < ncostchanges; iCostChg++) {
