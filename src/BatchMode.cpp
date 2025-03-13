@@ -4789,12 +4789,10 @@ void BatchError(string filename, int line, int option, string fieldname)
 			<< gMaxNbHab << ") and be sequentially numbered starting from 1";
 		break;
 	case 444:
-		batchLogOfs << "No. of " << fieldname << " columns must be one fewer than no. of stages, i.e. "
-			<< gNbStages - 1 << ", and be sequentially numbered starting from 1";
+		batchLogOfs << "No. of " << fieldname << " columns must be one fewer than no. of stages, and be sequentially numbered starting from 1";
 		break;
 	case 555:
-		batchLogOfs << "No. of " << fieldname << " columns must equal no. of stages, i.e. "
-			<< gNbStages << ", and be sequentially numbered starting from 0";
+		batchLogOfs << "No. of " << fieldname << " columns must equal no. of stages, and be sequentially numbered starting from 0";
 		break;
 	case 666:
 		batchLogOfs << fieldname << " must be a unique positive integer";
@@ -6731,6 +6729,9 @@ void RunBatch()
 					cout << endl << "Error in reading parameter file(s)" << endl;
 				}
 
+				// Empty species map for next simulation
+				simSpecies.clear();
+
 			} // end of loop through simulations
 
 			// Close input files
@@ -6767,6 +6768,9 @@ void RunBatch()
 		} // end of landOK condition
 
 	} // end of nLandscapes loop
+
+	for (auto& [sp, pSpecies] : allSpecies)
+		delete pSpecies;
 
 	ifsLandFile.close();  
 	ifsLandFile.clear();

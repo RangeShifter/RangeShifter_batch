@@ -154,11 +154,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	delete pRandom;
 	delete paramsStoch;
-
 	delete paramsSim;
-
-	for (auto& [sp, pSpecies] : allSpecies)
-		delete pSpecies;
 
 	t1 = static_cast<int>(time(0));
 	cout << endl << "***** Elapsed time " << t1 - t0 << " seconds" << endl << endl;
