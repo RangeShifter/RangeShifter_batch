@@ -56,6 +56,8 @@ using namespace std;
 #include "./RScore/NeutralTrait.h"
 
 set<species_id> gSpeciesNames;
+map<species_id, bool> gUseSpeciesDist;
+map<species_id, bool> gUseSMSCosts;
 
 // Global variables to check parameter
 // consistency across input files
@@ -81,7 +83,6 @@ struct spInputOptions {
 	int nbTraitFileRows; // how many lines to expect in traitsFile?
 };
 
-map<species_id, bool> gUseSpeciesDist;
 int gEnvStochType;
 bool gStochInK;
 
@@ -102,7 +103,7 @@ bool CheckParameterFile();
 bool CheckLandFile(int landType, string inputDir);
 bool CheckSpLandFile(string inputDir, bool isInitial);
 int CheckGeneticsFile(string inputDir);
-int CheckDynamicFile(string inputDir, string costFile);
+int CheckDynamicFile(string inputDir);
 int CheckStageFile(string inputDir);
 bool CheckTransitionFile(short, short nbSexesDemogr);
 bool CheckWeightsFile(string fileType, int nbStages, int nbSexes);
@@ -196,9 +197,9 @@ int ReadTransitionMatrix(
 );
 int ReadStageWeights(Species* pSpecies, int option);
 int ReadEmigration(speciesMap_t& simSpecies);
-int ReadTransferFile(speciesMap_t& simSpecies, landParams paramsLand, int transferType, map<species_id, bool>& useSpDist);
+int ReadTransferFile(speciesMap_t& simSpecies, landParams paramsLand, int transferType);
 int ReadTransferKernels(speciesMap_t& simSpecies, landParams paramsLand);
-void ReadTransferSMS(speciesMap_t& simSpecies, const landParams&, map<species_id, bool>& useSpDist);
+void ReadTransferSMS(speciesMap_t& simSpecies, const landParams&);
 int ReadTransferCRW(speciesMap_t& simSpecies, const landParams&);
 int ReadSettlement(speciesMap_t& simSpecies);
 int ReadInitialisation(const landParams& paramsLand, speciesMap_t& simSpecies);

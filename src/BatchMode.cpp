@@ -782,8 +782,12 @@ bool CheckParameterFile()
 		// Record which species exist for landscape checks
 		if (!gSpeciesNames.contains(inSp))
 			gSpeciesNames.insert(inSp);
-		if (!gUseSpeciesDist.contains(inSp))
+		if (!gUseSpeciesDist.contains(inSp)) {
 			gUseSpeciesDist.emplace(inSp, false); // false unless set true in SpLandFile
+		}
+		if (!gUseSMSCosts.contains(inSp)) {
+			gUseSMSCosts.emplace(inSp, false);
+		}
 
 		ifsParamFile >> inGradient;
 		if (gUsesPatches) {
@@ -1181,8 +1185,8 @@ bool CheckLandFile(int landtype, string inputDir)
 				batchLogOfs << "Checking " << whichInputFile << " " << pathToDyn << endl;
 				ifsDynLandFile.open(pathToDyn.c_str());
 				if (ifsDynLandFile.is_open()) {
-					int something = CheckDynamicFile(inputDir, gNameCostFile);
-					if (something < 0) {
+					int errCode = CheckDynamicFile(inputDir);
+					if (errCode < 0) {
 						nbErrors++;
 					}
 					ifsDynLandFile.close(); 
@@ -1317,7 +1321,7 @@ bool CheckSpLandFile(string inputDir, bool isInitial) {
 	string header;
 	int nbErrors = 0, whichLine = 1;
 	string whichFile = "SpLandFile";
-	string inPatchFile, inSpDistFile;
+	string inPatchFile, inCostFile, inSpDistFile;
 
 	ifsSpLandFile >> header; if (header != "Species") nbErrors++;
 	ifsSpLandFile >> header; if (header != "PatchFile") nbErrors++;
@@ -1382,8 +1386,8 @@ bool CheckSpLandFile(string inputDir, bool isInitial) {
 
 		// check cost map filename
 		whichInputFile = "CostMapFile";
-		ifsSpLandFile >> gNameCostFile;
-		if (gNameCostFile == "NULL") {
+		ifsSpLandFile >> inCostFile;
+		if (inCostFile == "NULL") {
 			if (gTransferType == 1 && gLandType == 2) { // SMS
 				BatchError(whichFile, whichLine, 0, " ");
 				nbErrors++;
@@ -1397,8 +1401,8 @@ bool CheckSpLandFile(string inputDir, bool isInitial) {
 				batchLogOfs << whichInputFile << " must be NULL if transfer model is not SMS" << endl;
 			}
 			else {
-				gUseSpeciesDist.at(spNb) = true;
-				string pathToCosts = inputDir + gNameCostFile;
+				gUseSMSCosts.at(spNb) = true;
+				string pathToCosts = inputDir + inCostFile;
 				rasterdata costRaster = CheckRasterFile(pathToCosts);
 				if (costRaster.ok) {
 					if (costRaster.cellsize == gResol) {
@@ -1436,6 +1440,7 @@ bool CheckSpLandFile(string inputDir, bool isInitial) {
 			whichInputFile = "SpDistFile";
 			ifsLandFile >> inSpDistFile;
 			if (inSpDistFile != "NULL") {
+				gUseSpeciesDist.at(spNb) = true;
 				string pathToSpDist = inputDir + inSpDistFile;
 				rasterdata spDistRaster = CheckRasterFile(pathToSpDist);
 				if (spDistRaster.ok) {
@@ -1485,7 +1490,7 @@ bool CheckSpLandFile(string inputDir, bool isInitial) {
 	return nbErrors == 0;
 }
 
-int CheckDynamicFile(string inputDir, string costFile) {
+int CheckDynamicFile(string inputDir) {
 
 	string header, inLandChgFile, inDynSpLand;
 	int change, prevChg, year, prevYr = 0;
@@ -2634,13 +2639,10 @@ int CheckTransferFile(string indir)
 					batchLogOfs << "SMtype must be 0 for LandType 2" << endl;
 				}
 			}
-			else {
-				if (inSMType != 0 && inSMType != 1) {
-					BatchError(whichFile, whichLine, 1, "SMtype"); errors++;
-				}
+			else if (inSMType != 0 && inSMType != 1) {
+				BatchError(whichFile, whichLine, 1, "SMtype"); errors++;
 			}
-			if (inSMType == 0)
-			{
+			if (inSMType == 0) {
 				if (inSMConst < 0.0 || inSMConst >= 1.0) {
 					BatchError(whichFile, whichLine, 20, "SMconst"); errors++;
 				}
@@ -2650,8 +2652,7 @@ int CheckTransferFile(string indir)
 			case 0: { // raster map with unique habitat codes
 				for (i = 0; i < gMaxNbHab; i++) {
 					ifsTransferFile >> morthab;
-					if (inSMType == 1)
-					{
+					if (inSMType == 1) {
 						if (morthab < 0.0 || morthab >= 1.0) {
 							colheader = "MortHab" + to_string(i + 1);
 							BatchError(whichFile, whichLine, 20, colheader); errors++;
@@ -2660,20 +2661,18 @@ int CheckTransferFile(string indir)
 				}
 				for (i = 0; i < gMaxNbHab; i++) {
 					ifsTransferFile >> costhab;
-					if (gNameCostFile == "NULL") {
-						if (costhab < 1) {
-							colheader = "CostHab" + to_string(i + 1);
-							BatchError(whichFile, whichLine, 11, colheader); errors++;
-						}
+					if (!gUseSMSCosts.at(inSp) && costhab < 1) {
+						colheader = "CostHab" + to_string(i + 1);
+						BatchError(whichFile, whichLine, 11, colheader);
+						errors++;
 					}
 				}
 				break;
 			} // end of raster map with unique habitat codes
 
 			case 2: { // raster map with habitat quality
-
 				break;
-			} // end of raster map with habitat quality
+			}
 
 			case 9: { // artificial landscape
 				ifsTransferFile >> morthab >> mortmatrix;
@@ -5933,7 +5932,7 @@ int ReadEmigration(speciesMap_t& simSpecies)
 }
 
 //---------------------------------------------------------------------------
-int ReadTransferFile(speciesMap_t& simSpecies, landParams paramsLand, int transferType, map<species_id, bool>& useSpDist)
+int ReadTransferFile(speciesMap_t& simSpecies, landParams paramsLand, int transferType)
 {
 	int error = 0;
 	switch (transferType) {
@@ -5943,7 +5942,7 @@ int ReadTransferFile(speciesMap_t& simSpecies, landParams paramsLand, int transf
 		break; // end of negative exponential dispersal kernel
 
 	case 1: // SMS
-		ReadTransferSMS(simSpecies, paramsLand, useSpDist);
+		ReadTransferSMS(simSpecies, paramsLand);
 		break; // end of SMS
 
 	case 2: // CRW
@@ -5954,6 +5953,13 @@ int ReadTransferFile(speciesMap_t& simSpecies, landParams paramsLand, int transf
 		error = 440;
 		break;
 	} // end of switch (TransferType)
+
+	if (transferType > 0) {
+		int nbHab = paramsLand.isArtificial ?
+			paramsLand.nHab : paramsLand.nHabMax;
+		for (auto& [sp, pSpecies] : simSpecies)
+			pSpecies->createHabCostMort(nbHab);
+	}
 
 	return error;
 }
@@ -6071,11 +6077,11 @@ int ReadTransferKernels(speciesMap_t& simSpecies, landParams paramsLand) {
 	return errorCode;
 }
 
-void ReadTransferSMS(speciesMap_t& simSpecies, const landParams& paramsLand, map<species_id, bool>& useSpDist) {
+void ReadTransferSMS(speciesMap_t& simSpecies, const landParams& paramsLand) {
 
 	int inIndVar, inSMType, inAlphaDB, inBetaDB, inStraightenPath, simNb;
 	float inHabMort, flushHabMort, inMortHabitat, inMortMatrix;
-	int inCostHab, flushCostHab, inCostMatrix;
+	int inCostHab, inCostMatrix;
 	trfrMovtParams move;
 	species_id sp;
 
@@ -6119,29 +6125,21 @@ void ReadTransferSMS(speciesMap_t& simSpecies, const landParams& paramsLand, map
 		}
 	}
 
-	trfr.usesCosts = useSpDist.at(sp);
+	trfr.usesCosts = gUseSMSCosts.at(sp);
 
 	if (!paramsLand.isArtificial) { // imported landscape
 		if (paramsLand.rasterType == 0) { // habitat codes
-			if (trfr.usesCosts) {
-				for (int i = 0; i < paramsLand.nHabMax; i++) 
-					ifsTransferFile >> flushCostHab;
-			}
-			else { // not costMap
-				for (int i = 0; i < paramsLand.nHabMax; i++) {
-					ifsTransferFile >> inCostHab; 
+			for (int i = 0; i < paramsLand.nHabMax; i++) {
+				ifsTransferFile >> inCostHab;
+				if (!trfr.usesCosts)
 					pSpecies->setHabCost(i, inCostHab);
-				}
 			}
 		}
 	}
 	else { // artificial landscape
-		if (trfr.usesCosts) { // should not occur 
-			ifsTransferFile >> flushCostHab >> flushCostHab;
-		}
-		else { // not costMap
+		ifsTransferFile >> inCostHab >> inCostMatrix;
+		if (!trfr.usesCosts) {
 			// costs are for habitat (hab=1) then for matrix (hab=0)
-			ifsTransferFile >> inCostHab >> inCostMatrix;
 			pSpecies->setHabCost(1, inCostHab);
 			pSpecies->setHabCost(0, inCostMatrix);
 		}
@@ -6680,12 +6678,6 @@ void RunBatch()
 				}
 			}
 
-			if (gTransferType > 0) {
-				int nbHab = paramsLand.isArtificial ?
-					paramsLand.nHab : paramsLand.nHabMax;
-				pSpecies->createHabCostMort(nbHab);
-			}
-
 			for (auto& thisSimulation : gSpInputOpt) {
 
 				int simNb = thisSimulation.first;
@@ -6708,7 +6700,7 @@ void RunBatch()
 					if (gUsesStageStruct) ReadStageStructure(simSpecies);
 					read_error = ReadEmigration(simSpecies);
 					if (read_error) areParamsOk = false;
-					read_error = ReadTransferFile(simSpecies, paramsLand, gTransferType, gUseSpeciesDist);
+					read_error = ReadTransferFile(simSpecies, paramsLand, gTransferType);
 					if (read_error) areParamsOk = false;
 					read_error = ReadSettlement(simSpecies);
 					if (read_error) areParamsOk = false;
