@@ -490,14 +490,46 @@ void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 	}
 }
 
-void Community::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv)
-{
+void Community::drawSurvivalDevlpt(const int phase)
+{	
 	for (auto& sp: activeSpecies) {
-		matrixPops.at(sp)->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
-	}
-	for (auto& sp : activeSpecies) {
-		for (auto pop : allPopns.at(sp)) {
-			pop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
+		
+		bool hasStages = speciesMap.at(sp)->stageStructured();
+		short survOption = speciesMap.at(sp)->getStageParams().survival;
+
+		switch (phase) {
+		case 0: { // After reproduction, before dispersal
+			if (hasStages && survOption == 0) {
+				// Survival + developments adults
+				matrixPops.at(sp)->drawSurvivalDevlpt(false, true, true, true);
+				for (auto pop : allPopns.at(sp)) {
+					pop->drawSurvivalDevlpt(false, true, true, true);
+				}
+			}
+			break;
+		}
+		case 1: { // After dispersal
+			bool resolveJuvs = true;
+			bool resolveAdults = !(hasStages && survOption == 0); // else already resolved after reproduction
+			bool resolveDev = true;
+			bool resolveSurv = !(hasStages && survOption == 2); // else resolved yearly
+
+			matrixPops.at(sp)->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
+			for (auto pop : allPopns.at(sp)) {
+				pop->drawSurvivalDevlpt(resolveJuvs, resolveAdults, resolveDev, resolveSurv);
+			}
+			break;
+		}
+		case 2: { // End of year
+			if (hasStages && survOption == 2) {
+				// Survival juveniles + adults
+				matrixPops.at(sp)->drawSurvivalDevlpt(true, true, false, true);
+				for (auto pop : allPopns.at(sp)) {
+					pop->drawSurvivalDevlpt(true, true, false, true);
+				}
+			}
+			break;
+		}
 		}
 	}
 }

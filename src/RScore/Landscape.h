@@ -287,6 +287,7 @@ public:
 	// Get co-ordinates of a specified cell in a specified initial distn
 	// Returns negative co-ordinates if the cell is not selected
 	locn getSelectedDistnCell(species_id sp, int ix);
+	bool usesSpDist(species_id sp) const;
 	int getSpDistResol(species_id sp) const { return distns.at(sp).getResol(); }
 
 	// Functions to handle connectivity matrix

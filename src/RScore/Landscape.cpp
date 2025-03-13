@@ -1078,7 +1078,7 @@ int Landscape::numLandChanges() { return (int)landChanges.size(); }
 
 landChange Landscape::getLandChange(short ix) {
 	landChange c; c.chgnum = c.chgyear = 0;
-	c.habfile = c.pchfile = c.costfile = "none";
+	c.habfile = "none";
 	int nchanges = (int)landChanges.size();
 	if (ix < nchanges) c = landChanges[ix];
 	return c;
@@ -1789,6 +1789,10 @@ int Landscape::distCellCount(species_id sp) {
 	return distns.at(sp).cellCount();
 }
 
+bool Landscape::usesSpDist(species_id sp) const {
+	return distns.contains(sp);
+}
+
 // Get the co-ordinates of a specified cell in a specified initial distribution
 // Returns negative co-ordinates if the cell is not selected
 locn Landscape::getSelectedDistnCell(species_id sp, int ix) {
@@ -1892,14 +1896,8 @@ int Landscape::readLandscape(int fileNum, string habfile,
 	minX = minY = 0; 
 	maxX = dimX - 1;
 	maxY = dimY - 1;
-
+	
 	if (fileNum == 0) { // First map layer
-
-		// Set initialisation limits to landscape limits
-		init.minSeedX = init.minSeedY = 0;
-		init.maxSeedX = maxX; 
-		init.maxSeedY = maxY;
-		paramsInit->setInit(init);
 
 		if (usesPatches) {
 			// Sink metadata
@@ -2133,8 +2131,7 @@ int Landscape::readLandscape(int fileNum, string habfile,
 								if (patchCode != 0) { // not matrix cell
 									pPatch = findPatch(sp, patchCode);
 									if (pPatch == nullptr) // doesn't exist yet
-										pPatch = pComm->resetActiveSpecies();
-									(sp, seq++, patchCode);
+										pPatch = addNewPatch(sp, seq++, patchCode);
 								}
 								addNewCellToPatch(pPatch, x, y, habFloat);
 							}
@@ -2754,7 +2751,6 @@ landParams createDefaultLandParams(const int& dim) {
 	ls_params.rasterType = 0; // habitat types
  
 	ls_params.usesPatches = false;
-	ls_params.useSpDist = false;
 	ls_params.isArtificial = false;
 	ls_params.isDynamic = false;
 	ls_params.landNum = 0;

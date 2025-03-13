@@ -99,12 +99,7 @@ public:
 	// their destination co-ordinates fall (executed for the matrix patch only)
 	void completeDispersal(Landscape* pLandscape);
 
-	void drawSurvivalDevlpt(
-		bool resolveJuvs,
-		bool resolveAdults,
-		bool resolveDev,
-		bool resolveSurv
-	);
+	void drawSurvivalDevlpt(const int phase);
 	void applySurvivalDevlpt();
 
 	void ageIncrement();

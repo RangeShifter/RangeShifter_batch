@@ -115,11 +115,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 		if (anyUsesGradient) pLandscape->drawGradientDev();
 
 		if (ppLand.usesPatches) {
-			for (auto& [sp, pSpecies] : simSpecies) 
+			for (auto& [sp, pSpecies] : simSpecies) {
 				if (pSpecies->doesOutputConnect()) {
 					pLandscape->createConnectMatrix(sp);
 					pLandscape->outConnectHeaders(sp);
 				}
+			}
 		}
 
 		// Dynamic landscape control
@@ -246,6 +247,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 			
 			// Dynamic landscape
 			if (ppLand.isDynamic && yr == landChg.chgyear) {
+
 				chgNb = landChg.chgnum;
 				updateland = true;
 				for (auto& [sp, updateK] : mustUpdateK) updateK = true;
@@ -254,9 +256,9 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 					iPatchChg = pLandscape->applyPatchChanges(speciesNames, chgNb, iPatchChg);
 					// index used after years loop to reset between replicates
 				}
-				if (landChg.costfile != "none") {
-					pLandscape->applyCostChanges(speciesNames, chgNb, iCostChg);
-				}
+
+				pLandscape->applyCostChanges(speciesNames, chgNb, iCostChg);
+
 				if (chgNb < pLandscape->numLandChanges()) { // get next change
 					landChg = pLandscape->getLandChange(chgNb);
 				}
@@ -272,8 +274,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 			if (ppLand.usesPatches) pLandscape->resetConnectMatrix();
 
 			if (ppLand.isDynamic && updateland) {
-				if (trfr.usesMovtProc && trfr.moveType == 1) { // SMS
-					if (!trfr.usesCosts) pLandscape->resetCosts(); // in case habitats have changed
+				for (auto& [sp, pSpecies] : simSpecies) {
+					if (!pSpecies->getTransferRules().usesCosts) 
+						pLandscape->resetCosts();
+					// in case habitats have changed
 				}
 				// apply effects of landscape change to species present in changed patches
 				for (auto& [sp, pSpecies] : simSpecies)
@@ -282,10 +286,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 			}
 
 			for (auto& [sp, pSpecies] : simSpecies) {
-				if (pSpecies->isRestrictYear(yr))
+				if (pSpecies->isRestrictYear(yr)) {
 					// Extirpate populations beyond the new limits
 					pComm->scanUnsuitablePatches(pSpecies);
-
+				}
 				if (pSpecies->getInitParams().seedType == 2) {
 					// add any new initial individuals for the current year
 					pComm->initialise(pSpecies, yr);
@@ -319,26 +323,20 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 				// Reproduction
 				pComm->reproduction(yr);
 
-				if (sim.usesStageStruct && sstruct.survival == 0) { // at reproduction
-					// Draw survival + devlpt for adults only
-					pComm->drawSurvivalDevlpt(false, true, true, true);
-				}
+				if (sim.usesStageStruct) {
+					// Post-reproduction adult survival + devlpt, where applicable
+					pComm->drawSurvivalDevlpt(0);
 
-				// Stage-structured pops: range + pop output *after* reproductrion
-				if (sim.usesStageStruct) pComm->popAndRangeOutput(rep, yr, gen);
+					// Stage-structured pops: range + pop output *after* reproductrion
+					pComm->popAndRangeOutput(rep, yr, gen);
+				}
 
 				// Dispersal
 				pComm->emigration();
 				pComm->dispersal(chgNb, yr);
 
-				// Draw survival and development
-				bool drawJuvs = true;
-				bool drawAdults = !sim.usesStageStruct
-					|| sstruct.survival != 0; // else already resolved for adults
-				bool drawDevlpt = true;
-				bool drawSurvival = !sim.usesStageStruct
-					|| sstruct.survival != 2; // else resolved at end of year
-				pComm->drawSurvivalDevlpt(drawJuvs, drawAdults, drawDevlpt, drawSurvival);
+				// Post-dispersal survival + devlpt, where applicable
+				pComm->drawSurvivalDevlpt(1);
 
 				pComm->indsAndGeneticsOutput(rep, yr, gen);
 
@@ -349,11 +347,9 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 			pComm->resetActiveSpecies();
 
 			if (sim.usesStageStruct) {
-				if (sstruct.survival == 2) {
-					// Draw survival for all stages
-					pComm->drawSurvivalDevlpt(true, true, false, true);
-					pComm->applySurvivalDevlpt();
-				}
+				// Yearly adult survival + development where applicable;
+				pComm->drawSurvivalDevlpt(2);
+				pComm->applySurvivalDevlpt();
 				// Apply age
 				pComm->ageIncrement();
 				for (auto& [sp, pSpecies] : simSpecies) {
@@ -398,13 +394,15 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 			pLandscape->applyPatchChanges(speciesNames, lastChange, iPatchChg);
 		}
 		if (ppLand.isDynamic) {
-			//transferRules trfr = pSpecies->getTransferRules();
-			if (trfr.usesMovtProc && trfr.moveType == 1) { // SMS
-				if (iCostChg > 0) {
-					// reset landscape costs to original configuration
-					pLandscape->applyCostChanges(speciesNames, lastChange, iCostChg);
+			for (auto& [sp, pSpecies] : simSpecies) {
+				transferRules trfr = pSpecies->getTransferRules();
+				if (trfr.usesMovtProc && trfr.moveType == 1) { // SMS
+					if (iCostChg > 0) {
+						// reset landscape costs to original configuration
+						pLandscape->applyCostChanges(speciesNames, lastChange, iCostChg);
+					}
+					if (!trfr.usesCosts) pLandscape->resetCosts(); // in case habitats have changed
 				}
-				if (!trfr.usesCosts) pLandscape->resetCosts(); // in case habitats have changed
 			}
 		}
 
@@ -600,6 +598,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 	outPar << "DIMENSIONS:  X " << ppLand.dimX << "  Y " << ppLand.dimY << endl;
 	outPar << "AVAILABLE:   min.X " << ppLand.minX << " min.Y " << ppLand.minY
 		<< "  max.X " << ppLand.maxX << " max.Y " << ppLand.maxY << endl;
+
 	if (!ppLand.isArtificial && ppLand.isDynamic) {
 		landChange chg;
 		outPar << "DYNAMIC LANDSCAPE: " << endl;
@@ -608,26 +607,9 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 			chg = pLandscape->getLandChange(i);
 			outPar << "Change no. " << chg.chgnum << " in year " << chg.chgyear << endl;
 			outPar << "Landscape: " << chg.habfile << endl;
-			if (ppLand.usesPatches) {
-				outPar << "Patches  : " << chg.pchfile << endl;
-			}
-			if (chg.costfile != "none") {
-				outPar << "Costs    : " << chg.costfile << endl;
-			}
+			outPar << "Species land file: " << chg.spLandFile << endl;
 		}
 	}
-	outPar << endl << "SPECIES DISTRIBUTION LOADED: \t";
-	if (ppLand.useSpDist) {
-		outPar << "yes" << endl;
-		outPar << "RESOLUTION (m)\t" << ppLand.spResol << endl;
-		outPar << "FILE NAME: ";
-#if !RS_RCPP
-		if (sim.batchMode) outPar << " (see batch file) " << landFile << endl;
-#else
-		outPar << gSpDistFileName << endl;
-#endif
-	}
-	else outPar << "no" << endl;
 
 	outPar << endl << "SPECIES PARAMETERS" << endl;
 
@@ -641,6 +623,21 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 		transferRules trfr = pSpecies->getTransferRules();
 		settleType sett = pSpecies->getSettle();
 		initParams init = pSpecies->getInitParams();
+
+		// Initial species distribution
+		outPar << endl << "SPECIES DISTRIBUTION LOADED: \t";
+		if (pLandscape->usesSpDist(sp)) {
+			outPar << "yes" << endl;
+			outPar << "RESOLUTION (m)\t" << pLandscape->getSpDistResol(sp) << endl;
+			outPar << "FILE NAME: ";
+#if !RS_RCPP
+			if (sim.batchMode) outPar << " (see batch file) " << landFile << endl;
+#else
+			outPar << gSpDistFileName << endl;
+#endif
+		}
+		else outPar << "no" << endl;
+
 		// Initialisation
 		outPar << endl << "INITIALISATION CONDITIONS:" << endl;
 		switch (init.seedType) {
