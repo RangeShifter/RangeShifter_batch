@@ -2216,7 +2216,7 @@ int CheckEmigFile()
 			&& (inEmigStg < 0 || inEmigStg >= stages)) {
 			BatchError(whichInputFile, lineNb, 0, "EmigStage");
 			nbErrors++;
-			batchLog << "EmigStage must be from 0 to " << to_string(stages - 1) << endl;
+			batchLog << "EmigStage must be an integer between 0 and " << to_string(stages - 1) << endl;
 		}
 		if (inSexDep != 0 && inSexDep != 1) {
 			BatchError(whichInputFile, lineNb, 1, "SexDep");
@@ -4593,7 +4593,7 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, simCheck
 	else { // no stage-dependent emigration
 		if (stage != 0) {
 			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
-			batchLog << "Stage must be 0 for non-stage-structured model" << endl;
+			batchLog << "Stage must be 0 if stage-dependency is off" << endl;
 		}
 	}
 	// validate sex
