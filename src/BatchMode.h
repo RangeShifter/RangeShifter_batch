@@ -27,9 +27,9 @@
  Functions for running in BATCH MODE
 
  For full details of RangeShifter, please see:
- Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+ Bocedi G., Palmer S.C.F., Peï¿½er G., Heikkinen R.K., Matsinos Y.G., Watts K.
  and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
- eco-evolutionary dynamics and species’ responses to environmental changes.
+ eco-evolutionary dynamics and speciesï¿½ responses to environmental changes.
  Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
  Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
@@ -120,6 +120,8 @@ int CheckEmigFile(void);
 int CheckTransferFile(string);
 int CheckSettleFile(void);
 int CheckInitFile(string);
+int CheckManageFile(string);
+int CheckTranslocFile(string);
 int CheckInitIndsFile(void);
 simCheck CheckStageSex(string, int, int, simCheck, int, int, int, int, int, bool, bool);
 int CheckGeneticsFile(string inputDirectory);
@@ -208,6 +210,8 @@ int ReadInitialisation(Landscape*);
 int ReadInitIndsFile(int, Landscape*, string);
 int ReadGeneticsFile(ifstream& ifs, Landscape*);
 int ReadTraitsFile(ifstream& ifs, const int& whichSim);
+int ReadTranslocationFile(Landscape* pLandscape);
+int ReadManagementFile();
 
 // Helper functions to ReadGenetics and ReadTraits
 void setUpSpeciesTrait(vector<string>);

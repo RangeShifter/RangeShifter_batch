@@ -52,7 +52,6 @@ void testPopulation()
 				true, // isInherited
 				mutationRate, // mutation rate
 				DistributionType::UNIFORM, mutParams,
-				DistributionType::UNIFORM, domParams,
 				isDiploid ? 2 : 1,
 				false
 			);
@@ -121,7 +120,6 @@ void testPopulation()
 				true, // isInherited
 				mutationRate, // mutation rate
 				DistributionType::UNIFORM, mutParams,
-				DistributionType::NONE, map<GenParamType, float>{}, // no dominance
 				isDiploid ? 2 : 1,
 				false
 			);
