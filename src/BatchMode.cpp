@@ -4986,8 +4986,8 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		outputGeneValues = (parameters[4] == "TRUE");
 		outputWeirCockerham = (parameters[5] == "TRUE");
 		outputWeirHill = (parameters[6] == "TRUE");
-		outputStartGenetics = stoi(parameters[7]);
-		outputGeneticInterval = stoi(parameters[8]);
+		outputStartGenetics = parameters[7] == "#" ? 0 : stoi(parameters[7]);
+		outputGeneticInterval = parameters[8] == "#" ? 0 : stoi(parameters[8]);
 
 		string inPatches = parameters[9];
 		string patchSamplingOption;
@@ -4995,7 +4995,8 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		if (inPatches != "all" && inPatches != "random" && inPatches != "random_occupied") {
 			// then must be a list of indices
 			patchSamplingOption = "list";
-			patchList = stringToPatches(inPatches);
+			if (inPatches != "#")
+				patchList = stringToPatches(inPatches);
 			if (patchList.contains(0)) throw logic_error("Patch sampling: ID 0 is reserved for the matrix and should not be sampled.");
 		}
 		else {
@@ -5008,7 +5009,9 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		const int nbStages = pSpecies->getStageParams().nStages;
 		remove(parameters[12].begin(), parameters[12].end(), '\r'),
 			parameters[12].end(); // bye windows line breaks
-		set<int> stagesToSampleFrom = stringToStages(parameters[12], nbStages);
+		set<int> stagesToSampleFrom;
+		if (parameters[12] != "#")
+			stringToStages(parameters[12], nbStages);
 
 		pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate,
 			patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
