@@ -5017,7 +5017,7 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 			parameters[12].end(); // bye windows line breaks
 		set<int> stagesToSampleFrom;
 		if (parameters[12] != "#")
-			stringToStages(parameters[12], nbStages);
+			stagesToSampleFrom = stringToStages(parameters[12], nbStages);
 
 		pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate,
 			patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
