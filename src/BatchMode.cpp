@@ -2171,6 +2171,7 @@ int CheckEmigFile()
 			BatchError(whichInputFile, lineNb, 0, " ");
 			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
 			nbErrors++;
+			break;
 		}
 
 		// read and validate columns relating to stage and sex-dependency and to IIV
@@ -2449,6 +2450,7 @@ int CheckTransferFile(string indir)
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
 			errors++;
+			break;
 		}
 
 		switch (gTransferType) {
@@ -2834,6 +2836,7 @@ int CheckSettleFile()
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
 			nbErrors++;
+			break;
 		}
 
 		if (gTransferType == 0)
@@ -3026,6 +3029,7 @@ int CheckTraitsFile(string indir)
 			BatchError(whichInputFile, lineNb, 0, " ");
 			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
 			nbErrors++;
+			break;
 		}
 
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
@@ -3936,6 +3940,7 @@ int CheckGeneticsFile(string inputDirectory) {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
 			nbErrors++;
+			break;
 		}
 
 		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutWeirCockerham >>
@@ -4216,6 +4221,7 @@ int CheckInitFile(string indir)
 			BatchError(filetype, line, 0, " ");
 			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
 			errors++;
+			break;
 		}
 
 		current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, 0, true, false);
