@@ -111,7 +111,6 @@ struct simCheck {
 batchfiles ParseControlAndCheckInputFiles(string, string, string);
 int CheckParameterFile();
 int CheckLandFile(int, string);
-int CheckGeneticsFile(string);
 int CheckDynamicFile(string, string);
 int CheckStageFile(string);
 int CheckTransitionFile(short, short);
