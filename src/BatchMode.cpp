@@ -5443,8 +5443,11 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		}
 		const string strNbInds = parameters[11];
 		const int nbStages = pSpecies->getStageParams().nStages;
-		remove(parameters[12].begin(), parameters[12].end(), '\r'),
-			parameters[12].end(); // bye windows line breaks
+		parameters[12].erase(
+			remove(parameters[12].begin(), parameters[12].end(), '\r'),
+			parameters[12].end() // bye windows line breaks
+		);
+
 		set<int> stagesToSampleFrom;
 		if (parameters[12] != "#")
 			stagesToSampleFrom = stringToStages(parameters[12], nbStages);
