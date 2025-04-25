@@ -49,6 +49,7 @@ using namespace std;
 #include "./RScore/Landscape.h"
 #include "./RScore/Species.h"
 #include "./RScore/SubCommunity.h"
+#include "./RScore/Management.h"
 #include "./BatchMode.h"
 
 #if LINUX_CLUSTER || R_CMD
@@ -88,6 +89,7 @@ paramSim* paramsSim;		// pointer to simulation parameters
 Species* pSpecies;		// pointer to species
 Community* pComm;		// pointer to community
 RSrandom* pRandom;		// pointer to random number routines
+Management* pManagement;	// pointer to management parameters
 
 //---------------------------------------------------------------------------
 #if LINUX_CLUSTER || RS_RCPP
@@ -144,6 +146,9 @@ int _tmain(int argc, _TCHAR* argv[])
 			b.transfer == 1,
 			b.transfer
 		);
+	    // create new Management
+//	    pManagement = new Management;
+//	    managementParams m = pManagement->getManagementParams();
 		cout << endl << "Batch input files OK" << endl;
 	}
 	else {

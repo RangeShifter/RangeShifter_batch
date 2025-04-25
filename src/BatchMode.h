@@ -120,7 +120,7 @@ int CheckTransferFile(string);
 int CheckSettleFile(void);
 int CheckInitFile(string);
 int CheckManageFile(string);
-int CheckTranslocFile(string);
+int CheckTranslocFile(void);
 int CheckInitIndsFile(void);
 simCheck CheckStageSex(string, int, int, simCheck, int, int, int, int, int, bool, bool);
 int CheckGeneticsFile(string inputDirectory);

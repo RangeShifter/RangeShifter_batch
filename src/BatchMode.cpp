@@ -59,9 +59,10 @@ int gFirstSimNb = 0; // not great, globals should not be modified.
 int fileNtraits; // no. of traits defined in genetic architecture file
 bool gHasGenetics = true;
 
-int translocation; // translocation feature
+int gHasTranslocation; // translocation feature
 
-bool spatial_demography; // spatial demography feature
+bool gHasSpatialDemography; // spatial demography feature
+short nDSlayer=gMaxNbLayers;
 
 set<int> gSimNbs; // record of simulation numbers to check input file use the same numbers
 
@@ -610,9 +611,14 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 		}
 	}
 
-	// Check management file
+	// Check management file if not NULL
 	controlFile >> paramname >> filename;
 	if (paramname == "ManagementFile" && !anyFormatError) {
+		if (filename == "NULL") {
+			gHasTranslocation = false;
+		}
+		else {
+			gHasTranslocation = true;
 		fname = indir + filename;
 		batchLog << endl << "Checking " << paramname << " " << fname << endl;
 		bManageFile.open(fname.c_str());
@@ -623,13 +629,12 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 			}
 			else {
 				FileOK(paramname, nSimuls, 0);
-//				manageFile = fname;
 				// Not sure whether I need to check whether the number of simulations in the management file matches the number of simulations in the control file
 				if (nSimuls != b.nSimuls) {
 					SimulnCountError(filename);
 					b.ok = false;
 				}
-				else manageFile = fname;
+					else managementFile = fname;
 			}
 			bManageFile.close();
 		}
@@ -638,6 +643,7 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 			b.ok = false;
 		}
 		bManageFile.clear();
+		}
 	}
 	else anyFormatError = true; // wrong control file format
 
@@ -4205,8 +4211,7 @@ int CheckManageFile(string indir){
 
 	int whichLine = 1;
 	int simNb = -98765, prevsimNb = -98765;
-	int nSimuls = 0;
-	string filename;
+	int nSimuls = 0, nSimsTransloc = 0;
 	string yearstr;
 	double catchingRate;
 
@@ -4255,8 +4260,18 @@ int CheckManageFile(string indir){
 			batchLog << "Checking " << ftype2 << " " << fname << endl;
 			bTranslocFile.open(fname.c_str());
 			if (bTranslocFile.is_open()) {
-				err = CheckTranslocFile(fname);
-				if (err == 0) FileHeadersOK(ftype2); else nbErrors++;
+				nSimsTransloc = CheckTranslocFile();
+
+				if (nSimsTransloc < 0) {
+				        nbErrors++;
+				    }
+				    else {
+				        if (nSimsTransloc != gSimNbs.size()) {
+				            SimulnCountError(filename);
+				        }
+				        else translocationFile = fname;
+				    }
+
 				bTranslocFile.close();
 			}
 			else {
@@ -4269,9 +4284,9 @@ int CheckManageFile(string indir){
 		// check  yearstr
 		// Check if it is a semicolon-separated list of integers
 		isMatch = regex_search(yearstr, patternIntList);
-		if (!isMatch && yearstr != "#") {
+		if (!isMatch) {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "Translocation years must be a semicolon-separated list of integers, or blank (#)." << endl;
+			batchLog << "Translocation years must be a semicolon-separated list of integers." << endl;
 			nbErrors++;
 		}
 		
@@ -4304,11 +4319,264 @@ int CheckManageFile(string indir){
 int CheckTranslocFile(){
 	string header;
 	int errors = 0;
+
+	simCheck current, prev;
+
+	string file = "TranslocationFile";
+
+	int line = 1;
+	int simNumber = -98765, prevsimNumber = -98765;
+	int nSims = 0;
+	int Year, prevYear = -98765;
+	string sourceStr, targetStr;
+	int nbCatch, minAge, maxAge, stage, sex;
+
+	const regex pattern2Int{ "^\"?([0-9]+);([0-9]+)\"?$" }; // semicolon-separated integers
+	const regex patternInt{ "^\"?([0-9]+)\"?$" }; // single integer
+	smatch match;
+
+
+	// Check header line
 	bTranslocFile >> header; if (header != "Simulation") errors++;
-	bTranslocFile >> header; if (header != "Translocation") errors++;
-	bTranslocFile >> header; if (header != "TranslocationYear") errors++;
-	bTranslocFile >> header; if (header != "TranslocationPatch") errors++;
-	bTranslocFile >> header
+	bTranslocFile >> header; if (header != "Year") errors++;
+	bTranslocFile >> header; if (header != "Source") errors++;
+	bTranslocFile >> header; if (header != "Target") errors++;
+	bTranslocFile >> header; if (header != "NbCatch") errors++;
+	bTranslocFile >> header; if (header != "MinAge") errors++;
+	bTranslocFile >> header; if (header != "MaxAge") errors++;
+	bTranslocFile >> header; if (header != "Stage") errors++;
+	bTranslocFile >> header; if (header != "Sex") errors++;
+
+
+	// Parse data lines
+
+	bTranslocFile >> simNumber; // several lines can contain the same simulation number
+
+	// first simulation number must match first one in parameterFile
+	if (simNumber != gFirstSimNb) {
+		BatchError(file, line, 111, "Simulation");
+		errors++;
+	}
+
+	while (simNumber != -98765) {
+			// check if simNb is in gSimNbs
+			if (!gSimNbs.contains(simNumber)) {
+				BatchError(file, line, 0, " ");
+				batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+				errors++;
+			}
+
+			// if simNb != previous simNb increase number of simulations
+			if (simNumber != prevsimNumber) {
+				nSims++;
+			}
+
+			// Parse parameters
+
+			bTranslocFile >> Year;
+			bTranslocFile >> sourceStr;
+			bTranslocFile >> targetStr;
+			bTranslocFile >> nbCatch;
+			bTranslocFile >> minAge;
+			bTranslocFile >> maxAge;
+			bTranslocFile >> stage;
+			bTranslocFile >> sex;
+
+
+			// check Year
+			// expect an integer, which is within the range of the simulated years and a member of the list of years
+			// check if it is a positive integer
+			// check if it is a valid year -> need to be checked later when reading in the translocation file
+			if (Year < 0) {
+				BatchError(file, line, 10, "Year");
+				errors++;
+			}
+			if (Year < prevYear) {
+				BatchError(file, line, 0, " ");
+				batchLog << "Translocation years must be in ascending order." << endl;
+				errors++;
+			}
+			// set prevYear to current year to assure that years appear in ascending order
+			if ( Year > prevYear ) {
+				prevYear = Year;
+			}
+
+			// check sourceStr:
+
+			// if it is a cell-based model, check if it is a semicolon-separated list of 2 integers
+			// extract both integers and check if they are in the range of the model
+
+			if ( patchmodel ) {
+				if (std::regex_match(sourceStr, match, patternInt)) {
+					// match[1] is a integer
+					int patchID = std::stoi(match[1]);
+					if(patchID < 0) {
+						BatchError(file, line, 0, " ");
+							batchLog << "Source location must be a positive integer." << endl;
+							errors++;
+					}
+				} else {
+					BatchError(file, line, 0, " ");
+					batchLog << "Source must be a integer." << endl;
+					errors++;
+				}
+			} else {
+				if (std::regex_match(sourceStr, match, pattern2Int)) {
+				        // match[1] and match[2] are the two captured integers
+				        int x = std::stoi(match[1]);
+				        int y = std::stoi(match[2]);
+				        if(x < 0 || y < 0) {
+				        	BatchError(file, line, 0, " ");
+				        	batchLog << "Source location must be positive integers." << endl;
+				        	errors++;
+				        }
+				    } else {
+						BatchError(file, line, 0, " ");
+						batchLog << "Source must be a semicolon-separated list of integers, representing the X,Y location of the source cell." << endl;
+						errors++;
+				    }
+			}
+
+
+			// check targetStr
+			// if it is a cell-based model, check if it is a semicolon-separated list of 2 integers
+			// extract both integers and check if they are in the range of the model
+
+			// if it is a patch-based model, expect a single integer, which is the patch ID
+			// check if it is a valid patch ID
+			if ( patchmodel ) {
+				if (std::regex_match(targetStr, match, patternInt)) {
+					// match[1] is a integer
+					int patchID = std::stoi(match[1]);
+					if(patchID < 0) {
+						BatchError(file, line, 0, " ");
+							batchLog << "Source location must be a positive integer." << endl;
+							errors++;
+					}
+				} else {
+					BatchError(file, line, 0, " ");
+					batchLog << "Source must be a integer." << endl;
+					errors++;
+				}
+			} else {
+				if (std::regex_match(targetStr, match, pattern2Int)) {
+						// match[1] and match[2] are the two captured integers
+						int x = std::stoi(match[1]);
+						int y = std::stoi(match[2]);
+						if(x < 0 || y < 0) {
+							BatchError(file, line, 0, " ");
+							batchLog << "Source location must be positive integers." << endl;
+							errors++;
+						}
+					} else {
+						BatchError(file, line, 0, " ");
+						batchLog << "Source must be a semicolon-separated list of integers, representing the X,Y location of the source cell." << endl;
+						errors++;
+					}
+			}
+
+			// check nbCatch
+			// check if it is a positive integer, if not -9
+			if (nbCatch < 0 && nbCatch != -9) {
+				BatchError(file, line, 10, "NbCatch");
+				errors++;
+			}
+
+			// check minAge
+			// check if it is a positive integer, if not -9 and not exceeding the maximum age of the species
+			if(stagestruct) {
+				if (minAge < 0 && minAge != -9) {
+					BatchError(file, line, 0, "MinAge");
+					batchLog << "MinAge must be greater 0 or -9." << endl;
+					errors++;
+				}
+//				if (minAge > maxAge) { // I need the maxAge of the species to check this
+//					BatchError(file, line, 0, " ");
+//					batchLog << "MinAge must be less than MaxAge." << endl;
+//					errors++;
+//				}
+			} else {
+				if (minAge != -9) {
+					BatchError(file, line, 0, "MinAge");
+					batchLog << "MinAge must be -9 for non stage structured models." << endl;
+					errors++;
+				}
+			}
+
+
+			// check maxAge
+			// check if it is a positive integer, if not -9, larger than minAge and not exceeding the maximum age of the species
+			if(stagestruct) {
+				if (maxAge < 0 && maxAge != -9) {
+					BatchError(file, line, 0, "MaxAge");
+					batchLog << "MaxAge must be greater 0 or -9." << endl;
+					errors++;
+				}
+				if (maxAge > 0 && maxAge < minAge) {
+					BatchError(file, line, 0, " ");
+					batchLog << "MaxAge must be greater than MinAge." << endl;
+					errors++;
+				}
+			} else {
+				if (maxAge != -9) {
+					BatchError(file, line, 0, "MaxAge");
+					batchLog << "MaxAge must be -9 for non stage structured models." << endl;
+					errors++;
+				}
+			}
+			// check stage
+			// check if it is a positive integer, if not -9, and not exceeding the number of stages simulated
+			if(stagestruct) {
+				if (stage < 0 && stage != -9) {
+					BatchError(file, line, 0, "Stage");
+					batchLog << "Stage must be greater 0 or -9." << endl;
+					errors++;
+				} else if (stage > stages) {
+					BatchError(file, line, 0, " ");
+					batchLog << "Stage must be less than or equal to the number of stages simulated." << endl;
+					errors++;
+				}
+
+			} else {
+				if (stage != -9) {
+					BatchError(file, line, 0, "Stage");
+					batchLog << "Stage must be -9 for non stage structured models." << endl;
+					errors++;
+				}
+			}
+
+			// check sex
+			// only valid for sexual models, check if it is 0 or 1, if not -9
+			if (sexesDem == 2) {
+				if ( sex != -9 && sex != 0 && sex != 1 ) {
+					BatchError(file, line, 0, "Sex");
+					batchLog << "Stage must be -9, 0 or 1." << endl;
+					errors++;
+				}
+			} else{
+				if ( sex != -9 ){
+					BatchError(file, line, 0, "Sex");
+					batchLog << "Sex must be -9 for asexual models." << endl;
+					errors++;
+				}
+			}
+
+			// read next line
+			line++;
+			prevsimNumber = simNumber;
+			simNumber = -98765;
+			bTranslocFile >> simNumber; // new line
+			if (bTranslocFile.eof()) simNumber = -98765;
+		} // end of while loop
+
+	if (!bTranslocFile.eof()) {
+		EOFerror(file);
+		errors++;
+	}
+
+	if (errors > 0) return -111;
+	else return nSims;
+
 	
 }
 
@@ -6647,11 +6915,11 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 }
 
 //---------------------------------------------------------------------------
-int ReadManageFile(Landscape* pLandscape, string managefile)
+int ReadManageFile(Landscape* pLandscape)
 {
-	// I think this is not needed?
+	// Just to make sure - but for the management file, I don't think it is needed
 	int error = 0;
-	// create new Management
+	// create new Management - is that needed??
 	if(pManagement != NULL)
 		delete pManagement;
 	pManagement = new Management;
@@ -6671,8 +6939,6 @@ int ReadManageFile(Landscape* pLandscape, string managefile)
 	vector<int> translocation_years; 
 	string translocation_file; 
 
-	// open management file
-	manageFile.open(managefile.c_str());
 	// read from management file:
 	// first line: simNb, translocation_file, translocation_years, catching_rate
 	manageFile >> simNb >> translocation_file >> translocYears >> catching_rate;
@@ -6692,6 +6958,8 @@ int ReadManageFile(Landscape* pLandscape, string managefile)
 
 	// set and update the management parameters
 	pManagement->setManagementParams(m);
+
+	return error;
 
 }
 
@@ -7164,6 +7432,13 @@ void RunBatch(int nSimuls, int nLandscapes)
 				flushHeaders(ifsTraits);
 			}
 
+			if (gHasTranslocation) {
+				manageFile.open(managementFile.c_str());
+				flushHeaders(manageFile);
+				translocFile.open(translocationFile.c_str());
+				flushHeaders(translocFile);
+			}
+
 			// nSimuls is the total number of lines (simulations) in
 			// the batch and is set in the control function
 			string msgsim = "Simulation,";
@@ -7208,6 +7483,17 @@ void RunBatch(int nSimuls, int nLandscapes)
 					}
 				}
 				
+				if (gHasTranslocation) {
+					read_error = ReadManageFile(pLandscape);
+					if (read_error) {
+						params_ok = false;
+					}
+//					read_error = ReadTranslocation(pLandscape);
+//					if (read_error) {
+//						params_ok = false;
+//					}
+				}
+
 				if (params_ok) {
 
 					cout << endl << "Running simulation nr. " << to_string(paramsSim->getSim().simulation)
@@ -7244,6 +7530,13 @@ void RunBatch(int nSimuls, int nLandscapes)
 				ifsGenetics.clear();
 				ifsTraits.close();
 				ifsTraits.clear();
+			}
+
+			if (gHasTranslocation) {
+				manageFile.close();
+				manageFile.clear();
+				translocFile.close();
+				translocFile.clear();
 			}
 
 			if (pLandscape != nullptr)
