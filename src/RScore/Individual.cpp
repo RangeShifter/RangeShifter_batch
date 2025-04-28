@@ -189,6 +189,10 @@ void Individual::inherit(Species* pSpecies, const Individual* mother) {
 			if (newTrait->getMutationRate() > 0 && pSpecies->areMutationsOn())
 				newTrait->mutate();
 		}
+
+		if (trait == GENETIC_LOAD1 || trait == GENETIC_LOAD2 || trait == GENETIC_LOAD3 || trait == GENETIC_LOAD4 || trait == GENETIC_LOAD5)
+			geneticFitness *= newTrait->express();
+
 		// Add the inherited trait and genes to the newborn's list
 		spTraitTable.insert(make_pair(trait, move(newTrait)));
 	}
@@ -1012,7 +1016,8 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 
 		} // end of switch (trfr.moveType)
 
-		if (patch > 0  // not no-data area or matrix
+		if (dispersing==1 && // only if it is still dispersing and did not die during the last step, it should make this decision!
+            patch > 0  // not no-data area or matrix
 			&& path->total >= settsteps.minSteps) {
 			pPatch = (Patch*)patch;
 			if (pPatch != pNatalPatch)
@@ -1050,7 +1055,7 @@ movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
 	array3x3d goal;	// to hold weights for moving towards a goal location
 	array3x3f hab;	// to hold weights for habitat (includes percep range)
 	int x2, y2; 			// x index from 0=W to 2=E, y index from 0=N to 2=S
-	int newX = 0, newY = 0;
+	int newX = -9, newY = -9; // BUGFIX: must not be 0 because 0,0 is a valid landscape cell
 	Cell* pCell;
 	Cell* pNewCell = NULL;
 	double sum_nbrs = 0.0;
@@ -1215,11 +1220,12 @@ movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
 			if (newX < land.minX || newX > land.maxX
 				|| newY < land.minY || newY > land.maxY) {
 				pNewCell = 0;
+			} else{
+			   pNewCell = pLand->findCell(newX, newY); // would also return 0 if outside boundary
 			}
-			pNewCell = pLand->findCell(newX, newY);
 		}
 	} while (!absorbing && pNewCell == 0 && loopsteps < 1000); // no-data cell
-	if (loopsteps >= 1000 || pNewCell == 0) {
+	if (loopsteps >= 1000 || pNewCell == 0 || (newX == -9 || newY== -9)) { // if no cell was found
 		// unable to make a move or crossed absorbing boundary
 		// flag individual to die
 		move.dist = -123.0;
