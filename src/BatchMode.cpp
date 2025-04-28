@@ -2973,7 +2973,8 @@ int CheckTraitsFile(string indir)
 	int simNb, nextLineSimNb;
 	string filename, inTraitType, inSex, inInitDist, inInitParams, inInitDomDist, inInitDomParams,
 		inDominanceDist, inDominanceParams, inIsInherited, inMutationDist, 
-		inMutationParams, inPositions, inNbPositions, inExpressionType, inMutationRate, inIsOutput;
+		inMutationParams, inPositions, inNbPositions, inInitPos, inNbInitPos,
+		inExpressionType, inMutationRate, inIsOutput;
 	int nbErrors = 0;
 	int nbSims = 0;
 	int nbGenLoadTraits = 0;
@@ -2988,6 +2989,8 @@ int CheckTraitsFile(string indir)
 	bTraitsFile >> header; if (header != "Positions") nbErrors++;
 	bTraitsFile >> header; if (header != "NbrOfPositions") nbErrors++;
 	bTraitsFile >> header; if (header != "ExpressionType") nbErrors++;
+	bTraitsFile >> header; if (header != "InitialPositions") nbErrors++;
+	bTraitsFile >> header; if (header != "NbrInitialPositions") nbErrors++;
 	bTraitsFile >> header; if (header != "InitialAlleleDist") nbErrors++;
 	bTraitsFile >> header; if (header != "InitialAlleleParams") nbErrors++;
 	bTraitsFile >> header; if (header != "InitialDomDist") nbErrors++;
@@ -3034,7 +3037,7 @@ int CheckTraitsFile(string indir)
 
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 		bTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions 
-			>> inExpressionType >> inInitDist >> inInitParams >> inInitDomDist >> inInitDomParams
+			>> inExpressionType >> inInitPos>> inNbInitPos >> inInitDist >> inInitParams >> inInitDomDist >> inInitDomParams
 			>> inIsInherited >> inMutationDist >> inMutationParams >> inDominanceDist >> inDominanceParams
 			>> inMutationRate >> inIsOutput;
 
@@ -3126,6 +3129,25 @@ int CheckTraitsFile(string indir)
 		if (isDisp && inExpressionType != "additive" && inExpressionType != "average") {
 			BatchError(whichInputFile, lineNb, 0, " ");
 			batchLog << "ExpressionType must be \"additive\" or \"average\" for dispersal traits." << endl;
+			nbErrors++;
+		}
+
+		isMatch = regex_search(inInitPos, patternPositions);
+		if (!isMatch && inInitPos != "random" && inInitPos != "all" && inInitPos != "#") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "InitialPositions must be either a semicolon-separated list of integer ranges, all, random, or # (nothing)." << endl;
+			nbErrors++;
+		}
+		if (inPositions == "random") {
+			if (stoi(inNbInitPos) <= 0) {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "NbrInitialPositions must be a strictly positive integrer." << endl;
+				nbErrors++;
+			}
+		}
+		else if (inNbPositions != "#") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "If InitialPositions is not random NbrInitialPositions must be blank (#)." << endl;
 			nbErrors++;
 		}
 
