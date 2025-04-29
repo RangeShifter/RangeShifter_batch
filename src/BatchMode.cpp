@@ -5087,51 +5087,84 @@ int ReadTraitsFile(ifstream& ifs, const int& nbRowsToRead) {
 
 // Set up a trait from input parameters and add it Species
 void setUpSpeciesTrait(vector<string> parameters) {
+
 	// Assumes all input is correct, errors have been handled by CheckTraits
 
 	const int genomeSize = pSpecies->getGenomeSize();
 	TraitType traitType = stringToTraitType(parameters[1]);
 	const sex_t sex = stringToSex(parameters[2]);
 	if (sex != NA) traitType = addSexDepToTrait(traitType, sex);
-	const set<int> positions = stringToLoci(parameters[3], parameters[4], genomeSize);
 	const ExpressionType expressionType = stringToExpressionType(parameters[5]);
 
+	set<int> positions;
+	string positionsArg = parameters[3];
+	if (positionsArg == "random") {
+		vector<int> lociToSampleFrom;
+		for (int pos = 0; pos < genomeSize; pos++) 
+			lociToSampleFrom.push_back(pos);
+		positions = selectRandomLociPositions(stoi(parameters[4]), lociToSampleFrom);
+	}
+	else { // comma-separated list
+		positions = stringToLoci(positionsArg);
+		for (auto position : positions) {
+			if (position >= genomeSize)
+				throw logic_error("Trait positions must not exceed genome size.\n");
+		}
+	}
+	
+	set<int> initialPositions;
+	positionsArg = parameters[6];
+	if (positionsArg == "all") {
+		initialPositions = positions;
+	}
+	else if (positionsArg == "random") {
+		vector<int> lociToSampleFrom(positions.begin(), positions.end());
+		initialPositions = selectRandomLociPositions(stoi(parameters[7]), lociToSampleFrom);
+	}
+	else if (positionsArg == "#") {
+		// nothing, set remains empty
+	}
+	else { // comma-separated list
+		initialPositions = stringToLoci(positionsArg);
+	}
+
 	// Initial allele distribution parameters
-	const DistributionType initDist = stringToDistributionType(parameters[6]);
-	const map<GenParamType, float> initParams = stringToParameterMap(parameters[7]);
+	const DistributionType initDist = stringToDistributionType(parameters[8]);
+	const map<GenParamType, float> initParams = stringToParameterMap(parameters[9]);
 
 	// Initial dominance distribution parameters
-	const DistributionType initDomDist = stringToDistributionType(parameters[8]);
-	const map<GenParamType, float> initDomParams = stringToParameterMap(parameters[9]);
+	const DistributionType initDomDist = stringToDistributionType(parameters[10]);
+	const map<GenParamType, float> initDomParams = stringToParameterMap(parameters[11]);
 
 	// Mutation parameters
-	bool isInherited = (parameters[10] == "TRUE");
+	bool isInherited = (parameters[12] == "TRUE");
 	DistributionType mutationDistribution = isInherited ? 
-		stringToDistributionType(parameters[11]) : 
+		stringToDistributionType(parameters[13]) : 
 		DistributionType::NONE;
 	map<GenParamType, float> mutationParameters;
 	if (isInherited) {
-		mutationParameters = stringToParameterMap(parameters[12]);
+		mutationParameters = stringToParameterMap(parameters[14]);
 	}
 
 	// Dominance distribution parameters
-	const DistributionType dominanceDist = stringToDistributionType(parameters[13]);
-	const map<GenParamType, float> dominanceParams = stringToParameterMap(parameters[14]);
+	const DistributionType dominanceDist = stringToDistributionType(parameters[15]);
+	const map<GenParamType, float> dominanceParams = stringToParameterMap(parameters[16]);
 
-	float mutationRate = isInherited ? stof(parameters[15]) : 0.0;
+	float mutationRate = isInherited ? stof(parameters[17]) : 0.0;
 	
-	parameters[16].erase(
+	parameters[18].erase(
 		// send windows line endings to hell where they belong
-		remove(parameters[16].begin(), parameters[16].end(), '\r'),
-		parameters[16].end()
+		remove(parameters[18].begin(), parameters[18].end(), '\r'),
+		parameters[18].end()
 	);
-	const bool isOutput = parameters[16] == "TRUE";
+	const bool isOutput = parameters[18] == "TRUE";
 
 	// Create species trait
 	int ploidy = gNbSexesDisp;
 	unique_ptr<SpeciesTrait> trait(new SpeciesTrait(
 		traitType, sex, 
 		positions, expressionType, 
+		initialPositions,
 		initDist, initParams, 
 		initDomDist, initDomParams,
 		isInherited, mutationRate, 
@@ -5292,66 +5325,51 @@ set<int> stringToChromosomeEnds(string str, const int& genomeSize) {
 	return chromosomeEnds;
 }
 
-set<int> selectRandomLociPositions(int nbLoci, const int& genomeSize) {
+set<int> selectRandomLociPositions(int nbLoci, vector<int> lociToSampleFrom) {
+	
+	// convert to vector to sample by index
 	set<int> positions;
-	if (nbLoci > genomeSize) throw logic_error("Number of random loci exceeds genome size.");
-	int rndLocus;
+	if (nbLoci > lociToSampleFrom.size()) throw logic_error("Number of random loci exceeds number of available positions.");
+	int rndIx;
 	for (int i = 0; i < nbLoci; ++i) {
-		do {
-			rndLocus = pRandom->IRandom(0, genomeSize - 1);
-		} while (positions.contains(rndLocus));
-		positions.insert(rndLocus);
+		rndIx = pRandom->IRandom(0, lociToSampleFrom.size() - 1);
+		positions.insert(lociToSampleFrom[rndIx]);
+		lociToSampleFrom.erase(lociToSampleFrom.begin() + rndIx); // rm element to not sample it again
 	}
 	return positions;
 }
 
-set<int> stringToLoci(string pos, string nLoci, const int& genomeSize) {
+set<int> stringToLoci(string pos) {
 
 	set<int> positions;
 
-	if (pos != "random") {
-
-		// Parse semicolon-separated list from input string
-		stringstream ss(pos);
-		string value, valueWithin;
-		// Read semicolon-separated positions
-		while (std::getline(ss, value, ';')) {
-			stringstream sss(value);
-			vector<int> positionRange;
-			// Read single positions and dash-separated ranges
-			while (std::getline(sss, valueWithin, '-')) {
-				valueWithin.erase(remove(valueWithin.begin(), valueWithin.end(), '\"'), valueWithin.end());
-				positionRange.push_back(stoi(valueWithin));
-			}
-			switch (positionRange.size()) {
-			case 1: // single position
-				if (positionRange[0] >= genomeSize)
-					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
-				positions.insert(positionRange[0]);
-				break;
-			case 2: // dash-separated range
-				if (positionRange[0] >= genomeSize || positionRange[1] >= genomeSize) {
-					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
-				}
-				if (positionRange[0] >= positionRange[1])
-					throw logic_error("Position ranges must be in ascending order");
-				for (int i = positionRange[0]; i < positionRange[1] + 1; ++i) {
-					positions.insert(i);
-				}
-				break;
-			default: // zero or more than 2 values between semicolons: error
-				throw logic_error("Traits file: ERROR - incorrectly formatted position range.");
-				break;
-			}
+	// Parse semicolon-separated list from input string
+	stringstream ss(pos);
+	string value, valueWithin;
+	// Read semicolon-separated positions
+	while (std::getline(ss, value, ';')) {
+		stringstream sss(value);
+		vector<int> positionRange;
+		// Read single positions and dash-separated ranges
+		while (std::getline(sss, valueWithin, '-')) {
+			valueWithin.erase(remove(valueWithin.begin(), valueWithin.end(), '\"'), valueWithin.end());
+			positionRange.push_back(stoi(valueWithin));
 		}
-
-		for (auto position : positions) {
-			if (position >= genomeSize)
-				throw logic_error("Traits file: ERROR - trait positions " + to_string(position) + " must not exceed genome size.\n");
+		switch (positionRange.size()) {
+		case 1: // single position
+			positions.insert(positionRange[0]);
+			break;
+		case 2: // dash-separated range
+			if (positionRange[0] >= positionRange[1])
+				throw logic_error("Position ranges must be in ascending order");
+			for (int i = positionRange[0]; i < positionRange[1] + 1; ++i) {
+				positions.insert(i);
+			}
+			break;
+		default: // zero or more than 2 values between semicolons: error
+			throw logic_error("Traits file: ERROR - incorrectly formatted position range.");
+			break;
 		}
-	}
-	else { // random
-		positions = selectRandomLociPositions(stoi(nLoci), genomeSize);
 	}
 	return positions;
 }
