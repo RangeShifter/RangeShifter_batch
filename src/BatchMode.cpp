@@ -3095,8 +3095,8 @@ int CheckTraitsFile(string indir)
 
 		// Check Positions and NbrOfPositions
 		const regex patternPositions{ "^\"?(([0-9]+-)?[0-9]+;)*([0-9]+-)?[0-9]+\"?$" };
-		bool isMatch = regex_search(inPositions, patternPositions);
-		if (!isMatch && inPositions != "random") {
+		bool isMatchPos = regex_search(inPositions, patternPositions);
+		if (!isMatchPos && inPositions != "random") {
 			BatchError(whichInputFile, lineNb, 0, " ");
 			batchLog << "Positions must be either a semicolon-separated list of integer ranges, or random." << endl;
 			nbErrors++;
@@ -3132,10 +3132,21 @@ int CheckTraitsFile(string indir)
 			nbErrors++;
 		}
 
-		isMatch = regex_search(inInitPos, patternPositions);
-		if (!isMatch && inInitPos != "random" && inInitPos != "all" && inInitPos != "#") {
+		// Check initial positions
+		bool isMatchInitPos = regex_search(inInitPos, patternPositions);
+		if (tr != GENETIC_LOAD && tr != NEUTRAL && inInitPos != "all") {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLog << "InitialPositions must be either a semicolon-separated list of integer ranges, all, random, or # (nothing)." << endl;
+			batchLog << "InitialPositions must be set to all for dispersal traits." << endl;
+			nbErrors++;
+		}
+		if (isMatchInitPos && !isMatchPos) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "InitialPositions cannot be a list if Positions is not a list." << endl;
+			nbErrors++;
+		}
+		if (!isMatchInitPos && inInitPos != "random" && inInitPos != "all" && inInitPos != "#") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "InitialPositions must be either a semicolon-separated list of integer ranges, all, random, or # (none)." << endl;
 			nbErrors++;
 		}
 		if (inPositions == "random") {
