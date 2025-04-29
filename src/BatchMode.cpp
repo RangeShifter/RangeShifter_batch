@@ -3102,7 +3102,12 @@ int CheckTraitsFile(string indir)
 			nbErrors++;
 		}
 		if (inPositions == "random") {
-			if (stoi(inNbPositions) <= 0) {
+			if (inNbPositions == "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "NbrOfPositions must be an integer if Positions is random." << endl;
+				nbErrors++;
+			}
+			else if (stoi(inNbPositions) <= 0) {
 				BatchError(whichInputFile, lineNb, 0, " ");
 				batchLog << "NbrOfPositions must be a strictly positive integrer." << endl;
 				nbErrors++;
@@ -3149,14 +3154,19 @@ int CheckTraitsFile(string indir)
 			batchLog << "InitialPositions must be either a semicolon-separated list of integer ranges, all, random, or # (none)." << endl;
 			nbErrors++;
 		}
-		if (inPositions == "random") {
-			if (stoi(inNbInitPos) <= 0) {
+		if (inInitPos == "random") {
+			if (inNbInitPos == "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "NbrInitialPositions must be an integer if InitialPositions is random." << endl;
+				nbErrors++;
+			}
+			else if (stoi(inNbInitPos) <= 0) {
 				BatchError(whichInputFile, lineNb, 0, " ");
 				batchLog << "NbrInitialPositions must be a strictly positive integrer." << endl;
 				nbErrors++;
 			}
 		}
-		else if (inNbPositions != "#") {
+		else if (inNbInitPos != "#") {
 			BatchError(whichInputFile, lineNb, 0, " ");
 			batchLog << "If InitialPositions is not random NbrInitialPositions must be blank (#)." << endl;
 			nbErrors++;
@@ -3180,7 +3190,7 @@ int CheckTraitsFile(string indir)
 		const regex patternParamsGamma{ "^\"?shape=[-]?([0-9]*[.])?[0-9]+;scale=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsMean{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsNeutral{ "^\"?max=[0-9]+\"?$" };
-
+		bool isMatch;
 		if (tr == NEUTRAL) {
 			if (inInitDist == "uniform") {
 				isMatch = regex_search(inInitParams, patternParamsNeutral);
@@ -5115,7 +5125,7 @@ void setUpSpeciesTrait(vector<string> parameters) {
 			lociToSampleFrom.push_back(pos);
 		positions = selectRandomLociPositions(stoi(parameters[4]), lociToSampleFrom);
 	}
-	else { // comma-separated list
+	else { // semicolon-separated list
 		positions = stringToLoci(positionsArg);
 		for (auto position : positions) {
 			if (position >= genomeSize)
@@ -5137,6 +5147,10 @@ void setUpSpeciesTrait(vector<string> parameters) {
 	}
 	else { // comma-separated list
 		initialPositions = stringToLoci(positionsArg);
+		for (auto position : initialPositions) {
+			if (!positions.contains(position))
+				throw logic_error("Initial trait positions must be a subset of Positions.\n");
+		}
 	}
 
 	// Initial allele distribution parameters
