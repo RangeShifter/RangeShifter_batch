@@ -33,13 +33,13 @@ SubCommunity::SubCommunity(Patch* pPch, int num) {
 	subCommNum = num;
 	pPatch = pPch;
 	// record the new sub-community no. in the patch
-	pPatch->setSubComm((intptr)this);
+	pPatch->setSubComm(this);
 	initial = false;
 	occupancy = 0;
 }
 
 SubCommunity::~SubCommunity() {
-	pPatch->setSubComm(0);
+	pPatch->setSubComm(nullptr);
 	int npops = (int)popns.size();
 	for (int i = 0; i < npops; i++) { // all populations
 		delete popns[i];
@@ -48,7 +48,7 @@ SubCommunity::~SubCommunity() {
 	if (occupancy != 0) delete[] occupancy;
 }
 
-intptr SubCommunity::getNum(void) { return subCommNum; }
+int SubCommunity::getNum(void) { return subCommNum; }
 
 Patch* SubCommunity::getPatch(void) { return pPatch; }
 
@@ -133,7 +133,7 @@ void SubCommunity::initialInd(Landscape* pLandscape, Species* pSpecies,
 	else {
 		if (iind.sex == 1) probmale = 1.0; else probmale = 0.0;
 	}
-	pInd = new Individual(pCell, pPatch, stg, age, repInt, probmale, trfr.moveModel, trfr.moveType);
+	pInd = new Individual(pSpecies, pCell, pPatch, stg, age, repInt, probmale, trfr.moveModel, trfr.moveType);
 
 	// add new individual to the population
 	// NB THIS WILL NEED TO BE CHANGED FOR MULTIPLE SPECIES...
@@ -299,8 +299,8 @@ void SubCommunity::emigration(void)
 	}
 }
 
-// Remove emigrants from their natal patch and add to patch 0 (matrix)
-void SubCommunity::initiateDispersal(SubCommunity* matrix) {
+// Remove emigrants from their natal patch and add to a map of vectors
+void SubCommunity::initiateDispersal(std::map<Species*,std::vector<Individual *>> &inds_map) {
 	if (subCommNum == 0) return; // no dispersal initiation in the matrix
 	popStats pop;
 	disperser disp;
@@ -308,11 +308,11 @@ void SubCommunity::initiateDispersal(SubCommunity* matrix) {
 	int npops = (int)popns.size();
 	for (int i = 0; i < npops; i++) { // all populations
 		pop = popns[i]->getStats();
+		Species* pSpecies = popns[i]->getSpecies();
 		for (int j = 0; j < pop.nInds; j++) {
 			disp = popns[i]->extractDisperser(j);
 			if (disp.yes) { // disperser - has already been removed from natal population
-				// add to matrix population
-				matrix->recruit(disp.pInd, pop.pSpecies);
+				inds_map[pSpecies].push_back(disp.pInd);
 			}
 		}
 		// remove pointers to emigrants
@@ -327,6 +327,16 @@ void SubCommunity::recruit(Individual* pInd, Species* pSpecies) {
 	for (int i = 0; i < npops; i++) { // all populations
 		if (pSpecies == popns[i]->getSpecies()) {
 			popns[i]->recruit(pInd);
+		}
+	}
+}
+
+// Add individuals into the local population of their species in the patch
+void SubCommunity::recruitMany(std::vector<Individual*>& inds, Species* pSpecies) {
+	int npops = (int)popns.size();
+	for (int i = 0; i < npops; i++) { // all populations
+		if (pSpecies == popns[i]->getSpecies()) {
+			popns[i]->recruitMany(inds);
 		}
 	}
 }
@@ -372,6 +382,7 @@ void SubCommunity::completeDispersal(Landscape* pLandscape, bool connect)
 	for (int i = 0; i < npops; i++) { // all populations
 		pSpecies = popns[i]->getSpecies();
 		popsize = popns[i]->getNInds();
+		#pragma omp parallel for private(settler, pNewPatch, pPop, pSubComm, pPrevCell, pPrevPatch)
 		for (int j = 0; j < popsize; j++) {
 			bool settled;
 			settler = popns[i]->extractSettler(j);
@@ -379,21 +390,25 @@ void SubCommunity::completeDispersal(Landscape* pLandscape, bool connect)
 			if (settled) {
 			// settler - has already been removed from matrix population
 			// find new patch
-				pNewPatch = (Patch*)settler.pCell->getPatch();
+				pNewPatch = settler.pCell->getPatch();
 				// find population within the patch (if there is one)
-				pPop = (Population*)pNewPatch->getPopn((intptr)pSpecies);
+				{
+#ifdef _OPENMP
+				const std::unique_lock<std::mutex> lock = pNewPatch->lockPopns();
+#endif // _OPENMP
+				pPop = pNewPatch->getPopn(pSpecies);
 				if (pPop == 0) { // settler is the first in a previously uninhabited patch
 					// create a new population in the corresponding sub-community
-					pSubComm = (SubCommunity*)pNewPatch->getSubComm();
+					pSubComm = pNewPatch->getSubComm();
 					pPop = pSubComm->newPopn(pLandscape, pSpecies, pNewPatch, 0);
+				}
 				}
 				pPop->recruit(settler.pInd);
 				if (connect) { // increment connectivity totals
 					int newpatch = pNewPatch->getSeqNum();
 					pPrevCell = settler.pInd->getLocn(0); // previous cell
-					intptr patch = pPrevCell->getPatch();
-					if (patch != 0) {
-						pPrevPatch = (Patch*)patch;
+					pPrevPatch = pPrevCell->getPatch();
+					if (pPrevPatch != nullptr) {
 						int prevpatch = pPrevPatch->getSeqNum();
 						pLandscape->incrConnectMatrix(prevpatch, newpatch);
 					}

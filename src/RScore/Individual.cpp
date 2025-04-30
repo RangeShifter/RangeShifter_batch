@@ -23,18 +23,93 @@
  //---------------------------------------------------------------------------
 
 #include "Individual.h"
+
+#ifdef _OPENMP
+#include <mutex>
+#endif
+
 //---------------------------------------------------------------------------
 
+template <typename T>
+MemoryQueue<T>::MemoryQueue(std::size_t size):
+	space(size),
+	data(new T[size]),
+	begin_idx(0),
+	nb_elts(0)
+{ }
+
+template <typename T>
+T &MemoryQueue<T>::front() {
+	return data[begin_idx];
+}
+
+template <typename T>
+T const &MemoryQueue<T>::front() const {
+	return data[begin_idx];
+}
+
+template <typename T>
+T &MemoryQueue<T>::back() {
+	return data[(begin_idx + nb_elts - 1) % space];
+}
+
+template <typename T>
+T const &MemoryQueue<T>::back() const {
+	return data[(begin_idx + nb_elts - 1) % space];
+}
+
+template <typename T>
+void MemoryQueue<T>::push(const T& value) {
+	size_t end_idx = (begin_idx + nb_elts) % space;
+	data[end_idx] = value;
+	nb_elts++;
+}
+
+template <typename T>
+void MemoryQueue<T>::push(T&& value) {
+	size_t end_idx = (begin_idx + nb_elts) % space;
+	data[end_idx] = std::move(value);
+	nb_elts++;
+}
+
+template <typename T>
+void MemoryQueue<T>::pop() {
+	begin_idx++;
+	begin_idx %= space;
+	nb_elts--;
+}
+
+template <typename T>
+std::size_t MemoryQueue<T>::size() const {
+	return nb_elts;
+}
+
+template <typename T>
+bool MemoryQueue<T>::empty() const {
+	return nb_elts == 0;
+}
+
+template <typename T>
+bool MemoryQueue<T>::full() const {
+	return nb_elts == space;
+}
+
+//---------------------------------------------------------------------------
+
+#ifdef _OPENMP
+std::atomic<int> Individual::indCounter = 0;
+#else // _OPENMP
 int Individual::indCounter = 0;
+#endif // _OPENMP
 
 //---------------------------------------------------------------------------
 
 // Individual constructor
-Individual::Individual(Cell* pCell, Patch* pPatch, short stg, short a, short repInt,
-	float probmale, bool movt, short moveType)
+Individual::Individual(Species* pSpecies, Cell* pCell, Patch* pPatch, short stg, short a, short repInt,
+	float probmale, bool movt, short moveType):
+	memory(pSpecies->getSMSTraits().memSize)
 {
-	indId = indCounter;
-	indCounter++; // unique identifier for each individual
+	indId = indCounter++; // unique identifier for each individual
 
 	stage = stg;
 	if (probmale <= 0.0) sex = 0;
@@ -868,7 +943,6 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies,
 	const short repType, const bool absorbing)
 {
 
-	intptr patch;
 	int patchNum = 0;
 	int newX = 0, newY = 0;
 	int dispersing = 1;
@@ -975,30 +1049,28 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies,
 				if (newX < land.minX || newX > land.maxX
 					|| newY < land.minY || newY > land.maxY) { // beyond absorbing boundary
 					pCell = 0;
-					patch = 0;
+					pPatch = nullptr;
 					patchNum = -1;
 				}
 				else {
 					pCell = pLandscape->findCell(newX, newY);
 					if (pCell == 0) { // no-data cell
-						patch = 0;
+						pPatch = nullptr;
 						patchNum = -1;
 					}
 					else {
-						patch = pCell->getPatch();
-						if (patch == 0) { // matrix
-							pPatch = 0;
+						pPatch = pCell->getPatch();
+						if (pPatch == nullptr) { // matrix
 							patchNum = 0;
 						}
 						else {
-							pPatch = (Patch*)patch;
 							patchNum = pPatch->getPatchNum();
 						}
 					}
 				}
 			}
 			else {
-				patch = 0;
+				pPatch = nullptr;
 				patchNum = -1;
 			}
 		} while (!absorbing && patchNum < 0 && loopsteps < 1000); 			 // in a no-data region
@@ -1067,7 +1139,6 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 
 	if (status != 1) return 0; // not currently dispersing
 
-	intptr patch;
 	int patchNum;
 	int newX, newY;
 	locn loc;
@@ -1076,7 +1147,7 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 	double angle;
 	double mortprob, rho, steplen;
 	movedata move;
-	Patch* pPatch = 0;
+	Patch* pPatch = nullptr;
 	bool absorbed = false;
 
 	landData land = pLandscape->getLandData();
@@ -1086,14 +1157,12 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 	trfrCRWTraits movt = pSpecies->getCRWTraits();
 	settleSteps settsteps = pSpecies->getSteps(stage, sex);
 
-	patch = pCurrCell->getPatch();
+	pPatch = pCurrCell->getPatch();
 
-	if (patch == 0) { // matrix
-		pPatch = 0;
+	if (pPatch == nullptr) { // matrix
 		patchNum = 0;
 	}
 	else {
-		pPatch = (Patch*)patch;
 		patchNum = pPatch->getPatchNum();
 	}
 	// apply step-dependent mortality risk ...
@@ -1117,7 +1186,7 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 	else { // take a step
 		(path->year)++;
 		(path->total)++;
-		if (patch == 0 || pPatch == 0 || patchNum == 0) { // not in a patch
+		if (pPatch == nullptr || patchNum == 0) { // not in a patch
 			if (path != 0) path->settleStatus = 0; // reset path settlement status
 			(path->out)++;
 		}
@@ -1140,13 +1209,7 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 
 				// WOULD IT BE MORE EFFICIENT FOR smsMove TO RETURN A POINTER TO THE NEW CELL? ...
 
-				patch = pCurrCell->getPatch();
-				if (patch == 0) {
-					pPatch = 0;
-				}
-				else {
-					pPatch = (Patch*)patch;
-				}
+				pPatch = pCurrCell->getPatch();
 				if (sim.saveVisits && pPatch != pNatalPatch) {
 					pCurrCell->incrVisits();
 				}
@@ -1197,11 +1260,11 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 				else
 					pCurrCell = pLandscape->findCell(newX, newY);
 				if (pCurrCell == 0) { // no-data cell or beyond absorbing boundary
-					patch = 0;
+					pPatch = nullptr;
 					if (absorbing) absorbed = true;
 				}
 				else
-					patch = pCurrCell->getPatch();
+					pPatch = pCurrCell->getPatch();
 			} while (!absorbing && pCurrCell == 0 && loopsteps < 1000);
 			crw->prevdrn = (float)angle;
 			crw->xc = (float)xcnew; crw->yc = (float)ycnew;
@@ -1225,9 +1288,9 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 
 		} // end of switch (trfr.moveType)
 
-		if (patch > 0  // not no-data area or matrix
+		if (dispersing == 1 &&
+            pPatch != nullptr  // not no-data area or matrix
 			&& path->total >= settsteps.minSteps) {
-			pPatch = (Patch*)patch;
 			if (pPatch != pNatalPatch)
 			{
 				// determine whether the new patch is potentially suitable
@@ -1265,7 +1328,7 @@ movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
 	array3x3d goal;	// to hold weights for moving towards a goal location
 	array3x3f hab;	// to hold weights for habitat (includes percep range)
 	int x2, y2; 			// x index from 0=W to 2=E, y index from 0=N to 2=S
-	int newX = 0, newY = 0;
+	int newX = -9, newY = -9;
 	Cell* pCell;
 	Cell* pNewCell = NULL;
 	double sum_nbrs = 0.0;
@@ -1325,7 +1388,10 @@ movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
 
 	// get habitat-dependent weights (mean effective costs, given perceptual range)
 	// first check if costs have already been calculated
-
+	{
+#ifdef _OPENMP
+	const std::unique_lock<std::mutex> lock = pCurrCell->lockCost();
+#endif
 	hab = pCurrCell->getEffCosts();
 
 	if (hab.cell[0][0] < 0.0) { // costs have not already been calculated
@@ -1335,6 +1401,7 @@ movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
 	}
 	else {
 		// they have already been calculated - no action required
+	}
 	}
 
 	// determine weighted effective cost for the 8 neighbours
@@ -1428,11 +1495,12 @@ movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
 			if (newX < land.minX || newX > land.maxX
 				|| newY < land.minY || newY > land.maxY) {
 				pNewCell = 0;
+			} else{
+			   pNewCell = pLand->findCell(newX, newY); // would also return 0 if outside boundary
 			}
-			pNewCell = pLand->findCell(newX, newY);
 		}
 	} while (!absorbing && pNewCell == 0 && loopsteps < 1000); // no-data cell
-	if (loopsteps >= 1000 || pNewCell == 0) {
+	if (loopsteps >= 1000 || pNewCell == 0 || (newX == -9 || newY== -9)) { // if no cell was found
 		// unable to make a move or crossed absorbing boundary
 		// flag individual to die
 		move.dist = -123.0;
@@ -1442,7 +1510,7 @@ movedata Individual::smsMove(Landscape* pLand, Species* pSpecies,
 		newcellcost = pNewCell->getCost();
 		move.cost = move.dist * 0.5f * ((float)cellcost + (float)newcellcost);
 		// make the selected move
-		if ((short)memory.size() == movt.memSize) {
+		if (memory.full()) {
 			memory.pop(); // remove oldest memory element
 		}
 		memory.push(current); // record previous location in memory
@@ -1733,6 +1801,10 @@ void Individual::outGenetics(const int rep, const int year, const int spnum,
 }
 
 #if RS_RCPP
+#ifdef _OPENMP
+std::mutex outMovePaths_mutex;
+#endif
+
 //---------------------------------------------------------------------------
 // Write records to movement paths file
 void Individual::outMovePath(const int year)
@@ -1741,6 +1813,9 @@ void Individual::outMovePath(const int year)
 
 	//if (pPatch != pNatalPatch) {
 	loc = pCurrCell->getLocn();
+#ifdef _OPENMP
+	const std::lock_guard<std::mutex> lock(outMovePaths_mutex);
+#endif
 	// if still dispersing...
 	if (status == 1) {
 		// at first step, record start cell first
@@ -1816,11 +1891,13 @@ double cauchy(double location, double scale) {
 
 void testIndividual() {
 
+	Species* pSpecies = new Species();
+
 	Patch* pPatch = new Patch(0, 0);
 	int cell_x = 2;
 	int cell_y = 5;
 	int cell_hab = 2;
-	Cell* pCell = new Cell(cell_x, cell_y, (intptr)pPatch, cell_hab);
+	Cell* pCell = new Cell(cell_x, cell_y, pPatch, cell_hab);
 
 	// Create an individual
 	short stg = 0;
@@ -1829,7 +1906,7 @@ void testIndividual() {
 	float probmale = 0;
 	bool uses_movt_process = true;
 	short moveType = 1;
-	Individual ind(pCell, pPatch, stg, age, repInt, probmale, uses_movt_process, moveType);
+	Individual ind(pSpecies, pCell, pPatch, stg, age, repInt, probmale, uses_movt_process, moveType);
 
 	// An individual can move to a neighbouring cell
 	//ind.moveto();
