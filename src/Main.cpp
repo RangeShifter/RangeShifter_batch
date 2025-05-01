@@ -42,7 +42,9 @@ Author: Steve Palmer, University of Aberdeen
 #include <iomanip>
 #include <stdlib.h>
 #include <cassert>
-
+#ifdef _OPENMP
+#include <omp.h>
+#endif // _OPENMP
 using namespace std;
 
 #include "./RScore/Parameters.h"
@@ -102,6 +104,10 @@ int _tmain(int argc, _TCHAR* argv[])
 #else
 	cout << "RangeShifter Release Mode" << endl;
 #endif
+
+#ifdef _OPENMP
+	cout << "OpenMP parallelisation enabled with up to " << omp_get_max_threads() << " threads." << endl;
+#endif //_OPENMP
 
 #if RSDEBUG
 	assert(0.1 > 0.0); // assert does run correctly

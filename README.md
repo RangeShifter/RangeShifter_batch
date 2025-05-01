@@ -1,4 +1,4 @@
-# RangeShifter Batch Mode 
+# RangeShifter Batch Mode
 
 C++ code for the RangeShifter v2 batch mode application 
 
@@ -56,6 +56,23 @@ Hit the button to build and run RangeShifter. The executable should be built in 
 
 For instructions on how to setup the project directory and input files, please refer to section 3.3 of the [User Manual](https://raw.githubusercontent.com/RangeShifter/RangeShifter-software-and-documentation/master/RangeShifter_v2.0_UserManual.pdf), and to the [documentation repository](https://github.com/RangeShifter/RangeShifter-software-and-documentation) for examples.
 
+## Parallelisation
+
+RangeShifter supports partial parallelisation with OpenMP (thanks @nboullis!).
+
+Parallelisation is turned off by default, but can be enabled by passing macro `OMP` to CMake:
+
+```bash
+cmake -DOMP= ..
+cmake --build .
+```
+
+The number of threads can be controlled with the `OMP_NUM_THREADS` variable:
+
+```bash
+OMP_NUM_THREADS=10 ./RangeShifter.exe ./
+```
+
 ## Contributing
 
 See [CONTRIBUTING](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/main/CONTRIBUTING.md)
@@ -67,16 +84,20 @@ See [CONTRIBUTING](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/m
 - [RangeShiftR-pkg](https://github.com/RangeShifter/RangeShiftR-pkg), source for the R interface
 
 ## Authors
+
 **Developers:**
+
 - Theo Pannetier ([@TheoPannetier](https://github.com/TheoPannetier))
 - Jette Reeg ([@JetteReeg](https://github.com/JetteReeg))
 - Steve Palmer
 - Roslyn Henry ([@RoslynHenry](https://github.com/RoslynHenry))
 
 **Maintainer:**
+
 - Theo Pannetier ([@TheoPannetier](https://github.com/TheoPannetier))
 
 Concepts:
+
 - Damaris Zurell ([@damariszurell](https://github.com/damariszurell))
 - Greta Bocedi ([@GretaBocedi](https://github.com/GretaBocedi))
 - Justin Travis
