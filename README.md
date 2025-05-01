@@ -1,6 +1,6 @@
-# RangeShifter Batch Mode <img src="doc/RS_logo.png" align="right" height = 100/>
+# RangeShifter Batch Mode with Graphics <img src="doc/RS_logo.png" align="right" height = 100/>
 
-C++ code for the RangeShifter v2 batch mode application
+C++ code for the RangeShifter v2 batch mode application. 
 
 <img title="" src="https://github.com/RangeShifter/RangeShifter_batch_dev/blob/main/doc/rs_batch_logo.png" alt="" align="right" height="150">
 
@@ -18,6 +18,8 @@ This repo contains the source code for the Batch Mode interface of RangeShifter.
 In Batch Mode, RangeShifter can be run from the command line (e.g., `./rangeshifter.exe`) within a project directory containing a set of input files.
 This allows the user to run large batches of simulations with different parameters, which would need to be specified individually in the GUI version.
 The Batch Mode also enables running RangeShifter on machines with a non-interactive interface, for example a high-performance cluster.
+
+
 
 ## Building RangeShifter
 
@@ -56,6 +58,28 @@ g++ --std=c++20 -o RangeShifter.exe ./src/*.cpp ./src/RScore/!(Main).cpp -DLINUX
 ## Running RangeShifter
 
 For instructions on how to setup the project directory and input files, please refer to section 3.3 of the [User Manual](https://raw.githubusercontent.com/RangeShifter/RangeShifter-software-and-documentation/master/RangeShifter_v2.0_UserManual.pdf), and to the [documentation repository](https://github.com/RangeShifter/RangeShifter-software-and-documentation) for examples.
+
+## SFML
+
+🚧 **Work in progress** - the graphic output is currently incorrect. 🚧
+
+This branch contains some basic graphic output using the [SFML](https://www.sfml-dev.org/) C++ library to help with debugging. It is not meant to be a replacement of the GUI.
+
+![](doc/sfml_demo.png)
+
+#### Building with SFML
+
+Building this branch requires two additional resources:
+
+1. The SFML library, which CMake should be able to fetch automatically from GitHub
+
+2. A `gfx` resource directory (currently containing only a font), which must be copied in the active project directory before running RangeShifter.
+
+#### Usage
+
+The simulation can be paused/resumed by pressing the space bar. The simulation will automatically pause at the end of the last year.
+
+The palette can be edited by changing the values in `BatchView::habitatPalette`.
 
 ## Contributing
 
