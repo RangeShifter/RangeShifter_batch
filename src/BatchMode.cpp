@@ -41,7 +41,7 @@ ofstream batchLog;
 ifstream parameters;
 ifstream ssfile, tmfile, fdfile, ddfile, sdfile;
 ifstream emigFile, transFile, settFile, initFile, initIndsFile;
-ifstream landfile, dynlandfile;
+ifstream landfile, dynLandIfs;
 ifstream ifsGenetics, ifsTraits;
 
 // global variables passed between parsing functions...
@@ -56,6 +56,8 @@ int gNbSexesDisp;	// no. of explicit sexes for dispersal model
 int gFirstSimNb = 0; // not great, globals should not be modified.
 int fileNtraits; // no. of traits defined in genetic architecture file
 bool gHasGenetics = true;
+
+set<int> gSimNbs; // record of simulation numbers to check input file use the same numbers
 
 // Track trait-relevant options to check for coherency across input files, 
 // e.g. if emig file says emigration is indvar, trait file should have d0 entry
@@ -706,10 +708,7 @@ int CheckParameterFile()
 	bParamFile >> header; if (header != "OutIntTraitCell") nbErrors++;
 	bParamFile >> header; if (header != "OutIntTraitRow") nbErrors++;
 	bParamFile >> header; if (header != "OutIntConn") nbErrors++;
-	bParamFile >> header; if (header != "SaveMaps") nbErrors++;
-	bParamFile >> header; if (header != "MapsInterval") nbErrors++;
 	bParamFile >> header; if (header != "SMSHeatMap") nbErrors++;
-	bParamFile >> header; if (header != "DrawLoadedSp") nbErrors++;
 	bParamFile >> header; if (header != "FixReplicateSeed") nbErrors++;
 
 	if (nbErrors > 0 || nbKerrors > 0) {
@@ -740,6 +739,9 @@ int CheckParameterFile()
 		nSimuls++;
 	}
 	while (simNb != -98765) {
+
+		// Record simulation numbers to cross-check other files
+		gSimNbs.insert(simNb);
 
 		// Initialise trait option map with simulation numbers
 		gTraitOptions.emplace(simNb, TraitInputOptions());
@@ -1037,25 +1039,10 @@ int CheckParameterFile()
 				nbErrors++;
 			}
 		}
-		bParamFile >> inSaveMaps; 
-		if (inSaveMaps != 0 && inSaveMaps != 1)
-		{
-			BatchError(whichFile, whichLine, 1, "SaveMaps"); 
-			nbErrors++;
-		}
-		bParamFile >> inMapsInterval; 
-		if (inSaveMaps == 1 && inMapsInterval < 1) {
-			BatchError(whichFile, whichLine, 11, "MapsInterval");
-			nbErrors++;
-		}
+		
 		bParamFile >> inSMSHeatMap; 
 		if (inSMSHeatMap != 0 && inSMSHeatMap != 1) {
 			BatchError(whichFile, whichLine, 1, "SMSHeatMap");
-			nbErrors++;
-		}
-		bParamFile >> inDrawLoadedSp; 
-		if (inSaveMaps == 1 && (inDrawLoadedSp != 0 && inDrawLoadedSp != 1)) {
-			BatchError(whichFile, whichLine, 1, "DrawLoadedSp");
 			nbErrors++;
 		}
 		bParamFile >> inFixReplicateSeed; 
@@ -1699,6 +1686,13 @@ int CheckStageFile(string indir)
 	}
 	prevsimul = inint;
 	while (inint != -98765) {
+
+		if (!gSimNbs.contains(inint)) {
+			BatchError(filetype, line, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			errors++;
+		}
+
 		simuls++;
 		bStageStructFile >> inint;
 		if (inint < 0 || inint > 1) { BatchError(filetype, line, 1, "PostDestructn"); errors++; }
@@ -2121,7 +2115,7 @@ int CheckWeightsFile(string filetype)
 }
 
 //---------------------------------------------------------------------------
-int CheckEmigFile(void)
+int CheckEmigFile()
 {
 	string header;
 	int simNb;
@@ -2172,6 +2166,14 @@ int CheckEmigFile(void)
 	}
 
 	while (readNextLine) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+			break;
+		}
+
 		// read and validate columns relating to stage and sex-dependency and to IIV
 		bEmigrationFile >> inDensDep >> inUseFullKern >> inStgDep >> inSexDep;
 		bEmigrationFile >> inIndVar >> inEmigStg >> inStage >> inSex;
@@ -2215,7 +2217,7 @@ int CheckEmigFile(void)
 			&& (inEmigStg < 0 || inEmigStg >= stages)) {
 			BatchError(whichInputFile, lineNb, 0, "EmigStage");
 			nbErrors++;
-			batchLog << "EmigStage must be from 0 to " << to_string(stages - 1) << endl;
+			batchLog << "EmigStage must be an integer between 0 and " << to_string(stages - 1) << endl;
 		}
 		if (inSexDep != 0 && inSexDep != 1) {
 			BatchError(whichInputFile, lineNb, 1, "SexDep");
@@ -2438,10 +2440,18 @@ int CheckTransferFile(string indir)
 	bTransferFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
-		BatchError(whichFile, whichLine, 111, "Simulation"); errors++;
+		BatchError(whichFile, whichLine, 111, "Simulation"); 
+		errors++;
 	}
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			errors++;
+			break;
+		}
 
 		switch (gTransferType) {
 
@@ -2771,7 +2781,7 @@ int CheckTransferFile(string indir)
 }
 
 //---------------------------------------------------------------------------
-int CheckSettleFile(void)
+int CheckSettleFile()
 {
 	string header;
 	int simNb, inStageDep, inSexDep, inStage, inSex, inSettleType;
@@ -2821,6 +2831,14 @@ int CheckSettleFile(void)
 	}
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+			break;
+		}
+
 		if (gTransferType == 0)
 		{ // dispersal kernel
 			// read and validate columns relating to stage and sex-dependency (NB no IIV here)
@@ -2953,9 +2971,10 @@ int CheckTraitsFile(string indir)
 {
 	string header, colheader;
 	int simNb, nextLineSimNb;
-	string filename, inTraitType, inSex, inInitDist, inInitParams,
+	string filename, inTraitType, inSex, inInitDist, inInitParams, inInitDomDist, inInitDomParams,
 		inDominanceDist, inDominanceParams, inIsInherited, inMutationDist, 
-		inMutationParams, inPositions, inNbPositions, inExpressionType, inMutationRate, inIsOutput;
+		inMutationParams, inPositions, inNbPositions, inInitPos, inNbInitPos,
+		inExpressionType, inMutationRate, inIsOutput;
 	int nbErrors = 0;
 	int nbSims = 0;
 	int nbGenLoadTraits = 0;
@@ -2970,13 +2989,17 @@ int CheckTraitsFile(string indir)
 	bTraitsFile >> header; if (header != "Positions") nbErrors++;
 	bTraitsFile >> header; if (header != "NbrOfPositions") nbErrors++;
 	bTraitsFile >> header; if (header != "ExpressionType") nbErrors++;
-	bTraitsFile >> header; if (header != "InitialDistribution") nbErrors++;
-	bTraitsFile >> header; if (header != "InitialParameters") nbErrors++;
-	bTraitsFile >> header; if (header != "DominanceDistribution") nbErrors++;
-	bTraitsFile >> header; if (header != "DominanceParameters") nbErrors++;
+	bTraitsFile >> header; if (header != "InitialPositions") nbErrors++;
+	bTraitsFile >> header; if (header != "NbrInitialPositions") nbErrors++;
+	bTraitsFile >> header; if (header != "InitialAlleleDist") nbErrors++;
+	bTraitsFile >> header; if (header != "InitialAlleleParams") nbErrors++;
+	bTraitsFile >> header; if (header != "InitialDomDist") nbErrors++;
+	bTraitsFile >> header; if (header != "InitialDomParams") nbErrors++;
 	bTraitsFile >> header; if (header != "IsInherited") nbErrors++;
 	bTraitsFile >> header; if (header != "MutationDistribution") nbErrors++;
 	bTraitsFile >> header; if (header != "MutationParameters") nbErrors++;
+	bTraitsFile >> header; if (header != "DominanceDistribution") nbErrors++;
+	bTraitsFile >> header; if (header != "DominanceParameters") nbErrors++;
 	bTraitsFile >> header; if (header != "MutationRate") nbErrors++;
 	bTraitsFile >> header; if (header != "OutputValues") nbErrors++;
 
@@ -3002,11 +3025,20 @@ int CheckTraitsFile(string indir)
 		nbErrors++;
 	}
 	int nbRowsToRead = 0;
+
 	while (!stopReading) {
 
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+			break;
+		}
+
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
-		bTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions >> inExpressionType >> inInitDist >> inInitParams
-			>> inDominanceDist >> inDominanceParams >> inIsInherited >> inMutationDist >> inMutationParams
+		bTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions 
+			>> inExpressionType >> inInitPos>> inNbInitPos >> inInitDist >> inInitParams >> inInitDomDist >> inInitDomParams
+			>> inIsInherited >> inMutationDist >> inMutationParams >> inDominanceDist >> inDominanceParams
 			>> inMutationRate >> inIsOutput;
 
 		current = CheckStageSex(whichInputFile, lineNb, simNb, prev, 0, 0, 0, 0, 0, true, false);
@@ -3062,15 +3094,20 @@ int CheckTraitsFile(string indir)
 		allReadTraits.push_back(tr);
 
 		// Check Positions and NbrOfPositions
-		const regex patternPositions{ "^\"?(([0-9]+-)?[0-9]+,)*([0-9]+-)?[0-9]+\"?$" };
-		bool isMatch = regex_search(inPositions, patternPositions);
-		if (!isMatch && inPositions != "random") {
+		const regex patternPositions{ "^\"?(([0-9]+-)?[0-9]+;)*([0-9]+-)?[0-9]+\"?$" };
+		bool isMatchPos = regex_search(inPositions, patternPositions);
+		if (!isMatchPos && inPositions != "random") {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLog << "Positions must be either a comma-separated list of integer ranges, or random." << endl;
+			batchLog << "Positions must be either a semicolon-separated list of integer ranges, or random." << endl;
 			nbErrors++;
 		}
 		if (inPositions == "random") {
-			if (stoi(inNbPositions) <= 0) {
+			if (inNbPositions == "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "NbrOfPositions must be an integer if Positions is random." << endl;
+				nbErrors++;
+			}
+			else if (stoi(inNbPositions) <= 0) {
 				BatchError(whichInputFile, lineNb, 0, " ");
 				batchLog << "NbrOfPositions must be a strictly positive integrer." << endl;
 				nbErrors++;
@@ -3100,36 +3137,66 @@ int CheckTraitsFile(string indir)
 			nbErrors++;
 		}
 
-		// Check InitialDistribution
-		if (tr == NEUTRAL && inInitDist != "uniform") {
+		// Check initial positions
+		bool isMatchInitPos = regex_search(inInitPos, patternPositions);
+		if (tr != GENETIC_LOAD && tr != NEUTRAL && inInitPos != "all") {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLog << "InitialDistribution must be uniform for the neutral trait." << endl;
+			batchLog << "InitialPositions must be set to all for dispersal traits." << endl;
 			nbErrors++;
 		}
-		if (tr == GENETIC_LOAD && inInitDist != "#") {
+		if (isMatchInitPos && !isMatchPos) {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLog << "InitialDistribution must be blank (#) for genetic load traits." << endl;
+			batchLog << "InitialPositions cannot be a list if Positions is not a list." << endl;
+			nbErrors++;
+		}
+		if (!isMatchInitPos && inInitPos != "random" && inInitPos != "all" && inInitPos != "#") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "InitialPositions must be either a semicolon-separated list of integer ranges, all, random, or # (none)." << endl;
+			nbErrors++;
+		}
+		if (inInitPos == "random") {
+			if (inNbInitPos == "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "NbrInitialPositions must be an integer if InitialPositions is random." << endl;
+				nbErrors++;
+			}
+			else if (stoi(inNbInitPos) <= 0) {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "NbrInitialPositions must be a strictly positive integrer." << endl;
+				nbErrors++;
+			}
+		}
+		else if (inNbInitPos != "#") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "If InitialPositions is not random NbrInitialPositions must be blank (#)." << endl;
+			nbErrors++;
+		}
+
+		// Check InitialAlleleDist
+		if (tr == NEUTRAL && inInitDist != "uniform") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "InitialAlleleDist must be uniform for the neutral trait." << endl;
 			nbErrors++;
 		}
 		if (isDisp && inInitDist != "normal" && inInitDist != "uniform") {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLog << "InitialDistribution must be either normal or uniform for dispersal traits." << endl;
+			batchLog << "InitialAlleleDist must be either normal or uniform for dispersal traits." << endl;
 			nbErrors++;
 		}
 
-		// Check InitialParameters
-		const regex patternParamsUnif{ "^\"?min=[-]?([0-9]*[.])?[0-9]+,max=[-]?([0-9]*[.])?[0-9]+\"?$" };
-		const regex patternParamsNormal{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+,sd=[-]?([0-9]*[.])?[0-9]+\"?$" };
-		const regex patternParamsGamma{ "^\"?shape=[-]?([0-9]*[.])?[0-9]+,scale=[-]?([0-9]*[.])?[0-9]+\"?$" };
+		// Check InitialAlleleParams
+		const regex patternParamsUnif{ "^\"?min=[-]?([0-9]*[.])?[0-9]+;max=[-]?([0-9]*[.])?[0-9]+\"?$" };
+		const regex patternParamsNormal{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+;sd=[-]?([0-9]*[.])?[0-9]+\"?$" };
+		const regex patternParamsGamma{ "^\"?shape=[-]?([0-9]*[.])?[0-9]+;scale=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsMean{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsNeutral{ "^\"?max=[0-9]+\"?$" };
-
+		bool isMatch;
 		if (tr == NEUTRAL) {
 			if (inInitDist == "uniform") {
 				isMatch = regex_search(inInitParams, patternParamsNeutral);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For neutral trait with uniform initialisation, InitialParameters must have form max=int" << endl;
+					batchLog << "For neutral trait with uniform initialisation, InitialAlleleParams must have form max=int" << endl;
 					nbErrors++;
 				}
 				else {
@@ -3144,21 +3211,17 @@ int CheckTraitsFile(string indir)
 			// if not uniform then initDist must be blank, no params
 			else {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "For neutral trait with uniform initialisation, InitialParameters must have form max=int" << endl;
+				batchLog << "For neutral trait with uniform initialisation, InitialAlleleParams must have form max=int" << endl;
 				nbErrors++;
 			}
 		}
-		if (tr == GENETIC_LOAD && inInitParams != "#") {
-			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLog << "For genetic load traits, InitialParameters must be blank (#)" << endl;
-			nbErrors++;
-		}
+
 		if (isDisp) {
 			if (inInitDist == "uniform") {
 				isMatch = regex_search(inInitParams, patternParamsUnif);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For dispersal trait uniform initialisation, InitialParameters must have form min=float,max=float" << endl;
+					batchLog << "For dispersal trait uniform initialisation, InitialAlleleParams must have form min=float;max=float" << endl;
 					nbErrors++;
 				}
 			}
@@ -3166,81 +3229,123 @@ int CheckTraitsFile(string indir)
 				isMatch = regex_search(inInitParams, patternParamsNormal);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For normal initialisation, InitialParameters must have form mean=float,sd=float" << endl;
+					batchLog << "For normal initialisation, InitialAlleleParams must have form mean=float;sd=float" << endl;
 					nbErrors++;
 				}
-			}
-		}
-
-		// Check DominanceDistribution and DominanceParameters
-		if (tr == NEUTRAL) {
-			if (inDominanceDist != "#") {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "DominanceDistribution must be left blank (#) for the neutral trait." << endl;
-				nbErrors++;
-			}
-			if (inDominanceParams != "#") {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "DominanceParameters must be left blank (#) for the neutral trait." << endl;
-				nbErrors++;
-			}
-		}
-		if (isDisp) {
-			if (inDominanceDist != "#") {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "DominanceDistribution must be left blank (#) for dispersal traits." << endl;
-				nbErrors++;
-			}
-			if (inDominanceParams != "#") {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "DominanceParameters must be left blank (#) for dispersal traits." << endl;
-				nbErrors++;
 			}
 		}
 		if (tr == GENETIC_LOAD) {
-			if (inDominanceDist == "normal") {
-				isMatch = regex_search(inDominanceParams, patternParamsNormal);
+			if (inInitDist == "uniform") {
+				isMatch = regex_search(inInitParams, patternParamsUnif);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For a normal dominance distribution, DominanceParams must have form mean=float,sd=float" << endl;
+					batchLog << "For a uniform distribution, InitialAlleleParams must have form min=float;max=float." << endl;
 					nbErrors++;
 				}
 			}
-			else if (inDominanceDist == "gamma") {
-				isMatch = regex_search(inDominanceParams, patternParamsGamma);
+			else if (inInitDist == "normal") {
+				isMatch = regex_search(inInitParams, patternParamsNormal);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For a Gamma dominance distribution, DominanceParams must have form shape=float,scale=float" << endl;
+					batchLog << "For a normal distribution, InitialAlleleParams must have form mean=float;sd=float." << endl;
 					nbErrors++;
 				}
 			}
-			else if (inDominanceDist == "uniform") {
-				isMatch = regex_search(inDominanceParams, patternParamsUnif);
+			else if (inInitDist == "gamma") {
+				isMatch = regex_search(inInitParams, patternParamsGamma);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For a uniform dominance distribution, DominanceParams must have form min=float,max=float" << endl;
+					batchLog << "For a Gamma distribution, InitialAlleleParams must have form shape=float;scale=float." << endl;
 					nbErrors++;
 				}
 			}
-			else if (inDominanceDist == "negExp") {
-				isMatch = regex_search(inDominanceParams, patternParamsMean);
+			else if (inInitDist == "negExp") {
+				isMatch = regex_search(inInitParams, patternParamsMean);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For a negative exponential dominance distribution, DominanceParams must have form mean=float" << endl;
+					batchLog << "For a negative exponential distribution, InitialAlleleParams must have form mean=float." << endl;
 					nbErrors++;
 				}
 			}
-			else if (inDominanceDist == "scaled") {
-				isMatch = regex_search(inDominanceParams, patternParamsMean);
-				if (!isMatch) {
+			else if (inInitDist == "#") {
+				if (inInitParams != "#") {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For a scaled dominance distribution, DominanceParams must have form mean=float" << endl;
+					batchLog << "If InitialAlleleDist is left blank, InitialAlleleParams must also be blank." << endl;
 					nbErrors++;
 				}
+				// otherwise fine!
 			}
 			else {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLog << "DominanceDistribution must be either normal, gamma, uniform, negExp or scaled for genetic load traits." << endl;
+				batchLog << "For genetic load traits, InitialAlleleDist must be either blank (#), uniform, gamma, negExp or normal" << endl;
+				nbErrors++;
+			}
+		}
+
+		// Check InitialDomDist and InitialDomParams
+		if ((isDisp || tr == NEUTRAL)
+			&& (inInitDomDist != "#" || inInitDomParams != "#")){
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "InitialDomDist and InitialDomParams must be blank (#) for dispersal and neutral traits." << endl;
+			nbErrors++;
+		}
+		else if (tr == GENETIC_LOAD) {
+			if (inInitDomDist == "normal") {
+				isMatch = regex_search(inInitDomParams, patternParamsNormal);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a normal dominance distribution, InitialDomParams must have form mean=float;sd=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inInitDomDist == "gamma") {
+				isMatch = regex_search(inInitDomParams, patternParamsGamma);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a Gamma dominance distribution, InitialDomParams must have form shape=float;scale=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inInitDomDist == "uniform") {
+				isMatch = regex_search(inInitDomParams, patternParamsUnif);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a uniform dominance distribution, InitialDomParams must have form min=float;max=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inInitDomDist == "negExp") {
+				isMatch = regex_search(inInitDomParams, patternParamsMean);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a negative exponential dominance distribution, InitialDomParams must have form mean=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inInitDomDist == "scaled") {
+				if (inInitDist == "#") {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "Initial scaled dominance distribution requires InitialAlleleDist to be non-blank." << endl;
+					nbErrors++;
+				}
+				isMatch = regex_search(inInitDomParams, patternParamsMean);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a scaled dominance distribution, InitialDomParams must have form mean=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inInitDomDist == "#") {
+				if (inInitDomParams != "#") {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "If InitialDomDist is left blank, InitialDomParams must also be blank." << endl;
+					nbErrors++;
+				}
+				// otherwise fine
+			}
+			else {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "InitialDomDist must be either blank (#), normal, gamma, uniform, negExp or scaled for genetic load traits." << endl;
 				nbErrors++;
 			}
 		}
@@ -3299,7 +3404,7 @@ int CheckTraitsFile(string indir)
 					isMatch = regex_search(inMutationParams, patternParamsUnif);
 					if (!isMatch) {
 						BatchError(whichInputFile, lineNb, 0, " ");
-						batchLog << "For a uniform distribution, mutationParams must have form min=float,max=float." << endl;
+						batchLog << "For a uniform distribution, mutationParams must have form min=float;max=float." << endl;
 						nbErrors++;
 					}
 				}
@@ -3307,7 +3412,7 @@ int CheckTraitsFile(string indir)
 					isMatch = regex_search(inMutationParams, patternParamsNormal);
 					if (!isMatch) {
 						BatchError(whichInputFile, lineNb, 0, " ");
-						batchLog << "For a normal distribution, mutationParams must have form mean=float,sd=float." << endl;
+						batchLog << "For a normal distribution, mutationParams must have form mean=float;sd=float." << endl;
 						nbErrors++;
 					}
 				}
@@ -3330,7 +3435,7 @@ int CheckTraitsFile(string indir)
 				isMatch = regex_search(inMutationParams, patternParamsUnif);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For a uniform distribution, mutationParams must have form min=float,max=float." << endl;
+					batchLog << "For a uniform distribution, mutationParams must have form min=float;max=float." << endl;
 					nbErrors++;
 				}
 			}
@@ -3338,7 +3443,7 @@ int CheckTraitsFile(string indir)
 				isMatch = regex_search(inMutationParams, patternParamsNormal);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For a normal distribution, mutationParams must have form mean=float,sd=float." << endl;
+					batchLog << "For a normal distribution, mutationParams must have form mean=float;sd=float." << endl;
 					nbErrors++;
 				}
 			}
@@ -3346,7 +3451,7 @@ int CheckTraitsFile(string indir)
 				isMatch = regex_search(inMutationParams, patternParamsGamma);
 				if (!isMatch) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLog << "For a Gamma distribution, mutationParams must have form shape=float,scale=float." << endl;
+					batchLog << "For a Gamma distribution, mutationParams must have form shape=float;scale=float." << endl;
 					nbErrors++;
 				}
 			}
@@ -3361,6 +3466,79 @@ int CheckTraitsFile(string indir)
 			else {
 				BatchError(whichInputFile, lineNb, 0, " ");
 				batchLog << "For genetic load traits, mutationDistribution must be either uniform, gamma, negExp or normal" << endl;
+				nbErrors++;
+			}
+		}
+
+		// Check DominanceDistribution and DominanceParameters
+		if (tr == NEUTRAL) {
+			if (inDominanceDist != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "DominanceDistribution must be left blank (#) for the neutral trait." << endl;
+				nbErrors++;
+			}
+			if (inDominanceParams != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "DominanceParameters must be left blank (#) for the neutral trait." << endl;
+				nbErrors++;
+			}
+		}
+		if (isDisp) {
+			if (inDominanceDist != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "DominanceDistribution must be left blank (#) for dispersal traits." << endl;
+				nbErrors++;
+			}
+			if (inDominanceParams != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "DominanceParameters must be left blank (#) for dispersal traits." << endl;
+				nbErrors++;
+			}
+		}
+		if (tr == GENETIC_LOAD) {
+			if (inDominanceDist == "normal") {
+				isMatch = regex_search(inDominanceParams, patternParamsNormal);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a normal dominance distribution, DominanceParams must have form mean=float,sd=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inDominanceDist == "gamma") {
+				isMatch = regex_search(inDominanceParams, patternParamsGamma);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a Gamma dominance distribution, DominanceParams must have form shape=float,scale=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inDominanceDist == "uniform") {
+				isMatch = regex_search(inDominanceParams, patternParamsUnif);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a uniform dominance distribution, DominanceParams must have form min=float;max=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inDominanceDist == "negExp") {
+				isMatch = regex_search(inDominanceParams, patternParamsMean);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a negative exponential dominance distribution, DominanceParams must have form mean=float" << endl;
+					nbErrors++;
+				}
+			}
+			else if (inDominanceDist == "scaled") {
+				isMatch = regex_search(inDominanceParams, patternParamsMean);
+				if (!isMatch) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLog << "For a scaled dominance distribution, DominanceParams must have form mean=float" << endl;
+					nbErrors++;
+				}
+			}
+			else {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "DominanceDistribution must be either normal, gamma, uniform, negExp or scaled for genetic load traits." << endl;
 				nbErrors++;
 			}
 		}
@@ -3767,7 +3945,7 @@ int CheckGeneticsFile(string inputDirectory) {
 	int nbSims = 0;
 	string whichFile = "GeneticsFile";
 
-	const regex patternIntList{ "^\"?([0-9]+,)*[0-9]+\"?$" }; // comma-separated integer list
+	const regex patternIntList{ "^\"?([0-9]+;)*[0-9]+\"?$" }; // semicolon-separated integer list
 	bool isMatch = false;
 
 	// Parse header line;
@@ -3800,6 +3978,14 @@ int CheckGeneticsFile(string inputDirectory) {
 		nbErrors++;
 	}
 	while (simNb != -98765) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+			break;
+		}
+
 		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutWeirCockerham >>
 			inOutWeirHill >> inOutStartGenetics >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
 			>> inNIndsToSample >> inStages;
@@ -3816,7 +4002,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		isMatch = regex_search(inChromosomeEnds, patternIntList);
 		if (!isMatch && inChromosomeEnds != "#") {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "ChromosomeEnds must be either a comma-separated list of integers, or blank (#)." << endl;
+			batchLog << "ChromosomeEnds must be either a semicolon-separated list of integers, or blank (#)." << endl;
 			nbErrors++;
 		}
 		set<int> chrEnds = stringToChromosomeEnds(inChromosomeEnds, inGenomeSize);
@@ -3914,7 +4100,7 @@ int CheckGeneticsFile(string inputDirectory) {
 				isMatch = regex_search(inPatchList, patternIntList);
 				if (!isMatch && inPatchList != "random" && inPatchList != "all" && inPatchList != "random_occupied") {
 					BatchError(whichFile, whichLine, 0, " ");
-					batchLog << "PatchList must be either a comma-separated list of integers, random, random_occupied or all." << endl;
+					batchLog << "PatchList must be either a semicolon-separated list of integers, random, random_occupied or all." << endl;
 					nbErrors++;
 				}
 			}
@@ -3978,7 +4164,7 @@ int CheckGeneticsFile(string inputDirectory) {
 				isMatch = regex_search(inStages, patternIntList);
 				if (!isMatch && inStages != "all") {
 					BatchError(whichFile, whichLine, 0, " ");
-					batchLog << "Stages must be either a comma-separated list of integers, or \"all\"." << endl;
+					batchLog << "Stages must be either a semicolon-separated list of integers, or \"all\"." << endl;
 					nbErrors++;
 				}
 			}
@@ -4073,6 +4259,14 @@ int CheckInitFile(string indir)
 	}
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
 	while (simNb != -98765) {
+
+		if (!gSimNbs.contains(simNb)) {
+			BatchError(filetype, line, 0, " ");
+			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			errors++;
+			break;
+		}
+
 		current = CheckStageSex(filetype, line, simNb, prev, 0, 0, 0, 0, 0, true, false);
 		if (current.isNewSim) simuls++;
 		errors += current.errors;
@@ -4250,7 +4444,7 @@ int CheckInitFile(string indir)
 }
 
 //---------------------------------------------------------------------------
-int CheckInitIndsFile(void) {
+int CheckInitIndsFile() {
 	string header;
 	int year, species, patchID, x, y, ninds, sex, age, stage, prevyear;
 
@@ -4261,7 +4455,8 @@ int CheckInitIndsFile(void) {
 	bInitIndsFile >> header; if (header != "Year") errors++;
 	bInitIndsFile >> header; if (header != "Species") errors++;
 	if (patchmodel) {
-		bInitIndsFile >> header; if (header != "PatchID") errors++;
+		bInitIndsFile >> header; 
+		if (header != "PatchID") errors++;
 	}
 	else {
 		bInitIndsFile >> header; if (header != "X") errors++;
@@ -4447,7 +4642,7 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, simCheck
 	else { // no stage-dependent emigration
 		if (stage != 0) {
 			BatchError(whichInputFile, whichLine, 0, " "); current.errors++;
-			batchLog << "Stage must be 0 for non-stage-structured model" << endl;
+			batchLog << "Stage must be 0 if stage-dependency is off" << endl;
 		}
 	}
 	// validate sex
@@ -4727,69 +4922,66 @@ int ReadLandFile(Landscape* pLandscape)
 //---------------------------------------------------------------------------
 int ReadDynLandFile(Landscape* pLandscape) {
 
-	string landchangefile, patchchangefile, costchangefile;
-	int change, imported;
-	int nchanges = 0;
+	string landChangeFile, patchChangeFile, costChangeFile;
+	int changeNb;
+	int nbChanges = 0;
 	landChange chg;
 	landParams ppLand = pLandscape->getLandParams();
-	string fname = paramsSim->getDir(1) + name_dynland;
+	string pathToFile = paramsSim->getDir(1) + name_dynland;
 
-	dynlandfile.open(fname.c_str());
-	if (dynlandfile.is_open()) {
+	dynLandIfs.open(pathToFile.c_str());
+	if (dynLandIfs.is_open()) {
 		string header;
-		int nheaders = 5;
-		for (int i = 0; i < nheaders; i++) 
-			dynlandfile >> header;
+		int nbHeaders = 5;
+		for (int i = 0; i < nbHeaders; i++) 
+			dynLandIfs >> header;
 	}
 	else {
-		dynlandfile.clear();
+		dynLandIfs.clear();
 		return 72727;
 	}
 
-	// read data lines
-	change = -98765;
-	dynlandfile >> change; // first change number
-	while (change != -98765) {
-		chg.chgnum = change;
-		dynlandfile >> chg.chgyear >> landchangefile >> patchchangefile >> costchangefile;
-		chg.habfile = paramsSim->getDir(1) + landchangefile;
-		chg.pchfile = paramsSim->getDir(1) + patchchangefile;
-		if (costchangefile == "NULL") 
-			chg.costfile = "none";
-		else 
-			chg.costfile = paramsSim->getDir(1) + costchangefile;
-		nchanges++;
+	// Read data lines
+	changeNb = -98765;
+	dynLandIfs >> changeNb; // first change number
+	while (changeNb != -98765) {
+		chg.chgNb = changeNb;
+		dynLandIfs >> chg.chgYear >> landChangeFile >> patchChangeFile >> costChangeFile;
+		chg.pathHabFile = paramsSim->getDir(1) + landChangeFile;
+		chg.pathPatchFile = paramsSim->getDir(1) + patchChangeFile;
+		chg.pathCostFile = costChangeFile == "NULL" ? "none" 
+			: paramsSim->getDir(1) + costChangeFile;
+		nbChanges++;
 		pLandscape->addLandChange(chg);
-		// read first field on next line
-		change = -98765;
-		dynlandfile >> change;
-		if (dynlandfile.eof()) {
-			change = -98765;
+
+		// Read first field on next line
+		changeNb = -98765;
+		dynLandIfs >> changeNb;
+		if (dynLandIfs.eof()) {
+			changeNb = -98765;
 		}
 	}
 
-	dynlandfile.close();
-	dynlandfile.clear();
+	dynLandIfs.close();
+	dynLandIfs.clear();
 
 	// read landscape change maps
 	if (ppLand.patchModel) {
 		pLandscape->createPatchChgMatrix();
 	}
-	if (costchangefile != "NULL") {
+	bool usesCosts = costChangeFile != "NULL";
+	if (usesCosts) {
 		pLandscape->createCostsChgMatrix();
 	}
-	for (int i = 0; i < nchanges; i++) {
-		if (costchangefile == "NULL") 
-			imported = pLandscape->readLandChange(i, false);
-		else 
-			imported = pLandscape->readLandChange(i, true);
+	for (int i = 0; i < nbChanges; i++) {
+		int imported = pLandscape->readLandChange(i, usesCosts);
 		if (imported != 0) {
 			return imported;
 		}
 		if (ppLand.patchModel) {
 			pLandscape->recordPatchChanges(i + 1);
 		}
-		if (costchangefile != "NULL") {
+		if (usesCosts) {
 			pLandscape->recordCostChanges(i + 1);
 		}
 	}
@@ -4798,7 +4990,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 		pLandscape->recordPatchChanges(0);
 		pLandscape->deletePatchChgMatrix();
 	}
-	if (costchangefile != "NULL") {
+	if (usesCosts) {
 		pLandscape->recordCostChanges(0);
 		pLandscape->deleteCostsChgMatrix();
 	}
@@ -4843,8 +5035,8 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		outputGeneValues = (parameters[4] == "TRUE");
 		outputWeirCockerham = (parameters[5] == "TRUE");
 		outputWeirHill = (parameters[6] == "TRUE");
-		outputStartGenetics = stoi(parameters[7]);
-		outputGeneticInterval = stoi(parameters[8]);
+		outputStartGenetics = parameters[7] == "#" ? 0 : stoi(parameters[7]);
+		outputGeneticInterval = parameters[8] == "#" ? 0 : stoi(parameters[8]);
 
 		string inPatches = parameters[9];
 		string patchSamplingOption;
@@ -4852,7 +5044,8 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		if (inPatches != "all" && inPatches != "random" && inPatches != "random_occupied") {
 			// then must be a list of indices
 			patchSamplingOption = "list";
-			patchList = stringToPatches(inPatches);
+			if (inPatches != "#")
+				patchList = stringToPatches(inPatches);
 			if (patchList.contains(0)) throw logic_error("Patch sampling: ID 0 is reserved for the matrix and should not be sampled.");
 		}
 		else {
@@ -4863,7 +5056,14 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		}
 		const string strNbInds = parameters[11];
 		const int nbStages = pSpecies->getStageParams().nStages;
-		set<int> stagesToSampleFrom = stringToStages(parameters[12], nbStages);
+		parameters[12].erase(
+			remove(parameters[12].begin(), parameters[12].end(), '\r'),
+			parameters[12].end() // bye windows line breaks
+		);
+
+		set<int> stagesToSampleFrom;
+		if (parameters[12] != "#")
+			stagesToSampleFrom = stringToStages(parameters[12], nbStages);
 
 		pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate,
 			patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
@@ -4892,8 +5092,7 @@ int ReadTraitsFile(ifstream& ifs, const int& nbRowsToRead) {
 			// Read input parameters as strings
 			stringstream inLine(strLine);
 			vector<string> parameters;
-			while (std::getline(inLine, entry, '	'))
-			{
+			while (std::getline(inLine, entry, '	')) {
 				parameters.push_back(entry);
 			}
 
@@ -4909,50 +5108,93 @@ int ReadTraitsFile(ifstream& ifs, const int& nbRowsToRead) {
 
 // Set up a trait from input parameters and add it Species
 void setUpSpeciesTrait(vector<string> parameters) {
+
 	// Assumes all input is correct, errors have been handled by CheckTraits
 
 	const int genomeSize = pSpecies->getGenomeSize();
 	TraitType traitType = stringToTraitType(parameters[1]);
 	const sex_t sex = stringToSex(parameters[2]);
 	if (sex != NA) traitType = addSexDepToTrait(traitType, sex);
-	const set<int> positions = stringToLoci(parameters[3], parameters[4], genomeSize);
 	const ExpressionType expressionType = stringToExpressionType(parameters[5]);
 
-	// Initial distribution parameters
-	const DistributionType initDist = stringToDistributionType(parameters[6]);
-	const map<GenParamType, float> initParams = stringToParameterMap(parameters[7]);
-
-	// Dominance distribution parameters
-	const DistributionType dominanceDist = stringToDistributionType(parameters[8]);
-	const map<GenParamType, float> dominanceParams = stringToParameterMap(parameters[9]);
-
-	// Mutation parameters
-	bool isInherited = (parameters[10] == "TRUE");
-	DistributionType mutationDistribution = isInherited ? 
-		stringToDistributionType(parameters[11]) : 
-		DistributionType::NONE;
-	map<GenParamType, float> mutationParameters;
-	float mutationRate = isInherited ? stof(parameters[13]) : 0.0;
-	if (isInherited) {
-		mutationParameters = stringToParameterMap(parameters[12]);
+	set<int> positions;
+	string positionsArg = parameters[3];
+	if (positionsArg == "random") {
+		vector<int> lociToSampleFrom;
+		for (int pos = 0; pos < genomeSize; pos++) 
+			lociToSampleFrom.push_back(pos);
+		positions = selectRandomLociPositions(stoi(parameters[4]), lociToSampleFrom);
+	}
+	else { // semicolon-separated list
+		positions = stringToLoci(positionsArg);
+		for (auto position : positions) {
+			if (position >= genomeSize)
+				throw logic_error("Trait positions must not exceed genome size.\n");
+		}
+	}
+	
+	set<int> initialPositions;
+	positionsArg = parameters[6];
+	if (positionsArg == "all") {
+		initialPositions = positions;
+	}
+	else if (positionsArg == "random") {
+		vector<int> lociToSampleFrom(positions.begin(), positions.end());
+		initialPositions = selectRandomLociPositions(stoi(parameters[7]), lociToSampleFrom);
+	}
+	else if (positionsArg == "#") {
+		// nothing, set remains empty
+	}
+	else { // comma-separated list
+		initialPositions = stringToLoci(positionsArg);
+		for (auto position : initialPositions) {
+			if (!positions.contains(position))
+				throw logic_error("Initial trait positions must be a subset of Positions.\n");
+		}
 	}
 
-	int ploidy = gNbSexesDisp;
-	parameters[14].erase(
+	// Initial allele distribution parameters
+	const DistributionType initDist = stringToDistributionType(parameters[8]);
+	const map<GenParamType, float> initParams = stringToParameterMap(parameters[9]);
+
+	// Initial dominance distribution parameters
+	const DistributionType initDomDist = stringToDistributionType(parameters[10]);
+	const map<GenParamType, float> initDomParams = stringToParameterMap(parameters[11]);
+
+	// Mutation parameters
+	bool isInherited = (parameters[12] == "TRUE");
+	DistributionType mutationDistribution = isInherited ? 
+		stringToDistributionType(parameters[13]) : 
+		DistributionType::NONE;
+	map<GenParamType, float> mutationParameters;
+	if (isInherited) {
+		mutationParameters = stringToParameterMap(parameters[14]);
+	}
+
+	// Dominance distribution parameters
+	const DistributionType dominanceDist = stringToDistributionType(parameters[15]);
+	const map<GenParamType, float> dominanceParams = stringToParameterMap(parameters[16]);
+
+	float mutationRate = isInherited ? stof(parameters[17]) : 0.0;
+	
+	parameters[18].erase(
 		// send windows line endings to hell where they belong
-		remove(parameters[14].begin(), parameters[14].end(), '\r'),
-		parameters[14].end()
+		remove(parameters[18].begin(), parameters[18].end(), '\r'),
+		parameters[18].end()
 	);
-	const bool isOutput = parameters[14] == "TRUE";
+	const bool isOutput = parameters[18] == "TRUE";
 
 	// Create species trait
+	int ploidy = gNbSexesDisp;
 	unique_ptr<SpeciesTrait> trait(new SpeciesTrait(
 		traitType, sex, 
 		positions, expressionType, 
+		initialPositions,
 		initDist, initParams, 
-		dominanceDist, dominanceParams, 
+		initDomDist, initDomParams,
 		isInherited, mutationRate, 
 		mutationDistribution, mutationParameters,
+		dominanceDist, dominanceParams,
 		ploidy,
 		isOutput
 	));
@@ -5015,7 +5257,7 @@ map<GenParamType, float> stringToParameterMap(string parameterString) {
 		stringstream ss(parameterString);
 
 		string singleParamString, valueWithin;
-		while (std::getline(ss, singleParamString, ',')) {
+		while (std::getline(ss, singleParamString, ';')) {
 			stringstream sss(singleParamString);
 			vector<string> paramNameAndVal;
 			while (std::getline(sss, valueWithin, '=')) {
@@ -5050,8 +5292,8 @@ set<int> stringToPatches(const string& str) {
 	stringstream ss(str);
 	string strPch;
 	int pch;
-	// Read comma-separated values
-	while (std::getline(ss, strPch, ',')) {
+	// Read semicolon-separated values
+	while (std::getline(ss, strPch, ';')) {
 		strPch.erase(remove(strPch.begin(), strPch.end(), '\"'), strPch.end());
 		pch = std::stoi(strPch);
 		patches.insert(pch);
@@ -5068,12 +5310,12 @@ set<int> stringToStages(const string& str, const int& nbStages) {
 		}
 	}
 	else {
-		// Parse comma-separated list from input string
+		// Parse semicolon-separated list from input string
 		stringstream ss(str);
 		string strStg;
 		int stg;
-		// Read comma-separated values
-		while (std::getline(ss, strStg, ',')) {
+		// Read semicolon-separated values
+		while (std::getline(ss, strStg, ';')) {
 			strStg.erase(remove(strStg.begin(), strStg.end(), '\"'), strStg.end());
 			stg = std::stoi(strStg);
 			if (stg > nbStages - 1)
@@ -5092,15 +5334,15 @@ set<int> stringToChromosomeEnds(string str, const int& genomeSize) {
 	if (str == "#")
 		chromosomeEnds.insert(genomeSize - 1); // last position in genome
 	else {
-		// Parse comma-separated list from input string
+		// Parse semicolon-separated list from input string
 		// drop quotation marks
 		str.erase(remove(str.begin(), str.end(), '\"'), str.end());
 		stringstream ss(str);
 
 		string strPos;
 		int pos;
-		// Read comma-separated positions
-		while (std::getline(ss, strPos, ',')) {
+		// Read semicolon-separated positions
+		while (std::getline(ss, strPos, ';')) {
 			pos = std::stoi(strPos);
 			chromosomeEnds.insert(pos);
 		}
@@ -5108,68 +5350,51 @@ set<int> stringToChromosomeEnds(string str, const int& genomeSize) {
 	return chromosomeEnds;
 }
 
-set<int> selectRandomLociPositions(int nbLoci, const int& genomeSize) {
+set<int> selectRandomLociPositions(int nbLoci, vector<int> lociToSampleFrom) {
+	
+	// convert to vector to sample by index
 	set<int> positions;
-	if (nbLoci > genomeSize) throw logic_error("Number of random loci exceeds genome size.");
-	int rndLocus;
-	for (int i = 0; i < nbLoci; ++i)
-	{
-		do {
-			rndLocus = pRandom->IRandom(0, genomeSize - 1);
-		} while (positions.contains(rndLocus));
-		positions.insert(rndLocus);
+	if (nbLoci > lociToSampleFrom.size()) throw logic_error("Number of random loci exceeds number of available positions.");
+	int rndIx;
+	for (int i = 0; i < nbLoci; ++i) {
+		rndIx = pRandom->IRandom(0, lociToSampleFrom.size() - 1);
+		positions.insert(lociToSampleFrom[rndIx]);
+		lociToSampleFrom.erase(lociToSampleFrom.begin() + rndIx); // rm element to not sample it again
 	}
 	return positions;
 }
 
-set<int> stringToLoci(string pos, string nLoci, const int& genomeSize) {
+set<int> stringToLoci(string pos) {
 
 	set<int> positions;
 
-	if (pos != "random") {
-
-		// Parse comma-separated list from input string
-		stringstream ss(pos);
-		string value, valueWithin;
-		// Read comma-separated positions
-		while (std::getline(ss, value, ',')) {
-			stringstream sss(value);
-			vector<int> positionRange;
-			// Read single positions and dash-separated ranges
-			while (std::getline(sss, valueWithin, '-')) {
-				valueWithin.erase(remove(valueWithin.begin(), valueWithin.end(), '\"'), valueWithin.end());
-				positionRange.push_back(stoi(valueWithin));
-			}
-			switch (positionRange.size())
-			{
-			case 1: // single position
-				if (positionRange[0] >= genomeSize)
-					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
-				positions.insert(positionRange[0]);
-				break;
-			case 2: // dash-separated range
-				if (positionRange[0] >= genomeSize || positionRange[1] >= genomeSize) {
-					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
-				}
-				if (positionRange[0] >= positionRange[1])
-					throw logic_error("Position ranges must be in ascending order");
-				for (int i = positionRange[0]; i < positionRange[1] + 1; ++i) {
-					positions.insert(i);
-				}
-				break;
-			default: // zero or more than 2 values between commas: error
-				throw logic_error("Traits file: ERROR - incorrectly formatted position range.");
-				break;
-			}
+	// Parse semicolon-separated list from input string
+	stringstream ss(pos);
+	string value, valueWithin;
+	// Read semicolon-separated positions
+	while (std::getline(ss, value, ';')) {
+		stringstream sss(value);
+		vector<int> positionRange;
+		// Read single positions and dash-separated ranges
+		while (std::getline(sss, valueWithin, '-')) {
+			valueWithin.erase(remove(valueWithin.begin(), valueWithin.end(), '\"'), valueWithin.end());
+			positionRange.push_back(stoi(valueWithin));
 		}
-
-		for (auto position : positions) {
-			if (position >= genomeSize)
-				throw logic_error("Traits file: ERROR - trait positions " + to_string(position) + " must not exceed genome size.\n");
+		switch (positionRange.size()) {
+		case 1: // single position
+			positions.insert(positionRange[0]);
+			break;
+		case 2: // dash-separated range
+			if (positionRange[0] >= positionRange[1])
+				throw logic_error("Position ranges must be in ascending order");
+			for (int i = positionRange[0]; i < positionRange[1] + 1; ++i) {
+				positions.insert(i);
+			}
+			break;
+		default: // zero or more than 2 values between semicolons: error
+			throw logic_error("Traits file: ERROR - incorrectly formatted position range.");
+			break;
 		}
-	}
-	else { // random
-		positions = selectRandomLociPositions(stoi(nLoci), genomeSize);
 	}
 	return positions;
 }
@@ -5308,14 +5533,8 @@ int ReadParameters(Landscape* pLandscape)
 		if (sim.outConnect) errorCode = 105;
 	}
 
-	// Output maps
-	parameters >> inSaveMaps >> sim.mapInt;
-	sim.saveMaps = inSaveMaps == "1";
 	parameters >> inHeatMaps;
 	sim.saveVisits = inHeatMaps == "1";
-	parameters >> inDrawLoaded;
-	sim.drawLoaded = inDrawLoaded == "1";
-
 	parameters >> inFixRepSeed;
 	sim.fixReplicateSeed = inFixRepSeed == "1";
 
@@ -6399,11 +6618,13 @@ void RunBatch(int nSimuls, int nLandscapes)
 				landcode = pLandscape->readLandscape(0, hname, " ", cname);
 			}
 			if (landcode != 0) {
+				cout << "Error reading landscape" << endl;
 				landOK = false;
 			}
 			if (paramsLand.dynamic) {
 				landcode = ReadDynLandFile(pLandscape);
 				if (landcode != 0) {
+					cout << "Error reading dynamic landscape" << endl;
 					landOK = false;
 				}
 			}
