@@ -23,6 +23,8 @@
  //---------------------------------------------------------------------------
 
 #include "Population.h"
+
+#include <algorithm>
 //---------------------------------------------------------------------------
 
 ofstream outPop;
@@ -57,7 +59,7 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 	pPatch = pPch;
 	// record the new population in the patch
 	patchPopn pp;
-	pp.pSp = (intptr)pSpecies; pp.pPop = (intptr)this;
+	pp.pSp = pSpecies; pp.pPop = this;
 	pPatch->addPopn(pp);
 
 	demogrParams dem = pSpecies->getDemogr();
@@ -176,10 +178,10 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 			else age = stg;
 #if RSDEBUG
 			// NOTE: CURRENTLY SETTING ALL INDIVIDUALS TO RECORD NO. OF STEPS ...
-			inds.push_back(new Individual(pCell, pPatch, stg, age, sstruct.repInterval,
+			inds.push_back(new Individual(pSpecies, pCell, pPatch, stg, age, sstruct.repInterval,
 				probmale, true, trfr.moveType));
 #else
-			inds.push_back(new Individual(pCell, pPatch, stg, age, sstruct.repInterval,
+			inds.push_back(new Individual(pSpecies, pCell, pPatch, stg, age, sstruct.repInterval,
 				probmale, trfr.moveModel, trfr.moveType));
 #endif
 			sex = inds[nindivs + i]->getSex();
@@ -489,9 +491,9 @@ void Population::reproduction(const float localK, const float envval, const int 
 					for (int j = 0; j < njuvs; j++) {
 #if RSDEBUG
 						// NOTE: CURRENTLY SETTING ALL INDIVIDUALS TO RECORD NO. OF STEPS ...
-						juvs.push_back(new Individual(pCell, pPatch, 0, 0, 0, 0.0, true, trfr.moveType));
+						juvs.push_back(new Individual(pSpecies, pCell, pPatch, 0, 0, 0, 0.0, true, trfr.moveType));
 #else
-						juvs.push_back(new Individual(pCell, pPatch, 0, 0, 0, 0.0, trfr.moveModel, trfr.moveType));
+						juvs.push_back(new Individual(pSpecies, pCell, pPatch, 0, 0, 0, 0.0, trfr.moveModel, trfr.moveType));
 #endif
 						nInds[0][0]++;
 						if (emig.indVar || trfr.indVar || sett.indVar || gen.neutralMarkers)
@@ -564,9 +566,9 @@ void Population::reproduction(const float localK, const float envval, const int 
 							for (int j = 0; j < njuvs; j++) {
 #if RSDEBUG
 								// NOTE: CURRENTLY SETTING ALL INDIVIDUALS TO RECORD NO. OF STEPS ...
-								juvs.push_back(new Individual(pCell, pPatch, 0, 0, 0, dem.propMales, true, trfr.moveType));
+								juvs.push_back(new Individual(pSpecies, pCell, pPatch, 0, 0, 0, dem.propMales, true, trfr.moveType));
 #else
-								juvs.push_back(new Individual(pCell, pPatch, 0, 0, 0, dem.propMales, trfr.moveModel, trfr.moveType));
+								juvs.push_back(new Individual(pSpecies, pCell, pPatch, 0, 0, 0, dem.propMales, trfr.moveModel, trfr.moveType));
 #endif
 								sex = juvs[nj + j]->getSex();
 								nInds[0][sex]++;
@@ -607,7 +609,7 @@ void Population::fledge(void)
 		for (int sex = 0; sex < nSexes; sex++) {
 			nInds[1][sex] = 0; // set count of adults to zero
 		}
-		inds = juvs;
+		inds = std::move(juvs);
 	}
 	juvs.clear();
 
@@ -822,7 +824,6 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 	int disperser;
 	short othersex;
 	bool mateOK, densdepOK;
-	intptr patch, popn;
 	int patchnum;
 	double localK, popsize, settprob;
 	Patch* pPatch = 0;
@@ -857,9 +858,8 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 				if (inds[i]->getStatus() == 2)
 				{ // disperser has found a patch
 					pCell = inds[i]->getLocn(1);
-					patch = pCell->getPatch();
-					if (patch != 0) { // not no-data area
-						pPatch = (Patch*)patch;
+					pPatch = pCell->getPatch();
+					if (pPatch != nullptr) { // not no-data area
 						pPatch->incrPossSettler(pSpecies, inds[i]->getSex());
 					}
 				}
@@ -905,9 +905,8 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 				settle = inds[i]->getSettPatch();
 				if (sett.densDep)
 				{
-					patch = pCell->getPatch();
-					if (patch != 0) { // not no-data area
-						pPatch = (Patch*)patch;
+					pPatch = pCell->getPatch();
+					if (pPatch != nullptr) { // not no-data area
 						if (settle.settleStatus == 0
 							|| settle.pSettPatch != pPatch)
 							// note: second condition allows for having moved from one patch to another
@@ -915,12 +914,11 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 						{
 							// determine whether settlement occurs in the (new) patch
 							localK = (double)pPatch->getK();
-							popn = pPatch->getPopn((intptr)pSpecies);
-							if (popn == 0) { // population has not been set up in the new patch
+							pNewPopn = pPatch->getPopn(pSpecies);
+							if (pNewPopn == nullptr) { // population has not been set up in the new patch
 								popsize = 0.0;
 							}
 							else {
-								pNewPopn = (Population*)popn;
 								popsize = (double)pNewPopn->totalPop();
 							}
 							if (localK > 0.0) {
@@ -1029,9 +1027,8 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 							// add to list of potential neighbouring cells if suitable, etc.
 							pCell = pLandscape->findCell(nbrloc.x, nbrloc.y);
 							if (pCell != 0) { // not no-data area
-								patch = pCell->getPatch();
-								if (patch != 0) { // not no-data area
-									pPatch = (Patch*)patch;
+								pPatch = pCell->getPatch();
+								if (pPatch != nullptr) { // not no-data area
 									patchnum = pPatch->getPatchNum();
 									if (patchnum > 0 && pPatch != inds[i]->getNatalPatch())
 									{ // not the matrix or natal patch
@@ -1070,20 +1067,18 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 // settler has reached
 bool Population::matePresent(Cell* pCell, short othersex)
 {
-	int patch;
 	Patch* pPatch;
 	Population* pNewPopn;
 	int popsize = 0;
 	bool matefound = false;
 
-	patch = (int)pCell->getPatch();
-	if (patch != 0) {
-		pPatch = (Patch*)pCell->getPatch();
+	pPatch = pCell->getPatch();
+	if (pPatch != nullptr) {
 		if (pPatch->getPatchNum() > 0) { // not the matrix patch
 			if (pPatch->getK() > 0.0)
 			{ // suitable
-				pNewPopn = (Population*)pPatch->getPopn((intptr)pSpecies);
-				if (pNewPopn != 0) {
+				pNewPopn = pPatch->getPopn(pSpecies);
+				if (pNewPopn != nullptr) {
 					// count members of other sex already resident in the patch
 					for (int stg = 0; stg < nStages; stg++) {
 						popsize += pNewPopn->nInds[stg][othersex];
@@ -1286,15 +1281,7 @@ void Population::clean(void)
 {
 	int ninds = (int)inds.size();
 	if (ninds > 0) {
-			// ALTERNATIVE METHOD: AVOIDS SLOW SORTING OF POPULATION
-		std::vector <Individual*> survivors; // all surviving individuals
-		for (int i = 0; i < ninds; i++) {
-			if (inds[i] != NULL) {
-				survivors.push_back(inds[i]);
-			}
-		}
-		inds.clear();
-		inds = survivors;
+		inds.erase(std::remove(inds.begin(), inds.end(), (Individual *)NULL), inds.end());
 #if RS_RCPP
 		shuffle(inds.begin(), inds.end(), pRandom->getRNG());
 #else
