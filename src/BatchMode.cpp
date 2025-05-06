@@ -45,6 +45,7 @@ int gNbLandscapes = 0;
 
 int gEnvStochType;
 bool gStochInK;
+map<int, int> gNbReplicates;
 set<species_id> gSpeciesNames;
 map<species_id, bool> gUseSpeciesDist;
 map<species_id, bool> gUseSMSCosts;
@@ -624,6 +625,9 @@ bool CheckSimFile() {
 			BatchError(whichFile, whichLine, 11, "Replicates");
 			nbErrors++;
 		}
+		else {
+			gNbReplicates.emplace(simNb, inReplicates);
+		}
 		ifsSimFile >> inYears;
 		if (inYears <= 0) {
 			BatchError(whichFile, whichLine, 11, "Years");
@@ -700,7 +704,7 @@ bool CheckSimFile() {
 bool CheckParameterFile()
 {
 	string header, Kheader, intext;
-	int i, simNb, inReplicates, inYears;
+	int i, simNb, inYears;
 	species_id inSp;
 	int inAbsorb, inGradient, inShifting, inShiftStart, inShiftEnd;
 	int inOptimum, inSaveMaps;
@@ -783,8 +787,15 @@ bool CheckParameterFile()
 		nbErrors++;
 	}
 	while (simNb != -98765) {
-		
+
+		if (!gSpInputOpt.contains(simNb)) {
+			batchLogOfs << "Error in ParameterFile - simulation number " << simNb << " is inconsistent with SimFile" << endl;
+			nbErrors++;
+			break;
+		}
+
 		ifsParamFile >> inSp;
+
 		// Initialise input option map for each species
 		gSpInputOpt.at(simNb).emplace(inSp, spInputOptions());
 
@@ -891,7 +902,6 @@ bool CheckParameterFile()
 			BatchError(whichFile, whichLine, 20, "LocalExtProb");
 			nbErrors++;
 		}
-
 
 		ifsParamFile >> inNbStages;
 		if (inNbStages < 1) {
@@ -1012,7 +1022,7 @@ bool CheckParameterFile()
 				}
 			}
 			else {
-				if (inReplicates < 2 && inOutIntOcc > 0) {
+				if (gNbReplicates.at(simNb) < 2 && inOutIntOcc > 0) {
 					BatchError(whichFile, whichLine, 0, " "); 
 					nbErrors++;
 					batchLogOfs << "OutIntOcc may be non-zero only if Replicates >= 2" << endl;
@@ -4267,13 +4277,13 @@ int CheckInitFile(string indir)
 			errors++;
 		}
 
+		ifsInitFile >> spNb;
 		if (!gSpInputOpt.at(simNb).contains(spNb)) {
 			BatchError(filetype, line, 0, " ");
 			batchLogOfs << "Species number " << to_string(spNb) << " doesn't match those in ParametersFile" << endl;
 			errors++;
 		}
 		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(spNb);
-
 
 		current = CheckStageSex(filetype, line, simNb, spNb, prev, 0, 0, 0, 0, 0, true, false);
 		if (current.isNewSim) simuls++;
@@ -4420,7 +4430,7 @@ int CheckInitFile(string indir)
 			}
 		}
 
-		if (gUsesStageStruct && inputOpt.nbStages > 1) {
+		if (gUsesStageStruct && maxNbStages > 1) {
 			ifsInitFile >> initAge;
 			if (seedtype != 2 && (initAge < 0 || initAge > 2)) {
 				BatchError(filetype, line, 2, "initAge"); 
