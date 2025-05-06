@@ -1092,14 +1092,14 @@ bool CheckParameterFile()
 bool CheckLandFile(int landtype, string inputDir)
 {
 	string header, inSpLand, inDynLand, inLandscape, whichInputFile;
-	int landNb, inNbHab, inint, whichLine;
+	int landNb, inNbHab, whichLine;
 	float infloat;
 	rasterdata patchRaster, spdistraster, costraster;
 	int nbErrors = 0;
 	vector <int> landlist;
 	string whichFile = "LandFile";
 
-	if (landtype == 0 || landtype == 2) { // real landscape
+	if (landtype == 0 || landtype == 2) { // imported landscape
 		// Parse header line;
 		ifsLandFile >> header; if (header != "LandNum") nbErrors++;
 		ifsLandFile >> header; if (header != "Nhabitats") nbErrors++;
@@ -1108,12 +1108,12 @@ bool CheckLandFile(int landtype, string inputDir)
 		ifsLandFile >> header; if (header != "DynLandFile") nbErrors++;
 		if (nbErrors > 0) {
 			FormatError(whichFile, 0);
-			batchLogOfs << "*** Ensure format is correct for real landscape" << endl;
+			batchLogOfs << "*** Ensure format is correct for imported landscape" << endl;
 			return false;
 		}
 		// Parse data lines
 		whichLine = 1;
-		inint = -98765;
+		landNb = -98765;
 		ifsLandFile >> landNb;
 		while (landNb != -98765) {
 			if (landNb < 1) {
@@ -1129,7 +1129,7 @@ bool CheckLandFile(int landtype, string inputDir)
 						nbErrors++;
 					}
 				}
-				landlist.push_back(inint);
+				landlist.push_back(landNb);
 			}
 			ifsLandFile >> inNbHab;
 			if (landtype == 0) { // raster map with unique habitat codes
@@ -1222,11 +1222,11 @@ bool CheckLandFile(int landtype, string inputDir)
 			gNbLandscapes++; 
 			whichLine++;
 			// read first field on next line
-			inint = -98765;
-			ifsLandFile >> inint;
+			landNb = -98765;
+			ifsLandFile >> landNb;
 		} // end of while loop
 		landlist.clear();
-	} // end of real landscape
+	} // end of imported landscape
 	else {
 		if (landtype == 9) { // artificial landscape
 			int isFractal, type, Xdim, Ydim;
@@ -1248,15 +1248,15 @@ bool CheckLandFile(int landtype, string inputDir)
 			}
 			// Parse data lines
 			whichLine = 1;
-			inint = -98765;
-			ifsLandFile >> inint;
-			while (inint != -98765) {
+			landNb = -98765;
+			ifsLandFile >> landNb;
+			while (landNb != -98765) {
 				for (int j = 0; j < (int)landlist.size(); j++) {
-					if (inint < 1 || inint == landlist[j]) {
+					if (landNb < 1 || landNb == landlist[j]) {
 						BatchError(whichFile, whichLine, 666, "LandNum"); j = (int)landlist.size() + 1; nbErrors++;
 					}
 				}
-				landlist.push_back(inint);
+				landlist.push_back(landNb);
 				ifsLandFile >> isFractal;
 				if (isFractal < 0 || isFractal > 1) {
 					BatchError(whichFile, whichLine, 1, "Fractal"); nbErrors++;
@@ -1319,8 +1319,8 @@ bool CheckLandFile(int landtype, string inputDir)
 				gNbLandscapes++; 
 				whichLine++;
 				// read first field on next line
-				inint = -98765;
-				ifsLandFile >> inint;
+				landNb = -98765;
+				ifsLandFile >> landNb;
 			} // end of while loop
 		} // end of artificial landscape
 		else { // ERROR condition which should not occur
@@ -2758,7 +2758,7 @@ int CheckTransferFile(string indir)
 			if (inStraightenPath != 0 && inStraightenPath != 1) {
 				BatchError(whichFile, whichLine, 1, "StraightenPath"); errors++;
 			}
-			if (gLandType == 0) { // real landscape with habitat types
+			if (gLandType == 0) { // imported landscape with habitat types
 				if (inSMType != 0 && inSMType != 1) {
 					BatchError(whichFile, whichLine, 1, "SMtype"); errors++;
 				}
@@ -2777,7 +2777,7 @@ int CheckTransferFile(string indir)
 					}
 				}
 			}
-			else { // real landscape with quality OR artificial landscape
+			else { // imported landscape with quality OR artificial landscape
 				if (inSMType != 0) {
 					BatchError(whichFile, whichLine, 0, " "); errors++;
 					batchLogOfs << "SMtype must be 0 for LandType 2 or 9" << endl;
