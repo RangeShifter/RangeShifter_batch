@@ -43,6 +43,12 @@ int gTransferType, gLandType, gMaxNbHab;
 bool gAnyUsesGenetics;
 int gNbLandscapes = 0;
 
+int gEnvStochType;
+bool gStochInK;
+set<species_id> gSpeciesNames;
+map<species_id, bool> gUseSpeciesDist;
+map<species_id, bool> gUseSMSCosts;
+
 // sim x species grid of parameters to check coherency between input files
 map<int, map<species_id, spInputOptions>> gSpInputOpt;
 
@@ -5790,7 +5796,7 @@ int ReadTransitionMatrix(Species* pSpecies, short nstages, short nsexesDem, shor
 int ReadStageWeights(Species* pSpecies, int option)
 {
 	string header;
-	int i, j, n;
+	int i, j;
 	float f;
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();

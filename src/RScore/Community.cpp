@@ -80,6 +80,7 @@ void Community::initialise(Species* pSpecies, int year) {
 	landParams ppLand = pLandscape->getLandParams();
 	initParams init = pSpecies->getInitParams();
 	species_id sp = pSpecies->getID();
+	int spratio = pLandscape->getSpDistResol(sp) / ppLand.resol;
 
 	// Initialise (empty) matrix populations
 	matrixPops.emplace(sp,
@@ -163,7 +164,6 @@ void Community::initialise(Species* pSpecies, int year) {
 
 	case 1:	// from species distribution
 		// initialise from loaded species distribution
-		int spratio = pLandscape->getSpDistResol(sp) / ppLand.resol;
 		switch (init.spDistType) {
 		case 0: // all presence cells
 			pLandscape->setDistribution(sp, 0); // activate all patches

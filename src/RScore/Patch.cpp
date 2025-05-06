@@ -159,7 +159,7 @@ void Patch::setCarryingCapacity(Species* pSpecies, float epsGlobal,
 	double envVal = gradVal; // 0 if no gradient
 	if (env.usesStoch && env.inK) {
 		envVal += env.stochIsLocal ?
-			cells[0]->getEps() : // cell-based if stoch is local so only one cell
+			cells[0]->getEps() : // cell-based if stoch is local so only one cell/patch
 			epsGlobal;
 	}
 

@@ -80,7 +80,7 @@ string getProjectDir(const vector<string>& mainArgs) {
 }
 
 paramSim* paramsSim;		// pointer to simulation parameters
-
+paramStoch* paramsStoch;
 Community* pComm;		// pointer to community
 RSrandom* pRandom;		// pointer to random number routines
 
@@ -101,8 +101,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	int t0, t1;
 	t0 = static_cast<int>(time(0));
 
-	paramsStoch = new paramStoch;
-
 	// set up working directory and control file name
 	vector<string> args(argc);
 	args[0] = argv[0];
@@ -110,6 +108,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	string pathToProjectDir = getProjectDir(args);
 	paramsSim = new paramSim(pathToProjectDir);
+	paramsStoch = new paramStoch;
 
 	string pathToControlFile = paramsSim->getDir(0) +
 		"Inputs/" + (argc > 2 ? argv[2] : "CONTROL.txt");

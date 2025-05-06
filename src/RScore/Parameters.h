@@ -26,8 +26,6 @@
 
  Implements the following classes:
 
- paramGrad  - Environmental gradient parameters
- paramInit  - Initialisation (seeding) parameters
  paramSim   - Simulation parameters
  paramStoch - Environmental stochasticity parameters
 

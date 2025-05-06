@@ -55,10 +55,6 @@ using namespace std;
 #include "./RScore/SpeciesTrait.h"
 #include "./RScore/NeutralTrait.h"
 
-set<species_id> gSpeciesNames;
-map<species_id, bool> gUseSpeciesDist;
-map<species_id, bool> gUseSMSCosts;
-
 // Global variables to check parameter
 // consistency across input files
 struct spInputOptions {
@@ -82,9 +78,6 @@ struct spInputOptions {
 	bool isCRWTransfIndVar = false;
 	int nbTraitFileRows; // how many lines to expect in traitsFile?
 };
-
-int gEnvStochType;
-bool gStochInK;
 
 bool traitExists(const TraitType& tr, const vector<TraitType>& existingTraits);
 TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex);
@@ -177,7 +170,7 @@ void FileHeadersOK(string);
 void SimulnCountError(string);
 
 void RunBatch();
-int ReadParameters(Landscape*, speciesMap_t& simSpecies);
+int ReadParameters(const Landscape*, speciesMap_t& simSpecies);
 int ReadLandFile(Landscape*);
 void ReadSpLandFile(
 	ifstream& ifsSpLand,
