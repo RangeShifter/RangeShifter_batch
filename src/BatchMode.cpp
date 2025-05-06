@@ -580,10 +580,10 @@ bool CheckSimFile() {
 	ifsSimFile >> header; if (header != "Years") nbErrors++;
 	ifsSimFile >> header; if (header != "Absorbing") nbErrors++;
 	ifsSimFile >> header; if (header != "FixReplicateSeed") nbErrors++;
-	ifsParamFile >> header; if (header != "EnvStoch") nbErrors++;
-	ifsParamFile >> header; if (header != "EnvStochType") nbErrors++;
-	ifsParamFile >> header; if (header != "ac") nbErrors++;
-	ifsParamFile >> header; if (header != "std") nbErrors++;
+	ifsSimFile >> header; if (header != "EnvStoch") nbErrors++;
+	ifsSimFile >> header; if (header != "EnvStochType") nbErrors++;
+	ifsSimFile >> header; if (header != "ac") nbErrors++;
+	ifsSimFile >> header; if (header != "std") nbErrors++;
 
 	string whichFile = "SimFile";
 	if (nbErrors > 0) {
@@ -611,7 +611,7 @@ bool CheckSimFile() {
 		nbSims++;
 	}
 
-	int inReplicates, inYears, inAbsorb, inFixReplicateSeed;
+	int inReplicates, inYears, inAbsorb, inFixReplicateSeed, inStochInK;
 	float inStochAC, inStochStD;
 
 	while (simNb != -98765) {
@@ -639,7 +639,7 @@ bool CheckSimFile() {
 			BatchError(whichFile, whichLine, 1, "FixReplicateSeed");
 			nbErrors++;
 		}
-		ifsParamFile >> gEnvStochType;
+		ifsSimFile >> gEnvStochType;
 		if (gUsesPatches == 0) { // cell-based model
 			if (gEnvStochType != 0 && gEnvStochType != 1 && gEnvStochType != 2) {
 				BatchError(whichFile, whichLine, 0, " ");
@@ -654,17 +654,20 @@ bool CheckSimFile() {
 				nbErrors++;
 			}
 		}
-		ifsParamFile >> gStochInK;
-		if (gEnvStochType && (gStochInK < 0 || gStochInK > 1)) {
-			BatchError(whichFile, whichLine, 1, "EnvStochType");
-			nbErrors++;
+		ifsSimFile >> inStochInK;
+		if (gEnvStochType) {
+			if (inStochInK < 0 || inStochInK > 1) {
+				BatchError(whichFile, whichLine, 1, "EnvStochType");
+				nbErrors++;
+			}
+			else gStochInK = inStochInK == 1;
 		}
-		ifsParamFile >> inStochAC;
+		ifsSimFile >> inStochAC;
 		if (gEnvStochType && (inStochAC < 0.0 || inStochAC >= 1.0)) {
 			BatchError(whichFile, whichLine, 20, "ac");
 			nbErrors++;
 		}
-		ifsParamFile >> inStochStD;
+		ifsSimFile >> inStochStD;
 		if (gEnvStochType && (inStochStD <= 0.0 || inStochStD > 1.0)) {
 			BatchError(whichFile, whichLine, 20, "std");
 			nbErrors++;
@@ -1074,6 +1077,7 @@ bool CheckParameterFile()
 	}
 	return nbErrors == 0;
 }
+
 
 bool CheckLandFile(int landtype, string inputDir)
 {
