@@ -147,7 +147,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			b.transfer
 		);
 	    // create new Management
-//	    pManagement = new Management;
+	    pManagement = new Management;
 //	    managementParams m = pManagement->getManagementParams();
 		cout << endl << "Batch input files OK" << endl;
 	}
@@ -183,6 +183,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	delete paramsInit;
 	delete paramsSim;
 	delete pSpecies;
+	delete pManagement;
 
 	t1 = (int)time(0);
 	cout << endl << "***** Elapsed time " << t1 - t0 << " seconds" << endl << endl;
