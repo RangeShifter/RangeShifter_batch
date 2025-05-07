@@ -6958,13 +6958,11 @@ int ReadManageFile(Landscape* pLandscape)
 		if (ss.peek() == ';')
 			ss.ignore();
 	                }else{
-	        			BatchError("ManagementFile", -999, 0, " ");
-	        			batchLog << "Translocation years should not be duplicated." << endl;
+	        			throw logic_error("Translocation years should not be duplicated.");
 	        			error++;
 	                }
 		} else {
-			BatchError("ManagementFile", -999, 0, " ");
-			batchLog << "Translocation years must be between 0 and the simulated years." << endl;
+			throw logic_error("Translocation years must be between 0 and the simulated years.");
 			error++;
 		}
 		}
@@ -7038,8 +7036,7 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim)
 				s.x = sourceID;
 				s.y = -9;
 			} else{
-				BatchError("TranslocationFile", -999, 0, " ");
-				batchLog << "Source patch ID must be between 1 and the highest patchID." << endl;
+				throw logic_error("Source patch ID must be between 1 and the highest patchID.");
 				errorTransloc++;
 			}
 
@@ -7056,8 +7053,7 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim)
 			bool data = false;
 			data = pLandscape->checkDataCell(x, y);
 			if(data == false){ // cell is out of boundary
-				BatchError("TranslocationFile", -999, 0, " ");
-				batchLog << "Source cell is not a landscape cell." << endl;
+				throw logic_error("Source cell is not a landscape cell.");
 				errorTransloc++;
 			} else{ // cell is within landscape
 				s.x = x;
@@ -7074,8 +7070,7 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim)
 				s.x = targetID;
 				s.y = -9;
 			} else{
-				BatchError("TranslocationFile", -999, 0, " ");
-				batchLog << "Target patch ID must be between 1 and the highest patchID." << endl;
+				throw logic_error("Target patch ID must be between 1 and the highest patchID.");
 				errorTransloc++;
 			}
 		} else {
@@ -7091,8 +7086,7 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim)
 			bool data = false;
 			data = pLandscape->checkDataCell(x, y);
 			if(data == false){ // cell is out of boundary
-				BatchError("TranslocationFile", -999, 0, " ");
-				batchLog << "Target cell is not a landscape cell." << endl;
+				throw logic_error("Target cell is not a landscape cell.");
 				errorTransloc++;
 			} else{ // cell is within landscape
 				s.x = x;
@@ -7109,7 +7103,6 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim)
 			// push_back the minimal age of the individuals to the min_age map
 			// the maximal age of the individuals to the max_age map
 			// and the stage of the individuals to the stage map
-//	                if(paramsLand.patchModel){
 			t.min_age[Year].push_back(minAge);
 
 			t.max_age[Year].push_back(maxAge);
@@ -7143,14 +7136,24 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim)
 	for (std::map<int, std::vector<locn>>::iterator it = t.source.begin(); it != t.source.end(); ++it) {
 		keys.push_back(it->first);
 	}
+
 	// check if the keys of the source map are equal to the translocation years both should be already in ascending order
 	if (keys != t.translocation_years) {
-		BatchError("TranslocationFile", -999, 0, " ");
-		batchLog << "You must provide translocation parameters for each year given in ManagementFile." << endl;
+		throw logic_error("You must provide translocation parameters for each year given in ManagementFile.");
 		errorTransloc++;
+
 	}
 
 #ifndef NDEBUG
+
+	// print key to console
+	for (int i = 0; i < keys.size(); i++) {
+		cout << "ReadTranslocationR(): keys[" << i << "]: " << keys[i] << endl;
+	}
+	// print t.translocation_years to console
+	for (int i = 0; i < t.translocation_years.size(); i++) {
+		cout << "ReadTranslocationR(): t.translocation_years[" << i << "]: " << t.translocation_years[i] << endl;
+	}
 
 	        // loop over t.source map and print out the content
 	for (std::map<int, std::vector<locn>>::iterator it = t.source.begin(); it != t.source.end(); ++it) {
