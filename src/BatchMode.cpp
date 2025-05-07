@@ -4477,7 +4477,7 @@ int CheckTranslocFile(){
 
 			// check nbCatch
 			// check if it is a positive integer, if not -9
-			if (nbCatch < 0 && nbCatch != -9) {
+			if (nbCatch <= 0) {
 				BatchError(file, line, 10, "NbCatch");
 				errors++;
 			}
@@ -6935,11 +6935,11 @@ int ReadManageFile(Landscape* pLandscape)
 
 	// get default values
 	managementParams m = pManagement->getManagementParams();
+	translocationParams t = pManagement->getTranslocationParams();
 
 	int simNb;
 	double catching_rate; 
 	string translocYears;
-	vector<int> translocation_years; 
 	string translocation_file; 
 
 	// read from management file:
@@ -6951,355 +6951,283 @@ int ReadManageFile(Landscape* pLandscape)
 	int i;
 	while (ss >> i)
 	{
-		translocation_years.push_back(i);
+		// check if the year is within the simulated years
+		if (i >0 && i <= sim.years){
+	                if(std::find(t.translocation_years.begin(), t.translocation_years.end(), i) == t.translocation_years.end()) {
+	                    t.translocation_years.push_back(i);
 		if (ss.peek() == ';')
 			ss.ignore();
+	                }else{
+	        			BatchError("ManagementFile", -999, 0, " ");
+	        			batchLog << "Translocation years should not be duplicated." << endl;
+	        			error++;
+	                }
+		} else {
+			BatchError("ManagementFile", -999, 0, " ");
+			batchLog << "Translocation years must be between 0 and the simulated years." << endl;
+			error++;
+		}
 		}
 	
 	// activate translocation if Translocation File is given!
-	if(translocation_years[0] > 0) m.translocation = true;
+	if(t.translocation_years[0] > 0) m.translocation = true;
+	if (catching_rate > 0) t.catching_rate = catching_rate;
 
 	// set and update the management parameters
 	pManagement->setManagementParams(m);
+	pManagement->setTranslocationParams(t);
+
+	// now read translocation setting for this simNb
+	error = error + ReadTranslocationFile(pLandscape, simNb);
+
 
 	return error;
-
 }
 
 //---------------------------------------------------------------------------
-int ReadTranslocationFile(Landscape* pLandscape)
+int ReadTranslocationFile(Landscape* pLandscape, int currsim)
 {
-//	int error = 0;
-//	// create new Management
-//	if(pManagement != NULL)
-//		delete pManagement;
-//	pManagement = new Management;
-//	// get landscape parameter (to distinguish between patch and cell model)
-//	landParams paramsLand = pLandscape->getLandParams();
-//	// get demographic parameter (to distinguish between sexual and asexual reproduction, and stage structured or not)
-//	demogrParams dem = pSpecies->getDemogrParams();
-//	// get simulation parameter (to get the number of years)
-//	simParams sim = paramsSim->getSim();
-//
-//	// get default values
-//	managementParams m = pManagement->getManagementParams();
-//	translocationParams t = pManagement->getTranslocationParams();
-//
-//	double catching_rate; // to set t.catching_rate
-//	vector<int> translocation_years; // integer vector? to set t.translocation_years
-//	string translocation_file; //-> extra file with the transloc_matrix
-//
-//
-//	catching_rate = 0.5; //extracted from Management file  in R: Rcpp::as<double>(TranslocationParamsR.slot("catching_rate"));
-//
-//	translocation_years = ;// extract from Management file: semicolon separated list of integersRcpp::as<Rcpp::IntegerVector>(TranslocationParamsR.slot("years"));
-//
-//	string translocation_file;
-//	//translocation_file = ;
-//
-//	// activate translocation if Translocation File is given!
-//	if(translocation_years[0] > 0) m.translocation = true;
-//
-//	// set and update the management parameters
-//	pManagement->setManagementParams(m);
-//
-//	    if(m.translocation) {
-//	        // check if catcing rate as valid value:
-//	        if(catching_rate > 0 || catching_rate <= 1) {
-//	            // parse catching_rate to t.catching_rate
-//	            t.catching_rate = catching_rate;
-//	        } else{
-//				batchLog << "*** Error in " << bTranslocFile << ": "
-//					<< "catching_rate must be between 0 and 1." << endl;
-//	            error = 600;
-//	            return error;
-//	        }
-//
-//	        // parse translocation_years_R to translocation_years
-//	        for (int i = 0; i < translocation_years.size(); i++) {
-//	            // check if the year is within the simulated years
-//	            if(translocation_years[i] > 0 || translocation_years[i] <= sim.years) {
-//	                // check if year is not already in the vector
-//	            	// I guess I dont necessarily need another vector of the years? simply add the year if it doesn't exist already
-//	                if(std::find(t.translocation_years.begin(), t.translocation_years.end(), translocation_years_R[i]) == t.translocation_years.end()) {
-//	                    t.translocation_years.push_back(translocation_years[i]);
-//	                }else{
-////	                	batchLog << "*** Error in " << bTranslocFile << ": " << translocation_years[i] << " already exists. Make sure that you only include each year once." << std::endl;
-//	                    error = 600;
-//	                    return error;
-//	                }
-//	            } else{
-////	            	batchLog << "*** Error in " << bTranslocFile << ": " translocation_years[i] << " is not within the simulated years" << std::endl;
-//	                error = 600;
-//	                return error;
-//	            }
-//
-//	        }
-//
-//	        for (int i = 0; i < translocation_matrix_R.nrow(); ++i) {
-//
-//	            // extract the year in the first column and initialize the year for each map if needed
-//	            int year = translocation_matrix_R(i,0);
-//	            if (t.source.find(year) == t.source.end()) {
-//	                // not found so add a new key
-//	                t.source.insert(std::pair<int, std::vector<locn>>(year, std::vector<locn>()));
-//	                t.target.insert(std::pair<int, std::vector<locn>>(year, std::vector<locn>()));
-//	                t.nb.insert(std::pair<int, std::vector<int>>(year, std::vector<int>()));
-//	                // if(dem.stageStruct) {
-//	                t.min_age.insert(std::pair<int, std::vector<int>>(year, std::vector<int>()));
-//	                t.max_age.insert(std::pair<int, std::vector<int>>(year, std::vector<int>()));
-//	                t.stage.insert(std::pair<int, std::vector<int>>(year, std::vector<int>()));
-//	                // }
-//	                // if(dem.repType!=0) {
-//	                t.sex.insert(std::pair<int, std::vector<int>>(year, std::vector<int>()));
-//	                // }
-//
-//	            }
-//
-//	            // push_back the source to the source map
-//	            locn s;
-//	            if(paramsLand.patchModel){ // if patch model, the x is the patch ID
-//	                // only if patch ID exists? otherwise exit?
-//	                if(translocation_matrix_R(i,1) <= pLandscape->patchCount() && translocation_matrix_R(i,1) > 0){ // not sure if I can run this check here
-//	                    s.x = translocation_matrix_R(i,1);
-//	                    s.y = -9;
-//	                } else{
-////	                    Rcpp::Rcout << "ReadTranslocationR(): patch ID of source location " << translocation_matrix_R(i,1) << " is either 0 or greater than the number of overall patches." << std::endl;
-//	                    error = 600;
-//	                    return error;
-//	                }
-//
-//	            } else {
-//	                // if cell-based model
-//	                // check if x and y values are inside boundaries
-//	                bool data = false;
-//	                data = pLandscape->checkDataCell(translocation_matrix_R(i,1), translocation_matrix_R(i,2));
-//	                if(data == false){ // cell is out of boundary
-////	                    Rcpp::Rcout << "ReadTranslocationR(): source location " << translocation_matrix_R(i,1) << " is outside the landscape." << std::endl;
-//	                    error = 600;
-//	                    return error;
-//	                } else{ // cell is within landscape
-//	                    s.x = translocation_matrix_R(i,1);
-//	                    s.y = translocation_matrix_R(i,2);
-//	                };
-//	            };
-//
-//	            t.source[year].push_back(s);
-//
-//	            // push_back the target to the target map
-//	            if(paramsLand.patchModel){ // if patch model, the x is the patch ID
-//	                // only if patch ID exists? otherwise exit?
-//	                if(translocation_matrix_R(i,2) <= pLandscape->patchCount() && translocation_matrix_R(i,2) > 0){
-//	                    s.x = translocation_matrix_R(i,2);
-//	                    s.y = -9;
-//	                } else{
-////	                    Rcpp::Rcout << "ReadTranslocationR(): patch ID of target location " << translocation_matrix_R(i,2) << " is either 0 or greater than the number of overall patches." << std::endl;
-//	                    error = 600;
-//	                    return error;
-//	                }
-//	            } else {
-//	                // if cell-based model
-//	                // check if x and y values are inside boundaries and habitat
-//	                if(translocation_matrix_R(i,3) > 0 && translocation_matrix_R(i,3) <= paramsLand.maxX){
-//	                    s.x = translocation_matrix_R(i,3);
-//	                } else{
-////	                    Rcpp::Rcout << "ReadTranslocationR(): x value of target location " << translocation_matrix_R(i,3) << " is either 0 or greater than the maximum x value." << std::endl;
-//	                    error = 600;
-//	                    return error;
-//	                }
-//	                if(translocation_matrix_R(i,4) > 0 && translocation_matrix_R(i,4) <= paramsLand.maxY){
-//	                    s.y = translocation_matrix_R(i,4);
-//	                } else{
-////	                    Rcpp::Rcout << "ReadTranslocationR(): y value of target location " << translocation_matrix_R(i,4) << " is either 0 or greater than the maximum y value." << std::endl;
-//	                    error = 600;
-//	                    return error;
-//	                }
-//	            }
-//
-//	            t.target[year].push_back(s);
-//
-//	            // push_back the number of individuals to the nb map
-//	            if(paramsLand.patchModel){
-//	                if((int)translocation_matrix_R(i,3)>0){
-//	                    t.nb[year].push_back((int)translocation_matrix_R(i,3));
-//	                }else{
-////	                    Rcpp::Rcout << "ReadTranslocationR(): number of individuals to be translocated is 0 or a negative value." << std::endl;
-//	                    error = 600;
-//	                    return error;
-//	                }
-//	            } else {
-//	                // cell-based
-//	                if((int)translocation_matrix_R(i,5)>0){
-//	                    t.nb[year].push_back((int)translocation_matrix_R(i,5));
-//	                }else{
-////	                    Rcpp::Rcout << "ReadTranslocationR(): number of individuals to be translocated is 0 or a negative value." << std::endl;
-//	                    error = 600;
-//	                    return error;
-//	                }
-//	            }
-//
-//	            // only if stage structured
+	int errorTransloc = 0;
+	int simulationNb = currsim;
+	int Year;
+	string sourceStr;
+	string targetStr;
+	int nbCatch;
+	int minAge;
+	int maxAge;
+	int Stage;
+	int Sex;
+
+	// get landscape parameter (to distinguish between patch and cell model)
+	landParams paramsLand = pLandscape->getLandParams();
+	// get demographic parameter (to distinguish between sexual and asexual reproduction, and stage structured or not)
+	demogrParams dem = pSpecies->getDemogrParams();
+	// get simulation parameter (to get the number of years)
+	simParams sim = paramsSim->getSim();
+
+	// get current values
+	translocationParams t = pManagement->getTranslocationParams();
+
+	// read from Translocation file:
+	if (currsim == gFirstSimNb) translocFile >> simulationNb; // only in the first simulation, read the simulation number
+	// parse all parameters for the current simulation number
+	while (simulationNb == currsim){
+		translocFile >> Year >> sourceStr >> targetStr >> nbCatch >> minAge >> maxAge >> Stage >> Sex;
+
+		// initialize year for each map
+		 if (t.source.find(Year) == t.source.end()) {
+			// not found so add a new key
+			t.source.insert(std::pair<int, std::vector<locn>>(Year, std::vector<locn>()));
+			t.target.insert(std::pair<int, std::vector<locn>>(Year, std::vector<locn>()));
+			t.nb.insert(std::pair<int, std::vector<int>>(Year, std::vector<int>()));
 //	            if(dem.stageStruct) {
-//	                // push_back the minimal age of the individuals to the min_age map
-//	                // the maximal age of the individuals to the max_age map
-//	                // and the stage of the individuals to the stage map
+			t.min_age.insert(std::pair<int, std::vector<int>>(Year, std::vector<int>()));
+			t.max_age.insert(std::pair<int, std::vector<int>>(Year, std::vector<int>()));
+			t.stage.insert(std::pair<int, std::vector<int>>(Year, std::vector<int>()));
+//	                    }
+			// if(dem.repType!=0) {
+			t.sex.insert(std::pair<int, std::vector<int>>(Year, std::vector<int>()));
+//	                    }
+		}
+
+		locn s;
+		if(paramsLand.patchModel){ // if patch model, the x is the patch ID
+			// only if patch ID exists? otherwise exit?
+			int sourceID = stoi(sourceStr);
+			if(sourceID <= pLandscape->patchCount() && sourceID > 0){ // not sure if I can run this check here
+				s.x = sourceID;
+				s.y = -9;
+			} else{
+				BatchError("TranslocationFile", -999, 0, " ");
+				batchLog << "Source patch ID must be between 1 and the highest patchID." << endl;
+				errorTransloc++;
+			}
+
+		} else {
+			// if cell-based model
+			// transform semicolon seperated string to  x, y int
+			std::stringstream ss(sourceStr);
+			int x, y;
+			ss >> x;
+			if (ss.peek() == ';')
+				ss.ignore();
+			ss >> y;
+			// check if x and y values are inside boundaries
+			bool data = false;
+			data = pLandscape->checkDataCell(x, y);
+			if(data == false){ // cell is out of boundary
+				BatchError("TranslocationFile", -999, 0, " ");
+				batchLog << "Source cell is not a landscape cell." << endl;
+				errorTransloc++;
+			} else{ // cell is within landscape
+				s.x = x;
+				s.y = y;
+			};
+		};
+		t.source[Year].push_back(s);
+
+		// push_back the target to the target map
+		if(paramsLand.patchModel){ // if patch model, the x is the patch ID
+			int targetID = stoi(targetStr);
+			// only if patch ID exists? otherwise exit?
+			if(targetID <= pLandscape->patchCount() && targetID > 0){
+				s.x = targetID;
+				s.y = -9;
+			} else{
+				BatchError("TranslocationFile", -999, 0, " ");
+				batchLog << "Target patch ID must be between 1 and the highest patchID." << endl;
+				errorTransloc++;
+			}
+		} else {
+			// if cell-based model
+			// transform semicolon seperated string to  x, y int
+			std::stringstream ss(targetStr);
+			int x, y;
+			ss >> x;
+			if (ss.peek() == ';')
+				ss.ignore();
+			ss >> y;
+			// check if x and y values are inside boundaries
+			bool data = false;
+			data = pLandscape->checkDataCell(x, y);
+			if(data == false){ // cell is out of boundary
+				BatchError("TranslocationFile", -999, 0, " ");
+				batchLog << "Target cell is not a landscape cell." << endl;
+				errorTransloc++;
+			} else{ // cell is within landscape
+				s.x = x;
+				s.y = y;
+			};
+		};
+
+		t.target[Year].push_back(s);
+
+		// push_back the number of individuals to the nb map
+		t.nb[Year].push_back(nbCatch);
+
+		if(dem.stageStruct) {
+			// push_back the minimal age of the individuals to the min_age map
+			// the maximal age of the individuals to the max_age map
+			// and the stage of the individuals to the stage map
 //	                if(paramsLand.patchModel){
-//	                    if ((int)translocation_matrix_R(i,4)>=0 || (int)translocation_matrix_R(i,4)==-9){
-//	                        t.min_age[year].push_back((int)translocation_matrix_R(i,4));
-//	                    } else{
-////	                        Rcpp::Rcout << "ReadTranslocationR(): minimal age of the individuals to be translocated is a negative value which is not -9." << std::endl;
-//	                        error = 600;
-//	                        return error;
-//	                    }
-//	                    if ((int)translocation_matrix_R(i,5)>0 || (int)translocation_matrix_R(i,5)==-9){
-//	                        t.max_age[year].push_back((int)translocation_matrix_R(i,5));
-//	                    } else{
-////	                        Rcpp::Rcout << "ReadTranslocationR(): maximal age of the individuals to be translocated is 0 or a negative value which is not -9." << std::endl;
-//	                        error = 600;
-//	                        return error;
-//	                    }
-//	                    if ((int)translocation_matrix_R(i,6)>=0 || (int)translocation_matrix_R(i,6)==-9){
-//	                        t.stage[year].push_back((int)translocation_matrix_R(i,6));
-//	                    } else{
-////	                        Rcpp::Rcout << "ReadTranslocationR(): stage of the individuals to be translocated is a negative value which is not -9." << std::endl;
-//	                        error = 600;
-//	                        return error;
-//	                    }
-//	                } else {
-//	                    if ((int)translocation_matrix_R(i,6)>=0 | (int)translocation_matrix_R(i,6)==-9){
-//	                        t.min_age[year].push_back((int)translocation_matrix_R(i,6));
-//	                    } else{
-////	                        Rcpp::Rcout << "ReadTranslocationR(): minimal age of the individuals to be translocated is a negative value which is not -9." << std::endl;
-//	                        error = 600;
-//	                        return error;
-//	                    }
-//	                    if ((int)translocation_matrix_R(i,7)>0 | (int)translocation_matrix_R(i,7)==-9){
-//	                        t.max_age[year].push_back((int)translocation_matrix_R(i,7));
-//	                    } else{
-////	                        Rcpp::Rcout << "ReadTranslocationR(): maximal age of the individuals to be translocated is 0 or a negative value which is not -9." << std::endl;
-//	                        error = 600;
-//	                        return error;
-//	                    }
-//	                    if ((int)translocation_matrix_R(i,8)>=0 | (int)translocation_matrix_R(i,8)==-9){
-//	                        t.stage[year].push_back((int)translocation_matrix_R(i,8));
-//	                    } else{
-////	                        Rcpp::Rcout << "ReadTranslocationR(): stage of the individuals to be translocated is a negative value which is not -9." << std::endl;
-//	                        error = 600;
-//	                        return error;
-//	                    }
-//	                }
-//	            } else{
-//	                t.min_age[year].push_back(-9);
-//	                t.max_age[year].push_back(-9);
-//	                t.stage[year].push_back(-9);
-//	            }
-//
-//	            if(dem.repType!=0) {
-//	                // push_back the sex of the individuals to the sex map
-//	                if(paramsLand.patchModel){
-//	                    if ((int)translocation_matrix_R(i,7) == 0 | (int)translocation_matrix_R(i,7) == 1 | (int)translocation_matrix_R(i,7) == -9){
-//	                        t.sex[year].push_back((int)translocation_matrix_R(i,7));
-//	                    } else{
-////	                        Rcpp::Rcout << "ReadTranslocation(): sex of the individuals to be translocated is not 0, 1 or -9." << std::endl;
-//	                        error = 600;
-//	                        return error;
-//	                    }
-//	                } else {
-//	                    // cell-based
-//	                    if ((int)translocation_matrix_R(i,9) == 0 | (int)translocation_matrix_R(i,9) == 1 | (int)translocation_matrix_R(i,9) == -9){
-//	                        t.sex[year].push_back((int)translocation_matrix_R(i,9));
-//	                    } else{
-////	                        Rcpp::Rcout << "ReadTranslocation(): sex of the individuals to be translocated is not 0, 1 or -9." << std::endl;
-//	                        error = 600;
-//	                        return error;
-//	                    }
-//	                }
-//	            } else{
-//	                t.sex[year].push_back(-9);
-//	            }
-//	        }
-//
-//	        // check input
-//	        // loop over t.source map and print out the content
-////	        for (std::map<int, std::vector<locn>>::iterator it = t.source.begin(); it != t.source.end(); ++it) {
-////	            Rcpp::Rcout << "ReadTranslocationR(): t.source[" << it->first << "]: ";
-////	            for (int i = 0; i < it->second.size(); i++) {
-////	                Rcpp::Rcout << it->second[i].x << " " << it->second[i].y << " ";
-////	            }
-////	            Rcpp::Rcout << std::endl;
-////	        }
-//
-//	        // check input
-//	        // loop over t.target map and print out the content
-////	        for (std::map<int, std::vector<locn>>::iterator it = t.target.begin(); it != t.target.end(); ++it) {
-////	            Rcpp::Rcout << "ReadTranslocationR(): t.target[" << it->first << "]: ";
-////	            for (int i = 0; i < it->second.size(); i++) {
-////	                Rcpp::Rcout << it->second[i].x << " " << it->second[i].y << " ";
-////	            }
-////	            Rcpp::Rcout << std::endl;
-////	        }
-//
-//	        // check input
-//	        // loop over t.nb map and print out the content
-////	        for (std::map<int, std::vector<int>>::iterator it = t.nb.begin(); it != t.nb.end(); ++it) {
-////	            Rcpp::Rcout << "ReadTranslocationR(): t.nb[" << it->first << "]: ";
-////	            for (int i = 0; i < it->second.size(); i++) {
-////	                Rcpp::Rcout << it->second[i] << " ";
-////	            }
-////	            Rcpp::Rcout << std::endl;
-////	        }
-//
-////	        if(dem.stageStruct) {
-//	            // check input
-//	            // loop over t.min_age map and print out the content
-////	            for (std::map<int, std::vector<int>>::iterator it = t.min_age.begin(); it != t.min_age.end(); ++it) {
-////	                Rcpp::Rcout << "ReadTranslocationR(): t.min_age[" << it->first << "]: ";
-////	                for (int i = 0; i < it->second.size(); i++) {
-////	                    Rcpp::Rcout << it->second[i] << " ";
-////	                }
-////	                Rcpp::Rcout << std::endl;
-////	            }
-//
-//	            // check input
-//	            // loop over t.max_age map and print out the content
-////	            for (std::map<int, std::vector<int>>::iterator it = t.max_age.begin(); it != t.max_age.end(); ++it) {
-////	                Rcpp::Rcout << "ReadTranslocationR(): t.max_age[" << it->first << "]: ";
-////	                for (int i = 0; i < it->second.size(); i++) {
-////	                    Rcpp::Rcout << it->second[i] << " ";
-////	                }
-////	                Rcpp::Rcout << std::endl;
-////	            }
+			t.min_age[Year].push_back(minAge);
+
+			t.max_age[Year].push_back(maxAge);
+
+			t.stage[Year].push_back(Stage);
+
+		} else{
+			t.min_age[Year].push_back(-9);
+			t.max_age[Year].push_back(-9);
+			t.stage[Year].push_back(-9);
+		}
+
+		if(dem.repType!=0) {
+			t.sex[Year].push_back(Sex);
+		} else{
+			t.sex[Year].push_back(-9);
+		}
+
+		// if not end of file, read next simulation number
+		if(!translocFile.eof()){
+			translocFile >> simulationNb;
+		} else{
+			simulationNb = -1;
+		}
+	};
+
+	// final check whether user provided translocation parameter for each translocation year:
+	// the keys of source map must match the translocation years
+	// extract the keys of the source map
+	std::vector<int> keys;
+	for (std::map<int, std::vector<locn>>::iterator it = t.source.begin(); it != t.source.end(); ++it) {
+		keys.push_back(it->first);
+	}
+	// check if the keys of the source map are equal to the translocation years both should be already in ascending order
+	if (keys != t.translocation_years) {
+		BatchError("TranslocationFile", -999, 0, " ");
+		batchLog << "You must provide translocation parameters for each year given in ManagementFile." << endl;
+		errorTransloc++;
+	}
+
+#ifndef NDEBUG
+
+	        // loop over t.source map and print out the content
+	for (std::map<int, std::vector<locn>>::iterator it = t.source.begin(); it != t.source.end(); ++it) {
+		cout << "ReadTranslocationR(): t.source[" << it->first << "]: ";
+		for (int i = 0; i < it->second.size(); i++) {
+			cout << it->second[i].x << " " << it->second[i].y << " ";
+		}
+		cout << std::endl;
+	}
+
+	        // check input
+	        // loop over t.target map and print out the content
+	for (std::map<int, std::vector<locn>>::iterator it = t.target.begin(); it != t.target.end(); ++it) {
+		cout << "ReadTranslocationR(): t.target[" << it->first << "]: ";
+		for (int i = 0; i < it->second.size(); i++) {
+			cout << it->second[i].x << " " << it->second[i].y << " ";
+		}
+		cout << std::endl;
+	}
+
+	        // check input
+	        // loop over t.nb map and print out the content
+	for (std::map<int, std::vector<int>>::iterator it = t.nb.begin(); it != t.nb.end(); ++it) {
+		cout << "ReadTranslocationR(): t.nb[" << it->first << "]: ";
+		for (int i = 0; i < it->second.size(); i++) {
+			cout << it->second[i] << " ";
+		}
+		cout << std::endl;
+	}
+
+	            // check input
+	            // loop over t.min_age map and print out the content
+	for (std::map<int, std::vector<int>>::iterator it = t.min_age.begin(); it != t.min_age.end(); ++it) {
+		cout << "ReadTranslocationR(): t.min_age[" << it->first << "]: ";
+		for (int i = 0; i < it->second.size(); i++) {
+			cout << it->second[i] << " ";
+		}
+		cout << std::endl;
+	}
+
+	            // check input
+	            // loop over t.max_age map and print out the content
+	for (std::map<int, std::vector<int>>::iterator it = t.max_age.begin(); it != t.max_age.end(); ++it) {
+		cout << "ReadTranslocationR(): t.max_age[" << it->first << "]: ";
+		for (int i = 0; i < it->second.size(); i++) {
+			cout << it->second[i] << " ";
+		}
+		cout << std::endl;
+	}
+
+	            // check input
+	            // loop over t.stage map and print out the content
+	for (std::map<int, std::vector<int>>::iterator it = t.stage.begin(); it != t.stage.end(); ++it) {
+		cout << "ReadTranslocationR(): t.stage[" << it->first << "]: ";
+		for (int i = 0; i < it->second.size(); i++) {
+			cout << it->second[i] << " ";
+		}
+		cout << std::endl;
+	}
+
+	        // only if sexual reproduction
 //
 //	            // check input
 //	            // loop over t.stage map and print out the content
-////	            for (std::map<int, std::vector<int>>::iterator it = t.stage.begin(); it != t.stage.end(); ++it) {
-////	                Rcpp::Rcout << "ReadTranslocationR(): t.stage[" << it->first << "]: ";
-////	                for (int i = 0; i < it->second.size(); i++) {
-////	                    Rcpp::Rcout << it->second[i] << " ";
-////	                }
-////	                Rcpp::Rcout << std::endl;
-////	            }
-////	        }
-//
-//	        // only if sexual reproduction
-////	        if(dem.repType!=0) {
-////
-////	            // check input
-////	            // loop over t.stage map and print out the content
-////	            for (std::map<int, std::vector<int>>::iterator it = t.sex.begin(); it != t.sex.end(); ++it) {
-////	                Rcpp::Rcout << "ReadTranslocationR(): t.sex[" << it->first << "]: ";
-////	                for (int i = 0; i < it->second.size(); i++) {
-////	                    Rcpp::Rcout << it->second[i] << " ";
-////	                }
-////	                Rcpp::Rcout << std::endl;
-////	            }
-////	        }
-//
-//	        // set and update the translocation parameters
-//	        pManagement->setTranslocationParams(t);
-//
-//	    }
-//	    return error;
+	for (std::map<int, std::vector<int>>::iterator it = t.sex.begin(); it != t.sex.end(); ++it) {
+		cout << "ReadTranslocationR(): t.sex[" << it->first << "]: ";
+		for (int i = 0; i < it->second.size(); i++) {
+			cout << it->second[i] << " ";
+		}
+		cout << std::endl;
+	}
+#endif
+
+	        // set and update the translocation parameters
+	        pManagement->setTranslocationParams(t);
+
+	    return errorTransloc;
 }
 
 //---------------------------------------------------------------------------
@@ -7491,7 +7419,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 					if (read_error) {
 						params_ok = false;
 					}
-//					read_error = ReadTranslocation(pLandscape);
+//					read_error = ReadTranslocation(pLandscape, i);
 //					if (read_error) {
 //						params_ok = false;
 //					}

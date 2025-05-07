@@ -209,7 +209,7 @@ int ReadInitialisation(Landscape*);
 int ReadInitIndsFile(int, Landscape*, string);
 int ReadGeneticsFile(ifstream& ifs, Landscape*);
 int ReadTraitsFile(ifstream& ifs, const int& whichSim);
-int ReadTranslocationFile(Landscape* pLandscape);
+int ReadTranslocationFile(Landscape* pLandscape, int sim);
 int ReadManagementFile();
 
 // Helper functions to ReadGenetics and ReadTraits
