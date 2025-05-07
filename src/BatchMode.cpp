@@ -1104,7 +1104,7 @@ bool CheckLandFile(int landtype, string inputDir)
 		ifsLandFile >> header; if (header != "LandNum") nbErrors++;
 		ifsLandFile >> header; if (header != "Nhabitats") nbErrors++;
 		ifsLandFile >> header; if (header != "LandscapeFile") nbErrors++;
-		ifsLandFile >> header; if (header != "LandSpeciesFile") nbErrors++;
+		ifsLandFile >> header; if (header != "SpeciesLandFile") nbErrors++;
 		ifsLandFile >> header; if (header != "DynLandFile") nbErrors++;
 		if (nbErrors > 0) {
 			FormatError(whichFile, 0);
@@ -1166,6 +1166,7 @@ bool CheckLandFile(int landtype, string inputDir)
 			}
 
 			// Check species-specific landscape parameters
+			whichInputFile = "SpeciesLandFile";
 			ifsLandFile >> inSpLand;
 			if (inSpLand == "NULL") {
 				if (gUsesPatches) {
@@ -1354,7 +1355,6 @@ bool CheckSpLandFile(string inputDir, bool isInitial) {
 	ifsSpLandFile >> spNb;
 	while (spNb != errSpNb) {
 
-		ifsSpLandFile >> spNb;
 		if (!gSpeciesNames.contains(spNb)) {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLogOfs << "Species number " << to_string(spNb) << " doesn't match those in ParametersFile" << endl;
@@ -1458,7 +1458,7 @@ bool CheckSpLandFile(string inputDir, bool isInitial) {
 
 			// check initial distribution map filename
 			whichInputFile = "SpDistFile";
-			ifsLandFile >> inSpDistFile;
+			ifsSpLandFile >> inSpDistFile;
 			if (inSpDistFile != "NULL") {
 				gUseSpeciesDist.at(spNb) = true;
 				string pathToSpDist = inputDir + inSpDistFile;
@@ -1649,7 +1649,7 @@ int CheckStageFile(string indir)
 	float infloat;
 	int nbErrors = 0;
 	int nbSims = 0;
-	int prevSim;
+	int prevSim = 0;
 	string inTrMatrixFile, fecStgWtFile, inDevStgWtsFile, inSurvWtsFile;
 	vector <string> transfiles, wtsfiles;
 	const string strStageFile = "StageStructFile";
@@ -1685,7 +1685,6 @@ int CheckStageFile(string indir)
 	simNb = -98765;
 	ifsStageStructFile >> simNb;
 	
-	prevSim = simNb;
 	while (simNb != -98765) {
 
 		if (!gSpInputOpt.contains(simNb)) {
