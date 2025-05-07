@@ -902,13 +902,25 @@ bool CheckParameterFile()
 			BatchError(whichFile, whichLine, 20, "LocalExtProb");
 			nbErrors++;
 		}
-
+		
 		ifsParamFile >> inNbStages;
-		if (inNbStages < 1) {
-			BatchError(whichFile, whichLine, 21, "NbStages");
-			nbErrors++;
+		if (gUsesStageStruct) {
+			if (inNbStages < 1) {
+				BatchError(whichFile, whichLine, 21, "NbStages");
+				nbErrors++;
+			}
+			else if (inNbStages < 2 || inNbStages > 10) {
+				BatchError(whichFile, whichLine, 0, " ");
+				nbErrors++;
+				batchLogOfs << "NbStages must be between 2 and 10." << endl;
+			}
+			else gSpInputOpt.at(simNb).at(inSp).nbStages = inNbStages;
 		}
-		else gSpInputOpt.at(simNb).at(inSp).nbStages = inNbStages;
+		else if (inNbStages != gEmptyVal) {
+			BatchError(whichFile, whichLine, 0, " ");
+			nbErrors++;
+			batchLogOfs << "NbStages should left empty (-9) if stage-structure is disabled." << endl;
+		}
 
 		ifsParamFile >> inRepro;
 		if (!(inRepro == 0 || inRepro == 1 || inRepro == 2)) {
@@ -2040,10 +2052,8 @@ bool CheckTransitionFile(short nstages, short nsexesDem)
 			line++;
 			// row header
 			ifsTransMatrix >> header;
-			if (nsexesDem == 1) expectedHeader = to_string(stage);
-			else {
-				if (sex == 0) expectedHeader = to_string(stage) + "m"; else expectedHeader = to_string(stage) + "f";
-			}
+			expectedHeader = to_string(stage);
+			if (nsexesDem == 2) expectedHeader += sex == 0 ? "m" : "f";
 			if (header != expectedHeader) {
 				BatchError(filetype, line, 0, " ");
 				batchLogOfs << "Invalid row header" << endl; errors++;
@@ -2059,11 +2069,13 @@ bool CheckTransitionFile(short nstages, short nsexesDem)
 			ifsTransMatrix >> minage;
 			if (stage == 1 && minage != 0) {
 				BatchError(filetype, line, 0, " ");
-				batchLogOfs << "MinAge must be zero for stage 1" << endl; errors++;
+				batchLogOfs << "MinAge must be zero for stage 1" << endl; 
+				errors++;
 			}
 			if (stage > 1) {
 				if (minage < 0) {
-					BatchError(filetype, line, 19, "MinAge"); errors++;
+					BatchError(filetype, line, 19, "MinAge"); 
+					errors++;
 				}
 			}
 		}
