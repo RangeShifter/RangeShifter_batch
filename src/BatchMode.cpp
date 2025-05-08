@@ -91,7 +91,7 @@ bool isValidFractalDim(int x) {
 //---------------------------------------------------------------------------
 bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir)
 {
-	int lines, nSimuls;
+	int lines;
 	int nbErrors = 0;
 	string paramName, filename, pathToFile, batchLogPath, header;
 	string whichInputFile = "Control file";
@@ -248,6 +248,8 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 		ifsSimFile.close();
 	ifsSimFile.clear();
 
+	int nSimuls = gSpInputOpt.size();
+
 	// Check parameter file
 	controlIfs >> paramName >> filename;
 	if (paramName == "ParameterFile" && !anyFormatError) {
@@ -326,15 +328,10 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 				batchLogOfs << "Checking " << paramName << " " << pathToFile << endl;
 				ifsStageStructFile.open(pathToFile.c_str());
 				if (ifsStageStructFile.is_open()) {
-					nSimuls = CheckStageFile(inputDir);
-					if (nSimuls < 0) areInputFilesOk = false;
-					else {
+					areInputFilesOk = CheckStageFile(inputDir);
+					if (areInputFilesOk) {
 						FileOK(paramName, nSimuls, 0);
-						if (nSimuls != gSpInputOpt.size()) {
-							SimulnCountError(filename); 
-							areInputFilesOk = false;
-						}
-						else stageStructFile = pathToFile;
+						stageStructFile = pathToFile;
 					}
 					ifsStageStructFile.close();
 				}
@@ -362,16 +359,10 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
 		ifsEmigrationFile.open(pathToFile.c_str());
 		if (ifsEmigrationFile.is_open()) {
-			nSimuls = CheckEmigFile();
-			if (nSimuls < 0) 
-				areInputFilesOk = false;
-			else {
+			areInputFilesOk = CheckEmigFile();
+			if (areInputFilesOk) {
 				FileOK(paramName, nSimuls, 0);
-				if (nSimuls != gSpInputOpt.size()) {
-					SimulnCountError(filename); 
-					areInputFilesOk = false;
-				}
-				else emigrationFile = pathToFile;
+				emigrationFile = pathToFile;
 			}
 			ifsEmigrationFile.close();
 		}
@@ -390,17 +381,10 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
 		ifsTransferFile.open(pathToFile.c_str());
 		if (ifsTransferFile.is_open()) {
-			nSimuls = CheckTransferFile(inputDir);
-			if (nSimuls < 0) {
-				areInputFilesOk = false;
-			}
-			else {
+			areInputFilesOk = CheckTransferFile(inputDir);
+			if (areInputFilesOk) {
 				FileOK(paramName, nSimuls, 0);
-				if (nSimuls != gSpInputOpt.size()) {
-					SimulnCountError(filename); 
-					areInputFilesOk = false;
-				}
-				else transferFile = pathToFile;
+				transferFile = pathToFile;
 			}
 			ifsTransferFile.close(); 
 			ifsTransferFile.clear();
@@ -420,17 +404,10 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
 		ifsSettlementFile.open(pathToFile.c_str());
 		if (ifsSettlementFile.is_open()) {
-			nSimuls = CheckSettleFile();
-			if (nSimuls < 0) {
-				areInputFilesOk = false;
-			}
-			else {
+			areInputFilesOk = CheckSettleFile();
+			if (areInputFilesOk) {
 				FileOK(paramName, nSimuls, 0);
-				if (nSimuls != gSpInputOpt.size()) {
-					SimulnCountError(filename); 
-					areInputFilesOk = false;
-				}
-				else settleFile = pathToFile;
+				settleFile = pathToFile;
 			}
 			ifsSettlementFile.close();
 		}
@@ -479,11 +456,8 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 			batchLogOfs << "Checking " << paramName << " " << pathToFile << endl;
 			ifsGeneticsFile.open(pathToFile.c_str());
 			if (ifsGeneticsFile.is_open()) {
-				nSimuls = CheckGeneticsFile(inputDir);
-				if (nSimuls < 0) {
-					areInputFilesOk = false;
-				}
-				else {
+				areInputFilesOk = CheckGeneticsFile(inputDir);
+				if (areInputFilesOk) {
 					FileOK(paramName, nSimuls, 0);
 					geneticsFile = pathToFile;
 				}
@@ -514,11 +488,8 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 			batchLogOfs << "Checking " << paramName << " " << pathToFile << endl;
 			ifsTraitsFile.open(pathToFile.c_str());
 			if (ifsTraitsFile.is_open()) {
-				nSimuls = CheckTraitsFile(inputDir);
-				if (nSimuls < 0) {
-					areInputFilesOk = false;
-				}
-				else {
+				areInputFilesOk = CheckTraitsFile(inputDir);
+				if (areInputFilesOk) {
 					FileOK(paramName, nSimuls, 0);
 					traitsFile = pathToFile;
 				}
@@ -540,17 +511,10 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
 		ifsInitFile.open(pathToFile.c_str());
 		if (ifsInitFile.is_open()) {
-			nSimuls = CheckInitFile(inputDir);
-			if (nSimuls < 0) {
-				areInputFilesOk = false;
-			}
-			else {
+			areInputFilesOk = CheckInitFile(inputDir);
+			if (areInputFilesOk) {
 				FileOK(paramName, nSimuls, 0);
-				if (nSimuls != gSpInputOpt.size()) {
-					SimulnCountError(filename); 
-					areInputFilesOk = false;
-				}
-				else initialFile = pathToFile;
+				initialFile = pathToFile;
 			}
 			ifsInitFile.close();
 		}
@@ -1651,7 +1615,7 @@ int CheckDynamicFile(string inputDir) {
 }
 
 //---------------------------------------------------------------------------
-int CheckStageFile(string indir)
+bool CheckStageFile(string indir)
 {
 	string header, fname;
 	int simNb, inSp, i, inFecDensDep;
@@ -1660,8 +1624,9 @@ int CheckStageFile(string indir)
 	float inDevDensCoeff, inSurvDensDepCoeff;
 	float infloat;
 	int nbErrors = 0;
-	int nbSims = 0;
+	int nbSims = 1;
 	int prevSim = 0;
+	set<int> simNbs;
 	string inTrMatrixFile, fecStgWtFile, inDevStgWtsFile, inSurvWtsFile;
 	vector <string> transfiles, wtsfiles;
 	const string strStageFile = "StageStructFile";
@@ -1704,7 +1669,7 @@ int CheckStageFile(string indir)
 			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
 			nbErrors++;
 		}
-		nbSims++;
+		else simNbs.emplace(simNb);
 
 		ifsStageStructFile >> inSp;
 		if (!gSpInputOpt.at(simNb).contains(inSp)) {
@@ -1981,8 +1946,11 @@ int CheckStageFile(string indir)
 	transfiles.clear();
 	wtsfiles.clear();
 
-	if (nbErrors > 0) return -111;
-	else return nbSims;
+	if (nbSims != gSpInputOpt.size()) {
+		SimulnCountError(strStageFile);
+		nbErrors++;
+	}
+	return nbErrors == 0;
 }
 
 //---------------------------------------------------------------------------
@@ -2158,16 +2126,15 @@ bool CheckWeightsFile(string filetype, int nbStages, int nbSexes)
 }
 
 //---------------------------------------------------------------------------
-int CheckEmigFile()
+bool CheckEmigFile()
 {
 	string header;
 	int inDensDep, inUseFullKern, inStgDep, inSexDep, inIndVar, inEmigStg, inStage, inSex;
 	bool isDensDep, isIndVar;
 	float inSp, inEP, inD0, inAlpha, inBeta;
 	int nbErrors = 0;
-	int nbSims = 0;
 	string whichInputFile = "EmigrationFile";
-
+	set<int> simNbs;
 	isDensDep = false;
 	isIndVar = false;
 	inEP = 0.0;
@@ -2208,6 +2175,9 @@ int CheckEmigFile()
 			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
 			nbErrors++;
 		}
+		else {
+			simNbs.emplace(simNb);
+		}
 
 		ifsEmigrationFile >> inSp;
 		if (!gSpInputOpt.at(simNb).contains(inSp)) {
@@ -2221,7 +2191,6 @@ int CheckEmigFile()
 		ifsEmigrationFile >> inDensDep >> inUseFullKern >> inStgDep >> inSexDep;
 		ifsEmigrationFile >> inIndVar >> inEmigStg >> inStage >> inSex;
 		currentLine = CheckStageSex(whichInputFile, lineNb, simNb, inSp, prevLine, inStgDep, inSexDep, inStage, inSex, inIndVar, true, false);
-		if (currentLine.isNewSim) nbSims++;
 		nbErrors += currentLine.errors;
 		prevLine = currentLine;
 
@@ -2354,12 +2323,16 @@ int CheckEmigFile()
 		EOFerror(whichInputFile);
 		nbErrors++;
 	}
-	if (nbErrors > 0) return -111;
-	else return nbSims;
+	
+	if (simNbs.size() != gSpInputOpt.size()) {
+		SimulnCountError(whichInputFile);
+		nbErrors++;
+	}
+	return nbErrors == 0;
 }
 
 //---------------------------------------------------------------------------
-int CheckTransferFile(string indir)
+bool CheckTransferFile(string indir)
 {
 	string header, colheader, intext, fname, ftype;
 	int i, simNb, inSp, inStageDep, inSexDep, inKernelType, inDistMort, inIndVar, inStage, inSex;
@@ -2378,7 +2351,7 @@ int CheckTransferFile(string indir)
 	int morthaberrors = 0; 
 	int costerrors = 0; 
 	int hrerrors = 0;
-	int simuls = 0;
+	set<int> simNbs;
 	string whichFile = "TransferFile";
 
 	// Parse header line;
@@ -2492,6 +2465,9 @@ int CheckTransferFile(string indir)
 			batchLogOfs << "Simulation number doesn't match those in SimFile." << endl;
 			errors++;
 		}
+		else {
+			simNbs.emplace(simNb);
+		}
 
 		ifsTransferFile >> inSp;
 		if (!gSpInputOpt.at(simNb).contains(inSp)) {
@@ -2508,7 +2484,6 @@ int CheckTransferFile(string indir)
 			ifsTransferFile >> inStageDep >> inSexDep >> inKernelType >> inDistMort;
 			ifsTransferFile >> inIndVar >> inStage >> inSex;
 			current = CheckStageSex(whichFile, whichLine, simNb, inSp, prev, inStageDep, inSexDep, inStage, inSex, inIndVar, true, false);
-			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
 			// validate kernel type
@@ -2602,7 +2577,6 @@ int CheckTransferFile(string indir)
 			ifsTransferFile >> inPerceptualRange >> inPercRangeMethod >> inDirPersistence;
 			ifsTransferFile >> inMemSize >> inGoalBias >> inGoalType >> inAlphaDispBias >> inBetaDispBias;
 			current = CheckStageSex(whichFile, whichLine, simNb, inSp, prev, 0, 0, 0, 0, 0, true, false);
-			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
 
@@ -2734,7 +2708,6 @@ int CheckTransferFile(string indir)
 		case 2: { // CRW
 			ifsTransferFile >> inIndVar >> inStepLength >> inStepCorr >> inStraightenPath >> inSMType >> inSMConst;
 			current = CheckStageSex(whichFile, whichLine, simNb, inSp, prev, 0, 0, 0, 0, inIndVar, true, false);
-			if (current.isNewSim) simuls++;
 			errors += current.errors;
 			prev = current;
 
@@ -2822,13 +2795,16 @@ int CheckTransferFile(string indir)
 	}
 	costsfiles.clear();
 
-	if (errors > 0) return -111;
-	else return simuls;
+	if (simNbs.size() != gSpInputOpt.size()) {
+		SimulnCountError(whichFile);
+		errors++;
+	}
+	return errors == 0;
 
 }
 
 //---------------------------------------------------------------------------
-int CheckSettleFile()
+bool CheckSettleFile()
 {
 	string header;
 	int simNb, inSp, inStageDep, inSexDep, inStage, inSex, inSettleType;
@@ -3022,7 +2998,7 @@ int CheckSettleFile()
 }
 
 //---------------------------------------------------------------------------
-int CheckTraitsFile(string indir)
+bool CheckTraitsFile(string indir)
 {
 	string header, colheader;
 	int simNb, inSp, nextLineSimNb, nextLineSp;
@@ -3030,7 +3006,7 @@ int CheckTraitsFile(string indir)
 		inInitDomParams, inDominanceDist, inDominanceParams, inIsInherited, inMutationDist, 
 		inMutationParams, inPositions, inNbPositions, inExpressionType, inMutationRate, inIsOutput;
 	int nbErrors = 0;
-	int nbSims = 0;
+	set<int> simNbs;
 	int nbGenLoadTraits = 0;
 	const string whichInputFile = "TraitsFile";
 	vector<TraitType> allReadTraits;
@@ -3080,6 +3056,9 @@ int CheckTraitsFile(string indir)
 			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
 			nbErrors++;
 		}
+		else {
+			simNbs.emplace(simNb);
+		}
 
 		if (!gSpInputOpt.at(simNb).contains(inSp)) {
 			BatchError(whichInputFile, lineNb, 0, " ");
@@ -3095,7 +3074,6 @@ int CheckTraitsFile(string indir)
 			>> inMutationRate >> inIsOutput;
 
 		current = CheckStageSex(whichInputFile, lineNb, simNb, inSp, prev, 0, 0, 0, 0, 0, true, false);
-		if (current.isNewSim) nbSims++;
 		nbErrors += current.errors;
 		prev = current;
 		nbRowsToRead++;
@@ -3592,9 +3570,11 @@ int CheckTraitsFile(string indir)
 		nbErrors++;
 	}
 
-	if (nbErrors > 0) 
-		return -111;
-	else return 0;
+	if (simNbs.size() != gSpInputOpt.size()) {
+		SimulnCountError(whichInputFile);
+		nbErrors++;
+	}
+	return nbErrors == 0;
 }
 
 int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& simNb, const species_id& sp) {
@@ -3950,7 +3930,7 @@ TraitType addSexDepToTrait(const TraitType& t, const sex_t& sex) {
 
 //---------------------------------------------------------------------------
 
-int CheckGeneticsFile(string inputDirectory) {
+bool CheckGeneticsFile(string inputDirectory) {
 
 	string header;
 	int simNb, inSp, prevSimNb, errCode;
@@ -3959,7 +3939,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		inOutStartGenetics, inOutputInterval, inNbrPatchesToSample, inNIndsToSample;
 	int inGenomeSize;
 	int nbErrors = 0;
-	int nbSims = 0;
+	set<int> simNbs;
 	string whichFile = "GeneticsFile";
 
 	const regex patternIntList{ "^\"?([0-9]+,)*[0-9]+\"?$" }; // comma-separated integer list
@@ -3996,6 +3976,9 @@ int CheckGeneticsFile(string inputDirectory) {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
 			nbErrors++;
+		}
+		else {
+			simNbs.emplace(simNb);
 		}
 
 		ifsGeneticsFile >> inSp;
@@ -4208,13 +4191,15 @@ int CheckGeneticsFile(string inputDirectory) {
 		nbErrors++;
 	}
 
-	if (nbErrors > 0) return -111;
-	else return nbSims;
-
+	if (simNbs.size() != gSpInputOpt.size()) {
+		SimulnCountError(whichFile);
+		nbErrors++;
+	}
+	return nbErrors == 0;
 }
 
 //---------------------------------------------------------------------------
-int CheckInitFile(string indir)
+bool CheckInitFile(string indir)
 {
 	string header, colheader;
 	int i, simNb, spNb;
@@ -4222,9 +4207,9 @@ int CheckInitFile(string indir)
 	int nCells, nSpCells, initAge;
 	int initFreezeYear, restrictRows, restrictFreq, finalFreezeYear;
 	float inds_per_ha;
-
-	int errors = 0; int propnerrors = 0;
-	int simuls = 0;
+	set<int> simNbs;
+	int errors = 0;
+	int propnerrors = 0;
 	string filetype = "InitialisationFile";
 
 	int maxNbStages = 0;
@@ -4287,6 +4272,9 @@ int CheckInitFile(string indir)
 			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
 			errors++;
 		}
+		else {
+			simNbs.emplace(simNb);
+		}
 
 		ifsInitFile >> spNb;
 		if (!gSpInputOpt.at(simNb).contains(spNb)) {
@@ -4297,7 +4285,6 @@ int CheckInitFile(string indir)
 		spInputOptions& inputOpt = gSpInputOpt.at(simNb).at(spNb);
 
 		current = CheckStageSex(filetype, line, simNb, spNb, prev, 0, 0, 0, 0, 0, true, false);
-		if (current.isNewSim) simuls++;
 		errors += current.errors;
 		prev = current;
 
@@ -4482,9 +4469,11 @@ int CheckInitFile(string indir)
 		errors++;
 	}
 
-	if (errors > 0) return -111;
-	else return simuls;
-
+	if (simNbs.size() != gSpInputOpt.size()) {
+		SimulnCountError(filetype);
+		errors++;
+	}
+	return errors == 0;
 }
 
 //---------------------------------------------------------------------------

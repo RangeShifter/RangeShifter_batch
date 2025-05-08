@@ -95,19 +95,19 @@ bool CheckSimFile();
 bool CheckParameterFile();
 bool CheckLandFile(int landType, string inputDir);
 bool CheckSpLandFile(string inputDir, bool isInitial);
-int CheckGeneticsFile(string inputDir);
+bool CheckGeneticsFile(string inputDir);
 int CheckDynamicFile(string inputDir);
-int CheckStageFile(string inputDir);
+bool CheckStageFile(string inputDir);
 bool CheckTransitionFile(short, short nbSexesDemogr);
 bool CheckWeightsFile(string fileType, int nbStages, int nbSexes);
-int CheckEmigFile();
-int CheckTransferFile(string inputDir);
-int CheckSettleFile();
-int CheckInitFile(string inputDir);
+bool CheckEmigFile();
+bool CheckTransferFile(string inputDir);
+bool CheckSettleFile();
+bool CheckInitFile(string inputDir);
 int CheckInitIndsFile(int simNb, species_id sp);
 simCheck CheckStageSex(string, int, int, species_id sp, simCheck, int, int, int, int, int, bool, bool);
-int CheckGeneticsFile(string inputDir);
-int CheckTraitsFile(string inputDir);
+bool CheckGeneticsFile(string inputDir);
+bool CheckTraitsFile(string inputDir);
 
 void BatchError(
 	string,	// file name
