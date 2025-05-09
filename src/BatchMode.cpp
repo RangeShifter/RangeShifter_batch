@@ -255,12 +255,11 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
 		ifsParamFile.open(pathToFile.c_str());
 		if (ifsParamFile.is_open()) {
-			if (!CheckParameterFile())
-				areInputFilesOk = false;
-			else {
+			if (CheckParameterFile()) {
 				FileOK(paramName, gSpInputOpt.size(), 0);
 				gParametersFile = pathToFile;
-			}
+			} 
+			else areInputFilesOk = false;
 			ifsParamFile.close();
 		}
 		else {
@@ -292,13 +291,13 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
 		ifsLandFile.open(pathToFile.c_str());
 		if (ifsLandFile.is_open()) {
-			if (!CheckLandFile(gLandType, inputDir)) {
-				areInputFilesOk = false;
-				batchLogOfs << "*** Format error in " << paramName << endl;
-			}
-			else {
+			if (CheckLandFile(gLandType, inputDir)) {
 				FileOK(paramName, gNbLandscapes, 1);
 				landFile = pathToFile;
+			}
+			else {
+				areInputFilesOk = false;
+				batchLogOfs << "*** Format error in " << paramName << endl;
 			}
 			ifsLandFile.close();
 		}
@@ -326,11 +325,11 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 				batchLogOfs << "Checking " << paramName << " " << pathToFile << endl;
 				ifsStageStructFile.open(pathToFile.c_str());
 				if (ifsStageStructFile.is_open()) {
-					areInputFilesOk = CheckStageFile(inputDir);
-					if (areInputFilesOk) {
+					if (CheckStageFile(inputDir)) {
 						FileOK(paramName, nSimuls, 0);
 						stageStructFile = pathToFile;
 					}
+					else areInputFilesOk = false;
 					ifsStageStructFile.close();
 				}
 				else {
@@ -357,11 +356,11 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
 		ifsEmigrationFile.open(pathToFile.c_str());
 		if (ifsEmigrationFile.is_open()) {
-			areInputFilesOk = CheckEmigFile();
-			if (areInputFilesOk) {
+			if (CheckEmigFile()) {
 				FileOK(paramName, nSimuls, 0);
 				emigrationFile = pathToFile;
 			}
+			else areInputFilesOk = false;
 			ifsEmigrationFile.close();
 		}
 		else {
@@ -379,11 +378,11 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
 		ifsTransferFile.open(pathToFile.c_str());
 		if (ifsTransferFile.is_open()) {
-			areInputFilesOk = CheckTransferFile(inputDir);
-			if (areInputFilesOk) {
+			if (CheckTransferFile(inputDir)) {
 				FileOK(paramName, nSimuls, 0);
 				transferFile = pathToFile;
 			}
+			else areInputFilesOk = false;
 			ifsTransferFile.close(); 
 			ifsTransferFile.clear();
 		}
@@ -402,11 +401,12 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
 		ifsSettlementFile.open(pathToFile.c_str());
 		if (ifsSettlementFile.is_open()) {
-			areInputFilesOk = CheckSettleFile();
-			if (areInputFilesOk) {
+			if (CheckSettleFile()) {
 				FileOK(paramName, nSimuls, 0);
 				settleFile = pathToFile;
 			}
+			else areInputFilesOk = false;
+
 			ifsSettlementFile.close();
 		}
 		else {
@@ -454,11 +454,11 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 			batchLogOfs << "Checking " << paramName << " " << pathToFile << endl;
 			ifsGeneticsFile.open(pathToFile.c_str());
 			if (ifsGeneticsFile.is_open()) {
-				areInputFilesOk = CheckGeneticsFile(inputDir);
-				if (areInputFilesOk) {
+				if (CheckGeneticsFile(inputDir)) {
 					FileOK(paramName, nSimuls, 0);
 					geneticsFile = pathToFile;
 				}
+				else areInputFilesOk = false;
 				ifsGeneticsFile.close();
 			}
 			else {
@@ -486,11 +486,11 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 			batchLogOfs << "Checking " << paramName << " " << pathToFile << endl;
 			ifsTraitsFile.open(pathToFile.c_str());
 			if (ifsTraitsFile.is_open()) {
-				areInputFilesOk = CheckTraitsFile(inputDir);
-				if (areInputFilesOk) {
+				if (CheckTraitsFile(inputDir)) {
 					FileOK(paramName, nSimuls, 0);
 					traitsFile = pathToFile;
 				}
+				else areInputFilesOk = false;
 				ifsTraitsFile.close();
 			}
 			else {
@@ -509,11 +509,11 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 		batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
 		ifsInitFile.open(pathToFile.c_str());
 		if (ifsInitFile.is_open()) {
-			areInputFilesOk = CheckInitFile(inputDir);
-			if (areInputFilesOk) {
+			if (CheckInitFile(inputDir)) {
 				FileOK(paramName, nSimuls, 0);
 				initialFile = pathToFile;
 			}
+			else areInputFilesOk = false;
 			ifsInitFile.close();
 		}
 		else {
@@ -2438,7 +2438,7 @@ bool CheckTransferFile(string indir)
 		if (morthaberrors > 0) BatchError(whichFile, -999, 333, "MortHab");
 		if (costerrors > 0) BatchError(whichFile, -999, 333, "CostHab");
 		if (hrerrors > 0) BatchError(whichFile, -999, 444, "Hr");
-		return -111;
+		return false;
 	}
 
 	// Parse data lines
@@ -4458,28 +4458,22 @@ int CheckInitIndsFile(int simNb, species_id sp) {
 	spInputOptions inputOpt = gSpInputOpt.at(simNb).at(sp);
 
 	// Parse header line
-	ifsInitIndsFile >> header; 
-	if (header != "Year") nbErrors++;
+	ifsInitIndsFile >> header; if (header != "Year") nbErrors++;
 	ifsInitIndsFile >> header; 
 	if (gUsesPatches) {
-		ifsInitIndsFile >> header; 
-		if (header != "PatchID") nbErrors++;
+		ifsInitIndsFile >> header; if (header != "PatchID") nbErrors++;
 	}
 	else {
-		ifsInitIndsFile >> header; 
-		if (header != "X") nbErrors++;
-		ifsInitIndsFile >> header;
-		if (header != "Y") nbErrors++;
+		ifsInitIndsFile >> header; if (header != "X") nbErrors++;
+		ifsInitIndsFile >> header; if (header != "Y") nbErrors++;
 	}
-	ifsInitIndsFile >> header; 
-	if (header != "Ninds") nbErrors++;
-	ifsInitIndsFile >> header;
-	if (header != "Sex") nbErrors++;
+	ifsInitIndsFile >> header; if (header != "Ninds") nbErrors++;
+	if (inputOpt.reproType > 0) {
+		ifsInitIndsFile >> header; if (header != "Sex") nbErrors++;
+	}
 	if (gUsesStageStruct) {
-		ifsInitIndsFile >> header; 
-		if (header != "Age") nbErrors++;
-		ifsInitIndsFile >> header; 
-		if (header != "Stage") nbErrors++;
+		ifsInitIndsFile >> header; if (header != "Age") nbErrors++;
+		ifsInitIndsFile >> header; if (header != "Stage") nbErrors++;
 	}
 
 	// Report any errors in headers, and if so, terminate validation
@@ -4506,11 +4500,7 @@ int CheckInitIndsFile(int simNb, species_id sp) {
 		}
 		prevyear = year;
 		ifsInitIndsFile >> species;
-		if (species != 0) {
-			BatchError(filetype, line, 0, " "); 
-			nbErrors++;
-			batchLogOfs << "Species must be 0" << endl;
-		}
+		
 		if (gUsesPatches) {
 			ifsInitIndsFile >> patchID;
 			if (patchID < 1) {
