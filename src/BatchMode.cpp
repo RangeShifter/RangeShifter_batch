@@ -1219,7 +1219,7 @@ bool CheckLandFile(int landtype, string inputDir)
 			if (nbErrors > 0) {
 				FormatError(whichFile, 0);
 				batchLogOfs << "*** Ensure format is correct for artificial landscape" << endl;
-				return -111;
+				return false;
 			}
 			// Parse data lines
 			whichLine = 1;
@@ -1308,7 +1308,7 @@ bool CheckLandFile(int landtype, string inputDir)
 		EOFerror(whichFile);
 		nbErrors++;
 	}
-	return nbErrors > 0;
+	return nbErrors == 0;
 }
 
 bool CheckSpLandFile(string inputDir, bool isInitial) {
@@ -1323,6 +1323,11 @@ bool CheckSpLandFile(string inputDir, bool isInitial) {
 	ifsSpLandFile >> header; if (header != "CostMapFile") nbErrors++;
 	if (isInitial) { // column absent for dynamic input
 		ifsSpLandFile >> header; if (header != "SpDistFile") nbErrors++;
+	}
+	if (nbErrors > 0) {
+		FormatError(whichFile, 0);
+		batchLogOfs << "*** Ensure format is correct in SpLandFile" << endl;
+		return false;
 	}
 	const int errSpNb = -978;
 	int spNb = errSpNb;
@@ -1652,7 +1657,7 @@ bool CheckStageFile(string indir)
 	ifsStageStructFile >> header; if (header != "SurvStageWtsFile") nbErrors++;
 	if (nbErrors > 0) {
 		FormatError(strStageFile, nbErrors);
-		return -111;
+		return false;
 	}
 
 	// Parse data lines
@@ -1979,7 +1984,7 @@ bool CheckTransitionFile(short nstages, short nsexesDem)
 
 	if (errors > 0) {
 		FormatError(filetype, errors);
-		return -111;
+		return false;
 	}
 
 	// check matrix, including row headers
@@ -2084,7 +2089,7 @@ bool CheckWeightsFile(string filetype, int nbStages, int nbSexes)
 
 	if (errors > 0) {
 		FormatError(filetype, errors);
-		return -111;
+		return false;
 	}
 
 	// check matrix, including row headers
@@ -2155,7 +2160,7 @@ bool CheckEmigFile()
 
 	if (nbErrors > 0) {
 		FormatError(whichInputFile, nbErrors);
-		return -111;
+		return false;
 	}
 
 	// Parse data lines
@@ -2823,7 +2828,7 @@ bool CheckSettleFile()
 	}
 	if (nbErrors > 0) {
 		FormatError(whichFile, nbErrors);
-		return -111;
+		return false;
 	}
 
 	// Parse data lines
@@ -2970,8 +2975,7 @@ bool CheckSettleFile()
 		nbErrors++;
 	}
 
-	if (nbErrors > 0) return -111;
-	else return nbSims;
+	return nbErrors == 0;
 }
 
 //---------------------------------------------------------------------------
@@ -3010,7 +3014,7 @@ bool CheckTraitsFile(string indir)
 
 	if (nbErrors > 0) {
 		FormatError(whichInputFile, nbErrors);
-		return -111;
+		return false;
 	}
 
 	// Parse data lines
@@ -3940,7 +3944,7 @@ bool CheckGeneticsFile(string inputDirectory) {
 
 	if (nbErrors > 0) {
 		FormatError(whichFile, nbErrors);
-		return -111;
+		return false;
 	}
 
 	// Parse data lines
@@ -4225,7 +4229,7 @@ bool CheckInitFile(string indir)
 	if (errors > 0 || propnerrors > 0) {
 		FormatError(filetype, errors + propnerrors);
 		if (propnerrors > 0) BatchError(filetype, -999, 444, "PropStage");
-		return -111;
+		return false;
 	}
 
 	// Parse data lines
@@ -4479,7 +4483,7 @@ int CheckInitIndsFile(int simNb, species_id sp) {
 	// Report any errors in headers, and if so, terminate validation
 	if (nbErrors > 0) {
 		FormatError(filetype, nbErrors);
-		return -111;
+		return false;
 	}
 
 	// Parse data lines
