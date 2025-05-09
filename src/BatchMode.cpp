@@ -63,8 +63,6 @@ string stageStructFile, transMatrix;
 string emigrationFile, transferFile, settleFile, geneticsFile, traitsFile, initialFile;
 string prevInitialIndsFile = " ";
 
-const string gNbLinesStr = "No. of lines for final Simulation ";
-const string gShouldBeStr = " should be ";
 const string gResolOfStr = "*** Resolution of ";
 const string gResolNotMatchStr = " does not match Resolution in Control file ";
 const string gHeadersOfStr = "*** Headers of ";
@@ -2312,13 +2310,6 @@ bool CheckEmigFile()
 
 	} // end of while loop
 
-	// check for correct number of lines for previous simulation
-	if (currentLine.simLines != currentLine.reqdSimLines) {
-		BatchError(whichInputFile, lineNb, 0, " "); 
-		nbErrors++;
-		batchLogOfs << gNbLinesStr << currentLine.simNb
-			<< gShouldBeStr << currentLine.reqdSimLines << endl;
-	}
 	if (!ifsEmigrationFile.eof()) {
 		EOFerror(whichInputFile);
 		nbErrors++;
@@ -2781,14 +2772,7 @@ bool CheckTransferFile(string indir)
 		ifsTransferFile >> simNb;
 		if (ifsTransferFile.eof()) simNb = -98765;
 	} // end of while loop
-	// check for correct number of lines for previous simulation
-	if (gTransferType == 0 // no. of lines checked for dispersal kernel transfer method only
-		&& current.simLines != current.reqdSimLines) {
-		BatchError(whichFile, whichLine, 0, " "); 
-		errors++;
-		batchLogOfs << gNbLinesStr << current.simNb
-			<< gShouldBeStr << current.reqdSimLines << endl;
-	}
+	
 	if (!ifsTransferFile.eof()) {
 		EOFerror(whichFile);
 		errors++;
@@ -2980,14 +2964,7 @@ bool CheckSettleFile()
 		if (ifsSettlementFile.eof())
 			simNb = -98765;
 	} // end of while loop
-	// check for correct number of lines for previous simulation
 
-	if (current.simLines != current.reqdSimLines) {
-		BatchError(whichFile, whichLine, 0, " "); 
-		nbErrors++;
-		batchLogOfs << gNbLinesStr << current.simNb
-			<< gShouldBeStr << current.reqdSimLines << endl;
-	}
 	if (!ifsSettlementFile.eof()) {
 		EOFerror(whichFile);
 		nbErrors++;
@@ -4458,12 +4435,7 @@ bool CheckInitFile(string indir)
 		if (ifsInitFile.eof()) simNb = -98765;
 
 	} // end of while loop
-	// check for correct number of lines for previous simulation
-	if (current.simLines != current.reqdSimLines) {
-		BatchError(filetype, line, 0, " "); errors++;
-		batchLogOfs << gNbLinesStr << current.simNb
-			<< gShouldBeStr << current.reqdSimLines << endl;
-	}
+	
 	if (!ifsInitFile.eof()) {
 		EOFerror(filetype);
 		errors++;
@@ -4625,13 +4597,6 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, species_
 			BatchError(whichInputFile, whichLine, 222, " "); 
 			current.errors++;
 		}
-		// check for correct number of lines for previous simulation
-		if (mustCheckLines && !(prev.simLines >= prev.reqdSimLines)) {
-			BatchError(whichInputFile, whichLine, 0, " "); 
-			current.errors++;
-			batchLogOfs << "No. of lines for previous Simulation " << prev.simNb
-				<< gShouldBeStr << prev.reqdSimLines << endl;
-		}
 	}
 	current.simNb = simNb;
 
@@ -4695,7 +4660,7 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, species_
 	else if (stage != 0) {
 		BatchError(whichInputFile, whichLine, 0, " ");
 		current.errors++;
-		batchLogOfs << "Stage must be 0 for non-stage-structured model" << endl;
+		batchLogOfs << "Stage must be 0 if StageDep is 0." << endl;
 	}
 	// validate sex
 	if (isSexDep) {
