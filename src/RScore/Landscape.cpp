@@ -1118,9 +1118,10 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 	if (!ifsDynHabFile.is_open()) return 30;
 
 	ifsSpLandFile.open(landChanges[changeIndex].spLandFile.c_str());
-	if (!ifsDynHabFile.is_open()) return 30;
+	if (!ifsSpLandFile.is_open()) return 30;
+	string flushedHeader;
+	std::getline(ifsSpLandFile, flushedHeader); // drop column names
 
-	// read header records of habitat
 	// NB headers of all files have already been compared
 	ifsDynHabFile
 		>> header >> ncols
@@ -1131,7 +1132,7 @@ int Landscape::readLandChange(int changeIndex, bool usesCosts) {
 		>> header >> habNoData;
 
 	map<species_id, string> pathsToPatchMaps, pathsToCostsMaps;
-	ReadSpDynLandFile(ifsDynHabFile, pathsToPatchMaps, pathsToCostsMaps, patchesList.size());
+	ReadSpDynLandFile(ifsSpLandFile, pathsToPatchMaps, pathsToCostsMaps, patchesList.size());
 	map<species_id, ifstream> ifsPatches, ifsCosts;
 	map<species_id, int> patchCodes, costCodes;
 
@@ -1996,7 +1997,9 @@ int Landscape::readLandscape(int fileNum, string habfile,
 				else if (habCode < 0 || (sim.batchMode && (habCode < 1 || habCode > nHabMax))) {
 					// Invalid habitat code
 #if RS_RCPP && !R_CMD
-					Rcpp::Rcout << "Found invalid habitat code." << std::endl;
+					Rcpp::Rcout << "Found invalid habitat code: " << habCode << " at " << x << y << std::endl;
+#else 
+					cout << "Found invalid habitat code: " << habCode << " at " << x << ", " << y << std::endl;
 #endif
 					ifsHabMap.close();
 					ifsHabMap.clear();

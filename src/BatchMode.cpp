@@ -4932,21 +4932,21 @@ void ReadSpLandFile(ifstream& ifsSpLand,
 	map<species_id, bool>& whichUseSpDist
 ) {
 	int inSp;
-	string patchMap, usesCosts, SpDistMap;
+	string patchMap, costMap, SpDistMap;
 	int nbSpecies = whichUseSpDist.size();
 
 	for (int i = 0; i < nbSpecies; i++) {
 
-		ifsSpLand >> inSp >> patchMap >> usesCosts >> SpDistMap;
+		ifsSpLand >> inSp >> patchMap >> costMap >> SpDistMap;
 
 		patchMap = patchMap == "NULL" ? " " :
 			paramsSim->getDir(1) + patchMap;
 		pathsToPatchMaps.emplace(inSp, patchMap);
 
-		if (!(usesCosts == "NULL" || usesCosts == "none")) {
+		if (!(costMap == "NULL" || costMap == "none")) {
 			// only populate with species for which costs apply
-			usesCosts = paramsSim->getDir(1) + usesCosts;
-			pathsToCostMaps.emplace(inSp, usesCosts);
+			costMap = paramsSim->getDir(1) + costMap;
+			pathsToCostMaps.emplace(inSp, costMap);
 		}
 
 		if (whichUseSpDist.at(inSp))
@@ -6524,7 +6524,7 @@ void RunBatch()
 	bool areParamsOk;
 	simParams sim = paramsSim->getSim();
 
-	// Create species
+	// Create empty species
 	speciesMap_t allSpecies;
 	for (species_id sp : gSpeciesNames) {
 		allSpecies.emplace(sp, new Species);
@@ -6573,7 +6573,14 @@ void RunBatch()
 		pLandscape->setLandParams(paramsLand, true);
 
 		if (gLandType != 9) { // imported landscape
-			string pathToHabMap = paramsSim->getDir(1) + gHabMapName;			
+
+			ifsSpLandFile.open(paramsSim->getDir(1) + gSpLandName);
+			if (!ifsSpLandFile.is_open()) {
+				cout << endl << "Error opening SpeciesLandFile - aborting batch run" << endl;
+				return;
+			}
+			flushHeaders(ifsSpLandFile);
+
 			map<species_id, string> pathsToPatchMaps, pathsToCostMaps, pathsToSpDistMaps;
 			ReadSpLandFile(
 				ifsSpLandFile,
@@ -6583,15 +6590,14 @@ void RunBatch()
 				gUseSpeciesDist
 			);
 
+			string pathToHabMap = paramsSim->getDir(1) + gHabMapName;
 			if (pLandscape->readLandscape(0, pathToHabMap, pathsToPatchMaps) != 0) {
 				cout << "Error reading landscape" << endl;
 				landOK = false;
 			}
-			if (sim.batchMode) {
-				if (pLandscape->readCosts(pathsToCostMaps) < 0) {
-					cout << "Error reading landscape" << endl;
-					landOK = false;
-				}
+			if (pLandscape->readCosts(pathsToCostMaps) < 0) {
+				cout << "Error reading landscape" << endl;
+				landOK = false;
 			}
 
 			if (paramsLand.isDynamic) {
