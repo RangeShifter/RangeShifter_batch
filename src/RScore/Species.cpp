@@ -127,9 +127,7 @@ Species::Species() {
 	resetGeneticParameters();
 
 	init.indsFile = "NULL";
-	for (int i = 0; i < gMaxNbStages; i++) {
-		initProps[i] = 0.0;
-	}
+	initProps = vector<float>(gMaxNbStages, 0.0);
 }
 
 Species::~Species() {

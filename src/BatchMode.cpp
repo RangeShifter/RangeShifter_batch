@@ -1157,7 +1157,7 @@ bool CheckLandFile(int landtype, string inputDir)
 			}
 			else {
 				string pathToSpLand = inputDir + inSpLand;
-				batchLogOfs << "Checking " << whichInputFile << " " << pathToSpLand << endl;
+				batchLogOfs << endl << "Checking " << whichInputFile << " " << pathToSpLand << endl;
 				ifsSpLandFile.open(pathToSpLand.c_str());
 				if (ifsSpLandFile.is_open()) {
 					if (!CheckSpLandFile(inputDir, true))
@@ -1177,7 +1177,7 @@ bool CheckLandFile(int landtype, string inputDir)
 			ifsLandFile >> inDynLand;
 			if (inDynLand != "NULL") { // landscape is dynamic
 				string pathToDyn = inputDir + inDynLand;
-				batchLogOfs << "Checking " << whichInputFile << " " << pathToDyn << endl;
+				batchLogOfs << endl << "Checking " << whichInputFile << " " << pathToDyn << endl;
 				ifsDynLandFile.open(pathToDyn.c_str());
 				if (ifsDynLandFile.is_open()) {
 					int errCode = CheckDynamicFile(inputDir);
@@ -1315,7 +1315,7 @@ bool CheckSpLandFile(string inputDir, bool isInitial) {
 
 	string header;
 	int nbErrors = 0, whichLine = 1;
-	string whichFile = "SpLandFile";
+	string whichFile = isInitial ? "SpLandFile" : "SpLandChangeFile";
 	string inPatchFile, inCostFile, inSpDistFile;
 
 	ifsSpLandFile >> header; if (header != "Species") nbErrors++;
@@ -1326,7 +1326,9 @@ bool CheckSpLandFile(string inputDir, bool isInitial) {
 	}
 	if (nbErrors > 0) {
 		FormatError(whichFile, 0);
-		batchLogOfs << "*** Ensure format is correct in SpLandFile" << endl;
+		batchLogOfs << "*** Ensure column format is correct in ";
+		if (!isInitial) batchLogOfs << "dynamic ";
+		batchLogOfs << whichFile << endl;
 		return false;
 	}
 	const int errSpNb = -978;
@@ -1545,7 +1547,7 @@ int CheckDynamicFile(string inputDir) {
 					&& landChgRaster.cellsize == landRaster.cellsize
 					&& (int)landChgRaster.xllcorner == (int)landRaster.xllcorner
 					&& (int)landChgRaster.yllcorner == (int)landRaster.yllcorner) {
-					batchLogOfs << strLandChg << " headers OK: " << pathToLandChg << endl;
+					batchLogOfs << endl << "Year " << year << " " << strLandChg << " headers OK: " << pathToLandChg << endl;
 				}
 				else {
 					batchLogOfs << gHeadersOfStr << strLandChg << " " << pathToLandChg
@@ -1575,7 +1577,7 @@ int CheckDynamicFile(string inputDir) {
 			if (gTransferType == 1 && gLandType == 2) { // SMS
 				BatchError(whichFile, whichLine, 0, " ");
 				nbErrors++;
-				batchLogOfs << "v is required to specify SMS costs for habitat quality landscapes." << endl;
+				batchLogOfs << "SpLandChangeFile is required to specify SMS costs for habitat quality landscapes." << endl;
 
 			}
 		}
