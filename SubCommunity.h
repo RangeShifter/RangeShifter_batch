@@ -114,29 +114,10 @@ public:
 		Landscape*,	// pointer to Landscape
 		short				// season / year
 	);
-	inline int transfer( // Transfer through matrix - run for matrix SubCommunity only
-		Landscape* pLandscape,	// pointer to Landscape
-		short landIx,			// landscape change index
-		short nextseason				// season / year
-	) {
-		int ndispersers = 0;
-		ndispersers += transfer_move(pLandscape, landIx);
-		ndispersers += transfer_settle(pLandscape, nextseason);
-		return ndispersers;
-	}
 #else
 	int transfer_settle( // Transfer through matrix - run for matrix SubCommunity only
 		Landscape*	// pointer to Landscape
 	);
-	inline int transfer( // Transfer through matrix - run for matrix SubCommunity only
-		Landscape* pLandscape,	// pointer to Landscape
-		short landIx			// landscape change index
-	) {
-		int ndispersers = 0;
-		ndispersers += transfer_move(pLandscape, landIx);
-		ndispersers += transfer_settle(pLandscape);
-		return ndispersers;
-	}
 #endif // RS_RCPP
 	// Remove emigrants from patch 0 (matrix) and transfer to SubCommunity in which
 	// their destination co-ordinates fall (executed for the matrix patch only)

@@ -476,10 +476,11 @@ void Community::dispersal(short landIx)
 		for (int i = 0; i < nsubcomms; i++) { // all populations
 			subComms[i]->resetPossSettlers();
 		}
+		ndispersers = matrix->transfer_move(pLandscape, landIx);
 #if RS_RCPP // included also SEASONAL
-		ndispersers = matrix->transfer(pLandscape, landIx, nextseason);
+		ndispersers += matrix->transfer_settle(pLandscape, nextseason);
 #else
-		ndispersers = matrix->transfer(pLandscape, landIx);
+		ndispersers += matrix->transfer_settle(pLandscape);
 #endif // SEASONAL || RS_RCPP
 		matrix->completeDispersal(pLandscape, sim.outConnect);
 	} while (ndispersers > 0);
