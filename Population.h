@@ -154,11 +154,26 @@ public:
 		std::vector<Individual*>&	// vector of pointers to Individuals
 	);
 #if RS_RCPP
-	int transfer( // Executed for the Population(s) in the matrix only
+	int transfer_move( // Executed for the Population(s) in the matrix only
 		Landscape*,	// pointer to Landscape
 		short,				// landscape change index
 		short				// year
 	);
+	int transfer_settle( // Executed for the Population(s) in the matrix only
+		Landscape*,	// pointer to Landscape
+		short,				// landscape change index
+		short				// year
+	);
+	inline int transfer( // Executed for the Population(s) in the matrix only
+		Landscape* pLandscape,	// pointer to Landscape
+		short landIx,				// landscape change index
+		short nextseason				// year
+	) {
+		int ndispersers = 0;
+		ndispersers += transfer_move(pLandscape, landIx, nextseason);
+		ndispersers += transfer_settle(pLandscape, landIx, nextseason);
+		return ndispersers;
+	}
 	// Determine whether there is a potential mate present in a patch which a potential
 	// settler has reached
 	bool matePresent(
@@ -166,10 +181,23 @@ public:
 		short		// sex of the required mate (0 = female, 1 = male)
 	);
 #else
-	int transfer( // Executed for the Population(s) in the matrix only
+	int transfer_move( // Executed for the Population(s) in the matrix only
 		Landscape*,	// pointer to Landscape
 		short				// landscape change index
 	);
+	int transfer_settle( // Executed for the Population(s) in the matrix only
+		Landscape*,	// pointer to Landscape
+		short				// landscape change index
+	);
+	inline int transfer( // Executed for the Population(s) in the matrix only
+		Landscape* pLandscape,	// pointer to Landscape
+		short landIx				// landscape change index
+	) {
+		int ndispersers = 0;
+		ndispersers += transfer_move(pLandscape, landIx);
+		ndispersers += transfer_settle(pLandscape, landIx);
+		return ndispersers;
+	}
 	// Determine whether there is a potential mate present in a patch which a potential
 	// settler has reached
 	bool matePresent(

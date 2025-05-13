@@ -832,9 +832,9 @@ void Population::recruitMany(std::vector<Individual*>& new_inds) {
 
 // Transfer is run for populations in the matrix only
 #if RS_RCPP // included also SEASONAL
-int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
+int Population::transfer_move(Landscape* pLandscape, short landIx, short nextseason)
 #else
-int Population::transfer(Landscape* pLandscape, short landIx)
+int Population::transfer_move(Landscape* pLandscape, short landIx)
 #endif
 {
 	int ndispersers = 0;
@@ -884,8 +884,39 @@ int Population::transfer(Landscape* pLandscape, short landIx)
 			}
 		}
 	}
+	return ndispersers;
+}
 
-// each individual which has reached a potential patch decides whether to settle
+// Transfer is run for populations in the matrix only
+#if RS_RCPP // included also SEASONAL
+int Population::transfer_settle(Landscape* pLandscape, short landIx, short nextseason)
+#else
+int Population::transfer_settle(Landscape* pLandscape, short landIx)
+#endif
+{
+	int ndispersers = 0;
+	int disperser;
+	short othersex;
+	bool mateOK, densdepOK;
+	int patchnum;
+	double localK, popsize, settprob;
+	Patch* pPatch = 0;
+	Cell* pCell = 0;
+	indStats ind;
+	Population* pNewPopn = 0;
+	locn newloc, nbrloc;
+
+	landData ppLand = pLandscape->getLandData();
+	short reptype = pSpecies->getRepType();
+	trfrRules trfr = pSpecies->getTrfr();
+	settleType settletype = pSpecies->getSettle();
+	settleRules sett;
+	settleTraits settDD;
+	settlePatch settle;
+	simParams sim = paramsSim->getSim();
+
+	// each individual which has reached a potential patch decides whether to settle
+	int ninds = (int)inds.size();
 	#pragma omp parallel for reduction(-:ndispersers) default(none) shared(ninds, settletype, pRandom, trfr, ppLand, pLandscape) private(ind, othersex, sett, pCell, mateOK, densdepOK, settle, pPatch, localK, popsize, pNewPopn, settDD, settprob, newloc, nbrloc, patchnum) schedule(static)
 	for (int i = 0; i < ninds; i++) {
 		ind = inds[i]->getStats();
