@@ -342,16 +342,26 @@ void SubCommunity::recruitMany(std::vector<Individual*>& inds, Species* pSpecies
 }
 
 // Transfer through the matrix - run for the matrix sub-community only
-#if RS_RCPP
-int SubCommunity::transfer(Landscape* pLandscape, short landIx, short nextseason)
-#else
-int SubCommunity::transfer(Landscape* pLandscape, short landIx)
-#endif // RS_RCPP
+int SubCommunity::transfer_move(Landscape* pLandscape, short landIx)
 {
 	int ndispersers = 0;
 	int npops = (int)popns.size();
 	for (int i = 0; i < npops; i++) { // all populations
 		ndispersers += popns[i]->transfer_move(pLandscape, landIx);
+	}
+	return ndispersers;
+}
+
+// Transfer through the matrix - run for the matrix sub-community only
+#if RS_RCPP
+int SubCommunity::transfer_settle(Landscape* pLandscape, short nextseason)
+#else
+int SubCommunity::transfer_settle(Landscape* pLandscape)
+#endif // RS_RCPP
+{
+	int ndispersers = 0;
+	int npops = (int)popns.size();
+	for (int i = 0; i < npops; i++) { // all populations
 #if RS_RCPP
 		ndispersers += popns[i]->transfer_settle(pLandscape, nextseason);
 #else
