@@ -351,10 +351,11 @@ int SubCommunity::transfer(Landscape* pLandscape, short landIx)
 	int ndispersers = 0;
 	int npops = (int)popns.size();
 	for (int i = 0; i < npops; i++) { // all populations
+		ndispersers += popns[i]->transfer_move(pLandscape, landIx);
 #if RS_RCPP
-		ndispersers += popns[i]->transfer(pLandscape, landIx, nextseason);
+		ndispersers += popns[i]->transfer_settle(pLandscape, nextseason);
 #else
-		ndispersers += popns[i]->transfer(pLandscape, landIx);
+		ndispersers += popns[i]->transfer_settle(pLandscape);
 #endif // RS_RCPP
 
 	}

@@ -162,16 +162,6 @@ public:
 		Landscape*,	// pointer to Landscape
 		short				// year
 	);
-	inline int transfer( // Executed for the Population(s) in the matrix only
-		Landscape* pLandscape,	// pointer to Landscape
-		short landIx,				// landscape change index
-		short nextseason				// year
-	) {
-		int ndispersers = 0;
-		ndispersers += transfer_move(pLandscape, landIx);
-		ndispersers += transfer_settle(pLandscape, nextseason);
-		return ndispersers;
-	}
 	// Determine whether there is a potential mate present in a patch which a potential
 	// settler has reached
 	bool matePresent(
@@ -182,15 +172,6 @@ public:
 	int transfer_settle( // Executed for the Population(s) in the matrix only
 		Landscape*	// pointer to Landscape
 	);
-	inline int transfer( // Executed for the Population(s) in the matrix only
-		Landscape* pLandscape,	// pointer to Landscape
-		short landIx				// landscape change index
-	) {
-		int ndispersers = 0;
-		ndispersers += transfer_move(pLandscape, landIx);
-		ndispersers += transfer_settle(pLandscape);
-		return ndispersers;
-	}
 	// Determine whether there is a potential mate present in a patch which a potential
 	// settler has reached
 	bool matePresent(
