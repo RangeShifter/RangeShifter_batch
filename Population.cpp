@@ -854,7 +854,6 @@ int Population::transfer_move(Species* pSpecies, std::vector<Individual*>& inds,
 	// each individual takes one step
 	// for dispersal by kernel, this should be the only step taken
 	int ninds = (int)inds.size();
-	#pragma omp parallel for reduction(+:ndispersers) private(disperser, pCell, pPatch) schedule(static,128)
 	for (int i = 0; i < ninds; i++) {
 		if (trfr.moveModel) {
 			disperser = inds[i]->moveStep(pLandscape, pSpecies, landIx, sim.absorbing);
@@ -908,7 +907,6 @@ int Population::transfer_settle(Species* pSpecies, std::vector<Individual*>& ind
 
 	// each individual which has reached a potential patch decides whether to settle
 	int ninds = (int)inds.size();
-	#pragma omp parallel for reduction(-:ndispersers) default(none) shared(pSpecies, inds, ninds, settletype, pRandom, trfr, ppLand, pLandscape) private(ind, othersex, sett, pCell, mateOK, densdepOK, settle, pPatch, localK, popsize, pNewPopn, settDD, settprob, newloc, nbrloc, patchnum) schedule(static)
 	for (int i = 0; i < ninds; i++) {
 		ind = inds[i]->getStats();
 		if (ind.sex == 0) othersex = 1; else othersex = 0;
