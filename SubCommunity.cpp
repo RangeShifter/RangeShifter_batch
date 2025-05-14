@@ -321,6 +321,27 @@ void SubCommunity::initiateDispersal(std::map<Species*,std::vector<Individual *>
 
 }
 
+// Remove emigrants from the matrix subcommunity and add to a map of vectors
+void SubCommunity::initiateMatrixDispersal(std::map<Species*,std::vector<Individual *>> &inds_map) {
+	if (subCommNum != 0) return;
+	popStats pop;
+
+	int npops = (int)popns.size();
+	for (int i = 0; i < npops; i++) { // all populations
+		pop = popns[i]->getStats();
+		Species* pSpecies = popns[i]->getSpecies();
+#pragma omp for schedule(static)
+		for (int j = 0; j < pop.nInds; j++) {
+			Individual *pInd = popns[i]->extractIndividual(j);
+			inds_map[pSpecies].push_back(pInd);
+		}
+		// remove pointers to emigrants
+#pragma omp single
+		popns[i]->clean();
+	}
+
+}
+
 // Add an individual into the local population of its species in the patch
 void SubCommunity::recruit(Individual* pInd, Species* pSpecies) {
 	int npops = (int)popns.size();

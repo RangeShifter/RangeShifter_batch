@@ -91,6 +91,10 @@ public:
 		bool		// TRUE for a patch-based model, FALSE for a cell-based model
 	);
 	void emigration(void);
+	// Remove emigrants from the matrix subcommunity and add to a map of vectors
+	void initiateMatrixDispersal(
+		std::map<Species*,std::vector<Individual*>>&
+	);
 	// Remove emigrants from their natal patch and add to a map of vectors
 	void initiateDispersal(
 		std::map<Species*,std::vector<Individual*>>&

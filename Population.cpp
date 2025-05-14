@@ -769,6 +769,15 @@ void Population::allEmigrate(void) {
 	}
 }
 
+// Remove an Individual from the Population
+Individual* Population::extractIndividual(int ix) {
+	Individual* pInd = inds[ix];
+	indStats ind = pInd->getStats();
+	inds[ix] = 0;
+	nInds[ind.stage][ind.sex]--;
+	return pInd;
+}
+
 // If an Individual has been identified as an emigrant, remove it from the Population
 disperser Population::extractDisperser(int ix) {
 	disperser d;

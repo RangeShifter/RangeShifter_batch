@@ -137,6 +137,10 @@ public:
 		float   // local carrying capacity
 	);
 	void allEmigrate(void); // All individuals emigrate after patch destruction
+	// Remove an individual from the Population
+	Individual* extractIndividual(
+		int		// index no. to the Individual in the inds vector
+	);
 	// If an individual has been identified as an emigrant, remove it from the Population
 	disperser extractDisperser(
 		int		// index no. to the Individual in the inds vector
