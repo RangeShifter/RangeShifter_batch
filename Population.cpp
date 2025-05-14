@@ -830,8 +830,8 @@ void Population::recruitMany(std::vector<Individual*>& new_inds) {
 
 //---------------------------------------------------------------------------
 
-// Transfer is run for populations in the matrix only
-int Population::transfer_move(Landscape* pLandscape, short landIx)
+// Transfer is run for a given vector of individuals
+int Population::transfer_move(Species* pSpecies, std::vector<Individual*>& inds, Landscape* pLandscape, short landIx)
 {
 	int ndispersers = 0;
 	int disperser;
@@ -873,9 +873,9 @@ int Population::transfer_move(Landscape* pLandscape, short landIx)
 
 // Transfer is run for populations in the matrix only
 #if RS_RCPP // included also SEASONAL
-int Population::transfer_settle(Landscape* pLandscape, short nextseason)
+int Population::transfer_settle(Species* pSpecies, std::vector<Individual*>& inds, Landscape* pLandscape, short nextseason)
 #else
-int Population::transfer_settle(Landscape* pLandscape)
+int Population::transfer_settle(Species* pSpecies, std::vector<Individual*>& inds, Landscape* pLandscape)
 #endif
 {
 	int ndispersers = 0;
@@ -899,7 +899,7 @@ int Population::transfer_settle(Landscape* pLandscape)
 
 	// each individual which has reached a potential patch decides whether to settle
 	int ninds = (int)inds.size();
-	#pragma omp parallel for reduction(-:ndispersers) default(none) shared(ninds, settletype, pRandom, trfr, ppLand, pLandscape) private(ind, othersex, sett, pCell, mateOK, densdepOK, settle, pPatch, localK, popsize, pNewPopn, settDD, settprob, newloc, nbrloc, patchnum) schedule(static)
+	#pragma omp parallel for reduction(-:ndispersers) default(none) shared(pSpecies, inds, ninds, settletype, pRandom, trfr, ppLand, pLandscape) private(ind, othersex, sett, pCell, mateOK, densdepOK, settle, pPatch, localK, popsize, pNewPopn, settDD, settprob, newloc, nbrloc, patchnum) schedule(static)
 	for (int i = 0; i < ninds; i++) {
 		ind = inds[i]->getStats();
 		if (ind.sex == 0) othersex = 1; else othersex = 0;
@@ -927,7 +927,7 @@ int Population::transfer_settle(Landscape* pLandscape)
 				if (sett.findMate) {
 					// determine whether at least one individual of the opposite sex is present in the
 					// new population
-					if (matePresent(pCell, othersex)) mateOK = true;
+					if (matePresent(pSpecies, pCell, othersex)) mateOK = true;
 				}
 				else { // no requirement to find a mate
 					mateOK = true;
@@ -1067,7 +1067,7 @@ int Population::transfer_settle(Landscape* pLandscape)
 										if (pPatch->getK() > 0.0)
 										{ // suitable
 											if (sett.findMate) {
-												if (matePresent(pCell, othersex)) nbrlist.push_back(pCell);
+												if (matePresent(pSpecies, pCell, othersex)) nbrlist.push_back(pCell);
 											}
 											else
 												nbrlist.push_back(pCell);
@@ -1097,7 +1097,7 @@ int Population::transfer_settle(Landscape* pLandscape)
 
 // Determine whether there is a potential mate present in a patch which a potential
 // settler has reached
-bool Population::matePresent(Cell* pCell, short othersex)
+bool Population::matePresent(Species* pSpecies, Cell* pCell, short othersex)
 {
 	Patch* pPatch;
 	Population* pNewPopn;
@@ -1111,8 +1111,9 @@ bool Population::matePresent(Cell* pCell, short othersex)
 			{ // suitable
 				pNewPopn = pPatch->getPopn(pSpecies);
 				if (pNewPopn != nullptr) {
+					const stageParams sstruct = pSpecies->getStage();
 					// count members of other sex already resident in the patch
-					for (int stg = 0; stg < nStages; stg++) {
+					for (int stg = 0; stg < sstruct.nStages; stg++) {
 						popsize += pNewPopn->nInds[stg][othersex];
 					}
 				}

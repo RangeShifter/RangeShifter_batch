@@ -153,32 +153,56 @@ public:
 	void recruitMany( // Add specified individuals to the population
 		std::vector<Individual*>&	// vector of pointers to Individuals
 	);
-	int transfer_move( // Executed for the Population(s) in the matrix only
+	static int transfer_move( // Executed for a given vector of individuals
+		Species*,	// pointer to Species
+		std::vector<Individual*>&,	// vector of pointers to individuals
 		Landscape*,	// pointer to Landscape
 		short				// landscape change index
 	);
+	inline int transfer_move( // Executed for the Population(s) in the matrix only
+		Landscape* pLandscape,	// pointer to Landscape
+		short landIx			// landscape change index
+	) {
+		return transfer_move(pSpecies, inds, pLandscape, landIx);
+	}
 #if RS_RCPP
-	int transfer_settle( // Executed for the Population(s) in the matrix only
+	static int transfer_settle( // Executed for a given vector of individuals
+		Species*,	// pointer to Species
+		std::vector<Individual*>&,	// vector of pointers to individuals
 		Landscape*,	// pointer to Landscape
 		short				// year
 	);
-	// Determine whether there is a potential mate present in a patch which a potential
-	// settler has reached
-	bool matePresent(
-		Cell*,	// pointer to the Cell which the potential settler has reached
-		short		// sex of the required mate (0 = female, 1 = male)
-	);
+	inline int transfer_settle( // Executed for the Population(s) in the matrix only
+		Landscape* pLandscape,	// pointer to Landscape
+		short nextseason	// year
+	) {
+		return transfer_settle(pSpecies, inds, pLandscape, nextseason);
+	}
 #else
-	int transfer_settle( // Executed for the Population(s) in the matrix only
+	static int transfer_settle( // Executed for a given vector of individuals
+		Species*,	// pointer to Species
+		std::vector<Individual*>&,	// vector of pointers to individuals
 		Landscape*	// pointer to Landscape
 	);
+	inline int transfer_settle( // Executed for the Population(s) in the matrix only
+		Landscape* pLandscape	// pointer to Landscape
+	) {
+		return transfer_settle(pSpecies, inds, pLandscape);
+	}
+#endif // RS_RCPP
 	// Determine whether there is a potential mate present in a patch which a potential
 	// settler has reached
-	bool matePresent(
+	static bool matePresent(
+		Species*,	// pointer to Species
 		Cell*,	// pointer to the Cell which the potential settler has reached
 		short		// sex of the required mate (0 = female, 1 = male)
 	);
-#endif // RS_RCPP
+	inline bool matePresent(
+		Cell* pCell,	// pointer to the Cell which the potential settler has reached
+		short othersex	// sex of the required mate (0 = female, 1 = male)
+	) {
+		return matePresent(pSpecies, pCell, othersex);
+	}
 	// Determine survival and development and record in individual's status code
 	// Changes are NOT applied to the Population at this stage
 	void survival0(
