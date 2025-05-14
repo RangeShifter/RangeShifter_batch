@@ -341,6 +341,18 @@ void SubCommunity::recruitMany(std::vector<Individual*>& inds, Species* pSpecies
 	}
 }
 
+// Transfer through the matrix - run for a per-species map of vectors of individuals
+int SubCommunity::transfer_move(std::map<Species*,vector<Individual*>>& inds_map, Landscape* pLandscape, short landIx)
+{
+	int ndispersers = 0;
+	for (auto & it : inds_map) { // all species
+		Species* const& pSpecies = it.first;
+		vector<Individual*>& inds = it.second;
+		ndispersers += Population::transfer_move(pSpecies, inds, pLandscape, landIx);
+	}
+	return ndispersers;
+}
+
 // Transfer through the matrix - run for the matrix sub-community only
 int SubCommunity::transfer_move(Landscape* pLandscape, short landIx)
 {
@@ -348,6 +360,27 @@ int SubCommunity::transfer_move(Landscape* pLandscape, short landIx)
 	int npops = (int)popns.size();
 	for (int i = 0; i < npops; i++) { // all populations
 		ndispersers += popns[i]->transfer_move(pLandscape, landIx);
+	}
+	return ndispersers;
+}
+
+// Transfer through the matrix - run for a per-species map of vectors of individuals
+#if RS_RCPP
+int SubCommunity::transfer_settle(std::map<Species*,vector<Individual*>>& inds_map, Landscape* pLandscape, short nextseason)
+#else
+int SubCommunity::transfer_settle(std::map<Species*,vector<Individual*>>& inds_map, Landscape* pLandscape)
+#endif // RS_RCPP
+{
+	int ndispersers = 0;
+	for (auto & it : inds_map) { // all species
+		Species* const& pSpecies = it.first;
+		vector<Individual*>& inds = it.second;
+#if RS_RCPP
+		ndispersers += Population::transfer_settle(pSpecies, inds, pLandscape, nextseason);
+#else
+		ndispersers += Population::transfer_settle(pSpecies, inds, pLandscape);
+#endif // RS_RCPP
+
 	}
 	return ndispersers;
 }
@@ -373,6 +406,58 @@ int SubCommunity::transfer_settle(Landscape* pLandscape)
 }
 
 //---------------------------------------------------------------------------
+
+// Remove emigrants from the vectors map and transfer to sub-community
+// in which their destination co-ordinates fall
+
+void SubCommunity::completeDispersal(std::map<Species*,vector<Individual*>>& inds_map, Landscape* pLandscape, bool connect)
+{
+	Population* pPop;
+	Patch* pPrevPatch;
+	Patch* pNewPatch;
+	Cell* pPrevCell;
+	SubCommunity* pSubComm;
+
+	for (auto & it : inds_map) { // all species
+		Species* const& pSpecies = it.first;
+		vector<Individual*>& inds = it.second;
+		for (Individual*& pInd : inds) {
+			indStats ind = pInd->getStats();
+			bool settled = ind.status == 4 || ind.status == 5;
+			if (settled) {
+				// find new patch
+				pNewPatch = pInd->getLocn(1)->getPatch();
+				// find population within the patch (if there is one)
+				{
+#ifdef _OPENMP
+					const std::unique_lock<std::mutex> lock = pNewPatch->lockPopns();
+#endif // _OPENMP
+					pPop = pNewPatch->getPopn(pSpecies);
+					if (pPop == 0) { // settler is the first in a previously uninhabited patch
+						// create a new population in the corresponding sub-community
+						pSubComm = pNewPatch->getSubComm();
+						pPop = pSubComm->newPopn(pLandscape, pSpecies, pNewPatch, 0);
+					}
+				}
+				pPop->recruit(pInd);
+				if (connect) { // increment connectivity totals
+					int newpatch = pNewPatch->getSeqNum();
+					pPrevCell = pInd->getLocn(0); // previous cell
+					pPrevPatch = pPrevCell->getPatch();
+					if (pPrevPatch != nullptr) {
+						int prevpatch = pPrevPatch->getSeqNum();
+						pLandscape->incrConnectMatrix(prevpatch, newpatch);
+					}
+				}
+				pInd = nullptr;
+			}
+			else { // for group dispersal only
+			}
+		}
+		// remove settled individuals
+		inds.erase(std::remove(inds.begin(), inds.end(), (Individual *)nullptr), inds.end());
+	}
+}
 
 // Remove emigrants from patch 0 (matrix) and transfer to sub-community
 // in which their destination co-ordinates fall

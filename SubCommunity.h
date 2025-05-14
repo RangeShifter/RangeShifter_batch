@@ -105,20 +105,41 @@ public:
 		std::vector<Individual*>&,	// vector of pointers to Individuals
 		Species*			// pointer to Species
 	);
+	static int transfer_move( // Transfer through matrix - run for a per-species map of vectors of individuals
+		std::map<Species*,vector<Individual*>>&,	// per-species map of vectors of individuals
+		Landscape*,	// pointer to Landscape
+		short			// landscape change index
+	);
 	int transfer_move( // Transfer through matrix - run for matrix SubCommunity only
 		Landscape*,	// pointer to Landscape
 		short			// landscape change index
 	);
 #if RS_RCPP
+	static int transfer_settle( // Transfer through matrix - run for a per-species map of vectors of individuals
+		std::map<Species*,vector<Individual*>>&,	// per-species map of vectors of individuals
+		Landscape*,	// pointer to Landscape
+		short				// season / year
+	);
 	int transfer_settle( // Transfer through matrix - run for matrix SubCommunity only
 		Landscape*,	// pointer to Landscape
 		short				// season / year
 	);
 #else
+	static int transfer_settle( // Transfer through matrix - run for matrix SubCommunity only
+		std::map<Species*,vector<Individual*>>&,	// per-species map of vectors of individuals
+		Landscape*	// pointer to Landscape
+	);
 	int transfer_settle( // Transfer through matrix - run for matrix SubCommunity only
 		Landscape*	// pointer to Landscape
 	);
 #endif // RS_RCPP
+	// Remove emigrants from the vectors map and transfer to SubCommunity in which
+	// their destination co-ordinates fall
+	static void completeDispersal(
+		std::map<Species*,vector<Individual*>>&, 	// per-species map of vectors of individuals
+		Landscape*,	// pointer to Landscape
+		bool				// TRUE to increment connectivity totals
+	);
 	// Remove emigrants from patch 0 (matrix) and transfer to SubCommunity in which
 	// their destination co-ordinates fall (executed for the matrix patch only)
 	void completeDispersal(
