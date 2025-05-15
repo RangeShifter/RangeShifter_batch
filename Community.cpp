@@ -26,6 +26,9 @@
 
 #ifdef _OPENMP
 #include <atomic>
+#include <condition_variable>
+#include <mutex>
+#include <omp.h>
 #endif // _OPENMP
 
 //---------------------------------------------------------------------------
@@ -438,6 +441,53 @@ void Community::emigration(void)
 #endif
 }
 
+#ifdef _OPENMP
+class split_barrier {
+private:
+	std::mutex m;
+	std::condition_variable cv;
+	int threads_in_section;
+	int total_threads;
+	bool may_enter;
+	bool may_leave;
+
+public:
+	split_barrier():
+		threads_in_section(0),
+		may_enter(false),
+		may_leave(false)
+	{}
+
+	void init(int threads) {
+		std::lock_guard<std::mutex> lock(m);
+		total_threads = threads;
+		may_enter = true;
+	}
+
+	void enter() {
+		std::unique_lock lock(m);
+		cv.wait(lock, [this]{return may_enter;});
+		if (++threads_in_section == total_threads) {
+			may_enter = false;
+			may_leave = true;
+			lock.unlock();
+			cv.notify_all();
+		}
+	}
+
+	void leave() {
+		std::unique_lock lock(m);
+		cv.wait(lock, [this]{return may_leave;});
+		if (--threads_in_section == 0) {
+			may_leave = false;
+			may_enter = true;
+			lock.unlock();
+			cv.notify_all();
+		}
+	}
+};
+#endif // _OPENMP
+
 #if RS_RCPP // included also SEASONAL
 void Community::dispersal(short landIx, short nextseason)
 #else
@@ -446,6 +496,7 @@ void Community::dispersal(short landIx)
 {
 #ifdef _OPENMP
 	std::atomic<int> ndispersers;
+	split_barrier barrier;
 #else
 	int ndispersers;
 #endif // _OPENMP
@@ -467,6 +518,10 @@ void Community::dispersal(short landIx)
 		for (int i = 0; i < nsubcomms; i++) { // all populations
 			subComms[i]->initiateDispersal(inds_map);
 		}
+#ifdef _OPENMP
+#pragma single
+		barrier.init(omp_get_num_threads());
+#endif // _OPENMP
 #if RSDEBUG
 #pragma omp master
 		{
@@ -479,22 +534,27 @@ void Community::dispersal(short landIx)
 		// dispersal is undertaken by all individuals now in the matrix patch
 		// (even if not physically in the matrix)
 		do {
-#pragma omp barrier
-#pragma omp single
-			ndispersers = 0;
-#pragma omp for schedule(static)
+#pragma omp for schedule(guided)
 			for (int i = 0; i < nsubcomms; i++) { // all populations
 				subComms[i]->resetPossSettlers();
 			}
-			ndispersers += matrix->transfer_move(inds_map, pLandscape, landIx);
+			int local_ndispersers = matrix->transfer_move(inds_map, pLandscape, landIx);
+#pragma omp single nowait
+			ndispersers = 0;
 #pragma omp barrier
 #if RS_RCPP // included also SEASONAL
-			ndispersers += matrix->transfer_settle(inds_map, pLandscape, nextseason);
+			local_ndispersers += matrix->transfer_settle(inds_map, pLandscape, nextseason);
 #else
-			ndispersers += matrix->transfer_settle(inds_map, pLandscape);
+			local_ndispersers += matrix->transfer_settle(inds_map, pLandscape);
 #endif // SEASONAL || RS_RCPP
+			ndispersers += local_ndispersers;
+#ifdef _OPENMP
+			barrier.enter();
+#endif // _OPENMP
 			matrix->completeDispersal(inds_map, pLandscape, sim.outConnect);
-#pragma omp barrier
+#ifdef _OPENMP
+			barrier.leave();
+#endif // _OPENMP
 		} while (ndispersers > 0);
 
 		// All remaining migrants join the matrix community
