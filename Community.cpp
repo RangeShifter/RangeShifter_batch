@@ -25,9 +25,19 @@
 #include "Community.h"
 
 #ifdef _OPENMP
+#ifdef __has_include
+#if __has_include(<version>)
+#include <version>
+#endif
+#endif
 #include <atomic>
+#if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
+#include <barrier>
+#include <optional>
+#else
 #include <condition_variable>
 #include <mutex>
+#endif
 #include <omp.h>
 #endif // _OPENMP
 
@@ -442,6 +452,8 @@ void Community::emigration(void)
 }
 
 #ifdef _OPENMP
+#if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
+#else
 class split_barrier {
 private:
 	std::mutex m;
@@ -486,6 +498,7 @@ public:
 		}
 	}
 };
+#endif
 #endif // _OPENMP
 
 #if RS_RCPP // included also SEASONAL
@@ -496,7 +509,11 @@ void Community::dispersal(short landIx)
 {
 #ifdef _OPENMP
 	std::atomic<int> ndispersers;
+#if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
+	std::optional<std::barrier<>> barrier;
+#else
 	split_barrier barrier;
+#endif
 #else
 	int ndispersers;
 #endif // _OPENMP
@@ -519,8 +536,12 @@ void Community::dispersal(short landIx)
 			subComms[i]->initiateDispersal(inds_map);
 		}
 #ifdef _OPENMP
-#pragma single
+#pragma omp single
+#if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
+		barrier.emplace(omp_get_num_threads());
+#else
 		barrier.init(omp_get_num_threads());
+#endif
 #endif // _OPENMP
 #if RSDEBUG
 #pragma omp master
@@ -549,11 +570,19 @@ void Community::dispersal(short landIx)
 #endif // SEASONAL || RS_RCPP
 			ndispersers += local_ndispersers;
 #ifdef _OPENMP
+#if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
+			std::barrier<>::arrival_token token = barrier->arrive();
+#else
 			barrier.enter();
+#endif
 #endif // _OPENMP
 			matrix->completeDispersal(inds_map, pLandscape, sim.outConnect);
 #ifdef _OPENMP
+#if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
+			barrier->wait(std::move(token));
+#else
 			barrier.leave();
+#endif
 #endif // _OPENMP
 		} while (ndispersers > 0);
 
