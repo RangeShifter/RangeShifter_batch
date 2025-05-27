@@ -4961,7 +4961,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	string landChgMap, spLandFile;
 	int change, imported;
 	int nbChanges = 0;
-	bool usesCosts = false;
+	bool usesCosts = gUseSMSCosts.size() > 0;
 	landChange chg;
 	landParams ppLand = pLandscape->getLandParams();
 	string pathToDynLandFile = paramsSim->getDir(1) + gDynLandFileName;
