@@ -6352,13 +6352,13 @@ int ReadInitialisation(const landParams& paramsLand, speciesMap_t& simSpecies)
 	int errorCode = 0;
 
 	species_id sp;
-	initParams init;
-	ifsInitFile >> simNb >> sp >> init.seedType >> init.freeType >> init.spDistType;
-
+	ifsInitFile >> sp;
 	Species* pSpecies = simSpecies.at(sp);
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
 
+	initParams init;
+	ifsInitFile >> simNb >> init.seedType >> init.freeType >> init.spDistType;
 
 	if (init.seedType == 1 && !gUseSpeciesDist.at(sp)) 
 		errorCode = 601;
