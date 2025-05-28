@@ -14,8 +14,8 @@ void testTransferKernels() {
 	ls.setLandParams(ls_params, true);
 
 	// Two suitable cells in opposite corners
-	Cell* init_cell = new Cell(0, 0, 0, 0, spID);
-	Cell* final_cell = new Cell(ls_params.dimX - 1, ls_params.dimY - 1, 0, 0, spID);
+	Cell* init_cell = new Cell(0, 0, 0, spID);
+	Cell* final_cell = new Cell(ls_params.dimX - 1, ls_params.dimY - 1, 0, spID);
 	ls.setCellArray();
 	ls.addCellToLand(init_cell);
 	ls.addCellToLand(final_cell);
@@ -149,7 +149,7 @@ void testTransferKernels() {
 	// Set central cell and all adjacent
 	for (int x = ls_params.minX + 1; x < ls_params.maxX; ++x) {
 		for (int y = ls_params.minY + 1; y < ls_params.maxY; ++y) {
-			cells.push_back(new Cell(x, y, 0, 0, spID));
+			cells.push_back(new Cell(x, y, 0, spID));
 		}
 	}
 
@@ -227,7 +227,7 @@ void testTransferCRW() {
 	vector<Cell*> cell_vec;
 	for (int x = ls_params.minX; x < ls_params.dimX; ++x) {
 		for (int y = ls_params.minY; y < ls_params.dimY; ++y) {
-			cell_vec.push_back(new Cell(x, y, 0, hab_index, spID));
+			cell_vec.push_back(new Cell(x, y, hab_index, spID));
 		}
 	}
 	Cell* init_cell = cell_vec[12]; // central
@@ -320,8 +320,8 @@ void testTransferCRW() {
 	sp.setHabK(hab_unsuitable, 0.0);
 
 	// Initial cell unsuitable, suitable cell in opposite corner
-	init_cell = new Cell(0, 0, 0, hab_unsuitable, spID);
-	Cell* final_cell = new Cell(ls_params.dimX - 1, ls_params.dimY - 1, 0, hab_suitable, spID);
+	init_cell = new Cell(0, 0, hab_unsuitable, spID);
+	Cell* final_cell = new Cell(ls_params.dimX - 1, ls_params.dimY - 1, hab_suitable, spID);
 	ls.setCellArray();
 	ls.addCellToLand(init_cell);
 	ls.addCellToLand(final_cell);
@@ -396,7 +396,7 @@ void testTransferCRW() {
 	cell_vec.clear();
 	for (int x = ls_params.minX; x < ls_params.dimX; ++x) {
 		for (int y = ls_params.minY; y < ls_params.dimY; ++y) {
-			cell_vec.push_back(new Cell(x, y, 0, hab_suitable, spID));
+			cell_vec.push_back(new Cell(x, y, hab_suitable, spID));
 		}
 	}
 	ls.setCellArray();
@@ -693,7 +693,8 @@ void testIndividual() {
 		// (both freq. have p < 0.001 from a binomial with p 0.5 and 100 trials) 
 	{
 		Patch* pPatch = new Patch(0, 0, spID);
-		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
+		Cell* pCell = new Cell(0, 0, 0, spID);
+		pCell->setPatch(spID, pPatch);
 
 		const float recombinationRate = 0.01;
 		const int genomeSz = 10;
@@ -751,7 +752,8 @@ void testIndividual() {
 	/// Emigration probability is 1 initially, but female trait mutates.
 	{
 		Patch* pPatch = new Patch(0, 0, spID);
-		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
+		Cell* pCell = new Cell(0, 0, 0, spID);
+		pCell->setPatch(spID, pPatch);
 
 		// Species-level paramters
 		const int genomeSz = 6;
@@ -843,7 +845,8 @@ void testIndividual() {
 		float indEmigProb = 0.0;
 
 		Patch* pPatch = new Patch(0, 0, spID);
-		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
+		Cell* pCell = new Cell(0, 0, 0, spID);
+		pCell->setPatch(spID, pPatch);
 
 		// Species-level paramters
 		const int genomeSz = 1;
@@ -913,7 +916,8 @@ void testIndividual() {
 	// Individuals with genetic fitness = 0 are never viable
 	{
 		Patch* pPatch = new Patch(0, 0, spID);
-		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
+		Cell* pCell = new Cell(0, 0, 0, spID);
+		pCell->setPatch(spID, pPatch);
 
 		// Species-level paramters
 		const int genomeSz = 1;
@@ -966,7 +970,8 @@ void testIndividual() {
 	// A largely dominant alleles overrides the expression of its homologue
 	{
 		Patch* pPatch = new Patch(0, 0, spID);
-		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
+		Cell* pCell = new Cell(0, 0, 0, spID);
+		pCell->setPatch(spID, pPatch);
 
 		// Species-level paramters
 		const int genomeSz = 1;
@@ -1029,7 +1034,8 @@ void testIndividual() {
 			const float mutationRate = 0.0; // no mutations
 
 			Patch* pPatch = new Patch(0, 0, spID);
-			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
+			Cell* pCell = new Cell(0, 0, 0, spID);
+			pCell->setPatch(spID, pPatch);
 
 			// Genome-level settings
 			Species* pSpecies = new Species;
@@ -1151,7 +1157,8 @@ void testIndividual() {
 			const float mutationRate = 0.0; // no mutations
 
 			Patch* pPatch = new Patch(0, 0, spID);
-			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
+			Cell* pCell = new Cell(0, 0, 0, spID);
+			pCell->setPatch(spID, pPatch);
 
 			// Genome-level settings
 			Species* pSpecies = new Species;
@@ -1233,7 +1240,8 @@ void testIndividual() {
 			const float mutationRate = 0.0; // no mutations
 
 			Patch* pPatch = new Patch(0, 0, spID);
-			Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
+			Cell* pCell = new Cell(0, 0, 0, spID);
+			pCell->setPatch(spID, pPatch);
 
 			// Genome-level settings
 			Species* pSpecies = new Species;

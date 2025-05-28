@@ -773,7 +773,7 @@ void Landscape::addNewCellToLand(int x, int y, float q) {
 	else {
 		auto kv = std::views::keys(patchesList);
 		set<species_id> spLabels = { kv.begin(), kv.end() };
-		cells[y][x] = new Cell(x, y, nullptr, q, spLabels);
+		cells[y][x] = new Cell(x, y, q, spLabels);
 	}
 }
 
@@ -783,7 +783,7 @@ void Landscape::addNewCellToLand(int x, int y, int hab) {
 	else {
 		auto kv = std::views::keys(patchesList);
 		set<species_id> spLabels = { kv.begin(), kv.end() };
-		cells[y][x] = new Cell(x, y, nullptr, hab, spLabels);
+		cells[y][x] = new Cell(x, y, hab, spLabels);
 	}
 }
 
@@ -797,12 +797,15 @@ void Landscape::addCellToLand(Cell* c) {
 
 void Landscape::addNewCellToPatch(Patch* pPatch, int x, int y, float q) {
 	if (q < 0.0) throw logic_error("Attempt to add a cell with negative habitat quality.");
-	else { // create the new cell
-		auto kv = std::views::keys(patchesList);
-		set<species_id> spLabels = { kv.begin(), kv.end() };
-		cells[y][x] = new Cell(x, y, pPatch, q, spLabels);
+	else {
+		if (cells[y][x] == nullptr) {
+			// Create new cell
+			auto kv = std::views::keys(patchesList);
+			set<species_id> spLabels = { kv.begin(), kv.end() };
+			cells[y][x] = new Cell(x, y, q, spLabels);
+		}
 		if (pPatch != nullptr) { // not the matrix patch
-			// add the cell to the patch
+			cells[y][x]->setPatch(pPatch->getSpeciesID(), pPatch);
 			pPatch->addCell(cells[y][x], x, y);
 		}
 	}
@@ -810,12 +813,15 @@ void Landscape::addNewCellToPatch(Patch* pPatch, int x, int y, float q) {
 
 void Landscape::addNewCellToPatch(Patch* pPatch, int x, int y, int hab) {
 	if (hab < 0) throw logic_error("Attempt to add a cell with negative habitat code.");
-	else { // create the new cell
-		auto kv = std::views::keys(patchesList);
-		set<species_id> spLabels = { kv.begin(), kv.end() };
-		cells[y][x] = new Cell(x, y, pPatch, hab, spLabels);
+	else {
+		if (cells[y][x] == nullptr) {
+			// Create new cell
+			auto kv = std::views::keys(patchesList);
+			set<species_id> spLabels = { kv.begin(), kv.end() };
+			cells[y][x] = new Cell(x, y, hab, spLabels);
+		}
 		if (pPatch != nullptr) { // not the matrix patch
-			// add the cell to the patch
+			cells[y][x]->setPatch(pPatch->getSpeciesID(), pPatch);
 			pPatch->addCell(cells[y][x], x, y);
 		}
 	}
@@ -1562,7 +1568,7 @@ void Landscape::createPatchChgMatrix() {
 
 				patchChangeMatrix[y][x] = cellChange();
 				Cell* pCell = findCell(x, y);
-
+				
 				if (pCell == nullptr) { // no-data cell
 					patchChangeMatrix[y][x].originVal = patchChangeMatrix[y][x].currentVal = 0;
 				}
@@ -1934,7 +1940,7 @@ int Landscape::readLandscape(int fileNum, string habfile,
 		for (auto& [sp, patches] : patchesList)
 			patches.push_back(new Patch(0, 0, sp));
 	}
-	seq = 1; 			// initial sequential patch landscape
+	seq = 1; // initial sequential patch landscape
 
 	switch (rasterType) {
 

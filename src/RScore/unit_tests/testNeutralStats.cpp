@@ -13,7 +13,8 @@ void testNeutralStats() {
 		const set<int> patchList{ pPatch->getPatchNum() };
 		const string indSampling = "all";
 		const set<int> stgToSample = { 1 };
-		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
+		Cell* pCell = new Cell(0, 0, 0, spID);
+		pCell->setPatch(spID, pPatch);
 		pPatch->addCell(pCell, 0, 0);
 
 		// Create genetic structure
@@ -60,7 +61,8 @@ void testNeutralStats() {
 		const set<int> patchList{ pPatch->getPatchNum() };
 		const string indSampling = "all";
 		const set<int> stgToSample = { 1 };
-		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
+		Cell* pCell = new Cell(0, 0, 0, spID);
+		pCell->setPatch(spID, pPatch);
 		pPatch->addCell(pCell, 0, 0);
 
 		// Create genetic structure
@@ -107,7 +109,8 @@ void testNeutralStats() {
 		const set<int> patchList{ pPatch->getPatchNum() };
 		const string indSampling = "all";
 		const set<int> stgToSample = { 1 };
-		Cell* pCell = new Cell(0, 0, pPatch, 0, spID);
+		Cell* pCell = new Cell(0, 0, 0, spID);
+		pCell->setPatch(spID, pPatch);
 		pPatch->addCell(pCell, 0, 0);
 
 		// Create genetic structure
@@ -168,7 +171,8 @@ void testNeutralStats() {
 		set<int> patchList;
 		for (int i = 0; i < nbPatches; i++) {
 			patches[i] = pLandscape->newPatch(i);
-			cells[i] = new Cell(0, 0, patches[i], 0, spID);
+			Cell* pCell = new Cell(0, 0, 0, spID);
+			pCell->setPatch(spID, patches[i]);
 			patches[i]->addCell(cells[i], 0, 0);
 			patchList.insert(patches[i]->getPatchNum());
 		}
@@ -215,7 +219,8 @@ void testNeutralStats() {
 			set<int> patchList;
 			for (int i = 0; i < nbPatches; i++) {
 				patches[i] = pLandscape->newPatch(i);
-				cells[i] = new Cell(0, 0, patches[i], 0, spID);
+				Cell* pCell = new Cell(0, 0, 0, spID);
+				pCell->setPatch(spID, patches[i]);
 				patches[i]->addCell(cells[i], 0, 0);
 				patchList.insert(patches[i]->getPatchNum());
 			}
@@ -268,7 +273,8 @@ void testNeutralStats() {
 			set<int> patchList;
 			for (int i = 0; i < nbPatches; i++) {
 				patches[i] = pLandscape->newPatch(i);
-				cells[i] = new Cell(0, 0, patches[i], 0, spID);
+				Cell* pCell = new Cell(0, 0, 0, spID);
+				pCell->setPatch(spID, patches[i]);
 				patches[i]->addCell(cells[i], 0, 0);
 				patchList.insert(patches[i]->getPatchNum());
 			}
@@ -342,7 +348,8 @@ void testNeutralStats() {
 			set<int> patchList;
 			for (int i = 0; i < nbPatches; i++) {
 				patches[i] = pLandscape->newPatch(i);
-				cells[i] = new Cell(0, 0, patches[i], 0, spID);
+				Cell* pCell = new Cell(0, 0, 0, spID);
+				pCell->setPatch(spID, patches[i]);
 				patches[i]->addCell(cells[i], 0, 0);
 				patchList.insert(patches[i]->getPatchNum());
 			}
@@ -416,7 +423,8 @@ void testNeutralStats() {
 		set<int> patchList;
 		for (int i = 0; i < nbPatches; i++) {
 			patches[i] = pLandscape->newPatch(i);
-			cells[i] = new Cell(0, 0, patches[i], 0, spID);
+			Cell* pCell = new Cell(0, 0, 0, spID);
+			pCell->setPatch(spID, patches[i]);
 			patches[i]->addCell(cells[i], 0, 0);
 			patchList.insert(patches[i]->getPatchNum());
 		}
@@ -518,7 +526,8 @@ void testNeutralStats() {
 			set<int> patchList;
 			for (int i = 0; i < nbPatches; i++) {
 				patches[i] = pLandscape->newPatch(i);
-				cells[i] = new Cell(0, 0, patches[i], 0, spID);
+				Cell* pCell = new Cell(0, 0, 0, spID);
+				pCell->setPatch(spID, patches[i]);
 				patches[i]->addCell(cells[i], 0, 0);
 				patchList.insert(patches[i]->getPatchNum());
 			}
@@ -621,7 +630,8 @@ void testNeutralStats() {
 			set<int> patchList;
 			for (int i = 0; i < nbPatches; i++) {
 				patches[i] = pLandscape->newPatch(i);
-				cells[i] = new Cell(0, 0, patches[i], 0, spID);
+				Cell* pCell = new Cell(0, 0, 0, spID);
+				pCell->setPatch(spID, patches[i]);
 				patches[i]->addCell(cells[i], 0, 0);
 				patchList.insert(patches[i]->getPatchNum());
 			}
@@ -717,7 +727,8 @@ void testNeutralStats() {
 		set<int> patchList;
 		for (int i = 0; i < nbPatches; i++) {
 			patches[i] = pLandscape->newPatch(i);
-			cells[i] = new Cell(0, 0, patches[i], 0, spID);
+			Cell* pCell = new Cell(0, 0, 0, spID);
+			pCell->setPatch(spID, patches[i]);
 			patches[i]->addCell(cells[i], 0, 0);
 			patchList.insert(patches[i]->getPatchNum());
 		}
@@ -828,7 +839,8 @@ void testNeutralStats() {
 		set<int> patchList;
 		for (int i = 0; i < nbPatches; i++) {
 			patches[i] = pLandscape->newPatch(i);
-			cells[i] = new Cell(0, 0, patches[i], 0, spID);
+			Cell* pCell = new Cell(0, 0, 0, spID);
+			pCell->setPatch(spID, patches[i]);
 			patches[i]->addCell(cells[i], 0, 0);
 			patchList.insert(patches[i]->getPatchNum());
 		}
@@ -916,7 +928,8 @@ void testNeutralStats() {
 		set<int> patchList;
 		for (int i = 0; i < nbPatches; i++) {
 			patches[i] = pLandscape->newPatch(i);
-			cells[i] = new Cell(0, 0, patches[i], 0, spID);
+			Cell* pCell = new Cell(0, 0, 0, spID);
+			pCell->setPatch(spID, patches[i]);
 			patches[i]->addCell(cells[i], 0, 0);
 			patchList.insert(patches[i]->getPatchNum());
 		}
@@ -1002,7 +1015,8 @@ void testNeutralStats() {
 		set<int> patchList;
 		for (int i = 0; i < nbPatches; i++) {
 			patches[i] = pLandscape->newPatch(i);
-			cells[i] = new Cell(0, 0, patches[i], 0, spID);
+			Cell* pCell = new Cell(0, 0, 0, spID);
+			pCell->setPatch(spID, patches[i]);
 			patches[i]->addCell(cells[i], 0, 0);
 			patchList.insert(patches[i]->getPatchNum());
 		}

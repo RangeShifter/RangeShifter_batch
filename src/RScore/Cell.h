@@ -63,10 +63,9 @@ struct smscosts { int cost; array3x3f* effcosts; };	// cell costs for SMS
 class Cell {
 public:
 	// Constructor for habitat codes
-	Cell(int xx, int yy, Patch* patch, int hab, set<species_id> spLabels);
-
+	Cell(int xx, int yy, int hab, set<species_id> spLabels);
 	// Constructor for habitat % cover or habitat quality
-	Cell(int xx, int yy, Patch* patch, float hab, set<species_id> spLabels);
+	Cell(int xx, int yy, float hab, set<species_id> spLabels);
 
 	~Cell();
 	void addHabIndex(short hx);

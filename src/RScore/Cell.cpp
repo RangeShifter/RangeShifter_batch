@@ -32,7 +32,7 @@
 
 // Cell functions
 
-Cell::Cell(int xx, int yy, Patch* patch, int hab, set<species_id> spLabels)
+Cell::Cell(int xx, int yy, int hab, set<species_id> spLabels)
 {
 	x = xx; 
 	y = yy;
@@ -42,15 +42,12 @@ Cell::Cell(int xx, int yy, Patch* patch, int hab, set<species_id> spLabels)
 		patches.emplace(sp, nullptr);
 		visits.emplace(sp, 0);
 		smsData.emplace(sp, nullptr);
-	}
-	if (patch != nullptr) {
-		patches.at(patch->getSpeciesID()) = patch;
 	}
 	envDev = eps = 0.0;
 	habIxx.push_back(hab);
 }
 
-Cell::Cell(int xx, int yy, Patch* patch, float hab, set<species_id> spLabels)
+Cell::Cell(int xx, int yy, float hab, set<species_id> spLabels)
 {
 	x = xx; 
 	y = yy;
@@ -60,9 +57,6 @@ Cell::Cell(int xx, int yy, Patch* patch, float hab, set<species_id> spLabels)
 		patches.emplace(sp, nullptr);
 		visits.emplace(sp, 0);
 		smsData.emplace(sp, nullptr);
-	}
-	if (patch != nullptr) {
-		patches.at(patch->getSpeciesID()) = patch;
 	}
 	envDev = eps = 0.0;
 	habitats.push_back(hab);
