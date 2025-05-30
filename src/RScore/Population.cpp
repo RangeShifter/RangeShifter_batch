@@ -74,13 +74,8 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 	for (int stg = 0; stg < nStages; stg++) {
 		for (int sex = 0; sex < nSexes; sex++) {
 			if (dem.stageStruct) {
-				if (dem.repType == 1) { // simple sexual model
-					// both sexes use minimum ages recorded for females
-					minAge[stg][sex] = pSpecies->getMinAge(stg, 0);
-				}
-				else {
-					minAge[stg][sex] = pSpecies->getMinAge(stg, sex);
-				}
+				int sexIx = dem.repType == 1 ? 0 : sex;
+				minAge[stg][sex] = pSpecies->getMinAge(stg, sexIx);
 			}
 			else { // non-structured population
 				minAge[stg][sex] = 0;

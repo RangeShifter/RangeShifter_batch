@@ -131,6 +131,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 
 		// Set up populations in the community
 		for (auto& [sp, pSpecies] : simSpecies) {
+
+			initParams init = pSpecies->getInitParams();
+			if (init.seedType == 0 && init.initFrzYr > 0)
+				pSpecies->applyRangeRestriction();
+			else pSpecies->resetRangeRestrictions(ppLand.dimX, ppLand.dimY);
+
 			pLandscape->updateCarryingCapacity(pSpecies, 0, 0);
 			pComm->initialise(pSpecies, -1);
 			if (rep == 0
@@ -146,10 +152,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 #endif
 
 		for (auto& [sp, pSpecies] : simSpecies) {
-
-			initParams init = pSpecies->getInitParams();
-			if (init.seedType == 0 && init.initFrzYr > 0)
-				pSpecies->applyRangeRestriction();
 
 			// open a new individuals file for each replicate
 			if (pSpecies->doesOutputInds())
@@ -193,8 +195,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 #endif
 			}
 
-			map<species_id, bool> mustUpdateK; 
-				// track which species should have their K re-calculated
+			map<species_id, bool> mustUpdateK;
+			// track which species should have their K re-calculated
 
 			for (auto& [sp, pSpecies] : simSpecies) {
 
@@ -206,7 +208,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 					if (yr == init.initFrzYr) {
 						// Release initial frozen range
 						// Reset available landscape to its full extent
-						pSpecies->liftRangeRestriction(ppLand.dimX, ppLand.dimY);
+						pSpecies->resetRangeRestrictions(ppLand.dimX, ppLand.dimY);
 						mustUpdateK.at(sp) = true;
 					}
 					else if (init.restrictRange && yr > init.initFrzYr) {
@@ -390,7 +392,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 		for (auto& [sp, pSpecies] : simSpecies) {
 			if (pSpecies->usesGradient())
 				pSpecies->resetOptY();
-			pSpecies->liftRangeRestriction(ppLand.dimX, ppLand.dimY);
+			pSpecies->resetRangeRestrictions(ppLand.dimX, ppLand.dimY);
 		}
 		const int lastChange = 666666;
 		if (ppLand.usesPatches && ppLand.isDynamic && iPatchChg > 0) {

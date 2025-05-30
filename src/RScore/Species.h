@@ -426,7 +426,7 @@ public:
 			&& yr < init.finalFrzYr;
 	}
 	void applyRangeRestriction();
-	void liftRangeRestriction(int dimX, int dimY);
+	void resetRangeRestrictions(int dimX, int dimY);
 	void freezeYrange(int minYlimit, int maxYlimit, int maxXlimit);
 	bool isWithinLimits(const int& x, const int& y);
 

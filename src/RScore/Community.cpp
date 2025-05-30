@@ -80,7 +80,9 @@ void Community::initialise(Species* pSpecies, int year) {
 	landParams ppLand = pLandscape->getLandParams();
 	initParams init = pSpecies->getInitParams();
 	species_id sp = pSpecies->getID();
-	int spratio = pLandscape->getSpDistResol(sp) / ppLand.resol;
+	int spratio;
+	if (init.seedType == 1)
+		spratio = pLandscape->getSpDistResol(sp) / ppLand.resol;
 
 	// Initialise (empty) matrix populations
 	matrixPops.emplace(sp,

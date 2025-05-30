@@ -245,7 +245,7 @@ void Species::freezeYrange(int minYlimit, int maxYlimit, int maxXlimit) {
 	maxY = maxYlimit;
 }
 
-void Species::liftRangeRestriction(int dimX, int dimY) {
+void Species::resetRangeRestrictions(int dimX, int dimY) {
 	minX = minY = 0;
 	maxX = dimX - 1;
 	maxY = dimY - 1;
