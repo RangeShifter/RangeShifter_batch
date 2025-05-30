@@ -86,8 +86,9 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& s
 constexpr int gEmptyVal = -9;
 
 struct simCheck {
-	bool isNewSim;
+	bool sameInput;
 	int simNb, simLines, reqdSimLines, errors;
+	species_id spNb;
 };
 
 bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir);

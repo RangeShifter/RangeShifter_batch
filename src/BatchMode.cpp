@@ -2169,7 +2169,7 @@ bool CheckEmigFile()
 	bool readNextLine = true;
 	int lineNb = 1;
 	simCheck currentLine, prevLine;
-	int simNb = prevLine.simNb = -999;
+	int simNb = prevLine.simNb = prevLine.spNb = -999;
 	prevLine.simLines = prevLine.reqdSimLines = 0;
 	ifsEmigrationFile >> simNb;
 
@@ -2452,7 +2452,7 @@ bool CheckTransferFile(string indir)
 	int whichLine = 1;
 	simCheck current, prev;
 	simNb = -98765;
-	prev.simNb = -999;
+	prev.simNb = prev.spNb = -999;
 	prev.simLines = prev.reqdSimLines = 0;
 	ifsTransferFile >> simNb;
 	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
@@ -2837,7 +2837,7 @@ bool CheckSettleFile()
 	int whichLine = 1;
 	simCheck current, prev;
 	simNb = -98765;
-	prev.simNb = -999;
+	prev.simNb = prev.spNb = -999;
 	prev.simLines = prev.reqdSimLines = 0;
 	ifsSettlementFile >> simNb;
 	
@@ -2864,7 +2864,7 @@ bool CheckSettleFile()
 			// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 			ifsSettlementFile >> inStageDep >> inSexDep >> inStage >> inSex >> inSettleType >> inFindMate;
 			current = CheckStageSex(whichFile, whichLine, simNb, inSp, prev, inStageDep, inSexDep, inStage, inSex, 0, true, false);
-			if (current.isNewSim) nbSims++;
+			if (current.sameInput) nbSims++;
 			nbErrors += current.errors;
 			prev = current;
 			if (inSettleType < 0 || inSettleType > 3) {
@@ -2885,7 +2885,7 @@ bool CheckSettleFile()
 			// read and validate columns relating to stage and sex-dependency (IIV psossible)
 			ifsSettlementFile >> inStageDep >> inSexDep >> inStage >> inSex >> inDensDep >> inIndVar >> inFindMate;
 			current = CheckStageSex(whichFile, whichLine, simNb, inSp, prev, inStageDep, inSexDep, inStage, inSex, inIndVar, true, false);
-			if (current.isNewSim) nbSims++;
+			if (current.sameInput) nbSims++;
 			nbErrors += current.errors;
 			prev = current;
 
@@ -3024,7 +3024,7 @@ bool CheckTraitsFile(string indir)
 	simCheck current, prev;		
 	constexpr int simNbNotRead = -98765;
 	simNb = simNbNotRead;
-	prev.simNb = -999;
+	prev.simNb = prev.spNb = -999;
 	prev.simLines = prev.reqdSimLines = 0;
 
 	ifsTraitsFile >> simNb >> inSp;
@@ -4243,7 +4243,7 @@ bool CheckInitFile(string indir)
 	vector <string> indsfiles;
 	ftype2 = "InitIndsFile";
 	simNb = -98765;
-	prev.simNb = -999;
+	prev.simNb = prev.spNb = -999;
 	prev.simLines = prev.reqdSimLines = 0;
 	ifsInitFile >> simNb;
 	
@@ -4580,21 +4580,22 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, species_
 	int nbSexDisp = gSpInputOpt.at(simNb).at(sp).reproType == 0 ? 1 : 2;
 	int nbStg = gSpInputOpt.at(simNb).at(sp).nbStages;
 
-	// has there been a change of simulation number?;
-	if (simNb == prev.simNb) { // no
-		current.isNewSim = false; 
+	// Is this line of input for the same species and simulation?
+	current.sameInput = simNb == prev.simNb && sp == prev.spNb;
+	if (current.sameInput) {
 		current.simLines = prev.simLines + 1;
 	}
-	else { // yes
-		// check for valid simulation number
-		current.isNewSim = true; 
+	else {
 		current.simLines = 1;
-		if (whichLine > 1 && simNb != prev.simNb + 1) {
-			BatchError(whichInputFile, whichLine, 222, " "); 
+		if (simNb != prev.simNb 
+			&& whichLine > 1 
+			&& simNb != prev.simNb + 1) {
+			BatchError(whichInputFile, whichLine, 222, " ");
 			current.errors++;
 		}
 	}
 	current.simNb = simNb;
+	current.spNb = sp;
 
 	// validate inStageDep
 	if (gUsesStageStruct) {
@@ -4624,7 +4625,7 @@ simCheck CheckStageSex(string whichInputFile, int whichLine, int simNb, species_
 		batchLogOfs << "SexDep must be 0 for asexual model" << endl;
 		isSexDep = 0; // to calculate required number of lines
 	}
-	if (current.isNewSim) { // set required number of lines
+	if (current.sameInput) { // set required number of lines
 		if (isStageDep) {
 			current.reqdSimLines = nbStg;
 			if (isSexDep) current.reqdSimLines *= nbSexDisp;
@@ -5842,11 +5843,8 @@ int ReadEmigration(speciesMap_t& simSpecies)
 	int simulationNb, simNbFirstLine = 0, inStage, inSex, inEmigstage;
 	float inEp, inD0, inAlpha, inBeta;
 	bool isFirstLine = true;
-	int nbSexesDisp;
 	emigTraits emigrationTraits;
 	species_id sp;
-	Species* pSpecies;
-	demogrParams dem;
 	stageParams sstruct;
 	emigRules emig;
 
@@ -5856,9 +5854,11 @@ int ReadEmigration(speciesMap_t& simSpecies)
 		ifsEmigrationFile >> simulationNb >> sp >> inDensDep >> inFullKernel
 			>> inStgDep >> inSexDep >> inIndVar >> inEmigstage;
 
+		Species* pSpecies = simSpecies.at(sp);
+		demogrParams dem = pSpecies->getDemogrParams();
+		int nbSexesDisp = dem.repType == 0 ? 1 : 2;
+
 		if (isFirstLine) {
-			pSpecies = simSpecies.at(sp);
-			dem = pSpecies->getDemogrParams();
 			sstruct = pSpecies->getStageParams();
 			emig = pSpecies->getEmigRules();
 
@@ -6358,7 +6358,6 @@ int ReadInitialisation(const landParams& paramsLand, speciesMap_t& simSpecies)
 	Species* pSpecies = simSpecies.at(sp);
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
-
 
 	if (init.seedType == 1 && !gUseSpeciesDist.at(sp)) 
 		errorCode = 601;
