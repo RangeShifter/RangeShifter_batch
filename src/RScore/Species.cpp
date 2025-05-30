@@ -21,9 +21,9 @@
 
 #include "Species.h"
 
-Species::Species() {
+Species::Species(const species_id& sp) {
 
-	ID = 0; // overwritten later
+	ID = sp;
 
 	// initialise demographic parameters
 	propMales = 0.0; 

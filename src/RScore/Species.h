@@ -214,7 +214,7 @@ typedef short species_id;
 class Species {
 
 public:
-	Species();
+	Species(const species_id& sp);
 	~Species();
 	species_id getID();
 

@@ -5180,7 +5180,7 @@ void setUpSpeciesTrait(Species* pSpecies, vector<string> parameters) {
 		remove(parameters[17].begin(), parameters[17].end(), '\r'),
 		parameters[17].end()
 	);
-	const bool isOutput = parameters[18] == "TRUE";
+	const bool isOutput = parameters[17] == "TRUE";
 	int ploidy = pSpecies->getDemogrParams().repType == 0 ? 1 : 2;
 
 	// Create species trait
@@ -6363,10 +6363,9 @@ int ReadInitialisation(const landParams& paramsLand, speciesMap_t& simSpecies)
 	if (init.seedType == 1 && !gUseSpeciesDist.at(sp)) 
 		errorCode = 601;
 
-	if (paramsLand.usesPatches) 
-		ifsInitFile >> init.initDens >> init.indsHa;
-	else 
-		ifsInitFile >> init.initDens >> init.indsCell;
+	ifsInitFile >> init.initDens;
+	if (paramsLand.usesPatches) ifsInitFile >> init.indsHa;
+	else ifsInitFile >> init.indsCell;
 
 	ifsInitFile >> init.minSeedX >> init.maxSeedX 
 		>> init.minSeedY >> init.maxSeedY
@@ -6525,7 +6524,7 @@ void RunBatch()
 	// Create empty species
 	speciesMap_t allSpecies;
 	for (species_id sp : gSpeciesNames) {
-		allSpecies.emplace(sp, new Species);
+		allSpecies.emplace(sp, new Species(sp));
 	}
 
 	Landscape* pLandscape = nullptr; 
