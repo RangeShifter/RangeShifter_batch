@@ -34,6 +34,7 @@ Community::Community(Landscape* pLand, speciesMap_t allSpecies) {
 
 	// Populate species maps
 	for (auto& [sp, pSpecies] : allSpecies) {
+		allPopns.emplace(sp, vector<Population*>());
 		neutralStatsMaps.emplace(sp, nullptr);
 		// Output file streams
 		if (pSpecies->doesOutputInds()) outIndsOfs.emplace(sp, ofstream());
