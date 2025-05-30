@@ -39,8 +39,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 
 	landParams ppLand = pLandscape->getLandParams();
 	envStochParams env = paramsStoch->getStoch();
-	//stageParams sstruct = pSpecies->getStageParams();
-	//transferRules trfr = pSpecies->getTransferRules();
 	simParams sim = paramsSim->getSim();
 
 	bool anyUsesGradient = false, anySavesVisits = false;
@@ -135,6 +133,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 		for (auto& [sp, pSpecies] : simSpecies) {
 			pLandscape->updateCarryingCapacity(pSpecies, 0, 0);
 			pComm->initialise(pSpecies, -1);
+			if (rep == 0
+				&& pSpecies->doesOutputOccup()
+				&& hasMultipleReplicates) {
+				int nbOutputRows = (sim.years / pSpecies->getOutOccInt()) + 1;
+				pComm->createOccupancy(sp, nbOutputRows, sim.reps);
+			}
 		}
 
 #if BATCH && RS_RCPP && !R_CMD

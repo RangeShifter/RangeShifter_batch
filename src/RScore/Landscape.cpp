@@ -333,10 +333,17 @@ void Landscape::initialise(speciesMap_t& allSpecies, landParams land) {
 	else if (!land.usesPatches) allocatePatches(allSpecies);
 	// otherwise (patch-based + imported) patches have been read already
 
-	// Random patch sampling is done once per landscape
+	outConnMatrices.clear(); // drop output streams from previous simulation
+
 	for (auto& [sp, pSpecies] : allSpecies) {
+
+		// Random patch sampling is done once per landscape
 		if (pSpecies->getSamplingOption() == "random")
 			samplePatches(pSpecies);
+
+		// Populate connectivity output map
+		if (pSpecies->doesOutputConnect()) 
+			outConnMatrices.emplace(sp, ofstream());
 	}
 }
 
@@ -2597,8 +2604,8 @@ void Landscape::outConnectHeaders(species_id sp)
 		name += "Batch" + to_string(sim.batchNum) + "_";
 		name += "Sim" + to_string(sim.simulation) + "_Land" + to_string(landNum);
 	}
-	else
-		name += "Sim" + to_string(sim.simulation);
+	else name += "Sim" + to_string(sim.simulation);
+
 	name += "Species_" + to_string(sp) + "_Connect.txt";
 	outConnMatrices.at(sp).open(name.c_str());
 

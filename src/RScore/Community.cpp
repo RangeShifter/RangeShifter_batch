@@ -1306,9 +1306,6 @@ bool Community::outOccupancyHeaders(Species* pSpecies)
 		occOfs << "\t" << "Year_" << i * outIntOcc;
 	occOfs << endl;
 
-	// Initialise cells/patches occupancy array
-	createOccupancy(sp, nbOutputRows, sim.reps);
-
 	return suitOfs.is_open() && occOfs.is_open();
 }
 
