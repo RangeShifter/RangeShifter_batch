@@ -138,7 +138,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 			else pSpecies->resetRangeRestrictions(ppLand.dimX, ppLand.dimY);
 
 			pLandscape->updateCarryingCapacity(pSpecies, 0, 0);
-			pComm->initialise(pSpecies, -1);
+			pComm->initialise(pSpecies, 0);
 			if (rep == 0
 				&& pSpecies->doesOutputOccup()
 				&& hasMultipleReplicates) {
@@ -296,9 +296,10 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 					// Extirpate populations beyond the new limits
 					pComm->scanUnsuitablePatches(pSpecies);
 				}
-				if (pSpecies->getInitParams().seedType == 2) {
-					// add any new initial individuals for the current year
-					pComm->initialise(pSpecies, yr);
+				if (pSpecies->getInitParams().seedType == 2
+					&& yr > 0 // already done earlier for the first year
+					) {
+					pComm->initialise(pSpecies, yr); // add new individuals for the current year
 				}
 			}
 

@@ -210,46 +210,42 @@ void Community::initialise(Species* pSpecies, int year) {
 		break;
 
 	case 2:	// initial individuals in specified patches/cells
-		if (year < 0) {
-			indIx = 0; // reset index for initial individuals
-		}
-		else { // add any initial individuals for the current year
-			initInd iind = initInd();
-			iind.year = 0;
-			int ninds = pSpecies->getNbInitInds();
-			while (indIx < ninds && iind.year <= year) {
-				iind = pSpecies->getInitInd(indIx);
-				while (iind.year == year && iind.speciesID == sp) {
-					if (ppLand.usesPatches) {
-						pPatch = pLandscape->findPatch(sp, iind.patchID);
-						if (pPatch != nullptr) { // exists
-							if (pPatch->isSuitable()) {
-								initialInd(pLandscape, pSpecies, pPatch, pPatch->getRandomCell(), indIx);
-							}
+
+		if (year == 0) indIx = 0; // reset index
+		initInd iind = initInd();
+		iind.year = 0;
+		int ninds = pSpecies->getNbInitInds();
+		while (indIx < ninds && iind.year <= year) {
+			iind = pSpecies->getInitInd(indIx);
+			while (iind.year == year && iind.speciesID == sp) {
+				if (ppLand.usesPatches) {
+					pPatch = pLandscape->findPatch(sp, iind.patchID);
+					if (pPatch != nullptr) { // exists
+						if (pPatch->isSuitable()) {
+							initialInd(pLandscape, pSpecies, pPatch, pPatch->getRandomCell(), indIx);
 						}
-					}
-					else { // cell-based model
-						pCell = pLandscape->findCell(iind.x, iind.y);
-						if (pCell != nullptr) {
-							pPatch = pCell->getPatch(sp);
-							if (pPatch != nullptr) {
-								if (pPatch->isSuitable()) {
-									initialInd(pLandscape, pSpecies, pPatch, pCell, indIx);
-								}
-							}
-						}
-					}
-					indIx++;
-					if (indIx < ninds) {
-						iind = pSpecies->getInitInd(indIx);
-					}
-					else {
-						iind.year = 99999999;
 					}
 				}
+				else { // cell-based model
+					pCell = pLandscape->findCell(iind.x, iind.y);
+					if (pCell != nullptr) {
+						pPatch = pCell->getPatch(sp);
+						if (pPatch != nullptr) {
+							if (pPatch->isSuitable()) {
+								initialInd(pLandscape, pSpecies, pPatch, pCell, indIx);
+							}
+						}
+					}
+				}
+				indIx++;
+				if (indIx < ninds) {
+					iind = pSpecies->getInitInd(indIx);
+				}
+				else {
+					iind.year = 99999999;
+				}
 			}
-		} // if year == 0
-
+		}
 		break;
 	} // end of switch (init.seedType)
 
