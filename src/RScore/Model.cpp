@@ -122,7 +122,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 		}
 
 		// Dynamic landscape control
-		bool updateland = false;
+		bool mustUpdateLand = false;
 		int chgNb = 0; // landscape change index
 		landChange landChg; 
 		if (ppLand.isDynamic) {
@@ -229,11 +229,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 					}
 				}
 			}
-			
-			// environmental gradient, stochasticity & local extinction
-			// or dynamic landscape
-			updateland = false;
-			
+						
 			// Environmental stochasticity
 			if (env.usesStoch && env.stochIsLocal) {
 				pLandscape->updateLocalStoch();
@@ -252,10 +248,11 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 			}
 			
 			// Dynamic landscape
+			mustUpdateLand = false;
 			if (ppLand.isDynamic && yr == landChg.chgyear) {
 
 				chgNb = landChg.chgnum;
-				updateland = true;
+				mustUpdateLand = true;
 				for (auto& [sp, updateK] : mustUpdateK) updateK = true;
 
 				if (ppLand.usesPatches) {
@@ -279,7 +276,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 			
 			if (ppLand.usesPatches) pLandscape->resetConnectMatrix();
 
-			if (ppLand.isDynamic && updateland) {
+			if (ppLand.isDynamic && mustUpdateLand) {
 				for (auto& [sp, pSpecies] : simSpecies) {
 					if (!pSpecies->getTransferRules().usesCosts) 
 						pLandscape->resetCosts();

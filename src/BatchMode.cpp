@@ -5485,6 +5485,7 @@ int ReadParameters(const Landscape* pLandscape, speciesMap_t& simSpecies)
 	ifsParamFile >> paramsGrad.gradIncr >> paramsGrad.optY 
 		>> paramsGrad.factor >> paramsGrad.extProbOpt >> inShifting;
 	ifsParamFile >> shift_rate >> shiftBegin >> shiftStop;
+	paramsGrad.usesGradient = paramsGrad.gradType != 0;
 	paramsGrad.doesShift = (inShifting == "1" && gradType != 0);
 	paramsGrad.shiftRate = paramsGrad.doesShift ? shift_rate : 0;
 	paramsGrad.shiftBegin = paramsGrad.doesShift ? shiftBegin : 0;
