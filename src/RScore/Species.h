@@ -394,14 +394,14 @@ public:
 		if (output.outRange) return yr % output.outIntRange == 0;
 		else return false;
 	}
-	bool doesOutputTraitCell() const { return output.outIntTraitCell; }
+	bool doesOutputTraitCell() const { return output.outTraitsCells; }
 	bool isTraitCellOutYear(int yr) const {
 		if (output.outTraitsCells) return yr >= output.outStartTraitCell
 			&& yr % output.outIntTraitCell == 0;
 		else return false;
 	}
 	int getOutTrCellInt() const { return output.outIntTraitCell; }
-	bool doesOutputTraitRows() const { return output.outIntTraitRow; }
+	bool doesOutputTraitRows() const { return output.outTraitsRows; }
 	bool isTraitRowOutYear(int yr) const {
 		if (output.outTraitsRows) return yr >= output.outStartTraitRow
 			&& yr % output.outIntTraitRow == 0;
