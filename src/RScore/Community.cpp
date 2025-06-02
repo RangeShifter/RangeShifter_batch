@@ -646,7 +646,7 @@ void Community::popAndRangeOutput(int rep, int yr, int gen) {
 		Species* pSpecies = speciesMap.at(sp);
 		if (pSpecies->isRangeOutputYear(yr))
 			outRange(sp, rep, yr, gen);
-		if (pSpecies->isIndOutputYear(yr))
+		if (pSpecies->isPopOutputYear(yr))
 			outPop(sp, rep, yr, gen);
 	}
 }
