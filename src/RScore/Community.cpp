@@ -498,7 +498,7 @@ void Community::drawSurvivalDevlpt(const int phase)
 
 		switch (phase) {
 		case 0: { // After reproduction, before dispersal
-			if (hasStages && survOption == 0) {
+			if (hasStages && survOption == phase) {
 				// Survival + developments adults
 				matrixPops.at(sp)->drawSurvivalDevlpt(false, true, true, true);
 				for (auto pop : allPopns.at(sp)) {
@@ -520,7 +520,7 @@ void Community::drawSurvivalDevlpt(const int phase)
 			break;
 		}
 		case 2: { // End of year
-			if (hasStages && survOption == 2) {
+			if (hasStages && survOption == phase) {
 				// Survival juveniles + adults
 				matrixPops.at(sp)->drawSurvivalDevlpt(true, true, false, true);
 				for (auto pop : allPopns.at(sp)) {
