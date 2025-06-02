@@ -274,9 +274,10 @@ public:
 	bool doesOutputWeirCockerham() const { return output.outputWeirCockerham; }
 	bool doesOutputWeirHill() const { return output.outputWeirHill; }
 	bool isGeneticOutputYear(int yr) const {
-		return (output.outputGenes || output.outputWeirCockerham || output.outputWeirHill)
-			&& yr >= output.outputStartGenetics
+		if (output.outputGenes || output.outputWeirCockerham || output.outputWeirHill)
+			return yr >= output.outputStartGenetics
 			&& yr % output.outputGeneticInterval == 0;
+		else return false;
 	}
 	std::set<int>& getSamplePatches() { return samplePatchList; }
 	string getNIndsToSample() { return nIndsToSample; }
@@ -365,46 +366,46 @@ public:
 	// Output control functions
 	bool doesOutputInds() const { return output.outInds; }
 	bool isIndOutputYear(int yr) const {
-		return output.outInds 
-			&& yr >= output.outStartInd 
+		if (output.outInds) return yr >= output.outStartInd
 			&& yr % output.outIntInd == 0;
+		else return false;
 	}
 	bool doesOutputConnect() const { return output.outConnect; }
 	bool isConnectOutputYear(int yr) const {
-		return output.outConnect
-			&& yr >= output.outStartConn 
+		if (output.outConnect) return yr >= output.outStartConn
 			&& yr % output.outIntConn == 0;
+		else return false;
 	}
 	bool savesVisits() const { return output.saveVisits;  }
 	bool doesOutputOccup() const { return output.outOccup; }
 	bool isOccOutputYear(int yr) const {
-		return output.outOccup
-			&& yr % output.outIntConn == 0;
+		if (output.outOccup) return yr % output.outIntOcc == 0;
+		else return false;
 	}
 	int getOutOccInt() const { return output.outIntOcc; }
 	bool doesOutputPop() const { return output.outPop; }
 	bool isPopOutputYear(int yr) const { 
-		return output.outPop 
-			&& yr >= output.outStartPop 
+		if (output.outPop) return yr >= output.outStartPop
 			&& yr % output.outIntPop == 0;
+		else return false;
 	}
 	bool doesOutputRange() const { return output.outRange; }
 	bool isRangeOutputYear(int yr) const {
-		return output.outRange
-			&& yr % output.outIntRange == 0;
+		if (output.outRange) return yr % output.outIntRange == 0;
+		else return false;
 	}
 	bool doesOutputTraitCell() const { return output.outIntTraitCell; }
 	bool isTraitCellOutYear(int yr) const {
-		return output.outTraitsCells
-			&& yr >= output.outStartTraitCell
+		if (output.outTraitsCells) return yr >= output.outStartTraitCell
 			&& yr % output.outIntTraitCell == 0;
+		else return false;
 	}
 	int getOutTrCellInt() const { return output.outIntTraitCell; }
 	bool doesOutputTraitRows() const { return output.outIntTraitRow; }
 	bool isTraitRowOutYear(int yr) const {
-		return output.outTraitsRows 
-			&& yr >= output.outStartTraitRow
+		if (output.outTraitsRows) return yr >= output.outStartTraitRow
 			&& yr % output.outIntTraitRow == 0;
+		else return false;
 	}
 	outputParams getOutputParams() const { return output; }
 	void setOutputParams(const outputParams& out) { output = out; }
