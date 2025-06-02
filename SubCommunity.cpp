@@ -416,7 +416,7 @@ void SubCommunity::completeDispersal(std::map<Species*,vector<Individual*>>& ind
 			bool settled = ind.status == 4 || ind.status == 5;
 			if (settled) {
 				// find new patch
-				pNewPatch = pInd->getLocn(1)->getPatch();
+				pNewPatch = pInd->getCurrCell()->getPatch();
 				// find population within the patch (if there is one)
 				{
 #ifdef _OPENMP
@@ -432,7 +432,7 @@ void SubCommunity::completeDispersal(std::map<Species*,vector<Individual*>>& ind
 				pPop->recruit(pInd);
 				if (connect) { // increment connectivity totals
 					int newpatch = pNewPatch->getSeqNum();
-					pPrevCell = pInd->getLocn(0); // previous cell
+					pPrevCell = pInd->getPrevCell();
 					pPrevPatch = pPrevCell->getPatch();
 					if (pPrevPatch != nullptr) {
 						int prevpatch = pPrevPatch->getSeqNum();
@@ -451,20 +451,20 @@ void SubCommunity::completeDispersal(std::map<Species*,vector<Individual*>>& ind
 
 //---------------------------------------------------------------------------
 
-void SubCommunity::survival(short part, short option0, short option1)
+void SubCommunity::survival0(short option0, short option1)
 {
 	int npops = (int)popns.size();
-	if (npops < 1) return;
-	if (part == 0) {
-		float localK = pPatch->getK();
-		for (int i = 0; i < npops; i++) { // all populations
-			popns[i]->survival0(localK, option0, option1);
-		}
+	float localK = pPatch->getK();
+	for (int i = 0; i < npops; i++) { // all populations
+		popns[i]->survival0(localK, option0, option1);
 	}
-	else {
-		for (int i = 0; i < npops; i++) { // all populations
-			popns[i]->survival1();
-		}
+}
+
+void SubCommunity::survival1()
+{
+	int npops = (int)popns.size();
+	for (int i = 0; i < npops; i++) { // all populations
+		popns[i]->survival1();
 	}
 }
 
@@ -530,27 +530,33 @@ void SubCommunity::deleteOccupancy(void) {
 }
 
 //---------------------------------------------------------------------------
+// Close population file
+bool SubCommunity::outPopFinishLandscape()
+{
+	bool fileOK;
+	Population* pPop;
+
+	// as all populations may have been deleted, set up a dummy one
+	// species is not necessary
+	pPop = new Population();
+	fileOK = pPop->outPopFinishLandscape();
+	delete pPop;
+	return fileOK;
+}
+
+//---------------------------------------------------------------------------
 // Open population file and write header record
-bool SubCommunity::outPopHeaders(Landscape* pLandscape, Species* pSpecies, int option)
+bool SubCommunity::outPopStartLandscape(Landscape* pLandscape, Species* pSpecies)
 {
 	bool fileOK;
 	Population* pPop;
 	landParams land = pLandscape->getLandParams();
 
-	if (option == -999) { // close the file
-		// as all populations may have been deleted, set up a dummy one
-		// species is not necessary
-		pPop = new Population();
-		fileOK = pPop->outPopHeaders(-999, land.patchModel);
-		delete pPop;
-	}
-	else { // open the file
-		// as no population has yet been created, set up a dummy one
-		// species is necessary, as columns depend on stage and sex structure
-		pPop = new Population(pSpecies, pPatch, 0, land.resol);
-		fileOK = pPop->outPopHeaders(land.landNum, land.patchModel);
-		delete pPop;
-	}
+	// as no population has yet been created, set up a dummy one
+	// species is necessary, as columns depend on stage and sex structure
+	pPop = new Population(pSpecies, pPatch, 0, land.resol);
+	fileOK = pPop->outPopStartLandscape(land.landNum, land.patchModel);
+	delete pPop;
 	return fileOK;
 }
 
@@ -601,17 +607,19 @@ void SubCommunity::outPop(Landscape* pLandscape, int rep, int yr, int gen)
 	}
 }
 
-// Write records to individuals file
-void SubCommunity::outInds(Landscape* pLandscape, int rep, int yr, int gen, int landNr) {
+// Close individuals file
+void SubCommunity::outIndsFinishReplicate() {
+	popns[0]->outIndsFinishReplicate();
+}
+
+// Open individuals file and write header record
+void SubCommunity::outIndsStartReplicate(Landscape* pLandscape, int rep, int landNr) {
 	landParams ppLand = pLandscape->getLandParams();
-	if (landNr >= 0) { // open the file
-		popns[0]->outIndsHeaders(rep, landNr, ppLand.patchModel);
-		return;
-	}
-	if (landNr == -999) { // close the file
-		popns[0]->outIndsHeaders(rep, -999, ppLand.patchModel);
-		return;
-	}
+	popns[0]->outIndsStartReplicate(rep, landNr, ppLand.patchModel);
+}
+
+// Write records to individuals file
+void SubCommunity::outIndividuals(Landscape* pLandscape, int rep, int yr, int gen) {
 	// generate output for each population within the sub-community (patch)
 	int npops = (int)popns.size();
 	for (int i = 0; i < npops; i++) { // all populations
@@ -619,21 +627,25 @@ void SubCommunity::outInds(Landscape* pLandscape, int rep, int yr, int gen, int 
 	}
 }
 
-// Write records to individuals file
-void SubCommunity::outGenetics(int rep, int yr, int gen, int landNr)
+// Close genetics file
+void SubCommunity::outGenFinishReplicate()
 {
-	if (landNr >= 0) { // open the file
-		popns[0]->outGenetics(rep, yr, landNr);
-		return;
-	}
-	if (landNr == -999) { // close the file
-		popns[0]->outGenetics(rep, yr, landNr);
-		return;
-	}
+	popns[0]->outGenFinishReplicate();
+}
+
+// Open genetics file and write header record
+void SubCommunity::outGenStartReplicate(int rep, int landNr)
+{
+	popns[0]->outGenStartReplicate(rep, landNr);
+}
+
+// Write records to genetics file
+void SubCommunity::outGenetics(int rep, int yr)
+{
 	// generate output for each population within the sub-community (patch)
 	int npops = (int)popns.size();
 	for (int i = 0; i < npops; i++) { // all populations
-		popns[i]->outGenetics(rep, yr, landNr);
+		popns[i]->outGenetics(rep, yr);
 	}
 }
 
@@ -647,16 +659,18 @@ int SubCommunity::stagePop(int stage) {
 	return popsize;
 }
 
+// Close traits file
+bool SubCommunity::outTraitsFinishLandscape()
+{
+	if (outtraits.is_open()) outtraits.close();
+	outtraits.clear();
+	return true;
+}
+
 // Open traits file and write header record
-bool SubCommunity::outTraitsHeaders(Landscape* pLandscape, Species* pSpecies, int landNr)
+bool SubCommunity::outTraitsStartLandscape(Landscape* pLandscape, Species* pSpecies, int landNr)
 {
 	landParams land = pLandscape->getLandParams();
-	if (landNr == -999) { // close file
-		if (outtraits.is_open()) outtraits.close();
-		outtraits.clear();
-		return true;
-	}
-
 	string name;
 	emigRules emig = pSpecies->getEmig();
 	trfrRules trfr = pSpecies->getTrfr();
