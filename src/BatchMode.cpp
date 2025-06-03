@@ -5637,6 +5637,8 @@ int ReadStageStructure(speciesMap_t& simSpecies)
 int ReadTransitionMatrix(Species* pSpecies, short nstages, short nsexesDem, short hab, short season)
 {
 	int stg, sex;
+	float probSurv, probDev;
+	float transSame, transNext;
 	int minAge;
 	string header;
 
@@ -5654,6 +5656,8 @@ int ReadTransitionMatrix(Species* pSpecies, short nstages, short nsexesDem, shor
 
 	if (nsexesDem != 2) { // asexual or implicit sexual model
 	
+		sex = 0; // same values for all sexes
+
 		// Create a temporary matrix
 		gMatrix = new float* [nstages];
 		gMatrixSize = nstages;
@@ -5667,26 +5671,27 @@ int ReadTransitionMatrix(Species* pSpecies, short nstages, short nsexesDem, shor
 				ifsTransMatrix >> gMatrix[j][i];
 			}
 			ifsTransMatrix >> minAge; 
-			pSpecies->setMinAge(i, 0, minAge);
+			pSpecies->setMinAge(i, sex, minAge);
 		}
 
 		// Find fecundity
-		for (int j = 1; j < nstages; j++)
+		for (int col = 1; col < nstages; col++)
 			// Fecundity is value on the first row
-			pSpecies->setFec(j, 0, gMatrix[j][0]);
+			pSpecies->setFec(col, sex, gMatrix[col][sex]);
 
 		// Find survival and development
-		for (int j = 0; j < nstages; j++) {
-			float transSame = 0.0; // surv * (1 - dev)
-			float transNext = 0.0; // surv * dev
-			for (int i = 0; i < nstages; i++) {
-				if (i == j) transSame = gMatrix[j][i];
-				if (i == (j + 1)) transNext = gMatrix[j][i];
+		for (int col = 0; col < nstages; col++) {
+			stg = col;
+			transSame = 0.0; // surv * (1 - dev)
+			transNext = 0.0; // surv * dev
+			for (int row = 0; row < nstages; row++) {
+				if (row == col) transSame = gMatrix[col][row];
+				if (row == (col + 1)) transNext = gMatrix[col][row];
 			}
-			float survProb = transSame + transNext;
-			pSpecies->setSurv(j, 0, survProb);
-			float devProb = survProb > 0.0f ? transNext / survProb : 0.0f;
-			pSpecies->setDev(j, 0, devProb);
+			probSurv = transSame + transNext;
+			probDev = probSurv > 0.0f ? transNext / probSurv : 0.0f;
+			pSpecies->setSurv(stg, sex, probSurv);
+			pSpecies->setDev(stg, sex, probDev);
 		}
 	}
 	else { // complex sexual model
@@ -5731,34 +5736,34 @@ int ReadTransitionMatrix(Species* pSpecies, short nstages, short nsexesDem, shor
 		stg = 0;
 		// survival and development of male juveniles
 		sex = 1;
-		float transSame = gMatrix[0][0]; // surv * (1 - dev)
-		float transNext = gMatrix[0][1]; // surv * dev
-		float probSurv = transSame + transNext;
-		float probDev = probSurv > 0.0 ? transNext / probSurv : 0.0;
+		transSame = gMatrix[0][0]; // surv * (1 - dev)
+		transNext = gMatrix[0][1]; // surv * dev
+		probSurv = transSame + transNext;
+		probDev = probSurv > 0.0 ? transNext / probSurv : 0.0;
 		pSpecies->setSurv(stg, sex, probSurv);
 		pSpecies->setDev(stg, sex, probDev);
 
 		// survival and development of female juveniles
 		sex = 0;
-		float transSame = gMatrix[1][0]; // surv * (1 - dev)
-		float transNext = gMatrix[1][2]; // surv * dev
-		float probSurv = transSame + transNext;
-		float probDev = probSurv > 0.0 ? transNext / probSurv : 0.0;
+		transSame = gMatrix[1][0]; // surv * (1 - dev)
+		transNext = gMatrix[1][2]; // surv * dev
+		probSurv = transSame + transNext;
+		probDev = probSurv > 0.0 ? transNext / probSurv : 0.0;
 		pSpecies->setSurv(stg, sex, probSurv);
 		pSpecies->setDev(stg, sex, probDev);
 
 		// survival and development of stages 1+
 		stg = 1;
-		for (int j = 2; j < nstages * 2; j++) {
-			int sex = j % 2 ? 1 : 0; // male / female columns
-			float transSame = 0.0; // surv * (1 - dev)
-			float transNext = 0.0; // surv * dev
-			for (int i = 1; i < nstages * 2; i++) {
-				if (i == j - 1) transSame = gMatrix[j][i];
-				if (i == j + 1) transNext = gMatrix[j][i];
+		for (int col = 2; col < nstages * 2; col++) {
+			sex = col % 2 == 0 ? 1 : 0; // male / female columns
+			transSame = 0.0; // surv * (1 - dev)
+			transNext = 0.0; // surv * dev
+			for (int row = 1; row < nstages * 2 - 1; row++) {
+				if (row == col - 1) transSame = gMatrix[col][row];
+				if (row == col + 1) transNext = gMatrix[col][row];
 			}
-			float probSurv = transSame + transNext;
-			float probDev = probSurv > 0.0 ? transNext / probSurv : 0.0;
+			probSurv = transSame + transNext;
+			probDev = probSurv > 0.0 ? transNext / probSurv : 0.0;
 			pSpecies->setSurv(stg, sex, probSurv);
 			pSpecies->setDev(stg, sex, probDev);
 			if (sex == 0) stg++;
