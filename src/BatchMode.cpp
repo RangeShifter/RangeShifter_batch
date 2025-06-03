@@ -5636,9 +5636,8 @@ int ReadStageStructure(speciesMap_t& simSpecies)
 //---------------------------------------------------------------------------
 int ReadTransitionMatrix(Species* pSpecies, short nstages, short nsexesDem, short hab, short season)
 {
-	int ii;
+	int stg, sex;
 	int minAge;
-	float ss, dd;
 	string header;
 
 	// read header line
@@ -5654,14 +5653,16 @@ int ReadTransitionMatrix(Species* pSpecies, short nstages, short nsexesDem, shor
 	}
 
 	if (nsexesDem != 2) { // asexual or implicit sexual model
-	// create a temporary matrix
+	
+		// Create a temporary matrix
 		gMatrix = new float* [nstages];
 		gMatrixSize = nstages;
 		for (int i = 0; i < nstages; i++)
 			gMatrix[i] = new float[nstages];
 
+		// Read matrix
 		for (int i = 0; i < nstages; i++) { 
-			ifsTransMatrix >> header;
+			ifsTransMatrix >> header; // sink row header
 			for (int j = 0; j < nstages; j++) {
 				ifsTransMatrix >> gMatrix[j][i];
 			}
@@ -5669,28 +5670,37 @@ int ReadTransitionMatrix(Species* pSpecies, short nstages, short nsexesDem, shor
 			pSpecies->setMinAge(i, 0, minAge);
 		}
 
+		// Find fecundity
 		for (int j = 1; j < nstages; j++)
+			// Fecundity is value on the first row
 			pSpecies->setFec(j, 0, gMatrix[j][0]);
 
+		// Find survival and development
 		for (int j = 0; j < nstages; j++) {
-			ss = 0.0; dd = 0.0;
+			float transSame = 0.0; // surv * (1 - dev)
+			float transNext = 0.0; // surv * dev
 			for (int i = 0; i < nstages; i++) {
-				if (i == j) ss = gMatrix[j][i];
-				if (i == (j + 1)) dd = gMatrix[j][i];
+				if (i == j) transSame = gMatrix[j][i];
+				if (i == (j + 1)) transNext = gMatrix[j][i];
 			}
-			pSpecies->setSurv(j, 0, ss + dd);
-			pSpecies->setDev(j, 0, (ss + dd) > 0.0f ? dd / (ss + dd) : 0.0);
+			float survProb = transSame + transNext;
+			pSpecies->setSurv(j, 0, survProb);
+			float devProb = survProb > 0.0f ? transNext / survProb : 0.0f;
+			pSpecies->setDev(j, 0, devProb);
 		}
 	}
 	else { // complex sexual model
-		gMatrix = new float* [nstages * 2];
+		
+		// Create temporary matrix
 		gMatrixSize = nstages * 2;
-		for (int j = 0; j < nstages * 2; j++)
-			gMatrix[j] = new float[nstages * 2 - 1];
+		gMatrix = new float* [gMatrixSize];
+		for (int j = 0; j < gMatrixSize; j++)
+			gMatrix[j] = new float[gMatrixSize - 1];
 
-		for (int i = 0; i < nstages * 2 - 1; i++) {
+		// Read matrix
+		for (int i = 0; i < gMatrixSize - 1; i++) {
 			ifsTransMatrix >> header;
-			for (int j = 0; j < nstages * 2; j++) 
+			for (int j = 0; j < gMatrixSize; j++)
 				ifsTransMatrix >> gMatrix[j][i];
 			if (i == 0) {
 				ifsTransMatrix >> minAge; 
@@ -5699,62 +5709,59 @@ int ReadTransitionMatrix(Species* pSpecies, short nstages, short nsexesDem, shor
 			}
 			else {
 				ifsTransMatrix >> minAge;
-				if (i % 2) 
-					pSpecies->setMinAge((i + 1) / 2, 1, minAge);	// odd lines  - males
-				else
-					pSpecies->setMinAge(i / 2, 0, minAge);			// even lines - females
+				if (i % 2) // odd lines  - males
+					pSpecies->setMinAge((i + 1) / 2, 1, minAge);
+				else // even lines - females
+					pSpecies->setMinAge(i / 2, 0, minAge);
 			}
 		}
 
-		ii = 1;
-		for (int j = 2; j < nstages * 2; j++) {
-			if (j % 2 == 0)
-				pSpecies->setFec(ii, 1, gMatrix[j][0]);
-			else {
-				pSpecies->setFec(ii, 0, gMatrix[j][0]);
-				ii++;
+		// Read fecundities
+		// i.e. values along first line, skipping two first columns (juvs)
+		stg = 1;
+		for (int col = 2; col < nstages * 2; col++) {
+			if (col % 2 == 0) // males
+				pSpecies->setFec(stg, 1, gMatrix[col][0]);
+			else { // females
+				pSpecies->setFec(stg, 0, gMatrix[col][0]);
+				stg++;
 			}
 		}
+
+		stg = 0;
 		// survival and development of male juveniles
-		pSpecies->setSurv(0, 1, (gMatrix[0][0] + gMatrix[0][1]));
-		if ((gMatrix[0][0] + gMatrix[0][1]) > 0.0)
-			pSpecies->setDev(0, 1, (gMatrix[0][1] / (gMatrix[0][0] + gMatrix[0][1])));
-		else
-			pSpecies->setDev(0, 1, 0.0);
+		sex = 1;
+		float transSame = gMatrix[0][0]; // surv * (1 - dev)
+		float transNext = gMatrix[0][1]; // surv * dev
+		float probSurv = transSame + transNext;
+		float probDev = probSurv > 0.0 ? transNext / probSurv : 0.0;
+		pSpecies->setSurv(stg, sex, probSurv);
+		pSpecies->setDev(stg, sex, probDev);
+
 		// survival and development of female juveniles
-		pSpecies->setSurv(0, 0, (gMatrix[1][0] + gMatrix[1][2]));
-		if ((gMatrix[1][0] + gMatrix[1][2]) > 0.0)
-			pSpecies->setDev(0, 0, (gMatrix[1][2] / (gMatrix[1][0] + gMatrix[1][2])));
-		else
-			pSpecies->setDev(0, 0, 0.0);
+		sex = 0;
+		float transSame = gMatrix[1][0]; // surv * (1 - dev)
+		float transNext = gMatrix[1][2]; // surv * dev
+		float probSurv = transSame + transNext;
+		float probDev = probSurv > 0.0 ? transNext / probSurv : 0.0;
+		pSpecies->setSurv(stg, sex, probSurv);
+		pSpecies->setDev(stg, sex, probDev);
+
 		// survival and development of stages 1+
-		ii = 1;
+		stg = 1;
 		for (int j = 2; j < nstages * 2; j++) {
-			ss = 0.0; dd = 0.0;
-			if (j % 2 == 0) { // males
-				for (int i = 0; i < nstages * 2 - 1; i++)
-				{
-					if (j == i + 1) ss = gMatrix[j][i];
-					if (j == i - 1) dd = gMatrix[j][i];
-				}
-				pSpecies->setSurv(ii, 1, (ss + dd));
-				if ((ss + dd) > 0.0)
-					pSpecies->setDev(ii, 1, dd / (ss + dd));
-				else
-					pSpecies->setDev(ii, 1, 0.0);
+			int sex = j % 2 ? 1 : 0; // male / female columns
+			float transSame = 0.0; // surv * (1 - dev)
+			float transNext = 0.0; // surv * dev
+			for (int i = 1; i < nstages * 2; i++) {
+				if (i == j - 1) transSame = gMatrix[j][i];
+				if (i == j + 1) transNext = gMatrix[j][i];
 			}
-			else { // females
-				for (int i = 0; i < nstages * 2; i++) {
-					if (j == i + 1) ss = gMatrix[j][i];
-					if (j == i - 1) dd = gMatrix[j][i];
-				}
-				pSpecies->setSurv(ii, 0, (ss + dd));
-				if ((ss + dd) > 0.0)
-					pSpecies->setDev(ii, 0, dd / (ss + dd));
-				else
-					pSpecies->setDev(ii, 0, 0.0);
-				ii++;
-			}
+			float probSurv = transSame + transNext;
+			float probDev = probSurv > 0.0 ? transNext / probSurv : 0.0;
+			pSpecies->setSurv(stg, sex, probSurv);
+			pSpecies->setDev(stg, sex, probDev);
+			if (sex == 0) stg++;
 		}
 	}
 
