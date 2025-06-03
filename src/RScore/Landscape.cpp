@@ -2700,6 +2700,13 @@ void Landscape::outConnect(species_id sp, int rep, int yr) {
 
 //---------------------------------------------------------------------------
 
+void Landscape::createOccupancy(species_id sp, int nbOutputRows) {
+	for (auto pPatch : patchesList.at(sp)) {
+		pPatch->createOccupancy(nbOutputRows);
+	}
+}
+
+
 void Landscape::resetVisits() {
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {

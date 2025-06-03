@@ -299,6 +299,8 @@ public:
 	bool closeConnectOfs(species_id sp);
 	void outConnect(species_id sp, int rep, int year);
 
+	void createOccupancy(species_id sp, int nbOutputRows);
+
 	// Functions to handle input and output
 	int readLandscape(
 		int filenum,		// fileNum == 0 for (first) habitat file and optional patch file

@@ -567,12 +567,8 @@ int Community::totalInds() {
 //---------------------------------------------------------------------------
 void Community::createOccupancy(species_id sp, int nbOutputRows, int nbReps) {
 
-	matrixPops.at(sp)->getPatch()->createOccupancy(nbOutputRows);
-	vector<Population*>& popns = allPopns.at(sp);
-	for (auto pop : popns) {
-		if (pop->getSpecies()->getID() != sp) continue;
-		pop->getPatch()->createOccupancy(nbOutputRows);
-	}
+	pLandscape->createOccupancy(sp, nbOutputRows);
+	
 	// Initialise array for occupancy of suitable cells/patches
 	vector<vector<int>> occupancyMap;
 	for (int i = 0; i < nbOutputRows; i++) {
