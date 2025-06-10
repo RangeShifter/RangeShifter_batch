@@ -535,6 +535,7 @@ void Community::drawSurvivalDevlpt(const int phase)
 
 void Community::applySurvivalDevlpt() {
 	for (auto& sp : activeSpecies) {
+		matrixPops.at(sp)->applySurvivalDevlpt();
 		for (auto pop : allPopns.at(sp))
 			pop->applySurvivalDevlpt();
 	}
