@@ -2606,7 +2606,7 @@ void Landscape::outConnectHeaders(species_id sp)
 	}
 	else name += "Sim" + to_string(sim.simulation);
 
-	name += "Species_" + to_string(sp) + "_Connect.txt";
+	name += "_Species_" + to_string(sp) + "_Connect.txt";
 	outConnMatrices.at(sp).open(name.c_str());
 
 	if (!outConnMatrices.at(sp).is_open()) {

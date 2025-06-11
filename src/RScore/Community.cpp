@@ -658,8 +658,8 @@ bool Community::outPopHeaders(Species* pSpecies) {
 
 	string name = paramsSim->getDir(2)
 		+ (sim.batchMode ? "Batch" + to_string(sim.batchNum) + "_" : "")
-		+ "Batch" + to_string(sim.batchNum) + "_"
-		+ "Sim" + to_string(sim.simulation) + "_Land" + to_string(land.landNum) + "_Pop.txt";
+		+ "Sim" + to_string(sim.simulation) + "_Land" + to_string(land.landNum) + 
+		+"_Species" + to_string(pSpecies->getID()) + "_Pop.txt";
 
 	ofstream& popOfs = outPopOfs.at(pSpecies->getID());
 
@@ -1903,15 +1903,19 @@ bool Community::openOutGenesFile(species_id sp, const bool& isDiploid, const int
 
 	if (sim.batchMode) {
 		name = paramsSim->getDir(2)
-			+ "Batch" + to_string(sim.batchNum) + "_"
-			+ "Sim" + to_string(sim.simulation) + "_Land"
-			+ to_string(landNr) + "_Rep" + to_string(rep)
+			+ "Batch" + to_string(sim.batchNum)
+			+ "_Sim" + to_string(sim.simulation) 
+			+ "_Land" + to_string(landNr) 
+			+ "_Rep" + to_string(rep)
+			+ "_Species" + to_string(sp)
 			+ "_geneValues.txt";
 	}
 	else {
 		name = paramsSim->getDir(2)
-			+ "Sim" + to_string(sim.simulation) + "_Land"
-			+ to_string(landNr) + "_Rep" + to_string(rep)
+			+ "Sim" + to_string(sim.simulation)
+			+ "_Land" + to_string(landNr)
+			+ "_Rep" + to_string(rep)
+			+ "_Species" + to_string(sp)
 			+ "_geneValues.txt";
 	}
 
@@ -1983,13 +1987,18 @@ bool Community::openNeutralOutputFile(species_id sp, int landNr)
 
 	if (sim.batchMode) {
 		name = paramsSim->getDir(2)
-			+ "Batch" + to_string(sim.batchNum) + "_"
-			+ "Sim" + to_string(sim.simulation) + "_Land"
-			+ to_string(landNr)
+			+ "Batch" + to_string(sim.batchNum)
+			+ "_Sim" + to_string(sim.simulation) 
+			+ "_Land" + to_string(landNr) 
+			+ "_Species" + to_string(sp)
 			+ "_neutralGenetics.txt";
 	}
 	else {
-		name = paramsSim->getDir(2) + "Sim" + to_string(sim.simulation) + "_neutralGenetics.txt";
+		paramsSim->getDir(2)
+			+ "Sim" + to_string(sim.simulation)
+			+ "_Land" + to_string(landNr)
+			+ "_Species" + to_string(sp)
+			+ "_neutralGenetics.txt";
 	}
 	outWCFstatOfs.at(sp).open(name.c_str());
 	outWCFstatOfs.at(sp) << "Rep\tYear\tRepSeason\tnExtantPatches\tnIndividuals\tFstWC\tFisWC\tFitWC\tFstWH\tmeanAllelePerLocus\tmeanAllelePerLocusPatches\tmeanFixedLoci\tmeanFixedLociPatches\tmeanObHeterozygosity";
@@ -2064,14 +2073,20 @@ bool Community::openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, co
 
 	if (sim.batchMode) {
 		name = paramsSim->getDir(2)
-			+ "Batch" + to_string(sim.batchNum) + "_"
-			+ "Sim" + to_string(sim.simulation) + "_Land"
-			+ to_string(landNr) + "_Rep"
-			+ to_string(rep)
+			+ "Batch" + to_string(sim.batchNum)
+			+ "_Sim" + to_string(sim.simulation) 
+			+ "_Land" + to_string(landNr) 
+			+ "_Rep" + to_string(rep)
+			+ "_Species" + to_string(sp) +
 			+ "_pairwisePatchNeutralGenetics.txt";
 	}
 	else {
-		name = paramsSim->getDir(2) + "Sim" + to_string(sim.simulation) + "_Rep" + to_string(rep) + "_pairwisePatchNeutralGenetics.txt";
+		name = paramsSim->getDir(2)
+			+ "Sim" + to_string(sim.simulation)
+			+ "_Land" + to_string(landNr)
+			+ "_Rep" + to_string(rep)
+			+ "_Species" + to_string(sp) +
+			+"_pairwisePatchNeutralGenetics.txt";
 	}
 	outPairwiseFstOfs.at(sp).open(name.c_str());
 	outPairwiseFstOfs.at(sp) << "Year\tRepSeason\tpatchA\tpatchB\tFst";
