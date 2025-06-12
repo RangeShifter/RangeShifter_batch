@@ -346,7 +346,8 @@ void Patch::createOccupancy(int nbOutputRows) {
 
 void Patch::updateOccupancy(int whichRow) {
 	popStats ps = pPop->getStats();
-	occupancy[whichRow] = ps.nInds > 0 && ps.breeding;
+	if (ps.nInds > 0 && ps.breeding)
+		occupancy[whichRow]++;
 }
 
 int Patch::getOccupancy(int whichRow) {

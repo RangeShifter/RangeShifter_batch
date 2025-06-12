@@ -384,8 +384,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 		pComm->traitAndOccOutput(rep, yr, 0);
 		pComm->popAndRangeOutput(rep, yr, 0);
 
-		pComm->resetPopns();
-
 		// Reset the gradient optimum
 		for (auto& [sp, pSpecies] : simSpecies) {
 			if (pSpecies->usesGradient())
@@ -450,6 +448,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 		}
 	}
 
+	pComm->resetPopns();
 	pComm->closeGlobalOutputFiles(hasMultipleReplicates);
 	pComm->closeYearlyOutputFiles(); // might still be open if the simulation was stopped by the user
 
