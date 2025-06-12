@@ -260,6 +260,7 @@ Landscape::Landscape(const set<species_id>& speciesNames) {
 		connectMatrices.emplace(sp, nullptr);
 		patchChanges.emplace(sp, vector<patchChange>());
 		costsChanges.emplace(sp, vector<costChange>());
+		outOccupOfs.emplace(sp, ofstream());
 	}
 }
 
@@ -2706,6 +2707,66 @@ void Landscape::createOccupancy(species_id sp, int nbOutputRows) {
 	}
 }
 
+void Landscape::outOccupancy(Species* pSpecies) {
+
+	landParams ppLand = getLandParams();
+	simParams sim = paramsSim->getSim();
+	locn loc;
+	int nbRows = sim.years / pSpecies->getOutOccInt();
+	ofstream& occOfs = outOccupOfs.at(pSpecies->getID());
+
+	for (auto pPatch : patchesList.at(pSpecies->getID())) {
+		if (ppLand.usesPatches) {
+			occOfs << pPatch->getPatchNum();
+		}
+		else {
+			loc = pPatch->getCellLocn(0);
+			occOfs << loc.x << "\t" << loc.y;
+		}
+		for (int row = 0; row <= nbRows; row++) {
+			occOfs << "\t" << pPatch->getOccupancy(row) / (double)sim.reps;
+		}
+		occOfs << endl;
+	}
+}
+
+bool Landscape::outOccupancyHeaders(Species* pSpecies)
+{
+	string name;
+	simParams sim = paramsSim->getSim();
+	landParams ppLand = getLandParams();
+	int outIntOcc = pSpecies->getOutOccInt();
+	int nbOutputRows = (sim.years / outIntOcc) + 1;
+	species_id sp = pSpecies->getID();
+
+	name = paramsSim->getDir(2);
+	if (sim.batchMode) {
+		name += "Batch" + to_string(sim.batchNum) + "_";
+		name += "Sim" + to_string(sim.simulation) + "_Land" + to_string(ppLand.landNum);
+	}
+	else
+		name += "Sim" + to_string(sim.simulation);
+	name += "_Species" + to_string(pSpecies->getID()) + "_Occupancy.txt";
+
+	ofstream& occOfs = outOccupOfs.at(sp);
+	occOfs.open(name.c_str());
+	if (ppLand.usesPatches) {
+		occOfs << "PatchID";
+	}
+	else {
+		occOfs << "X\tY";
+	}
+	for (int i = 0; i < nbOutputRows; i++)
+		occOfs << "\t" << "Year_" << i * outIntOcc;
+	occOfs << endl;
+
+	return occOfs.is_open();
+}
+
+void Landscape::closeOccupancyOfs(species_id sp) {
+	if (outOccupOfs.at(sp).is_open()) outOccupOfs.at(sp).close();
+	outOccupOfs.at(sp).clear();
+}
 
 void Landscape::resetVisits() {
 	for (int y = dimY - 1; y >= 0; y--) {

@@ -301,6 +301,10 @@ public:
 
 	void createOccupancy(species_id sp, int nbOutputRows);
 
+	bool outOccupancyHeaders(Species* pSpecies);
+	void closeOccupancyOfs(species_id sp);
+	void outOccupancy(Species* pSpecies);
+
 	// Functions to handle input and output
 	int readLandscape(
 		int filenum,		// fileNum == 0 for (first) habitat file and optional patch file
@@ -358,6 +362,7 @@ private:
 	// indexed by [start patch seq num][end patch seq num]
 	map<species_id, int**> connectMatrices;
 	map<species_id, ofstream> outConnMatrices;
+	map<species_id, ofstream> outOccupOfs;
 
 	// global environmental stochasticity (epsilon)
 	float* epsGlobal;	// pointer to time-series	

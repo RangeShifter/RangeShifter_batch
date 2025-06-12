@@ -47,7 +47,6 @@ Community::Community(Landscape* pLand, speciesMap_t allSpecies) {
 			outPerLocusFstat.emplace(sp, ofstream());
 		}
 		if (pSpecies->doesOutputOccup()) {
-			outOccupOfs.emplace(sp, ofstream());
 			outSuitOfs.emplace(sp, ofstream());
 		}
 		if (pSpecies->doesOutputTraitRows())
@@ -1253,26 +1252,19 @@ void Community::outRange(species_id sp, int rep, int yr, int gen)
 	rangeOfs << endl;
 }
 
-void Community::closeOccupancyOfs(species_id sp) {
+void Community::closeOccSuitOfs(species_id sp) {
 	if (outSuitOfs.at(sp).is_open()) outSuitOfs.at(sp).close();
-	if (outOccupOfs.at(sp).is_open()) outOccupOfs.at(sp).close();
 	outSuitOfs.at(sp).clear();
-	outOccupOfs.at(sp).clear();
 }
 
 // Open occupancy file, write header record and set up occupancy array
-bool Community::outOccupancyHeaders(Species* pSpecies)
+bool Community::outOccSuitHeaders(Species* pSpecies)
 {
-	string name, nameI;
 	simParams sim = paramsSim->getSim();
 	landParams ppLand = pLandscape->getLandParams();
-	int outIntOcc = pSpecies->getOutOccInt();
-	int nbOutputRows = (sim.years / outIntOcc) + 1;
 	species_id sp = pSpecies->getID();
-	ofstream& suitOfs = outSuitOfs.at(sp);
-	ofstream& occOfs = outOccupOfs.at(sp);
 
-	name = paramsSim->getDir(2);
+	string name = paramsSim->getDir(2);
 	if (sim.batchMode) {
 		name += "Batch" + to_string(sim.batchNum) + "_";
 		name += "Sim" + to_string(sim.simulation) + "_Land" + to_string(ppLand.landNum);
@@ -1280,52 +1272,12 @@ bool Community::outOccupancyHeaders(Species* pSpecies)
 	else
 		name += "Sim" + to_string(sim.simulation);
 	name += "_Species" + to_string(pSpecies->getID()) + "_Occupancy_Stats.txt";
+	
+	ofstream& suitOfs = outSuitOfs.at(sp);
 	suitOfs.open(name.c_str());
 	suitOfs << "Year\tMean_OccupSuit\tStd_error" << endl;
 
-	name = paramsSim->getDir(2);
-	if (sim.batchMode) {
-		name += "Batch" + to_string(sim.batchNum) + "_";
-		name += "Sim" + to_string(sim.simulation) + "_Land" + to_string(ppLand.landNum);
-	}
-	else
-		name += "Sim" + to_string(sim.simulation);
-	name += "_Species" + to_string(pSpecies->getID()) + "_Occupancy.txt";
-	occOfs.open(name.c_str());
-	if (ppLand.usesPatches) {
-		occOfs << "PatchID";
-	}
-	else {
-		occOfs << "X\tY";
-	}
-	for (int i = 0; i < nbOutputRows; i++)
-		occOfs << "\t" << "Year_" << i * outIntOcc;
-	occOfs << endl;
-
-	return suitOfs.is_open() && occOfs.is_open();
-}
-
-void Community::outOccupancy(Species* pSpecies) {
-	landParams ppLand = pLandscape->getLandParams();
-	simParams sim = paramsSim->getSim();
-	locn loc;
-	int nbRows = sim.years / pSpecies->getOutOccInt();
-	ofstream& occOfs = outOccupOfs.at(pSpecies->getID());
-
-	vector<Population*>& popns = allPopns.at(pSpecies->getID());
-	for (auto pop : popns) {
-		if (ppLand.usesPatches) {
-			occOfs << pop->getPatch()->getPatchNum();
-		}
-		else {
-			loc = pop->getPatch()->getCellLocn(0);
-			occOfs << loc.x << "\t" << loc.y;
-		}
-		for (int row = 0; row <= nbRows; row++) {
-			occOfs << "\t" << pop->getPatch()->getOccupancy(row) / (double)sim.reps;
-		}
-		occOfs << endl;
-	}
+	return suitOfs.is_open();
 }
 
 void Community::outOccSuit(Species* pSpecies) {
@@ -2280,9 +2232,12 @@ bool Community::openOutputFiles(bool hasMultipleReplicates, const int landNum) {
 				filesOK = false;
 			}
 		}
-		if (pSpecies->doesOutputOccup() && hasMultipleReplicates)
-			if (!outOccupancyHeaders(pSpecies))
+		if (pSpecies->doesOutputOccup() && hasMultipleReplicates) {
+			if (!outOccSuitHeaders(pSpecies))
 				filesOK = false;
+			if (!pLandscape->outOccupancyHeaders(pSpecies))
+					filesOK = false;
+		}
 
 		if (pSpecies->doesOutputPop())
 			if (!outPopHeaders(pSpecies))
@@ -2326,8 +2281,10 @@ void Community::closeGlobalOutputFiles(bool hasMultipleReplicates) {
 			|| pSpecies->doesOutputWeirCockerham())
 			closeNeutralOutputOfs(sp);
 
-		if (hasMultipleReplicates && pSpecies->doesOutputOccup())
-			closeOccupancyOfs(sp);
+		if (hasMultipleReplicates && pSpecies->doesOutputOccup()) {
+			closeOccSuitOfs(sp);
+			pLandscape->closeOccupancyOfs(sp);
+		}
 	}
 }
 

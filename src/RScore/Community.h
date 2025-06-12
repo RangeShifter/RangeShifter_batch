@@ -114,9 +114,8 @@ public:
 	void closeYearlyOutputFiles();
 
 	// Open occupancy file, write header record and set up occupancy array
-	bool outOccupancyHeaders(Species* pSpecies);
-	void outOccupancy(Species* pSpecies);
-	void closeOccupancyOfs(species_id sp);
+	bool outOccSuitHeaders(Species* pSpecies);
+	void closeOccSuitOfs(species_id sp);
 	void outOccSuit(Species* pSpecies);
 
 	void popAndRangeOutput(int rep, int yr, int gen);
@@ -201,7 +200,6 @@ private:
 
 	map<species_id, ofstream> outPopOfs;
 	map<species_id, ofstream> outIndsOfs;
-	map<species_id, ofstream> outOccupOfs;
 	map<species_id, ofstream> outSuitOfs;
 	map<species_id, ofstream> outTraitsOfs;
 	map<species_id, ofstream> outRangeOfs;

@@ -442,7 +442,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 	if (hasMultipleReplicates) {
 		for (auto& [sp, pSpecies] : simSpecies) {
 			if (pSpecies->doesOutputOccup()) {
-				pComm->outOccupancy(pSpecies);
+				pLandscape->outOccupancy(pSpecies);
 				pComm->outOccSuit(pSpecies);
 			}
 		}
