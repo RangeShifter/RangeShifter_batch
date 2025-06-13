@@ -5984,6 +5984,7 @@ int ReadTransferKernels(speciesMap_t& simSpecies, landParams paramsLand) {
 			dem = pSpecies->getDemogrParams();
 			trfr = pSpecies->getTransferRules();
 
+			trfr.usesMovtProc = false;
 			trfr.twinKern = (inKernelType == 1);
 			trfr.distMort = (inDistMort == 1);
 			sexKernels = 2 * inStageDep + inSexDep;
@@ -6083,6 +6084,8 @@ void ReadTransferSMS(speciesMap_t& simSpecies, const landParams& paramsLand) {
 	Species* pSpecies = simSpecies.at(sp);
 	transferRules trfr = pSpecies->getTransferRules();
 
+	trfr.usesMovtProc = true;
+	trfr.moveType = 1;
 	trfr.indVar = (inIndVar == 1);
 	if (move.goalType == 2) { // dispersal bias
 		move.alphaDB = inAlphaDB;
@@ -6151,6 +6154,8 @@ int ReadTransferCRW(speciesMap_t& simSpecies, const landParams& paramsLand) {
 	Species* pSpecies = simSpecies.at(sp);
 	transferRules trfr = pSpecies->getTransferRules();
 	trfr.indVar = inIndVar != 0;
+	trfr.usesMovtProc = true;
+	trfr.moveType = 2;
 
 	ifsTransferFile >> move.stepLength >> move.rho;
 	ifsTransferFile >> inStraightenPath >> inSMconst >> move.stepMort;

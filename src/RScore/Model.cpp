@@ -626,7 +626,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 		initParams init = pSpecies->getInitParams();
 
 		if (ppLand.usesPatches) {
-			outPar << "No. PATCHES: \n" << pLandscape->getPatchCount(sp) - 1 << endl;
+			outPar << "No. PATCHES: \t" << pLandscape->getPatchCount(sp) - 1 << endl;
 		}
 
 		// Initial species distribution
@@ -1410,7 +1410,8 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 		outPar << endl << "GENETICS:" << endl;
 		set<TraitType> traitList = pSpecies->getTraitTypes();
 
-		if (pSpecies->isDiploid()) outPar << "DIPLOID" << endl; else outPar << "HAPLOID" << endl;
+		if (pSpecies->isDiploid()) outPar << "DIPLOID" << endl; 
+		else outPar << "HAPLOID" << endl;
 		outPar << "Genome size: " << pSpecies->getGenomeSize() << endl;
 		outPar << "Chromosome breaks : ";
 
@@ -1420,7 +1421,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 		outPar << "Recombination rate: " << pSpecies->getRecombinationRate() << endl;
 		outPar << "Traits modelled:  " << endl;
 		for (auto trait : traitList)
-			outPar << trait << endl;
+			outPar << to_string(trait) << endl;
 
 		outPar << endl << "OUTPUTS:" << endl;
 		outputParams out = pSpecies->getOutputParams();
