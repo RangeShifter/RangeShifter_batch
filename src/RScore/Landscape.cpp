@@ -1765,7 +1765,6 @@ int Landscape::applyCostChanges(const set<species_id>& whichSpecies, const int& 
 	// species must be specified because species for this simulation
 	// could be a subset of species in landscape object
 	for (const species_id sp : whichSpecies) {
-
 		int ncostchanges = getNbCostChanges(sp);
 		for (; iCostChg < ncostchanges; iCostChg++) {
 			costChange costChange = getCostChange(sp, iCostChg);
@@ -1773,9 +1772,9 @@ int Landscape::applyCostChanges(const set<species_id>& whichSpecies, const int& 
 			Cell* pCell = findCell(costChange.x, costChange.y);
 			if (pCell != nullptr) pCell->setCost(sp, costChange.newcost);
 		}
-		resetEffCosts();
-		return iCostChg;
 	}
+	resetEffCosts();
+	return iCostChg;
 }
 
 //---------------------------------------------------------------------------

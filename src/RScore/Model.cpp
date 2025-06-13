@@ -260,7 +260,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 					// index used after years loop to reset between replicates
 				}
 
-				pLandscape->applyCostChanges(speciesNames, chgNb, iCostChg);
+				iCostChg = pLandscape->applyCostChanges(speciesNames, chgNb, iCostChg);
 
 				if (chgNb < pLandscape->numLandChanges()) { // get next change
 					landChg = pLandscape->getLandChange(chgNb);
@@ -390,7 +390,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 				pSpecies->resetOptY();
 			pSpecies->resetRangeRestrictions(ppLand.dimX, ppLand.dimY);
 		}
-		const int lastChange = 666666;
+		constexpr int lastChange = 666666;
 		if (ppLand.usesPatches && ppLand.isDynamic && iPatchChg > 0) {
 			// reset landscape patches to original configuration
 			pLandscape->applyPatchChanges(speciesNames, lastChange, iPatchChg);
@@ -428,6 +428,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 			pLandscape->outPathsHeaders(rep, -999);
 #endif
 
+		pComm->resetPopns();
+
 	} // end of the replicates loop
 
 	if (ppLand.usesPatches) {
@@ -448,7 +450,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 		}
 	}
 
-	pComm->resetPopns();
 	pComm->closeGlobalOutputFiles(hasMultipleReplicates);
 	pComm->closeYearlyOutputFiles(); // might still be open if the simulation was stopped by the user
 
