@@ -320,7 +320,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 				if (gen == 0 && !ppLand.usesPatches) {
 					// Local extinction applied before reproduction 
 					// so nb juveniles can be reported
-					if (env.usesLocalExt) pComm->applyRandLocExt(env.locExtProb);
+					pComm->applyRandLocExt();
 					if (anyUsesGradient) pComm->applyLocalExtGrad();
 				}
 
@@ -515,7 +515,6 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 	settleSteps ssteps;
 	settleTraits settleDD;
 	simParams sim = paramsSim->getSim();
-	//envGradParams grad = pSpecies->getEnvGradient();
 
 	string name;
 	if (sim.batchMode)
@@ -544,7 +543,6 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 	outPar << "YEARS \t" << sim.years << endl;
 	if (ppLand.usesPatches) {
 		outPar << "PATCH-BASED MODEL" << endl;
-		outPar << "No. PATCHES: \n" << pLandscape->allPatchCount() - 1 << endl;
 	}
 	else
 		outPar << "CELL-BASED MODEL" << endl;
@@ -626,6 +624,10 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 		transferRules trfr = pSpecies->getTransferRules();
 		settleType sett = pSpecies->getSettle();
 		initParams init = pSpecies->getInitParams();
+
+		if (ppLand.usesPatches) {
+			outPar << "No. PATCHES: \n" << pLandscape->getPatchCount(sp) - 1 << endl;
+		}
 
 		// Initial species distribution
 		outPar << endl << "SPECIES DISTRIBUTION LOADED: \t";
@@ -816,8 +818,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 		}
 		else outPar << "no" << endl;
 		outPar << "LOCAL EXTINCTION PROBABILITY:\t";
-		if (env.usesLocalExt) outPar << env.locExtProb << endl;
-		else outPar << "0.0" << endl;
+		outPar << pSpecies->getLocalExtProb() << endl;
 
 		outPar << "REPRODUCTION:" << endl;
 		outPar << "TYPE: ";

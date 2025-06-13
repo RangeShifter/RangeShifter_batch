@@ -2716,8 +2716,12 @@ void Landscape::outOccupancy(Species* pSpecies) {
 	ofstream& occOfs = outOccupOfs.at(pSpecies->getID());
 
 	for (auto pPatch : patchesList.at(pSpecies->getID())) {
+		
+		int patchNum = pPatch->getPatchNum();
+		if (patchNum == 0) continue; // skip the matrix
+
 		if (ppLand.usesPatches) {
-			occOfs << pPatch->getPatchNum();
+			occOfs << patchNum;
 		}
 		else {
 			loc = pPatch->getCellLocn(0);

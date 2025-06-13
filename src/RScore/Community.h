@@ -89,7 +89,7 @@ public:
 		int ix
 	);
 	void applyLocalExtGrad();
-	void applyRandLocExt(const float& probExt);
+	void applyRandLocExt();
 	void scanUnsuitablePatches(Species* pSpecies);
 	void reproduction(int year);
 	void emigration();

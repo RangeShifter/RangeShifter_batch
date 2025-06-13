@@ -290,7 +290,7 @@ void Community::disableInactiveSpecies(int gen) {
 	}
 }
 
-void Community::applyRandLocExt(const float& probExt) {
+void Community::applyRandLocExt() {
 	for (auto& sp : activeSpecies) {
 		const float probExt = speciesMap.at(sp)->getLocalExtProb();
 		if (probExt == 0.0) continue;

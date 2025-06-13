@@ -157,10 +157,8 @@ struct envStochParams {
 	bool usesStoch; 
 	bool stochIsLocal;
 	bool inK; 
-	bool usesLocalExt;
 	float ac; 
 	float std;
-	float locExtProb;
 };
 
 class paramStoch {
