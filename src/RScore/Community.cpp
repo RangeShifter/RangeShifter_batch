@@ -355,18 +355,16 @@ void Community::dispersal(short landIx, short nextseason)
 {
 	simParams sim = paramsSim->getSim();
 
-	// initiate dispersal - all emigrants leave their natal community and join matrix community
+	// initiate dispersal - all emigrants leave their natal population and join matrix population
 	for (auto& sp : activeSpecies) {
 		for (auto pop : allPopns.at(sp)) {
 
 			for (int j = 0; j < pop->getStats().nInds; j++) {
 				disperser disp = pop->extractDisperser(j);
 				if (disp.isDispersing) { // disperser - has already been removed from natal population
-					short spID = pop->getSpecies()->getID();
-					auto it = matrixPops.find(spID);
-					if (it != matrixPops.end())
-						it->second->recruit(disp.pInd); // add to matrix population
-					else throw runtime_error("");
+					if (nextseason == 10 && sp == 3)
+						cout << "";
+					matrixPops.at(sp)->recruit(disp.pInd); // add to matrix population
 				}
 			}
 			// remove pointers to emigrants
