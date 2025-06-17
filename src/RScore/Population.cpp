@@ -983,34 +983,33 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 	settlePatch settle;
 	simParams sim = paramsSim->getSim();
 
-	int ninds = inds.size();
-	for (int i = 0; i < ninds; i++) {
+	for (auto& pInd : inds) {
 
 		if (trfr.usesMovtProc) {
 			// Resolve a single movement step
-			isDispersing = inds[i]->moveStep(pLandscape, landIx, sim.absorbing);
+			isDispersing = pInd->moveStep(pLandscape, landIx, sim.absorbing);
 		}
 		else {
 			// Resolve the (only) movement step
-			isDispersing = inds[i]->moveKernel(pLandscape, sim.absorbing);
+			isDispersing = pInd->moveKernel(pLandscape, sim.absorbing);
 		}
-		nbDispersers += isDispersing;
+		if (isDispersing) nbDispersers++;
 
 		// Record potential settlers to each patch
 		if (isDispersing
 			&& reptype > 0 // always settle if asexual 
-			&& inds[i]->getStatus() == waitSettlement // disperser has found a patch
+			&& pInd->getStatus() == waitSettlement // disperser has found a patch
 			) {
-			pCell = inds[i]->getLocn(1);
+			pCell = pInd->getLocn(1);
 			pPatch = pCell->getPatch(pSpecies->getID());
 			if (pPatch != nullptr) { // not no-data area
-				pPatch->incrPossSettler(inds[i]->getSex());
+				pPatch->incrPossSettler(pInd->getSex());
 			}
 		}
 	}
 
-	for (int i = 0; i < ninds; i++) {
-		ind = inds[i]->getStats();
+	for (auto& pInd : inds) {
+		ind = pInd->getStats();
 
 		short stgId = settletype.stgDep ? ind.stage : 0;
 		short sexId = settletype.sexDep ? ind.sex : 0;
@@ -1018,7 +1017,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 
 		// Resolve candidate settlers
 		if (ind.status == waitSettlement) { // awaiting settlement
-			pCell = inds[i]->getLocn(1);
+			pCell = pInd->getLocn(1);
 			if (pCell == nullptr) {
 				// this condition can occur in a patch-based model at the time of a dynamic landscape
 				// change when there is a range restriction in place, since a patch can straddle the
@@ -1033,7 +1032,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 				mateOK = sett.findMate ? isMatePresent(pCell, oppositeSex) : true;
 				
 				densdepOK = false;
-				settle = inds[i]->getSettPatch();
+				settle = pInd->getSettPatch();
 
 				if (sett.densDep) {
 					pPatch = pCell->getPatch(pSpecies->getID());
@@ -1056,7 +1055,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 							}
 							if (localK > 0.0) {
 
-								if (settletype.indVar) settDensDep = inds[i]->getIndSettTraits();
+								if (settletype.indVar) settDensDep = pInd->getIndSettTraits();
 								else settDensDep = pSpecies->getSpSettTraits(ind.stage, ind.sex);
 
 								settProb = settDensDep.s0 / 
@@ -1071,7 +1070,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 								}
 								settle.pSettPatch = pPatch;
 							}
-							inds[i]->setSettPatch(settle);
+							pInd->setSettPatch(settle);
 						}
 						else if (settle.settleStatus == 2) { // previously allowed to settle
 							densdepOK = true;
@@ -1081,7 +1080,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 					densdepOK = true;
 					settle.settleStatus = 2;
 					settle.pSettPatch = pPatch;
-					inds[i]->setSettPatch(settle);
+					pInd->setSettPatch(settle);
 				}
 
 				// Update individual status
@@ -1092,7 +1091,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 					if (trfr.usesMovtProc) {
 						ind.status = dispersing; // continue dispersing, 
 						// unless maximum steps has been exceeded
-						pathSteps steps = inds[i]->getSteps();
+						pathSteps steps = pInd->getSteps();
 						settleSteps settsteps = pSpecies->getSteps(ind.stage, ind.sex);
 						if (steps.year >= settsteps.maxStepsYr) {
 							ind.status = waitNextDispersal;
@@ -1108,7 +1107,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 				}
 			}
 
-			inds[i]->setStatus(ind.status);
+			pInd->setStatus(ind.status);
 		}
 
 #if RS_RCPP
@@ -1125,7 +1124,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 			&& sett.goToNeighbourLocn 
 			&& (ind.status == waitNextDispersal || ind.status == diedInTransfer)) {
 
-			pCell = inds[i]->getLocn(1);
+			pCell = pInd->getLocn(1);
 			newloc = pCell->getLocn();
 			vector <Cell*> neighbourCells;
 
@@ -1151,7 +1150,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 
 							// Check whether patch is suitable
 							if (!pPatch->isMatrix()
-								&& pPatch != inds[i]->getNatalPatch()// or natal patch
+								&& pPatch != pInd->getNatalPatch()// or natal patch
 								&& pPatch->isSuitable()) {
 
 								// Check mate reqt if applicable
@@ -1170,7 +1169,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 			if (neighbourCells.size() > 0) {
 				vector<Cell*> destCell;
 				sample(neighbourCells.begin(), neighbourCells.end(), std::back_inserter(destCell), 1, pRandom->getRNG());
-				inds[i]->moveTo(destCell[0]);
+				pInd->moveTo(destCell[0]);
 			}
 		}
 
