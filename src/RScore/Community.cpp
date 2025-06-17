@@ -376,75 +376,68 @@ void Community::dispersal(short landIx, short nextseason)
 
 	// dispersal is undertaken by all individuals now in the matrix patch
 	// (even if not physically in the matrix)
-	int ndispersers = 0;
-	do {
-		// Reset possible settlers for all patches before transfer
-		for (auto& sp : activeSpecies) {
+	for (auto& sp : activeSpecies) {
+		int ndispersers = 0;
+		do {
+			// Reset possible settlers for all patches before transfer
 			matrixPops.at(sp)->getPatch()->resetPossSettlers();
-		}
-		for (auto& sp : activeSpecies) {
 			for (auto pop : allPopns.at(sp)) {
 				pop->getPatch()->resetPossSettlers();
 			}
-		}
 
-		// Transfer takes place in the matrix
-		for (auto& sp : activeSpecies) {
+			// Transfer takes place in the matrix
 			ndispersers = matrixPops.at(sp)->transfer(pLandscape, landIx, nextseason);
-		}
-		completeDispersal(pLandscape);
+			completeDispersal(pLandscape, sp);
 
-	} while (ndispersers > 0);
+		} while (ndispersers > 0);
+	}
 }
 
 // Remove emigrants from patch 0 (matrix) and transfer to the population
 // in which their destination co-ordinates fall
 // This function is executed for matrix patch populations only
-void Community::completeDispersal(Landscape* pLandscape)
+void Community::completeDispersal(Landscape* pLandscape, species_id sp)
 {
 	Population* pPop;
 	Patch* pPrevPatch;
 	Patch* pNewPatch;
 	Cell* pPrevCell;
 
-	for (auto& sp : activeSpecies) {
+	Population* mtxPop = matrixPops.at(sp);
+	int popsize = mtxPop->getNInds();
+	for (int j = 0; j < popsize; j++) {
 
-		Population* mtxPop = matrixPops.at(sp);
-		int popsize = mtxPop->getNInds();
-		for (int j = 0; j < popsize; j++) {
+		disperser settler = mtxPop->extractSettler(j);
+		if (settler.isSettling) {
+			// settler - has already been removed from matrix population
+			// find new patch
+			pNewPatch = settler.pCell->getPatch(sp);
 
-			disperser settler = mtxPop->extractSettler(j);
-			if (settler.isSettling) {
-				// settler - has already been removed from matrix population
-				// find new patch
-				pNewPatch = settler.pCell->getPatch(sp);
+			// find population within the patch (if there is one)
+			pPop = pNewPatch->getPop();
 
-				// find population within the patch (if there is one)
-				pPop = pNewPatch->getPop();
+			if (pPop == nullptr) { // settler is the first in a previously uninhabited patch
+				// create a new population in the corresponding sub-community
+				pPop = new Population(mtxPop->getSpecies(), pNewPatch, 0, pLandscape->getLandParams().resol);
+				allPopns.at(sp).push_back(pPop); // add new pop to community list
+			}
 
-				if (pPop == nullptr) { // settler is the first in a previously uninhabited patch
-					// create a new population in the corresponding sub-community
-					pPop = new Population(mtxPop->getSpecies(), pNewPatch, 0, pLandscape->getLandParams().resol);
-					allPopns.at(sp).push_back(pPop); // add new pop to community list
-				}
+			pPop->recruit(settler.pInd);
 
-				pPop->recruit(settler.pInd);
-
-				if (mtxPop->getSpecies()->doesOutputConnect()) { // increment connectivity totals
-					int newpatch = pNewPatch->getSeqNum();
-					pPrevCell = settler.pInd->getLocn(0); // previous cell
-					Patch* pPatch = pPrevCell->getPatch(sp);
-					if (pPatch != nullptr) {
-						pPrevPatch = pPatch;
-						int prevpatch = pPrevPatch->getSeqNum();
-						pLandscape->incrConnectMatrix(sp, prevpatch, newpatch);
-					}
+			if (mtxPop->getSpecies()->doesOutputConnect()) { // increment connectivity totals
+				int newpatch = pNewPatch->getSeqNum();
+				pPrevCell = settler.pInd->getLocn(0); // previous cell
+				Patch* pPatch = pPrevCell->getPatch(sp);
+				if (pPatch != nullptr) {
+					pPrevPatch = pPatch;
+					int prevpatch = pPrevPatch->getSeqNum();
+					pLandscape->incrConnectMatrix(sp, prevpatch, newpatch);
 				}
 			}
 		}
-		// remove pointers in the matrix popn to settlers
-		mtxPop->clean();
 	}
+	// remove pointers in the matrix popn to settlers
+	mtxPop->clean();
 }
 
 // initialise a specified individual
