@@ -355,8 +355,9 @@ void Community::dispersal(short landIx, short nextseason)
 {
 	simParams sim = paramsSim->getSim();
 
-	// initiate dispersal - all emigrants leave their natal population and join matrix population
 	for (auto& sp : activeSpecies) {
+
+		// initiate dispersal - all emigrants leave their natal population and join matrix population
 		for (auto pop : allPopns.at(sp)) {
 
 			for (int j = 0; j < pop->getStats().nInds; j++) {
@@ -370,11 +371,9 @@ void Community::dispersal(short landIx, short nextseason)
 			// remove pointers to emigrants
 			pop->clean();
 		}
-	}
 
 	// dispersal is undertaken by all individuals now in the matrix patch
 	// (even if not physically in the matrix)
-	for (auto& sp : activeSpecies) {
 		int ndispersers = 0;
 		do {
 			// Reset possible settlers for all patches before transfer
