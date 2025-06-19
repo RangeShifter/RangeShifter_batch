@@ -1020,9 +1020,9 @@ bool Individual::moveStep(Landscape* pLandscape,
 			&& path->total >= settsteps.minSteps) {
 			if (pPatch != pNatalPatch
 				&& pPatch->isSuitable()) {
-				status = waitSettlement;
-			}
-		}
+						status = waitSettlement;
+					}
+				}
 		if (status != waitSettlement 
 			&& status != diedInTransfer) { // no suitable patch but not dead yet
 			if (path->year >= settsteps.maxStepsYr) {

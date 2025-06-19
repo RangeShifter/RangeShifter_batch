@@ -86,7 +86,7 @@ public:
 	void resetCost();
 	array3x3f getEffCosts(species_id sp);
 	void setEffCosts(species_id sp, array3x3f effCostsNeighbours);
-	void resetEffCosts(); // Reset the effective cost, but not the cost, of the cell
+	void resetEffCosts(species_id sp); // Reset the effective cost, but not the cost, of the cell
 	void resetVisits();
 	void incrVisits(species_id sp);
 	unsigned long int getVisits(species_id sp);

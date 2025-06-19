@@ -766,13 +766,9 @@ Patch* Landscape::addNewPatch(species_id sp, int seqnum, int num)
 	return patchesList.at(sp)[patchesList.at(sp).size() - 1];
 }
 
-void Landscape::resetPatchLimits() {
-	for (auto& [sp, patches] : patchesList) {
-		int npatches = static_cast<int>(patches.size());
-		for (int i = 0; i < npatches; i++) {
-			patches[i]->resetLimits();
-		}
-	}
+void Landscape::resetPatchLimits(species_id sp) {
+	for (auto& pPatch : patchesList.at(sp))
+			pPatch->resetLimits();
 }
 
 void Landscape::addNewCellToLand(int x, int y, float q) {
@@ -1068,11 +1064,11 @@ void Landscape::resetCosts() {
 	}
 }
 
-void Landscape::resetEffCosts() {
+void Landscape::resetEffCosts(species_id sp) {
 	for (int y = dimY - 1; y >= 0; y--) {
 		for (int x = 0; x < dimX; x++) {
 			if (cells[y][x] != nullptr) {
-				cells[y][x]->resetEffCosts();
+				cells[y][x]->resetEffCosts(sp);
 			}
 		}
 	}
@@ -1649,37 +1645,34 @@ patchChange Landscape::getPatchChange(species_id sp, int i) {
 	return patchChanges.at(sp)[i];
 }
 
-int Landscape::applyPatchChanges(const set<species_id>& whichSpecies, const int& landChgNb, int iPatchChg) {
+void Landscape::applyPatchChanges(species_id sp, const int& landChgNb, int& iPatchChg) {
 	// species must be specified because species for this simulation
 	// could be a subset of species in landscape object
 	Patch* pPatch;
-	for (const species_id sp : whichSpecies) {
 
-		int nbPatchChanges = getNbPatchChanges(sp);
+	int nbPatchChanges = getNbPatchChanges(sp);
 
-		for (; iPatchChg < nbPatchChanges; iPatchChg++) {
+	for (; iPatchChg < nbPatchChanges; iPatchChg++) { // advance through list of changes until...
 
-			patchChange pchChange = getPatchChange(sp, iPatchChg);
-			if (pchChange.chgNb > landChgNb) break;
+		patchChange pchChange = getPatchChange(sp, iPatchChg);
+		if (pchChange.chgNb > landChgNb) break; // ...until we have processed all changes for this year
 
-			// Move cell from original patch to new patch
-			Cell* pCell = findCell(pchChange.x, pchChange.y);
-			if (pchChange.oldPatch != 0) { // not matrix
-				pPatch = findPatch(sp, pchChange.oldPatch);
-				pPatch->removeCell(pCell);
-			}
-			if (pchChange.newPatch == 0) { // matrix
-				pPatch = nullptr;
-			}
-			else {
-				pPatch = findPatch(sp, pchChange.newPatch);
-				pPatch->addCell(pCell, pchChange.x, pchChange.y);
-			}
-			pCell->setPatch(sp, pPatch);
+		// Move cell from original patch to new patch
+		Cell* pCell = findCell(pchChange.x, pchChange.y);
+		if (pchChange.oldPatch != 0) { // not matrix
+			pPatch = findPatch(sp, pchChange.oldPatch);
+			pPatch->removeCell(pCell);
 		}
+		if (pchChange.newPatch == 0) { // matrix
+			pPatch = nullptr;
+		}
+		else {
+			pPatch = findPatch(sp, pchChange.newPatch);
+			pPatch->addCell(pCell, pchChange.x, pchChange.y);
+		}
+		pCell->setPatch(sp, pPatch);
 	}
-	resetPatchLimits();
-	return iPatchChg;
+	resetPatchLimits(sp);
 }
 
 // Create & initialise costs change matrix
@@ -1761,20 +1754,17 @@ costChange Landscape::getCostChange(species_id sp, int i) {
 	return costsChanges.at(sp)[i];
 }
 
-int Landscape::applyCostChanges(const set<species_id>& whichSpecies, const int& landChgNb, int iCostChg) {
+void Landscape::applyCostChanges(species_id sp, const int& landChgNb, int& iCostChg) {
 	// species must be specified because species for this simulation
 	// could be a subset of species in landscape object
-	for (const species_id sp : whichSpecies) {
-		int ncostchanges = getNbCostChanges(sp);
-		for (; iCostChg < ncostchanges; iCostChg++) {
-			costChange costChange = getCostChange(sp, iCostChg);
-			if (costChange.chgnum > landChgNb) break;
-			Cell* pCell = findCell(costChange.x, costChange.y);
-			if (pCell != nullptr) pCell->setCost(sp, costChange.newcost);
-		}
+	int ncostchanges = getNbCostChanges(sp);
+	for (; iCostChg < ncostchanges; iCostChg++) {
+		costChange costChange = getCostChange(sp, iCostChg);
+		if (costChange.chgnum > landChgNb) break;
+		Cell* pCell = findCell(costChange.x, costChange.y);
+		if (pCell != nullptr) pCell->setCost(sp, costChange.newcost);
 	}
-	resetEffCosts();
-	return iCostChg;
+	resetEffCosts(sp);
 }
 
 //---------------------------------------------------------------------------

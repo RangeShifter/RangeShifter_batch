@@ -210,7 +210,7 @@ public:
 	void allocatePatches(const speciesMap_t& allSpecies); // create patches for a cell-based landscape
 	Patch* addNewPatch(species_id id, int num);
 	Patch* addNewPatch(species_id id, int seqnum, int num);
-	void resetPatchLimits();
+	void resetPatchLimits(species_id sp);
 	void addNewCellToLand(int x, int y, float habQual);
 	void addNewCellToLand(int x, int y, int habType);
 	void addCellToLand(Cell* pCell);
@@ -242,7 +242,7 @@ public:
 
 	// SMS costs
 	void resetCosts();
-	void resetEffCosts();
+	void resetEffCosts(species_id sp);
 
 	// Dynamic changes
 	void setDynamicLand(bool isDynamic);
@@ -269,13 +269,13 @@ public:
 	void recordPatchChanges(int landIx);
 	int getNbPatchChanges(species_id sp);
 	patchChange getPatchChange(species_id sp, int changeIx);
-	int applyPatchChanges(const set<species_id>& whichSpecies, const int& landChgNb, int iPatchChg);
+	void applyPatchChanges(species_id sp, const int& landChgNb, int& iPatchChg);
 	void createCostsChgMatrix();
 	void resetCostChanges();
 	void recordCostChanges(int landIx);
 	int getNbCostChanges(species_id sp);
 	costChange getCostChange(species_id sp, int i);
-	int applyCostChanges(const set<species_id>& whichSpecies, const int& landChgNb, int iCostChg);
+	void applyCostChanges(species_id sp, const int& landChgNb, int& iCostChg);
 
 	// Species distributions
 	int newDistribution(species_id sp, string distFileName);

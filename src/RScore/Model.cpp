@@ -82,8 +82,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 			pRandom->fixNewSeed(rep);
 		}
 
-		int iPatchChg = 0; // track outside year loop to reset between replicates
-		int iCostChg = 0;
+		map<species_id, int> patchChgIndices; // track outside year loop to reset between replicates
+		map<species_id, int> costChgIndices;
+		for (auto& sp : speciesNames) {
+			patchChgIndices.emplace(sp, 0);
+			costChgIndices.emplace(sp, 0);
+		}
 		
 		// Create and select sampled patches for artifical landscapes
 		if (ppLand.isArtificial) { // then need to initialise for every replicate
@@ -256,11 +260,12 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 				for (auto& [sp, updateK] : mustUpdateK) updateK = true;
 
 				if (ppLand.usesPatches) {
-					iPatchChg = pLandscape->applyPatchChanges(speciesNames, chgNb, iPatchChg);
+					for (auto& sp : speciesNames)
+						pLandscape->applyPatchChanges(sp, chgNb, patchChgIndices.at(sp));
 					// index used after years loop to reset between replicates
 				}
-
-				iCostChg = pLandscape->applyCostChanges(speciesNames, chgNb, iCostChg);
+				for (auto& sp : speciesNames)
+					pLandscape->applyCostChanges(sp, chgNb, costChgIndices.at(sp));
 
 				if (chgNb < pLandscape->numLandChanges()) { // get next change
 					landChg = pLandscape->getLandChange(chgNb);
@@ -385,23 +390,24 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 		pComm->popAndRangeOutput(rep, yr, 0);
 
 		// Reset the gradient optimum
+		constexpr int lastChange = 666666;
 		for (auto& [sp, pSpecies] : simSpecies) {
 			if (pSpecies->usesGradient())
 				pSpecies->resetOptY();
 			pSpecies->resetRangeRestrictions(ppLand.dimX, ppLand.dimY);
-		}
-		constexpr int lastChange = 666666;
-		if (ppLand.usesPatches && ppLand.isDynamic && iPatchChg > 0) {
-			// reset landscape patches to original configuration
-			pLandscape->applyPatchChanges(speciesNames, lastChange, iPatchChg);
+
+			if (ppLand.usesPatches && ppLand.isDynamic && patchChgIndices.at(sp) > 0) {
+				// reset landscape patches to original configuration
+				pLandscape->applyPatchChanges(sp, lastChange, patchChgIndices.at(sp));
+			}
 		}
 		if (ppLand.isDynamic) {
 			for (auto& [sp, pSpecies] : simSpecies) {
 				transferRules trfr = pSpecies->getTransferRules();
 				if (trfr.usesMovtProc && trfr.moveType == 1) { // SMS
-					if (iCostChg > 0) {
+					if (costChgIndices.at(sp) > 0) {
 						// reset landscape costs to original configuration
-						pLandscape->applyCostChanges(speciesNames, lastChange, iCostChg);
+						pLandscape->applyCostChanges(sp, lastChange, costChgIndices.at(sp));
 					}
 					if (!trfr.usesCosts) pLandscape->resetCosts(); // in case habitats have changed
 				}

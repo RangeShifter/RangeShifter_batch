@@ -148,8 +148,8 @@ void Cell::setCost(species_id sp, int c) {
 
 // Reset the cost and the effective cost of the cell
 void Cell::resetCost() {
-	resetEffCosts();
 	for (auto& [sp, sms] : smsData) {
+		resetEffCosts(sp);
 		if (sms != nullptr) {
 			delete sms;
 		}
@@ -179,13 +179,12 @@ void Cell::setEffCosts(species_id sp, array3x3f a) {
 }
 
 // Reset the effective cost, but not the cost, of the cell
-void Cell::resetEffCosts() {
-	for (auto& [sp, sms] : smsData) {
-		if (sms != nullptr) {
-			if (sms->effcosts != nullptr) {
-				delete sms->effcosts;
-				sms->effcosts = nullptr;
-			}
+void Cell::resetEffCosts(species_id sp) {
+	auto sms = smsData.at(sp);
+	if (sms != nullptr) {
+		if (sms->effcosts != nullptr) {
+			delete sms->effcosts;
+			sms->effcosts = nullptr;
 		}
 	}
 }
