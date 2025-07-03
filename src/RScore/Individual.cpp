@@ -211,6 +211,7 @@ void Individual::inheritGenes(const Individual* mother) {
 			if (newTrait->getMutationRate() > 0 && pSpecies->areMutationsOn())
 				newTrait->mutate();
 		}
+
 		if (trait == GENETIC_LOAD1 || trait == GENETIC_LOAD2 || trait == GENETIC_LOAD3 || trait == GENETIC_LOAD4 || trait == GENETIC_LOAD5)
 			geneticFitness *= newTrait->express();
 
@@ -231,6 +232,7 @@ void Individual::setUpGenes(int resol) {
 		this->spTraitTable.emplace(traitType, traitFactory.Create(traitType, spTrait));
 	}
 	expressDispersalPhenotypes(resol);
+	expressGeneticLoad();
 }
 
 void Individual::expressDispersalPhenotypes(int resol) {
@@ -241,24 +243,29 @@ void Individual::expressDispersalPhenotypes(int resol) {
 	const settleRules settRules = pSpecies->getSettRules(stage, sex);
 
 	// record phenotypic traits
-	if (emig.indVar)
-		this->expressEmigTraits(emig.sexDep, emig.densDep);
-	if (trfr.indVar)
-		this->expressTransferTraits(trfr, resol);
-	if (sett.indVar)
-		this->expressSettlementTraits(sett.sexDep, settRules.densDep);
+	if (emig.indVar) expressEmigTraits(emig.sexDep, emig.densDep);
+	if (trfr.indVar) expressTransferTraits(trfr, resol);
+	if (sett.indVar) expressSettlementTraits(sett.sexDep, settRules.densDep);
+}
+
+// Set the fitness attribute of individuals
+// Only called at initialisation, otherwise probably faster to compute directly during inheritance
+void Individual::expressGeneticLoad() {
+	const int nbGenLoadTraits = pSpecies->getNbGenLoadTraits();
+	const vector<TraitType> whichTrait = { GENETIC_LOAD1 , GENETIC_LOAD2, GENETIC_LOAD3, GENETIC_LOAD4, GENETIC_LOAD5 };
+	for (int i = 0; i < nbGenLoadTraits; i++) {
+		if (spTraitTable.contains(whichTrait[i]))
+			geneticFitness *= getTrait(whichTrait[i])->express();
+	}
 }
 
 void Individual::expressTransferTraits(transferRules trfr, int resol) {
 	if (trfr.usesMovtProc) {
-		if (trfr.moveType == 1) {
+		if (trfr.moveType == 1) 
 			expressSMSTraits();
-		}
-		else
-			expressCRWTraits();
+		else expressCRWTraits();
 	}
-	else
-		expressKernelTraits(trfr.sexDep, trfr.twinKern, resol);
+	else expressKernelTraits(trfr.sexDep, trfr.twinKern, resol);
 }
 
 void Individual::expressSettlementTraits(bool sexDep, bool densDep) {
@@ -1016,13 +1023,14 @@ bool Individual::moveStep(Landscape* pLandscape,
 		} // end of switch (trfr.moveType)
 
 		// Update individual status
-		if (pPatch != nullptr  // not no-data area or matrix
+		if (isDispersing 
+			&& pPatch != nullptr  // not no-data area or matrix
 			&& path->total >= settsteps.minSteps) {
 			if (pPatch != pNatalPatch
 				&& pPatch->isSuitable()) {
-						status = waitSettlement;
-					}
-				}
+				status = waitSettlement;
+			}
+		}
 		if (status != waitSettlement 
 			&& status != diedInTransfer) { // no suitable patch but not dead yet
 			if (path->year >= settsteps.maxStepsYr) {
@@ -1049,7 +1057,7 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 	array3x3d neighbourWeights; // to hold weights/costs/probs of moving to neighbouring cells
 	array3x3d goalBiasWeights;	// to hold weights for moving towards a goal location
 	array3x3f habDepWeights;	// to hold weights for habitat (includes percep range)
-	int newX = 0, newY = 0;
+	int newX = -9, newY = 9;
 	Cell* pCell;
 	Cell* pNewCell = NULL;
 	double sum_nbrs = 0.0;
@@ -1203,14 +1211,19 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 			if (!pSpecies->isWithinLimits(newX, newY)) {
 				pNewCell = nullptr;
 			}
-			pNewCell = pLand->findCell(newX, newY);
+			else {
+				pNewCell = pLand->findCell(newX, newY); // would also return 0 if outside boundary
+			}
 		}
 
 	} while (!absorbing 
 		&& pNewCell == nullptr 
 		&& loopsteps < maxLoopSteps);
 
-	if (loopsteps >= maxLoopSteps || pNewCell == nullptr) {
+	if (loopsteps >= maxLoopSteps 
+		|| pNewCell == nullptr
+		|| (newX == -9 || newY == -9)) {
+
 		// unable to make a move or crossed absorbing boundary
 		// flag individual to die
 		move.dist = -123.0;
@@ -1641,7 +1654,6 @@ void Individual::triggerMutations(Species* pSp) {
 			|| trType == GENETIC_LOAD5)
 			geneticFitness *= indTrait->express();
 	}
-	this->expressDispersalPhenotypes(1);
 }
 
 // Shorthand function to edit a genotype with custom values

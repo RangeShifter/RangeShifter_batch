@@ -543,12 +543,12 @@ void testGenetics() {
 			sex_t::NA,
 			createTestGenePositions(genomeSz),
 			ExpressionType::ADDITIVE,
-			DistributionType::UNIFORM,
-			distParams,
+			DistributionType::UNIFORM, distParams,
 			DistributionType::NONE, distParams, // no dominance, not used
 			isInherited,
 			0.0, // no mutations
 			DistributionType::UNIFORM, distParams, // ignored
+			DistributionType::NONE, distParams, // no dominance, not used
 			isDiploid ? 2 : 1,
 			false
 		);
@@ -605,10 +605,11 @@ void testGenetics() {
 				createTestGenePositions(genomeSz),
 				ExpressionType::MULTIPLICATIVE,
 				DistributionType::NONE, placeholderParams, // not used for genetic load
-				DistributionType::NORMAL, dominanceParams,
+				DistributionType::NONE, dominanceParams,
 				true,
 				1.0, // every site mutates
 				DistributionType::GAMMA, mutationParams,
+				DistributionType::NORMAL, dominanceParams,
 				isDiploid ? 2 : 1,
 				false
 			);
@@ -646,10 +647,11 @@ void testGenetics() {
 				createTestGenePositions(genomeSz),
 				ExpressionType::MULTIPLICATIVE,
 				DistributionType::NONE, placeholderParams, // not used for genetic load
-				DistributionType::NORMAL, placeholderParams, // doesn't matter for this test
+				DistributionType::NONE, placeholderParams, // doesn't matter for this test
 				true,
 				1.0, // every site mutates
 				DistributionType::NORMAL, mutationParams,
+				DistributionType::NORMAL, placeholderParams, // doesn't matter for this test
 				isDiploid ? 2 : 1,
 				false
 			);
@@ -801,6 +803,7 @@ void testIndividual() {
 			true, // isInherited
 			maleMutationRate, // does not mutate
 			DistributionType::UNIFORM, mutationParams, // not used
+			DistributionType::NONE, initParams, // no dominance, params are ignored
 			isDiploid ? 2 : 1,
 			false
 		);
@@ -817,6 +820,7 @@ void testIndividual() {
 			true, // isInherited
 			femaleMutationRate, // does mutate
 			DistributionType::UNIFORM, mutationParams, // not used
+			DistributionType::NONE, initParams,
 			isDiploid ? 2 : 1,
 			false
 		);
@@ -882,6 +886,7 @@ void testIndividual() {
 			true, // isInherited
 			0.0, // no mutation
 			DistributionType::UNIFORM, mutationParams, // not used
+			DistributionType::NONE, initParams, // no dominance, params are ignored
 			2, // diploid
 			false
 		);
@@ -944,13 +949,15 @@ void testIndividual() {
 			set<int>{ 0 }, // only one locus
 			ExpressionType::MULTIPLICATIVE,
 			DistributionType::NONE, initParams,
-			DistributionType::UNIFORM, domParams, // no dominance, params are ignored
+			DistributionType::UNIFORM, domParams,
 			true, // isInherited
 			1.0, // will mutate
 			DistributionType::UNIFORM, mutationParams, // lethal mutation
+			DistributionType::UNIFORM, domParams,
 			2, // diploid
 			false
 		);
+		
 		pSpecies->addTrait(TraitType::GENETIC_LOAD1, *spTr);
 
 		Individual ind = Individual(pSpecies, pCell, pPatch, 0, 0, 0, 0.0, false, 0);
@@ -967,7 +974,7 @@ void testIndividual() {
 		assert(!ind.isViable());
 	}
 
-	// A largely dominant alleles overrides the expression of its homologue
+	// A largely dominant allele overrides the expression of its homologue
 	{
 		Patch* pPatch = new Patch(0, 0, spID);
 		Cell* pCell = new Cell(0, 0, 0, spID);
@@ -983,22 +990,23 @@ void testIndividual() {
 			set<int>{}, "none", set<int>{}, 0 // no output so no sampling
 		);
 
-		// Create species trait
+		// Create template species trait
 		const map<GenParamType, float> distParams{
 			pair<GenParamType, float>{GenParamType::MIN, 0.0},
 			pair<GenParamType, float>{GenParamType::MAX, 0.0}
 		};
-
+		// Pretty empty, actual values are set below
 		SpeciesTrait* spTr = new SpeciesTrait(
 			TraitType::GENETIC_LOAD1,
 			sex_t::NA,
 			set<int>{ 0 }, // only one locus
 			ExpressionType::MULTIPLICATIVE,
 			DistributionType::NONE, distParams,
-			DistributionType::UNIFORM, distParams, // no dominance, params are ignored
+			DistributionType::UNIFORM, distParams,
 			true, // isInherited
 			0.0, // no mutation
-			DistributionType::UNIFORM, distParams, // lethal mutation
+			DistributionType::UNIFORM, distParams,
+			DistributionType::UNIFORM, distParams,
 			2, // diploid
 			false
 		);
@@ -1080,6 +1088,7 @@ void testIndividual() {
 				true, // isInherited
 				mutationRate, // does not mutate
 				DistributionType::UNIFORM, distParams, // not used
+				DistributionType::NONE, distParams, // no dominance, params are ignored
 				isDiploid ? 2 : 1,
 				false
 			);
@@ -1093,6 +1102,7 @@ void testIndividual() {
 				true, // isInherited
 				mutationRate, // does not mutate
 				DistributionType::UNIFORM, distParams, // not used
+				DistributionType::NONE, distParams,
 				isDiploid ? 2 : 1,
 				false
 			);
@@ -1106,6 +1116,7 @@ void testIndividual() {
 				true, // isInherited
 				mutationRate, // does not mutate
 				DistributionType::UNIFORM, distParams, // not used
+				DistributionType::NONE, distParams, // no dominance, params are ignored
 				isDiploid ? 2 : 1,
 				false
 			);
@@ -1119,6 +1130,7 @@ void testIndividual() {
 				true, // isInherited
 				mutationRate, // does not mutate
 				DistributionType::UNIFORM, distParams, // not used
+				DistributionType::NONE, distParams, // no dominance, params are ignored
 				isDiploid ? 2 : 1,
 				false
 			);
@@ -1195,6 +1207,7 @@ void testIndividual() {
 				true, // isInherited
 				mutationRate, // does not mutate
 				DistributionType::UNIFORM, distParams, // not used
+				DistributionType::NONE, distParams, // no dominance, params are ignored
 				isDiploid ? 2 : 1,
 				false
 			);
@@ -1208,6 +1221,7 @@ void testIndividual() {
 				true, // isInherited
 				mutationRate, // does not mutate
 				DistributionType::UNIFORM, distParams, // not used
+				DistributionType::NONE, distParams, // no dominance, params are ignored
 				isDiploid ? 2 : 1,
 				false
 			);
@@ -1278,6 +1292,7 @@ void testIndividual() {
 				true, // isInherited
 				mutationRate, // does not mutate
 				DistributionType::UNIFORM, distParams, // not used
+				DistributionType::NONE, distParams, // no dominance, params are ignored
 				isDiploid ? 2 : 1,
 				false
 			);
@@ -1291,6 +1306,7 @@ void testIndividual() {
 				true, // isInherited
 				mutationRate, // does not mutate
 				DistributionType::UNIFORM, distParams, // not used
+				DistributionType::NONE, distParams, // no dominance, params are ignored
 				isDiploid ? 2 : 1,
 				false
 			);
@@ -1304,6 +1320,7 @@ void testIndividual() {
 				true, // isInherited
 				mutationRate, // does not mutate
 				DistributionType::UNIFORM, distParams, // not used
+				DistributionType::NONE, distParams, // no dominance, params are ignored
 				isDiploid ? 2 : 1,
 				false
 			);
@@ -1317,6 +1334,7 @@ void testIndividual() {
 				true, // isInherited
 				mutationRate, // does not mutate
 				DistributionType::UNIFORM, distParams, // not used
+				DistributionType::NONE, distParams, // no dominance, params are ignored
 				isDiploid ? 2 : 1,
 				false
 			);

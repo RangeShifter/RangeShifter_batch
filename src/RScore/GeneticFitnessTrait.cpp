@@ -20,31 +20,31 @@ GeneticFitnessTrait::GeneticFitnessTrait(SpeciesTrait* P)
 	case UNIFORM:
 	{
 		if (initialParameters.count(MAX) != 1)
-			throw logic_error("Error: initial uniform distribution parameter must contain max value (e.g. max= ) \n");
+			throw logic_error("initial uniform distribution parameter must contain max value (e.g. max= ) \n");
 		if (initialParameters.count(MIN) != 1)
-			throw logic_error("Error: initial uniform distribution parameter must contain min value (e.g. min= ) \n");
+			throw logic_error("initial uniform distribution parameter must contain min value (e.g. min= ) \n");
 		break;
 	}
 	case NORMAL:
 	{
 		if (initialParameters.count(MEAN) != 1)
-			throw logic_error("Error: initial normal distribution parameter must contain mean value (e.g. mean= ) \n");
+			throw logic_error("initial normal distribution parameter must contain mean value (e.g. mean= ) \n");
 		if (initialParameters.count(SD) != 1)
-			throw logic_error("Error: initial normal distribution parameter must contain sdev value (e.g. sdev= ) \n");
+			throw logic_error("initial normal distribution parameter must contain sdev value (e.g. sdev= ) \n");
 		break;
 	}
 	case GAMMA:
 	{
 		if (initialParameters.count(SHAPE) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to gamma so parameters must contain one shape value (e.g. shape= ) \n");
+			throw logic_error("genetic load dominance distribution set to gamma so parameters must contain one shape value (e.g. shape= ) \n");
 		if (initialParameters.count(SCALE) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to gamma so parameters must contain one scale value (e.g. scale= ) \n");
+			throw logic_error("genetic load dominance distribution set to gamma so parameters must contain one scale value (e.g. scale= ) \n");
 		break;
 	}
 	case NEGEXP:
 	{
 		if (initialParameters.count(MEAN) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to negative exponential (negative decay) so parameters must contain mean value (e.g. mean= ) \n");
+			throw logic_error("genetic load dominance distribution set to negative exponential (negative decay) so parameters must contain mean value (e.g. mean= ) \n");
 		break;
 	}
 	case NONE: // initialise with default (i.e. zero) values
@@ -62,37 +62,37 @@ GeneticFitnessTrait::GeneticFitnessTrait(SpeciesTrait* P)
 	case UNIFORM:
 	{
 		if (initDomParameters.count(MAX) != 1)
-			throw logic_error("Error:: genetic load dominance uniform distribution parameter must contain one max value (e.g. max= ) \n");
+			throw logic_error("genetic load dominance uniform distribution parameter must contain one max value (e.g. max= ) \n");
 		if (initDomParameters.count(MIN) != 1)
-			throw logic_error("Error:: genetic load dominance uniform distribution parameter must contain one min value (e.g. min= ) \n");
+			throw logic_error("genetic load dominance uniform distribution parameter must contain one min value (e.g. min= ) \n");
 		break;
 	}
 	case NORMAL:
 	{
 		if (initDomParameters.count(MEAN) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to normal so parameters must contain one mean value (e.g. mean= ) \n");
+			throw logic_error("genetic load dominance distribution set to normal so parameters must contain one mean value (e.g. mean= ) \n");
 		if (initDomParameters.count(SD) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to normal so parameters must contain one sdev value (e.g. sdev= ) \n");
+			throw logic_error("genetic load dominance distribution set to normal so parameters must contain one sdev value (e.g. sdev= ) \n");
 		break;
 	}
 	case GAMMA:
 	{
 		if (initDomParameters.count(SHAPE) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to gamma so parameters must contain one shape value (e.g. shape= ) \n");
+			throw logic_error("genetic load dominance distribution set to gamma so parameters must contain one shape value (e.g. shape= ) \n");
 		if (initDomParameters.count(SCALE) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to gamma so parameters must contain one scale value (e.g. scale= ) \n");
+			throw logic_error("genetic load dominance distribution set to gamma so parameters must contain one scale value (e.g. scale= ) \n");
 		break;
 	}
 	case NEGEXP:
 	{
 		if (initDomParameters.count(MEAN) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to negative exponential (negative decay) so parameters must contain mean value (e.g. mean= ) \n");
+			throw logic_error("genetic load dominance distribution set to negative exponential (negative decay) so parameters must contain mean value (e.g. mean= ) \n");
 		break;
 	}
 	case SCALED:
 	{
 		if (initDomParameters.count(MEAN) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to scaled, so parameters must contain mean dominance value (e.g. mean= ) \n");
+			throw logic_error("genetic load dominance distribution set to scaled, so parameters must contain mean dominance value (e.g. mean= ) \n");
 		// Set for drawing initial values
 		setScaledCoeff(initialDistribution, initialParameters);
 		break;
@@ -101,7 +101,7 @@ GeneticFitnessTrait::GeneticFitnessTrait(SpeciesTrait* P)
 		break;
 	default:
 	{
-		throw logic_error("Error:: wrong parameter value for genetic load dominance model, must be uniform/normal/gamma/negExp/scaled \n");
+		throw logic_error("wrong parameter value for genetic load dominance model, must be uniform/normal/gamma/negExp/scaled \n");
 		break;
 	}
 	}
@@ -115,35 +115,35 @@ GeneticFitnessTrait::GeneticFitnessTrait(SpeciesTrait* P)
 	case UNIFORM:
 	{
 		if (mutationParameters.count(MAX) != 1)
-			throw logic_error("Error:: genetic load mutation uniform distribution parameter must contain one max value (e.g. max= ) \n");
+			throw logic_error("genetic load mutation uniform distribution parameter must contain one max value (e.g. max= ) \n");
 		if (mutationParameters.count(MIN) != 1)
-			throw logic_error("Error:: genetic load mutation uniform distribution parameter must contain one min value (e.g. min= ) \n");
+			throw logic_error("genetic load mutation uniform distribution parameter must contain one min value (e.g. min= ) \n");
 		break;
 	}
 	case NORMAL:
 	{
 		if (mutationParameters.count(MEAN) != 1)
-			throw logic_error("Error:: genetic load mutation distribution set to normal so parameters must contain one mean value (e.g. mean= ) \n");
+			throw logic_error("genetic load mutation distribution set to normal so parameters must contain one mean value (e.g. mean= ) \n");
 		if (mutationParameters.count(SD) != 1)
-			throw logic_error("Error:: genetic load mutation distribution set to normal so parameters must contain one sdev value (e.g. sdev= ) \n");
+			throw logic_error("genetic load mutation distribution set to normal so parameters must contain one sdev value (e.g. sdev= ) \n");
 		break;
 	}
 	case GAMMA:
 	{
 		if (mutationParameters.count(SHAPE) != 1)
-			throw logic_error("Error:: genetic load mutation distribution set to gamma so parameters must contain one shape value (e.g. shape= ) \n");
+			throw logic_error("genetic load mutation distribution set to gamma so parameters must contain one shape value (e.g. shape= ) \n");
 		if (mutationParameters.count(SCALE) != 1)
-			throw logic_error("Error:: genetic load mutation distribution set to gamma so parameters must contain one scale value (e.g. scale= ) \n");
+			throw logic_error("genetic load mutation distribution set to gamma so parameters must contain one scale value (e.g. scale= ) \n");
 		break;
 	}
 	case NEGEXP:
 	{
 		if (mutationParameters.count(MEAN) != 1)
-			throw logic_error("Error:: genetic load mutation distribution set to negative exponential (negative decay) so parameters must contain one mean value (e.g. mean= ) \n");
+			throw logic_error("genetic load mutation distribution set to negative exponential (negative decay) so parameters must contain one mean value (e.g. mean= ) \n");
 		break;
 	}
 	default:
-		throw logic_error("Error:: wrong parameter value for genetic load mutation model, must be uniform/normal/gamma/negExp \n");
+		throw logic_error("wrong parameter value for genetic load mutation model, must be uniform/normal/gamma/negExp \n");
 	}
 
 	DistributionType dominanceDistribution = pSpeciesTrait->getDominanceDistribution();
@@ -153,37 +153,37 @@ GeneticFitnessTrait::GeneticFitnessTrait(SpeciesTrait* P)
 	case UNIFORM:
 	{
 		if (dominanceParameters.count(MAX) != 1)
-			throw logic_error("Error:: genetic load dominance uniform distribution parameter must contain one max value (e.g. max= ) \n");
+			throw logic_error("genetic load dominance uniform distribution parameter must contain one max value (e.g. max= ) \n");
 		if (dominanceParameters.count(MIN) != 1)
-			throw logic_error("Error:: genetic load dominance uniform distribution parameter must contain one min value (e.g. min= ) \n");
+			throw logic_error("genetic load dominance uniform distribution parameter must contain one min value (e.g. min= ) \n");
 		break;
 	}
 	case NORMAL:
 	{
 		if (dominanceParameters.count(MEAN) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to normal so parameters must contain one mean value (e.g. mean= ) \n");
+			throw logic_error("genetic load dominance distribution set to normal so parameters must contain one mean value (e.g. mean= ) \n");
 		if (dominanceParameters.count(SD) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to normal so parameters must contain one sdev value (e.g. sdev= ) \n");
+			throw logic_error("genetic load dominance distribution set to normal so parameters must contain one sdev value (e.g. sdev= ) \n");
 		break;
 	}
 	case GAMMA:
 	{
 		if (dominanceParameters.count(SHAPE) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to gamma so parameters must contain one shape value (e.g. shape= ) \n");
+			throw logic_error("genetic load dominance distribution set to gamma so parameters must contain one shape value (e.g. shape= ) \n");
 		if (dominanceParameters.count(SCALE) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to gamma so parameters must contain one scale value (e.g. scale= ) \n");
+			throw logic_error("genetic load dominance distribution set to gamma so parameters must contain one scale value (e.g. scale= ) \n");
 		break;
 	}
 	case NEGEXP:
 	{
 		if (dominanceParameters.count(MEAN) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to negative exponential (negative decay) so parameters must contain mean value (e.g. mean= ) \n");
+			throw logic_error("genetic load dominance distribution set to negative exponential (negative decay) so parameters must contain mean value (e.g. mean= ) \n");
 		break;
 	}
 	case SCALED:
 	{
 		if (dominanceParameters.count(MEAN) != 1)
-			throw logic_error("Error:: genetic load dominance distribution set to scaled, so parameters must contain mean dominance value (e.g. mean= ) \n");
+			throw logic_error("genetic load dominance distribution set to scaled, so parameters must contain mean dominance value (e.g. mean= ) \n");
 		
 		// Set for drawing mutations (overwrite initial value)
 		setScaledCoeff(mutationDistribution, mutationParameters);
@@ -191,7 +191,7 @@ GeneticFitnessTrait::GeneticFitnessTrait(SpeciesTrait* P)
 	}
 	default:
 	{
-		throw logic_error("Error:: wrong parameter value for genetic load dominance model, must be uniform/normal/gamma/negExp/scaled \n");
+		throw logic_error("wrong parameter value for genetic load dominance model, must be uniform/normal/gamma/negExp/scaled \n");
 		break;
 	}
 	}
@@ -243,13 +243,16 @@ void GeneticFitnessTrait::initialise() {
 	auto initDomParams = pSpeciesTrait->getInitDomParameters();
 
 	const set<int> genePositions = pSpeciesTrait->getGenePositions();
+	const set<int> initPositions = pSpeciesTrait->getInitPositions();
+
 	for (auto position : genePositions) {
 		vector<shared_ptr<Allele>> initialGene(ploidy);
 		for (int p = 0; p < ploidy; p++) {
-			initSelCoeff = initDist == NONE ? 0.0f 
-				: drawSelectionCoef(initDist, initParams);
-			initDomCoeff = initDomDist == NONE ? 0.0f
-				: drawDominance(initSelCoeff, initDomDist, initDomParams);
+			initSelCoeff = initDomCoeff = 0.0;
+			if (initPositions.contains(position)) {
+				initSelCoeff = drawSelectionCoef(initDist, initParams);
+				initDomCoeff = drawDominance(initSelCoeff, initDomDist, initDomParams);
+			}
 			initialGene[p] = make_shared<Allele>(initSelCoeff, initDomCoeff);
 		}
 		genes.insert(make_pair(position, initialGene));
@@ -304,7 +307,7 @@ void GeneticFitnessTrait::mutate()
 // ----------------------------------------------------------------------------------------
 float GeneticFitnessTrait::drawDominance(float selCoef, const DistributionType& domDist, const map<GenParamType, float>& domParams) {
 
-	float h;
+	float h = 0.0;
 	switch (domDist) {
 	case UNIFORM:
 	{
@@ -343,10 +346,14 @@ float GeneticFitnessTrait::drawDominance(float selCoef, const DistributionType& 
 		h = pRandom->FRandom(0, max);
 		break;
 	}
-
+	case NONE:
+	{
+		// nothing, s remains 0.0
+		break;
+	}
 	default:
 	{
-		throw logic_error("Error:: wrong parameter value for genetic load dominance model, must be uniform/normal/gamma/negExp/scaled \n");
+		throw logic_error("wrong parameter value for genetic load dominance model, must be uniform/normal/gamma/negExp/scaled/none \n");
 		break;
 	}
 	}
@@ -398,9 +405,14 @@ float GeneticFitnessTrait::drawSelectionCoef(const DistributionType& mutationDis
 		} while (!pSpeciesTrait->isValidTraitVal(s));
 		break;
 	}
+	case NONE:
+	{
+		// nothing, s remains 0.0
+		break;
+	}
 	default:
 	{
-		throw logic_error("Error:: wrong parameter value for genetic load mutation model, must be uniform/normal/gamma/negExp/scaled \n");
+		throw logic_error("wrong parameter value for genetic load mutation model, must be uniform/normal/gamma/negExp/scaled/none \n");
 		break;
 	}
 	}

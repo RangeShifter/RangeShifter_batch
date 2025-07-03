@@ -249,6 +249,8 @@ public:
 	QuantitativeTrait* getTrait(TraitType trait) const;
 	set<TraitType> getTraitTypes();
 	
+	void expressGeneticLoad();
+
 	// Express disperal traits from allelic values
 	void expressDispersalPhenotypes(int landResol);
 

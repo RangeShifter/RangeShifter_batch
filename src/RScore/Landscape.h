@@ -222,6 +222,7 @@ public:
 	patchData getPatchData(species_id id, int patchIx);
 	bool existsPatch(species_id whichSpecies, int patchIx);
 	Patch* findPatch(species_id whichSpecies, int patchIx);
+	set<int> getPatchNbs(species_id sp) const;
 	void samplePatches(Species* pSpecies);
 	int checkTotalCover();
 	void resetPatchPopns();

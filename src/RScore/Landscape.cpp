@@ -885,6 +885,13 @@ bool Landscape::existsPatch(species_id whichSpecies, int patchID) {
 	return findPatch(whichSpecies, patchID) != nullptr;
 }
 
+set<int> Landscape::getPatchNbs(species_id sp) const {
+	set<int> patchNbs;
+	for (auto& p : patchesList.at(sp))
+		patchNbs.emplace(p->getPatchNum());
+	return patchNbs;
+}
+
 void Landscape::samplePatches(Species* pSpecies) {
 
 	const string samplingOption = pSpecies->getSamplingOption();
@@ -916,7 +923,7 @@ void Landscape::samplePatches(Species* pSpecies) {
 			nbToSample, rng);
 	}
 	else {
-		throw logic_error("Sampling option should be random, rnadom_occupied or all when sampling patches.");
+		throw logic_error("Sampling option should be random, random_occupied or all when sampling patches.");
 	}
 
 	set<int> patchIds;
@@ -2543,6 +2550,7 @@ void Landscape::createConnectMatrix(species_id sp)
 
 // Re-initialise connectivity matrix
 void Landscape::resetConnectMatrix() {
+
 	for (auto& [speciesID, connectMatrix] : connectMatrices) {
 		if (connectMatrix != nullptr) {
 			int npatches = static_cast<int>(patchesList.at(speciesID).size());
