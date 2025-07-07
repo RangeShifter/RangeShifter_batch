@@ -260,12 +260,17 @@ Species* Community::findSpecies(species_id id) {
 
 void Community::resetPopns() {
 
-	for (auto& [sp, mtxPop] : matrixPops)
+	for (auto& [sp, mtxPop] : matrixPops) {
 		mtxPop->getPatch()->resetPop();
+		delete mtxPop;
+	}
+	matrixPops.clear();
 
+		
 	for (auto& [sp, popns] : allPopns) {
 		for (auto pop : popns) {
 			pop->getPatch()->resetPop();
+			delete pop;
 		}
 		popns.clear();
 	}
