@@ -5974,7 +5974,7 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 	// set no.of lines assuming maximum stage- and sex-dependency
 	int Nlines = stageStruct.nStages == 0 ? gNbSexesDisp : gNbSexesDisp * stageStruct.nStages;
 
-	for (int line = 0; line < Nlines; line++) {
+		for (int line = 0; line < Nlines; line++) {
 
 		transFile >> simNb >> inStageDep >> inSexDep >> inKernelType >> inDistMort >> inIndVar;
 		if (isFirstLine) {
@@ -6008,7 +6008,7 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 				errorCode = 403;
 		}
 
-		switch (sexKernels) {
+			switch (sexKernels) {
 
 		case 0: // no sex / stage dependence
 			transFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;

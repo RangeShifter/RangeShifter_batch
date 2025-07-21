@@ -42,7 +42,9 @@
 #include <iomanip>
 #include <stdlib.h>
 #include <cassert>
-
+#ifdef _OPENMP
+#include <omp.h>
+#endif // _OPENMP
 using namespace std;
 
 #include "./RScore/Parameters.h"
@@ -80,6 +82,14 @@ string getProjectDir(const vector<string>& mainArgs) {
 	return pathToProjectDir;
 }
 
+#if RSDEBUG
+void run_batch_unit_tests() {
+	cout << "******* Unit test output for batch interface *******" << endl;
+	// call tests here
+	cout << endl << "************************" << endl;
+}
+#endif // RSDEBUG
+
 paramGrad* paramsGrad;		// pointer to environmental gradient parameters
 paramStoch* paramsStoch;	// pointer to environmental stochasticity parameters
 paramInit* paramsInit;		// pointer to initialisation parameters
@@ -101,6 +111,18 @@ int _tmain(int argc, _TCHAR* argv[])
 	cout << "RangeShifter Release Mode" << endl;
 #else
 	cout << "RangeShifter Debug Mode" << endl;
+#endif
+
+#ifdef _OPENMP
+	cout << "OpenMP parallelisation enabled with up to " << omp_get_max_threads() << " threads." << endl;
+#endif //_OPENMP
+
+#if RSDEBUG
+	assert(0.1 > 0.0); // assert does run correctly
+	run_batch_unit_tests();
+#else
+	// assert does not run in Release mode
+	assert(1 == 2);
 #endif
 
 	int t0, t1;
@@ -126,41 +148,41 @@ int _tmain(int argc, _TCHAR* argv[])
 	cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
 	cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
 	cout << endl << "Control file:      " << pathToControlFile << endl << endl;
-#endif
-
+#else 
+if (__argc > 1) {
 	if (!CheckDirectory(pathToProjectDir)) return 1;
-
-	string indir = paramsSim->getDir(1);
-	string outdir = paramsSim->getDir(2);
-	batchfiles b = ParseControlAndCheckInputFiles(pathToControlFile, indir, outdir);
-	if (b.ok) {
-		paramsSim->setBatchNum(b.batchNum);
-		// Set up species
-		pSpecies = new Species(
-			b.reproductn,
-			b.repseasons,
-			b.stagestruct == 1, // int to bool
-			b.stages,
-			b.transfer == 1,
-			b.transfer
-		);
-		cout << endl << "Batch input files OK" << endl;
+}
+DEBUGLOG << endl << "Normal(2.5,0.35):" << endl;
+for (int i = 0; i < 5; i++) {
+	for (int j = 0; j < 10; j++) {
+		DEBUGLOG << pRandom->Normal(2.5,0.35) << " ";
 	}
-	else {
-		cout << endl << "Error in parsing batch input files - see BatchLog file for details" << endl;
+	DEBUGLOG << endl;
+}
+DEBUGLOG << endl << "Normal(-564.7,123.4):" << endl;
+for (int i = 0; i < 5; i++) {
+	for (int j = 0; j < 10; j++) {
+		DEBUGLOG << pRandom->Normal(-564.7,123.4) << " ";
 	}
+	DEBUGLOG << endl;
+}
 
-	// set up random number class
-#if RS_RCPP
-#ifndef NDEBUG
-	pRandom = new RSrandom(666);
-#else
-	pRandom = new RSrandom(-1);  // need to be replaced with parameter from control file
-#endif
-#else
-	pRandom = new RSrandom();
-#endif
+*/
 
+/*
+DEBUGLOG.close();
+DEBUGLOG.clear();
+
+cout << "*****" << endl;
+cout << "***** Simulation completed - enter any number to terminate program" << endl;
+cout << "*****" << endl;
+cin >> i;
+
+return 0;
+*/
+
+
+// set up species
 	if (b.ok) {
 		try
 		{
@@ -171,22 +193,60 @@ int _tmain(int argc, _TCHAR* argv[])
 			cerr << endl << "Error: " << e.what() << endl;
 		}
 	}
-
-	delete pRandom;
-	delete paramsGrad;
-	delete paramsStoch;
-	delete paramsInit;
-	delete paramsSim;
-	delete pSpecies;
+			b.transfer
+		);
+		cout << endl << "Batch input files OK" << endl;
+	}
+	else {
+		cout << endl << "Error in parsing batch input files - see BatchLog file for details" << endl;
+	}
 
 	t1 = (int)time(0);
 	cout << endl << "***** Elapsed time " << t1 - t0 << " seconds" << endl << endl;
 	cout << "*****" << endl;
 	cout << "***** Simulation completed." << endl;
 	cout << "*****" << endl;
+#else
+	pRandom = new RSrandom();
+#endif
+
+	delete paramsGrad;
+	delete paramsStoch;
+	delete paramsInit;
+	delete paramsSim;
+	delete pSpecies;
+
+t1 = (int)time(0);
+cout << endl << "***** Elapsed time " << t1-t0 << " seconds" << endl << endl;
+
+cout << "*****" << endl;
+cout << "***** Simulation completed - enter any number to terminate program" << endl;
+cout << "*****" << endl;
+cin >> i;
 
 	return 0;
 }
+
+//---------------------------------------------------------------------------
+
+// Dummy functions corresponding to those used in GUI version
+
+/* Batch mode of v2.0 currently has no facility to save maps (unless initiated from GUI).
+To do so, we would need a form of bit map which is portable across platforms
+and operating systems, rather than the Embarcadero VCL classes.
+Does such exist?
+*/
+
+traitCanvas SetupTraitCanvas(void) {
+traitCanvas tcanv;
+for (int i = 0; i < NTRAITS; i++) { tcanv.pcanvas[i] = 0; }
+return tcanv;
+}
+
+void Landscape::setLandMap(void) { }
+void Landscape::drawLandscape(int rep,int yr,int landnum) { }
+void Community::viewOccSuit(int year,double mn,double se) { }
+void Community::draw(int rep,int yr,int gen,int landNum) { }
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
