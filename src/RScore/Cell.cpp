@@ -193,6 +193,16 @@ void Cell::resetVisits() { for (auto& [sp, vis] : visits) vis = 0; }
 void Cell::incrVisits(species_id sp) { visits.at(sp)++; }
 unsigned long int Cell::getVisits(species_id sp) { return visits.at(sp); }
 
+// Let patches know which patches from other species they overlap with
+void Cell::declareOverlappingPatches() const {
+	for (auto& [sp, pPatch] : patches) {
+		for (auto& [otherSp, pOverlappingPatch] : patches) {
+			if (sp == otherSp) continue;
+			else pPatch->incrementPatchOverlap(pOverlappingPatch);
+		}
+	}
+}
+
 //---------------------------------------------------------------------------
 
 // Initial species distribution cell functions

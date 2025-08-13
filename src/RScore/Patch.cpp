@@ -336,8 +336,7 @@ int Patch::getPossSettlers(int sex) {
 }
 
 bool Patch::speciesIsPresent() {
-	const auto pPop = this->getPop();
-	return pPop != nullptr;
+	return getPop() != nullptr;
 }
 
 void Patch::createOccupancy(int nbOutputRows) {
@@ -352,6 +351,38 @@ void Patch::updateOccupancy(int whichRow) {
 
 int Patch::getOccupancy(int whichRow) {
 	return occupancy[whichRow];
+}
+
+// Increment the tally of overlapping cells with the patch of another species
+void Patch::incrementPatchOverlap(Patch* pOverlappingPatch) {
+
+	// Add entries if not already present
+	const species_id otherSp = pOverlappingPatch->getSpeciesID();
+	const int otherPatchId = pOverlappingPatch->getPatchNum();
+	if (!overlappingPatches.contains(otherSp))
+		overlappingPatches.emplace(otherSp, map<int, double>());
+	auto& thisSpEntry = overlappingPatches.at(sp);
+	if (!thisSpEntry.contains(otherPatchId))
+		thisSpEntry.emplace(otherPatchId, 0.0f);
+
+	// Increment overlap (in nb of cells) between these patches;
+	thisSpEntry.at(otherPatchId)++;
+}
+
+// Calculate final amount of overlap with other species patches
+// as proportion of this patch's cells that overlap
+void Patch::calcPatchOverlap() {
+
+	for (auto& patchesFromThisSp : overlappingPatches) {
+		for (auto& thisOtherPatch : patchesFromThisSp.second)
+			// convert the previously calculated tally into a proportion of overlap
+			thisOtherPatch.second /= nCells;
+	}
+
+}
+
+void Patch::resetPatchOverlap() {
+	overlappingPatches.clear();
 }
 
 //---------------------------------------------------------------------------

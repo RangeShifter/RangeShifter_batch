@@ -91,6 +91,7 @@ public:
 	void incrVisits(species_id sp);
 	unsigned long int getVisits(species_id sp);
 
+	void declareOverlappingPatches() const;
 private:
 	int x, y;		// cell co-ordinates
 

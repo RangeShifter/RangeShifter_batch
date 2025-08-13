@@ -431,7 +431,12 @@ public:
 	void freezeYrange(int minYlimit, int maxYlimit, int maxXlimit);
 	bool isWithinLimits(const int& x, const int& y);
 
+	// Interaction functions
+	void addInteractingSpecies(const species_id& sp);
+	set<species_id> getInteractingSpecies() const;
+
 private:
+	species_id ID;
 
 	// Demographic parameters
 	short repType;		// 0 = asexual, 1 = simple two sex, 2 = complex two sex
@@ -554,18 +559,17 @@ private:
 	float alphaS[gMaxNbStages][gMaxNbSexes];			// slope of the settlement reaction norm to density
 	float betaS[gMaxNbStages][gMaxNbSexes];				// inflection point of the settlement reaction norm to density
 
+	// Interaction parameters
+	set<species_id> interactingSpecies;
+
 	// Initialisation parameters
 	initParams init;
 	vector<initInd> initInds;	// individuals to be initialised
 	vector<float> initProps; // proportion of each stage among initial individuals
 	int minX, minY, maxX, maxY; // limits the species is allowed to live in,
 								// changed by the freeze/range restriction feature
-
 	// Output controls
 	outputParams output;
-
-	// other attributes
-	species_id ID;
 };
 
 // Map to record and track all species

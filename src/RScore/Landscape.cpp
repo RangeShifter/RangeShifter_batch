@@ -333,6 +333,8 @@ void Landscape::initialise(speciesMap_t& allSpecies, landParams land) {
 	if (land.isArtificial) generatePatches(allSpecies);
 	else if (!land.usesPatches) allocatePatches(allSpecies);
 	// otherwise (patch-based + imported) patches have been read already
+	
+	calcPatchOverlap();
 
 	outConnMatrices.clear(); // drop output streams from previous simulation
 
@@ -345,6 +347,31 @@ void Landscape::initialise(speciesMap_t& allSpecies, landParams land) {
 		// Populate connectivity output map
 		if (pSpecies->doesOutputConnect()) 
 			outConnMatrices.emplace(sp, ofstream());
+	}
+}
+
+// Calculate patch overlap between interacting species
+void Landscape::calcPatchOverlap() {
+
+	// Erase any previous entries
+	for (auto& [sp, patches] : patchesList) {
+		for (auto pPatch : patches)
+			pPatch->resetPatchOverlap();
+	}
+
+	for (int x = 0; x < dimX; x++) {
+		for (int y = 0; x < dimY; y++) {
+			auto pCell = cells[y][x];
+			// Let each patch know which patches they overlap with
+			// and tally the nb of overlapping cells
+			pCell->declareOverlappingPatches();
+		}
+	}
+
+	// Finalise overlap calculation by dividing tally by cell area
+	for (auto& [sp, patches] : patchesList) {
+		for (auto pPatch : patches)
+			pPatch->calcPatchOverlap();
 	}
 }
 

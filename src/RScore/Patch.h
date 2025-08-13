@@ -140,6 +140,10 @@ public:
 	void updateOccupancy(int whichRow);
 	int getOccupancy(int whichRow);
 
+	void incrementPatchOverlap(Patch* pOverlappingPatch);
+	void calcPatchOverlap();
+	void resetPatchOverlap();
+
 #ifndef NDEBUG
 	// Testing only
 	void overrideK(const float& k) { localK = k; }
@@ -160,6 +164,7 @@ private:
 	vector<int> occupancy;		// pointer to occupancy array
 
 	std::vector <Cell*> cells;
+	map<species_id, map<int, double>> overlappingPatches; // [other patch's ID, % of overlap (in nb cells)]
 };
 
 //---------------------------------------------------------------------------

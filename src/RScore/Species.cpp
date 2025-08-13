@@ -892,7 +892,19 @@ void Species::setGeneticParameters(
 void Species::setSamplePatchList(const set<int>& samplePatchList) {
 	this->samplePatchList = samplePatchList;
 }
+
 //---------------------------------------------------------------------------
+
+// Interaction functions
+
+void Species::addInteractingSpecies(const species_id& sp) {
+	interactingSpecies.insert(sp);
+}
+
+set<species_id> Species::getInteractingSpecies() const {
+	return interactingSpecies;
+}
+
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 

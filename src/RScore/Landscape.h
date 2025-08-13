@@ -187,6 +187,7 @@ public:
 
 	// Generate patches, sample patches and set landscape limits
 	void initialise(speciesMap_t& allSpecies, landParams land);
+	void calcPatchOverlap();
 
 	// Landscape parameters
 	void setLandParams(landParams ppp, bool batchmode);

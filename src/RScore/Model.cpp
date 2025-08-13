@@ -255,24 +255,22 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 			mustUpdateLand = false;
 			if (ppLand.isDynamic && yr == landChg.chgyear) {
 
-				chgNb = landChg.chgnum;
+				chgNb = landChg.chgnum; // index used to reset between replicates
+
 				mustUpdateLand = true;
 				for (auto& [sp, updateK] : mustUpdateK) updateK = true;
 
 				if (ppLand.usesPatches) {
 					for (auto& sp : speciesNames)
 						pLandscape->applyPatchChanges(sp, chgNb, patchChgIndices.at(sp));
-					// index used after years loop to reset between replicates
+					pLandscape->calcPatchOverlap(); // must recalculate which patches overlap
 				}
 				for (auto& sp : speciesNames)
 					pLandscape->applyCostChanges(sp, chgNb, costChgIndices.at(sp));
 
-				if (chgNb < pLandscape->numLandChanges()) { // get next change
+				if (chgNb < pLandscape->numLandChanges()) // get next change
 					landChg = pLandscape->getLandChange(chgNb);
-				}
-				else {
-					landChg.chgyear = 9999999;
-				}
+				else landChg.chgyear = 9999999;
 			}
 
 			for (auto& [sp, updateK] : mustUpdateK) {
