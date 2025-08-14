@@ -272,7 +272,8 @@ public:
 
 	// Identify whether an individual is a potentially breeding female -
 	// if so, return her stage, otherwise return 0
-	int breedingFem();
+	bool isBreedingFem();
+	bool breedsThisSeason(const stageParams& sstruct);
 	int getId();
 	sex_t getSex();
 	indStatus getStatus();

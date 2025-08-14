@@ -492,16 +492,16 @@ void Population::extirpate() {
 // Produce juveniles and hold them in the juvs vector
 void Population::reproduction(const float localK, const int resol)
 {
-
+	
 	// get population size at start of reproduction
 	int ninds = static_cast<int>(inds.size());
 	if (ninds == 0) return;
 
-	int nsexes, stage, sex, njuvs, nj, nmales, nfemales;
+	int stage, sex, nbOffspring, nj, nmales, nfemales;
 	Cell* pCell;
 	indStats ind;
-	double expected;
-	bool skipbreeding;
+	double exptdNbOffspring;
+	bool skipBreeding;
 
 	envStochParams env = paramsStoch->getStoch();
 	demogrParams dem = pSpecies->getDemogrParams();
@@ -510,141 +510,112 @@ void Population::reproduction(const float localK, const int resol)
 	transferRules trfr = pSpecies->getTransferRules();
 	settleType sett = pSpecies->getSettle();
 
-	if (dem.repType == 0)
-		nsexes = 1; 
-	else nsexes = 2;
+	int nsexes = dem.repType == 0 ? 1 : 2;
+	// if sexual, must also calculate male fecundity
+	// to decide which males reproduce (those with fec > 0)
 
-
-// set up local copy of species fecundity table
+	// Base fecundity
 	float fec[gMaxNbStages][gMaxNbSexes];
 	for (int stg = 0; stg < sstruct.nStages; stg++) {
 		for (int sex = 0; sex < nsexes; sex++) {
 			if (dem.stageStruct) {
-				if (dem.repType == 1) { // simple sexual model
-					// both sexes use fecundity recorded for females
-					fec[stg][sex] = pSpecies->getFec(stg, 0);
-				}
-				else
-					fec[stg][sex] = pSpecies->getFec(stg, sex);
+				fec[stg][sex] = pSpecies->getFec(stg, dem.repType == 0 ? 0 : sex);
 			}
 			else { // non-structured population
-				if (stg == 1) fec[stg][sex] = dem.lambda; // adults
-				else fec[stg][sex] = 0.0; // juveniles
+				fec[stg][sex] = stg == 1 ? dem.lambda : 0.0;
 			}
 		}
 	}
 
-	if (dem.stageStruct) {
-	// apply environmental effects and density dependence
-	// to all non-zero female non-juvenile stages
-		for (int stg = 1; stg < nStages; stg++) {
-			if (fec[stg][0] > 0.0) {
-				// apply any effect of environmental gradient and/or stochasticty
-				fec[stg][0] *= pPatch->getGradVal();
-				if (env.usesStoch && !env.inK) {
-					// fecundity (at low density) is constrained to lie between limits specified
-					// for the species
-					float limit;
-					limit = pSpecies->getMinMax(0);
-					if (fec[stg][0] < limit) fec[stg][0] = limit;
-					limit = pSpecies->getMinMax(1);
-					if (fec[stg][0] > limit) fec[stg][0] = limit;
-				}
-				if (sstruct.fecDens) { // apply density dependence
-					float effect = 0.0;
-					if (sstruct.fecStageDens) { // stage-specific density dependence
-						// NOTE: matrix entries represent effect of ROW on COLUMN 
-						// AND males precede females
-						float weight = 0.0;
-						for (int effstg = 0; effstg < nStages; effstg++) {
-							for (int effsex = 0; effsex < nSexes; effsex++) {
-								if (dem.repType == 2) {
-									if (effsex == 0) weight = pSpecies->getDDwtFec(2 * stg + 1, 2 * effstg + 1);
-									else weight = pSpecies->getDDwtFec(2 * stg + 1, 2 * effstg);
-								}
-								else {
-									weight = pSpecies->getDDwtFec(stg, effstg);
-								}
-								effect += (float)nInds[effstg][effsex] * weight;
-							}
-						}
-					}
-					else // not stage-specific
-						effect = (float)totalPop();
-					if (localK > 0.0) fec[stg][0] *= exp(-effect / localK);
-				}
-			}
-		}
-	}
-	else { // non-structured - set fecundity for adult females only
-		// apply any effect of environmental gradient and/or stochasticty
-		fec[1][0] *= pPatch->getGradVal();
+	// Environmental effects
+	for (int stg = 1; stg < sstruct.nStages; stg++) {
+
+		if (fec[stg][0] <= 0.0) continue;
+
+		// Environmental gradient + stochasticty
+		fec[stg][0] *= pPatch->getGradVal();
+
+		// Limits if applicable
 		if (env.usesStoch && !env.inK) {
-			// fecundity (at low density) is constrained to lie between limits specified
-			// for the species
 			float limit;
 			limit = pSpecies->getMinMax(0);
-			if (fec[1][0] < limit) fec[1][0] = limit;
+			if (fec[stg][0] < limit) fec[stg][0] = limit;
 			limit = pSpecies->getMinMax(1);
-			if (fec[1][0] > limit) fec[1][0] = limit;
+			if (fec[stg][0] > limit) fec[stg][0] = limit;
 		}
-		// apply density dependence
-		if (localK > 0.0) {
-			if (dem.repType == 1 || dem.repType == 2) { // sexual model
-				// apply factor of 2 (as in manual, eqn. 6)
-				fec[1][0] *= 2.0;
+	}
+
+	// Intraspecific density-dependence
+	if (dem.stageStruct) {
+
+		for (int stg = 1; stg < nStages; stg++) {
+
+			if (fec[stg][0] <= 0.0 || !sstruct.fecDens) continue;
+
+			float densDepEffect = 0.0;
+			if (sstruct.fecStageDens) { // stage-specific density dependence
+				// NOTE: matrix entries represent effect of ROW on COLUMN 
+				// AND males precede females
+				float weight = 0.0;
+				for (int effstg = 0; effstg < nStages; effstg++) {
+					for (int effsex = 0; effsex < nSexes; effsex++) {
+						if (dem.repType == 2) {
+							int sexColIndex = effsex == 0 ? 1 : 0;
+							weight = pSpecies->getDDwtFec(2 * stg + 1, 2 * effstg + sexColIndex);
+						}
+						else weight = pSpecies->getDDwtFec(stg, effstg);
+
+						densDepEffect += (float)nInds[effstg][effsex] * weight;
+					}
+				}
 			}
+			else densDepEffect = static_cast<float>(totalPop());
+
+			if (localK > 0.0) fec[stg][0] *= exp(-densDepEffect / localK);
+		}
+	}
+	else { // Non-structured
+		if (localK > 0.0) {
+			if (dem.repType != 0) // sexual model
+				fec[1][0] *= 2.0; // cf manual
 			fec[1][0] /= (1.0f + fabs(dem.lambda - 1.0f) * pow(((float)ninds / localK), dem.bc));
 		}
 	}
 
 	double propBreed;
-	Individual* father = nullptr;
+	Individual* newJuv;
+	Individual* pFather = nullptr;
 	std::vector <Individual*> fathers;
 
 	switch (dem.repType) {
 
 	case 0: // asexual model
-		for (int i = 0; i < ninds; i++) {
-			stage = inds[i]->breedingFem();
-			if (stage > 0) { // female of breeding age
-				if (dem.stageStruct) {
-					// determine whether she must miss current breeding attempt
-					ind = inds[i]->getStats();
-					if (ind.fallow >= sstruct.repInterval) {
-						if (pRandom->Bernoulli(sstruct.probRep)) skipbreeding = false;
-						else skipbreeding = true;
-					}
-					else skipbreeding = true; // cannot breed this time
+		for (auto& pInd : inds) {
+
+			if (!pInd->isBreedingFem()) continue; // proceed to next individual
+			
+			if (dem.stageStruct) // check for reproduction cooldown (fallow)
+				if (!pInd->breedsThisSeason(sstruct))
+					continue;
+
+			exptdNbOffspring = fec[pInd->getStats().stage][0];
+			nbOffspring = exptdNbOffspring <= 0.0 ? 0 : pRandom->Poisson(exptdNbOffspring);
+			pCell = pPatch->getRandomCell();
+
+			for (int j = 0; j < nbOffspring; j++) {
+
+				newJuv = new Individual(pSpecies, pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
+
+				if (pSpecies->getNTraits() > 0) {
+					newJuv->inheritTraits(pInd, resol);
 				}
-				else skipbreeding = false; // not structured - always breed
-				if (skipbreeding) {
-					inds[i]->incFallow();
+
+				if (!newJuv->isViable()) {
+					delete newJuv;
 				}
-				else { // attempt to breed
-					inds[i]->resetFallow();
-					expected = fec[stage][0];
-					if (expected <= 0.0) njuvs = 0;
-					else njuvs = pRandom->Poisson(expected);
-					nj = (int)juvs.size();
-					pCell = pPatch->getRandomCell();
-					for (int j = 0; j < njuvs; j++) {
-
-						Individual* newJuv;
-						newJuv = new Individual(pSpecies, pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
-
-						if (pSpecies->getNTraits() > 0) {
-							newJuv->inheritTraits(inds[i], resol);
-						}
-
-						if (!newJuv->isViable()) {
-							delete newJuv;
-						}
-						else {
-							juvs.push_back(newJuv);
-							nInds[0][0]++;
-						}
-					}
+				else {
+					juvs.push_back(newJuv);
+					nInds[0][0]++;
 				}
 			}
 		}
@@ -655,83 +626,59 @@ void Population::reproduction(const float localK, const int resol)
 		// count breeding females and males
 		// add breeding males to list of potential fathers
 		nfemales = nmales = 0;
-		for (int i = 0; i < ninds; i++) {
-			ind = inds[i]->getStats();
+		for (auto& pInd : inds) {
+			ind = pInd->getStats();
 			if (ind.sex == 0 && fec[ind.stage][0] > 0.0) nfemales++;
 			if (ind.sex == 1 && fec[ind.stage][1] > 0.0) {
-				fathers.push_back(inds[i]);
+				fathers.push_back(pInd);
 				nmales++;
 			}
 		}
-		if (nfemales > 0 && nmales > 0)
-		{ // population can breed
-			if (dem.repType == 2) { // complex sexual model
-				// calculate proportion of eligible females which breed
-				propBreed = (2.0 * dem.harem * nmales) / (nfemales + dem.harem * nmales);
-				if (propBreed > 1.0) propBreed = 1.0;
-			}
-			else propBreed = 1.0;
-			for (int i = 0; i < ninds; i++) {
-				stage = inds[i]->breedingFem();
-				if (stage > 0 && fec[stage][0] > 0.0) { // (potential) breeding female
-					if (dem.stageStruct) {
-						// determine whether she must miss current breeding attempt
-						ind = inds[i]->getStats();
-						if (ind.fallow >= sstruct.repInterval) {
-							if (pRandom->Bernoulli(sstruct.probRep)) skipbreeding = false;
-							else skipbreeding = true;
-						}
-						else skipbreeding = true; // cannot breed this time
-					}
-					else skipbreeding = false; // not structured - always breed
-					if (skipbreeding) {
-						inds[i]->incFallow();
-					}
-					else { // attempt to breed
-						inds[i]->resetFallow();
-						// NOTE: FOR COMPLEX SEXUAL MODEL, NO. OF FEMALES *ACTUALLY* BREEDING DOES NOT
-						// NECESSARILY EQUAL THE EXPECTED NO. FROM EQN. 7 IN THE MANUAL...
-						if (pRandom->Bernoulli(propBreed)) {
-							expected = fec[stage][0]; // breeds
-						}
-						else expected = 0.0; // fails to breed
-						if (expected <= 0.0) njuvs = 0;
-						else njuvs = pRandom->Poisson(expected);
+		if (nfemales <= 0 || nmales <= 0)
+			break; // no reproduction
 
-						if (njuvs > 0)
-						{
-							nj = (int)juvs.size();
-							// select father at random from breeding males ...
-							int rrr = 0;
-							if (nmales > 1) rrr = pRandom->IRandom(0, nmales - 1);
-							father = fathers[rrr];
-							pCell = pPatch->getRandomCell();
-							for (int j = 0; j < njuvs; j++) {
-								Individual* newJuv;
+		if (dem.repType == 2) { // complex sexual model
+			propBreed = min(1.0, (2.0 * dem.harem * nmales)
+				/ (nfemales + dem.harem * nmales));
+		}
 
-								newJuv = new Individual(pSpecies, pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
+		for (auto& pInd : inds) {
+			stage = pInd->getStats().stage;
+			if (!pInd->isBreedingFem() || fec[stage][0] <= 0.0) continue;
 
-								if (pSpecies->getNTraits() > 0) {
-									newJuv->inheritTraits(inds[i], father, resol);
-								}
+			if (dem.stageStruct) // check for reproduction cooldown (fallow)
+				if (!pInd->breedsThisSeason(sstruct))
+					continue;
 
-								if (!newJuv->isViable()) {
-									delete newJuv;
-								}
-								else {
-									juvs.push_back(newJuv);
-									sex = newJuv->getSex();
-									nInds[0][sex]++;
-								}
-							}
-						}
-					}
+			// NOTE: FOR COMPLEX SEXUAL MODEL, NO. OF FEMALES *ACTUALLY* BREEDING DOES NOT
+			// NECESSARILY EQUAL THE EXPECTED NO. FROM EQN. 7 IN THE MANUAL...
+			if (dem.repType == 2)
+				if (!pRandom->Bernoulli(propBreed)) continue;
+
+			exptdNbOffspring = fec[stage][0];
+			nbOffspring = exptdNbOffspring > 0.0 ? pRandom->Poisson(exptdNbOffspring) : 0;
+			if (nbOffspring <= 0) continue;
+
+			// Select father randomly among eligible individuals
+			int whichFather = nmales > 1 ? pRandom->IRandom(0, nmales - 1) : 0;
+			pFather = fathers[whichFather];
+			pCell = pPatch->getRandomCell();
+
+			for (int j = 0; j < nbOffspring; j++) {
+
+				newJuv = new Individual(pSpecies, pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
+				if (pSpecies->getNTraits() > 0)
+					newJuv->inheritTraits(pInd, pFather, resol);
+				if (!newJuv->isViable())
+					delete newJuv;
+				else {
+					juvs.push_back(newJuv);
+					sex = newJuv->getSex();
+					nInds[0][sex]++;
 				}
 			}
 		}
-		fathers.clear();
 		break;
-
 	} // end of switch (dem.repType)
 
 // THIS MAY NOT BE CORRECT FOR MULTIPLE SPECIES IF THERE IS SOME FORM OF

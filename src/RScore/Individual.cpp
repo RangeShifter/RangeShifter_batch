@@ -326,15 +326,25 @@ void Individual::inheritTraits(Individual* mother, int resol)
 
 // Identify whether an individual is a potentially breeding female -
 // if so, return her stage, otherwise return 0
-int Individual::breedingFem() {
-	if (sex == FEM) {
-		if (status == initial 
-			|| status == settled 
-			|| status == settledNeighbour) 
-			return stage;
-		else return 0;
+bool Individual::isBreedingFem() {
+	return sex == FEM &&
+		(status == initial
+			|| status == settled
+			|| status == settledNeighbour);
+}
+
+// Skip reproduction if ind is still in reproduction cooldown
+// // or does not pass prob. of reproduction
+bool Individual::breedsThisSeason(const stageParams& sstruct) {
+	if (fallow < sstruct.repInterval
+		|| !pRandom->Bernoulli(sstruct.probRep)) {
+		this->incFallow();
+		return false;
 	}
-	else return 0;
+	else {
+		this->resetFallow();
+		return true;
+	}
 }
 
 int Individual::getId() { return indId; }
