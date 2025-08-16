@@ -492,14 +492,10 @@ void Population::extirpate() {
 // Produce juveniles and hold them in the juvs vector
 void Population::reproduction(const float localK, const int resol)
 {
-	
-	// get population size at start of reproduction
-	int ninds = static_cast<int>(inds.size());
-	if (ninds == 0) return;
+	if (inds.size() == 0) return;
 
-	int stage, sex, nbOffspring, nj, nmales, nfemales;
+	int stage, sex, nbOffspring, nmales, nfemales;
 	Cell* pCell;
-	indStats ind;
 	double exptdNbOffspring;
 	bool skipBreeding;
 
@@ -537,11 +533,9 @@ void Population::reproduction(const float localK, const int resol)
 
 		// Limits if applicable
 		if (env.usesStoch && !env.inK) {
-			float limit;
-			limit = pSpecies->getMinMax(0);
-			if (fec[stg][0] < limit) fec[stg][0] = limit;
-			limit = pSpecies->getMinMax(1);
-			if (fec[stg][0] > limit) fec[stg][0] = limit;
+			float minFec = pSpecies->getMinMax(0);
+			float maxFec = pSpecies->getMinMax(1);
+			fec[stg][0] = min(maxFec, max(minFec, fec[stg][0]));
 		}
 	}
 
@@ -578,7 +572,7 @@ void Population::reproduction(const float localK, const int resol)
 		if (localK > 0.0) {
 			if (dem.repType != 0) // sexual model
 				fec[1][0] *= 2.0; // cf manual
-			fec[1][0] /= (1.0f + fabs(dem.lambda - 1.0f) * pow(((float)ninds / localK), dem.bc));
+			fec[1][0] /= (1.0f + fabs(dem.lambda - 1.0f) * pow((static_cast<float>(inds.size()) / localK), dem.bc));
 		}
 	}
 
@@ -605,14 +599,10 @@ void Population::reproduction(const float localK, const int resol)
 			for (int j = 0; j < nbOffspring; j++) {
 
 				newJuv = new Individual(pSpecies, pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
-
-				if (pSpecies->getNTraits() > 0) {
+				if (pSpecies->getNTraits() > 0)
 					newJuv->inheritTraits(pInd, resol);
-				}
-
-				if (!newJuv->isViable()) {
-					delete newJuv;
-				}
+				if (!newJuv->isViable())
+					delete newJuv; 
 				else {
 					juvs.push_back(newJuv);
 					nInds[0][0]++;
@@ -627,14 +617,14 @@ void Population::reproduction(const float localK, const int resol)
 		// add breeding males to list of potential fathers
 		nfemales = nmales = 0;
 		for (auto& pInd : inds) {
-			ind = pInd->getStats();
+			indStats ind = pInd->getStats();
 			if (ind.sex == 0 && fec[ind.stage][0] > 0.0) nfemales++;
 			if (ind.sex == 1 && fec[ind.stage][1] > 0.0) {
 				fathers.push_back(pInd);
 				nmales++;
 			}
 		}
-		if (nfemales <= 0 || nmales <= 0)
+		if (nfemales == 0 || nmales == 0)
 			break; // no reproduction
 
 		if (dem.repType == 2) { // complex sexual model
@@ -680,9 +670,6 @@ void Population::reproduction(const float localK, const int resol)
 		}
 		break;
 	} // end of switch (dem.repType)
-
-// THIS MAY NOT BE CORRECT FOR MULTIPLE SPECIES IF THERE IS SOME FORM OF
-// CROSS-SPECIES DENSITY-DEPENDENT FECUNDITY
 }
 
 // Following reproduction of ALL species, add juveniles to the population prior to dispersal
