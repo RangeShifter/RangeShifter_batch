@@ -56,7 +56,7 @@
 
 class SpeciesTrait;
 
- // structures for demographic parameters
+// structures for demographic parameters
 
 struct demogrParams {
 	short repType;
@@ -207,6 +207,40 @@ struct settleTraits {
 	}
 };
 
+// Structures for interactions
+
+// Initiated interactions,
+// e.g. predation/parasitism/pollination 
+// from P.O.V. of predator/parasite/pollinator
+// Effector species "owns" all parameters of the functional response
+struct initdInteraction {
+	Species* recipientSpecies; // host, prey...
+	int stage; // which recipient stage this applies to
+	double beta; // conversion rate
+	double handlingTime; // how many such interactions resolved per generation?
+	double interactionRate; // e.g. attack rate
+	double hullCoeff; // shape of the functional response
+	double interfIntercept; 
+	double interfExponent;
+	double relPreference; // weight for choosing this prey over others
+};
+
+// Received interactions,
+// e.g. predation/parasitism/pollination 
+// from P.O.V. of prey/host/flowering plant
+struct recdInteraction {
+	Species* initiatorSpecies; // predator, pollinator, parasite...
+	int stage; // which initiator stage this applies to
+	double delta; // effect of one unit interaction on the process
+};
+
+// Resource-mediated interactions,
+// e.g. scramble competition and mutualism
+struct resInteraction {
+	Species* partnerSpecies; // competitor or mutualist
+	int stage; // which partner species stage this applies to
+	double alpha; // effect of one individual of the partner species
+};
 
 //---------------------------------------------------------------------------
 typedef short species_id;
@@ -560,7 +594,9 @@ private:
 	float betaS[gMaxNbStages][gMaxNbSexes];				// inflection point of the settlement reaction norm to density
 
 	// Interaction parameters
-	set<species_id> interactingSpecies;
+	vector<initdInteraction> initiatedIntrcts;	// species targeting this, e.g. predators and pollinators
+	vector<recdInteraction> recipientIntrcts;	// species this one targets, e.g. preys or hosts
+	vector<resInteraction> resDepIntrcts;	// species that affect carrying capacity (competitors/mutualists)
 
 	// Initialisation parameters
 	initParams init;
