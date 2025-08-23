@@ -211,6 +211,7 @@ public:
 	void resolveResMedtdInteractions();
 	void resolveInitiatedInteractions();
 	void addRecvdIntrctEffect(const demogrProcess_t& process, const int& stg, const double& funcResp);
+	void resetIntrctEffects();
 
 #ifndef NDEBUG
 	// Testing only

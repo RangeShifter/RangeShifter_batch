@@ -445,6 +445,10 @@ void Community::completeDispersal(Landscape* pLandscape, species_id sp)
 void Community::resolveInteractions() {
 
 	for (auto& [sp, popns] : allPopns)
+		for (auto& pPop : popns)
+			pPop->resetIntrctEffects();
+
+	for (auto& [sp, popns] : allPopns)
 		for (auto& pPop : popns) {
 			pPop->resolveResMedtdInteractions();
 			pPop->resolveInitiatedInteractions();

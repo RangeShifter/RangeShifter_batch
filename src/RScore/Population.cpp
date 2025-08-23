@@ -543,6 +543,11 @@ void Population::reproduction(const float localK, const int resol)
 		}
 	}
 
+	// Received contributions from interspecific interactions
+	for (int stg = 1; stg < nStages; stg++) {
+		fec[stg][0] += fecRecdEffects[stg];
+	}
+
 	// Intraspecific density-dependence
 	if (dem.stageStruct) {
 
@@ -570,6 +575,12 @@ void Population::reproduction(const float localK, const int resol)
 			else densDepEffect = static_cast<float>(totalPop());
 
 			if (localK > 0.0) fec[stg][0] *= exp(-densDepEffect / localK);
+
+			// Contribution from resource-dependent interactions
+			fec[stg][0] *= exp(fecResDepEffects[stg]);
+
+			// Contributions from initiated interspecific interactions
+			fec[stg][0] += exp(fecInitdEffects[stg]);
 		}
 	}
 	else { // Non-structured
@@ -1128,15 +1139,8 @@ bool Population::isMatePresent(Cell* pCell, short othersex)
 //---------------------------------------------------------------------------
 // Determine survival and development and record in individual's status code
 // Changes are NOT applied to the Population at this stage
-
-// FOR MULTIPLE SPECIES, MAY NEED TO SEPARATE OUT THIS IDENTIFICATION STAGE,
-// SO THAT IT CAN BE PERFORMED FOR ALL SPECIES BEFORE ANY UPDATING OF POPULATIONS
-
 void Population::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv)
 {
-	// option0:	0 - stage 0 (juveniles) only
-	//			1 - all stages
-	//			2 - stage 1 and above (all non-juveniles)
 	densDepParams ddparams = pSpecies->getDensDep();
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
@@ -1176,6 +1180,9 @@ void Population::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool r
 		for (int stg = 0; stg < nStages; stg++) {
 			for (int sex = 0; sex < nsexes; sex++) {
 
+				// Contribution of received effects from interspecific interactions
+				dev[stg][sex] += devRecdEffects[stg];
+
 				// Calculate development density-dependence
 				if (resolveDev && sstruct.devDens && stg > 0) {
 				// NB DD in development does NOT apply to juveniles,
@@ -1206,7 +1213,18 @@ void Population::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool r
 
 					dev[stg][sex] *= exp(-(ddparams.devCoeff * density) / localK);
 
+					// Contribution from interspecific resource-dependent interactions
+					dev[stg][sex] *= exp(devResDepEffects[stg]);
+
+					// Contribution from initiated species interactions
+					dev[stg][sex] += devInitdEffects[stg];
+
+					// Ensure development probability remains bounded between 0 and 1
+					dev[stg][sex] = max(0.0f, min(1.0f, dev[stg][sex]));
 				}
+
+				// Contribution of received effects from interspecific interactions
+				surv[stg][sex] += survRecdEffects[stg];
 
 				// Calculate survival density-dependence
 				if (resolveSurv && sstruct.survDens) {
@@ -1230,10 +1248,18 @@ void Population::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool r
 							}
 						}
 					}
-					else // not stage-specific
-						density = totalPop();
+					else density = totalPop();
 					
 					surv[stg][sex] *= exp(-(ddparams.survCoeff * density) / localK);
+
+					// Contribution from interspecific resource-dependent interactions
+					surv[stg][sex] *= exp(survResDepEffects[stg]);
+
+					// Contribution from initiated species interactions
+					surv[stg][sex] += survInitdEffects[stg];
+
+					// Ensure survival probability remains bounded between 0 and 1
+					surv[stg][sex] = max(0.0f, min(1.0f, surv[stg][sex]));
 				}
 
 			} // sex loop
@@ -1433,6 +1459,20 @@ void Population::addRecvdIntrctEffect(const demogrProcess_t& whichProcess, const
 		break;
 	default:
 		break;
+	}
+}
+
+void Population::resetIntrctEffects() {
+	for (int stg = 0; stg < pSpecies->getStageParams().nStages; stg++) {
+		fecInitdEffects[stg] = 0.0;
+		fecRecdEffects[stg] = 0.0;
+		fecResDepEffects[stg] = 0.0;
+		devInitdEffects[stg] = 0.0;
+		devRecdEffects[stg] = 0.0;
+		devResDepEffects[stg] = 0.0;
+		survInitdEffects[stg] = 0.0;
+		survRecdEffects[stg] = 0.0;
+		survResDepEffects[stg] = 0.0;
 	}
 }
 
