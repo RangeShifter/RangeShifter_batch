@@ -208,6 +208,7 @@ public:
 	double computeHs();
 
 	// Interactions
+	void resolveResMedtdInteractions();
 	void resolveInitiatedInteractions();
 	void addRecvdIntrctEffect(const demogrProcess_t& process, const int& stg, const double& funcResp);
 
@@ -235,10 +236,13 @@ private:
 	// one entry per stage
 	vector<double> fecInitdEffects; // interactions initiated by this species
 	vector<double> fecRecdEffects; // interactions initiated by other species
+	vector<double> fecResDepEffects; // resource-dependent interactions
 	vector<double> devInitdEffects;
 	vector<double> devRecdEffects;
+	vector<double> devResDepEffects;
 	vector<double> survInitdEffects;
 	vector<double> survRecdEffects;
+	vector<double> survResDepEffects;
 };
 
 //---------------------------------------------------------------------------

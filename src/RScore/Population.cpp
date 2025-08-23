@@ -83,6 +83,10 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 		}
 	}
 
+	fecInitdEffects = fecRecdEffects = devInitdEffects 
+		= devRecdEffects = survInitdEffects = survRecdEffects
+		= vector(nStages, 0.0);
+
 	// individuals of new population must be >= stage 1
 	for (int stg = 1; stg < nStages; stg++) {
 		if (dem.stageStruct) { // allocate to stages according to initialisation conditions
@@ -1297,6 +1301,52 @@ void Population::ageIncrement(void) {
 	}
 }
 
+void Population::resolveResMedtdInteractions() {
+
+	int nbStg = pSpecies->getStageParams().nStages;
+
+	set<demogrProcess_t> demogrProcesses = { FEC, DEV, SURV };
+	for (auto& process : demogrProcesses) {
+
+		for (int stg = 0; stg < nbStg; stg++) {
+
+			const auto& allResDepInteractions = pSpecies->getAllResDepInteractions(process, stg);
+
+			for (auto& interaction : allResDepInteractions) {
+
+				// Find all populations of target species that are in contact with this one
+				const auto& patchesInContact = pPatch->getOverlappingPatches(interaction.partnerSpecies->getID());
+				for (auto& [pContactPatch, overlap] : patchesInContact) {
+
+					auto pTargetPop = pContactPatch->getPop();
+					if (pTargetPop == nullptr) continue; // empty patch
+
+					// Get abundance scaled down by the % of overlap between the two patches
+					double partnerAbundance = pTargetPop->stagePop(interaction.partnerStage);
+					partnerAbundance *= overlap;
+
+					double effect = interaction.alpha * partnerAbundance;
+					
+					switch (process)
+					{
+					case FEC:
+						this->fecResDepEffects[stg] += effect;
+						break;
+					case DEV:
+						this->devResDepEffects[stg] += effect;
+						break;
+					case SURV:
+						this->survResDepEffects[stg] += effect;
+						break;
+					default:
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
 void Population::resolveInitiatedInteractions() {
 
 	map<pair<Population*, int>, double> interactionRates; // C_i, one entry per target population and stage
@@ -1353,8 +1403,10 @@ void Population::resolveInitiatedInteractions() {
 				{
 				case FEC:
 					this->fecInitdEffects[stg] += funcResp;
+					break;
 				case DEV:
 					this->devInitdEffects[stg] += funcResp;
+					break;
 				case SURV:
 					this->survInitdEffects[stg] += funcResp;
 					break;
