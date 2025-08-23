@@ -358,15 +358,14 @@ void Patch::incrementPatchOverlap(Patch* pOverlappingPatch) {
 
 	// Add entries if not already present
 	const species_id otherSp = pOverlappingPatch->getSpeciesID();
-	const int otherPatchId = pOverlappingPatch->getPatchNum();
 	if (!overlappingPatches.contains(otherSp))
 		overlappingPatches.emplace(otherSp, map<int, double>());
 	auto& thisSpEntry = overlappingPatches.at(sp);
-	if (!thisSpEntry.contains(otherPatchId))
-		thisSpEntry.emplace(otherPatchId, 0.0f);
+	if (!thisSpEntry.contains(pOverlappingPatch))
+		thisSpEntry.emplace(pOverlappingPatch, 0.0f);
 
 	// Increment overlap (in nb of cells) between these patches;
-	thisSpEntry.at(otherPatchId)++;
+	thisSpEntry.at(pOverlappingPatch)++;
 }
 
 // Calculate final amount of overlap with other species patches
@@ -384,6 +383,12 @@ void Patch::calcPatchOverlap() {
 void Patch::resetPatchOverlap() {
 	overlappingPatches.clear();
 }
+
+map<Patch*, double> Patch::getOverlappingPatches(const species_id& whichSpecies) const {
+	if (!overlappingPatches.contains(whichSpecies)) return map<Patch*, double>();
+	else return overlappingPatches.at(whichSpecies);
+}
+
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

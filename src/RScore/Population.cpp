@@ -1297,6 +1297,93 @@ void Population::ageIncrement(void) {
 	}
 }
 
+void Population::resolveInitiatedInteractions() {
+
+	map<pair<Population*, int>, double> interactionRates; // C_i, one entry per target population and stage
+	double totalIntrctRate = 0.0;
+	double totalPreference = 0.0;
+
+	int nbStg = pSpecies->getStageParams().nStages;
+
+	set<demogrProcess_t> demogrProcesses = { FEC, DEV, SURV };
+	for (auto& process : demogrProcesses) {
+
+		for (int stg = 0; stg < nbStg; stg++) {
+
+			const auto& allInitdInteractions = pSpecies->getAllInitdInteractions(process, stg);
+
+			for (auto& interaction : allInitdInteractions) {
+
+				// Find all populations of target species that are in contact with this one
+				const auto& patchesInContact = pPatch->getOverlappingPatches(interaction.recipientSpecies->getID());
+				for (auto& [pContactPatch, overlap] : patchesInContact) {
+
+					auto pTargetPop = pContactPatch->getPop();
+					if (pTargetPop == nullptr) continue; // empty patch
+
+					// Get abundances scaled down by the % of overlap between the two patches
+					double targetAbundance = pTargetPop->stagePop(interaction.recipientStage);
+					targetAbundance *= overlap;
+					double initiatorAbundance = stagePop(stg) * overlap;
+
+					// Calculate interaction rate terms
+					double targetPreference = interaction.relPreference * targetAbundance; // pi_i * N_i
+					totalPreference += targetPreference; // sum_k (pi_k * N_k)
+
+					double intrctRate = interaction.attackRate * pow(targetAbundance, interaction.hullCoeff) // a_i * N_i^h
+						/ (interaction.interfIntercept + pow(initiatorAbundance, interaction.interfExponent)) // 1 / (omega_i + N_p^q)
+						* targetPreference;
+					interactionRates.emplace(make_pair(pTargetPop, interaction.recipientStage), intrctRate);
+
+					totalIntrctRate += interaction.handlingTime * intrctRate; // h_i * C_i
+				}
+			}
+
+			// Re-scale the preference term once we know their sum
+			for (auto& [targetStgPop, intrctRate] : interactionRates) {
+				intrctRate /= totalPreference;
+			}
+			totalIntrctRate /= totalPreference;
+
+			// Finish the calculation of the functional reponse
+			// and increment the corresponding sum of effects
+			for (auto& [targetStgPop, intrctRate] : interactionRates) {
+				double funcResp = intrctRate / (1 + totalIntrctRate);
+				switch (process)
+				{
+				case FEC:
+					this->fecInitdEffects[stg] += funcResp;
+				case DEV:
+					this->devInitdEffects[stg] += funcResp;
+				case SURV:
+					this->survInitdEffects[stg] += funcResp;
+					break;
+				default:
+					break;
+				}
+				targetStgPop.first->addRecvdIntrctEffect(process, targetStgPop.second, funcResp);
+			}
+		}
+	}
+}
+
+void Population::addRecvdIntrctEffect(const demogrProcess_t& whichProcess, const int& stg, const double& funcResp) {
+	switch (whichProcess)
+	{
+	case FEC :
+		fecRecdEffects[stg] += funcResp;
+		break;
+	case DEV :
+		devRecdEffects[stg] += funcResp;
+		break;
+	case SURV :
+		survRecdEffects[stg] += funcResp;
+		break;
+	default:
+		break;
+	}
+}
+
 //---------------------------------------------------------------------------
 // Remove zero pointers to dead or dispersed individuals
 void Population::clean()

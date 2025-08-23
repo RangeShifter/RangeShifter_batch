@@ -342,6 +342,9 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 				pComm->emigration();
 				pComm->dispersal(chgNb, yr);
 
+				// Calculate functional responses for interacting species
+				pComm->resolveInteractions();
+
 				// Post-dispersal survival + devlpt, where applicable
 				pComm->drawSurvivalDevlpt(1);
 

@@ -128,6 +128,9 @@ typedef enum {
 	INVALID_SEX // error
 } sex_t;
 
+// Demographic processes type, used for mapping interactions
+typedef enum { FEC, DEV, SURV } demogrProcess_t;
+
 //---------------------------------------------------------------------------
 
 // Environmental gradient parameters

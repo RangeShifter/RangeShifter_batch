@@ -143,6 +143,7 @@ public:
 	void incrementPatchOverlap(Patch* pOverlappingPatch);
 	void calcPatchOverlap();
 	void resetPatchOverlap();
+	map<Patch*, double> getOverlappingPatches(const species_id& whichSpecies) const;
 
 #ifndef NDEBUG
 	// Testing only
@@ -164,7 +165,7 @@ private:
 	vector<int> occupancy;		// pointer to occupancy array
 
 	std::vector <Cell*> cells;
-	map<species_id, map<int, double>> overlappingPatches; // [other patch's ID, % of overlap (in nb cells)]
+	map<species_id, map<Patch*, double>> overlappingPatches; // [other patch, % of overlap (in nb cells)]
 };
 
 //---------------------------------------------------------------------------

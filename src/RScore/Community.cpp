@@ -442,6 +442,15 @@ void Community::completeDispersal(Landscape* pLandscape, species_id sp)
 	mtxPop->clean();
 }
 
+void Community::resolveInteractions() {
+
+	for (auto& [sp, popns] : allPopns)
+		for (auto& pPop : popns)
+			pPop->resolveInitiatedInteractions();
+
+}
+
+
 // initialise a specified individual
 void Community::initialInd(Landscape* pLandscape, Species* pSpecies,
 	Patch* pPatch, Cell* pCell, int ix)

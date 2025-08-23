@@ -94,6 +94,7 @@ public:
 	void reproduction(int year);
 	void emigration();
 	void dispersal(short landIx, short nextseason);
+	void resolveInteractions();
 
 	// Remove emigrants from patch 0 (matrix) and transfer to the Population in which
 	// their destination co-ordinates fall (executed for the matrix patch only)

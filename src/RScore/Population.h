@@ -171,9 +171,9 @@ public:
 	// Determine survival and development and record in individual's status code
 	// Changes are NOT applied to the Population at this stage
 	void drawSurvivalDevlpt(
-		bool resolveJuvs, 
+		bool resolveJuvs,
 		bool resolveAdults,
-		bool resolveDev, 
+		bool resolveDev,
 		bool resolveSurv
 	);
 	void applySurvivalDevlpt(); // Apply survival changes to the population
@@ -196,7 +196,7 @@ public:
 	void outputTraitPatchInfo(ofstream& outtraits, int rep, int yr, int gen, bool usesPatches);
 	traitsums outTraits(ofstream& outtraits, const bool& writefile);
 	void outputGeneValues(ofstream& ofsGenes, const int& yr, const int& gen) const;
-	
+
 	void clean(); // Remove zero pointers to dead or dispersed individuals
 
 	void updatePopNeutralTables();
@@ -206,6 +206,10 @@ public:
 	int countHeterozygoteLoci();
 	vector<int> countNbHeterozygotesEachLocus();
 	double computeHs();
+
+	// Interactions
+	void resolveInitiatedInteractions();
+	void addRecvdIntrctEffect(const demogrProcess_t& process, const int& stg, const double& funcResp);
 
 #ifndef NDEBUG
 	// Testing only
@@ -226,6 +230,15 @@ private:
 	vector<Individual*> sampledInds;
 	vector<NeutralCountsTable> popNeutralCountTables;
 	void resetPopNeutralTables();
+
+	// Cumulated effects from species interactions,
+	// one entry per stage
+	vector<double> fecInitdEffects; // interactions initiated by this species
+	vector<double> fecRecdEffects; // interactions initiated by other species
+	vector<double> devInitdEffects;
+	vector<double> devRecdEffects;
+	vector<double> survInitdEffects;
+	vector<double> survRecdEffects;
 };
 
 //---------------------------------------------------------------------------
