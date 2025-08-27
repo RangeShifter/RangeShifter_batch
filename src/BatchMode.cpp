@@ -27,7 +27,7 @@
 
 // Note - all batch files are prefixed 'b' here for reasons concerned with RS v1.0
 ifstream ifsSimFile, ifsParamFile, ifsLandFile, ifsSpLandFile, ifsDynLandFile;
-ifstream ifsSpDistFile, ifsStageStructFile, ifsTransMatrix;
+ifstream ifsSpDistFile, ifsStageStructFile, ifsTransMatrix, ifsInteraction;
 ifstream ifsStageWeightsFile;
 ifstream ifsEmigrationFile, ifsTransferFile, ifsSettlementFile;
 ifstream ifsTraitsFile, ifsGeneticsFile;
@@ -59,7 +59,7 @@ string gSimFile, gParametersFile;
 string landFile;
 string gHabMapName, gDynLandFileName;
 string gSpLandName;
-string stageStructFile, transMatrix;
+string stageStructFile, transMatrix, interactionFile;
 string emigrationFile, transferFile, settleFile, geneticsFile, traitsFile, initialFile;
 string prevInitialIndsFile = " ";
 
@@ -344,6 +344,37 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 						<< gUsesStageStruct << endl;
 					areInputFilesOk = false;
 				}
+			}
+		}
+	}
+	else anyFormatError = true; // wrong control file format
+
+	// Check interaction file if required
+	controlIfs >> paramName >> filename;
+	batchLogOfs << endl;
+	if (paramName == "InteractionFile" && !anyFormatError) {
+		if (filename != "NULL")  {
+			if (!gUsesStageStruct) {
+				batchLogOfs << "*** Stage-structure must be enabled to enable species interactions" << endl;
+				areInputFilesOk = false;
+			}
+			else {
+				pathToFile = inputDir + filename;
+				batchLogOfs << "Checking " << paramName << " " << pathToFile << endl;
+				ifsInteraction.open(pathToFile.c_str());
+				if (ifsInteraction.is_open()) {
+					if (CheckInteractionFile(inputDir)) {
+						FileOK(paramName, nSimuls, 0);
+						interactionFile = pathToFile;
+					}
+					else areInputFilesOk = false;
+					ifsInteraction.close();
+				}
+				else {
+					OpenError(paramName, pathToFile);
+					areInputFilesOk = false;
+				}
+				ifsInteraction.clear();
 			}
 		}
 	}
@@ -2131,6 +2162,432 @@ bool CheckWeightsFile(string filetype, int nbStages, int nbSexes)
 }
 
 //---------------------------------------------------------------------------
+
+// Check species interactions file
+bool CheckInteractionFile(string indir)
+{
+	string header, colheader;
+	int simNb, nextLineSimNb, inSpLeft, inSpRight, inStgLeft, inStgRight;
+	string filename, inProcess, inResMedIntrct, inAlpha, inInitIntrct, inBeta, 
+		inHandlingTime, inAttackRate, inHullCoeff, inOmega, inInterfExp, 
+		inRelPref, inRecIntrct, inDelta, inTargetDensity, inInterference, inTargetPref;
+	int nbErrors = 0;
+	set<int> simNbs;
+	const string whichInputFile = "InteractionFile";
+
+	// Track initiated and received interactions to check they are matched
+	set<tuple<int, int, int, int, string>> initdIntrctRecord, recdIntrctRecord;
+
+	// Track relative preference counts to make sure more than one target is supplied;
+	map<tuple<int, int, string>, int> relPrefMap; 
+
+	// Parse header line
+	ifsInteraction >> header; if (header != "Simulation") nbErrors++;
+	ifsInteraction >> header; if (header != "SpeciesLeft") nbErrors++;
+	ifsInteraction >> header; if (header != "SpeciesRight") nbErrors++;
+	ifsInteraction >> header; if (header != "StageLeft") nbErrors++;
+	ifsInteraction >> header; if (header != "StageRight") nbErrors++;
+	ifsInteraction >> header; if (header != "Process") nbErrors++;
+	ifsInteraction >> header; if (header != "ResMedInteraction") nbErrors++;
+	ifsInteraction >> header; if (header != "Alpha") nbErrors++;
+	ifsInteraction >> header; if (header != "InitiatedInteraction") nbErrors++;
+	ifsInteraction >> header; if (header != "Beta") nbErrors++;
+	ifsInteraction >> header; if (header != "HandlingTime") nbErrors++;
+	ifsInteraction >> header; if (header != "TargetDensity") nbErrors++;
+	ifsInteraction >> header; if (header != "AttackRate") nbErrors++;
+	ifsInteraction >> header; if (header != "HullCoeff") nbErrors++;
+	ifsInteraction >> header; if (header != "Interference") nbErrors++;
+	ifsInteraction >> header; if (header != "Omega") nbErrors++;
+	ifsInteraction >> header; if (header != "IntereferenceExp") nbErrors++;
+	ifsInteraction >> header; if (header != "TargetPreference") nbErrors++;
+	ifsInteraction >> header; if (header != "RelPreference") nbErrors++;
+	ifsInteraction >> header; if (header != "ReceivedInteraction") nbErrors++;
+	ifsInteraction >> header; if (header != "Delta") nbErrors++;
+
+	if (nbErrors > 0) {
+		FormatError(whichInputFile, nbErrors);
+		return false;
+	}
+
+	// Parse data lines
+	int lineNb = 1;
+	simCheck current, prev;
+	constexpr int simNbNotRead = -98765;
+	simNb = simNbNotRead;
+	prev.simNb = prev.spNb = -999;
+	prev.simLines = prev.reqdSimLines = 0;
+
+	ifsInteraction >> simNb;
+	bool stopReading = (simNb == simNbNotRead);
+
+	while (!stopReading) {
+
+		if (!gSpInputOpt.contains(simNb)) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
+			nbErrors++;
+		}
+
+		ifsEmigrationFile >> inSpLeft >> inSpRight 
+			>> inStgLeft >> inStgRight >> inProcess
+			>> inResMedIntrct >> inAlpha
+			>> inInitIntrct >> inBeta >> inHandlingTime
+			>> inTargetDensity >> inAttackRate >> inHullCoeff
+			>> inInterference >> inOmega >> inInterfExp
+			>> inTargetPref >> inRelPref
+			>> inRecIntrct >> inDelta;
+
+		if (!gSpInputOpt.at(simNb).contains(inSpLeft)) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "SpeciesLeft (" << to_string(inSpLeft) << ") doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+		}
+		if (!gSpInputOpt.at(simNb).contains(inSpRight)) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "SpeciesRight (" << to_string(inSpRight) << ") doesn't match those in ParametersFile" << endl;
+			nbErrors++;
+		}
+		if (inSpLeft == inSpRight) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "SpeciesRight and SpeciesLeft cannot be the same species." << endl;
+			nbErrors++;
+		}
+
+		int nbStgLeft = gSpInputOpt.at(simNb).at(inSpLeft).nbStages;
+		int nbStgRight = gSpInputOpt.at(simNb).at(inSpRight).nbStages;
+
+		if (inStgLeft < 0 || inStgLeft >= nbStgLeft) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "StageLeft (" << to_string(inStgLeft) << ") must be between 0 and " << to_string(nbStgLeft - 1) << endl;
+			nbErrors++;
+		}
+		if (inStgLeft < 0 || inStgRight >= nbStgRight) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "StageRight (" << to_string(inStgRight) << ") must be between 0 and " << to_string(inStgRight - 1) << endl;
+			nbErrors++;
+		}
+
+		if (inProcess != "fecundity" && inProcess != "development" && inProcess != "survival") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "Process must be either fecundity, development or survival" << endl;
+			nbErrors++;
+		}
+
+		if (inProcess == "fecundity" && inStgLeft == 0) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "Species interactions cannot affect the fecundity of juveniles (stage 0) since they don't reproduce." << endl;
+			nbErrors++;
+		}
+
+		if (inResMedIntrct != "TRUE" && inResMedIntrct != "FALSE") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "ResMedInteraction must be either TRUE or FALSE" << endl;
+			nbErrors++;
+		}
+
+		if (inInitIntrct != "TRUE" && inInitIntrct != "FALSE") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "InitiatedInteraction must be either TRUE or FALSE" << endl;
+			nbErrors++;
+		}
+
+		if (inRecIntrct != "TRUE" && inRecIntrct != "FALSE") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLogOfs << "ReceivedInteraction must be either TRUE or FALSE" << endl;
+			nbErrors++;
+		}
+
+		// Resource-mediated interaction
+		if (inResMedIntrct == "TRUE") {
+			if (inAlpha == "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If ResMedInteraction is TRUE, Alpha must not be #" << endl;
+				nbErrors++;
+			}
+		} 
+		else {
+			if (inAlpha != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If ResMedInteraction is FALSE, Alpha must be #" << endl;
+				nbErrors++;
+			}
+		}
+		
+		// Initiated interaction
+		if (inInitIntrct == "TRUE") {
+
+			// Check this entry is not already present
+			auto initdIntrctEntry = make_tuple(inSpLeft, inStgLeft, inSpRight, inStgRight, inProcess);
+			if (initdIntrctRecord.contains(initdIntrctEntry)) {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "Multiple entries for the same " << inProcess 
+					<< " interaction involving stage " << to_string(inStgLeft)
+					<< " of species " << to_string(inSpLeft) << " and stage "
+					<< to_string(inStgRight) << " of species " << to_string(inSpRight) << endl;
+				nbErrors++;
+			}
+			else {
+				initdIntrctRecord.insert(initdIntrctEntry);
+			}
+
+			if (inBeta == "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If InitiatedInteraction is TRUE, Beta must not be #" << endl;
+				nbErrors++;
+			}
+			if (inHandlingTime == "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If InitiatedInteraction is TRUE, HandlingTime must not be #" << endl;
+				nbErrors++;
+			}
+			else if (stof(inHandlingTime) < 0.0) {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "HandlingTime must be >= 0" << endl;
+				nbErrors++;
+			}
+
+			// Target density-dependence parameters
+			if (inTargetDensity == "TRUE") {
+				if (inAttackRate == "#" || inHullCoeff == "#") {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "If TargetDensity is TRUE, AttackRate and HullCoeff must be supplied." << endl;
+					nbErrors++;
+				}
+				if (stof(inAttackRate) < 0) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "AttackRate must be >= 0." << endl;
+					nbErrors++;
+				}
+				if (stof(inHullCoeff) < 0) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "HullCoeff must be >= 0." << endl;
+					nbErrors++;
+				}
+			}
+			else { // not target density
+				if (inAttackRate != "#" || inHullCoeff != "#") {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "If TargetDensity is FALSE, AttackRate and HullCoeff must be #" << endl;
+					nbErrors++;
+				}
+			}
+
+			// Initiator interference
+			if (inInterference == "TRUE") {
+				if (inOmega == "#" || inInterfExp == "#") {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "If Interference is TRUE, Omega and InterferenceExp must be supplied." << endl;
+					nbErrors++;
+				}
+				if (stof(inOmega) < 0) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "Omega must be >= 0." << endl;
+					nbErrors++;
+				}
+				if (stof(inInterfExp) < 0) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "InterferenceExp must be >= 0." << endl;
+					nbErrors++;
+				}
+			}
+			else { // no interference
+				if (inOmega != "#" || inInterfExp != "#") {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "If Interference is FALSE, Omega and InterferenceExp must be #" << endl;
+					nbErrors++;
+				}
+			}
+
+			// Relative target preference
+			if (inTargetPref == "TRUE") {
+
+				// Count how many targets are provided if relative preference is enabled
+				// (there should be at least 2, or else none)
+				auto relPrefEntry = make_tuple(inSpLeft, inStgLeft, inProcess);
+				if (relPrefMap.contains(relPrefEntry)) {
+					relPrefMap.at(relPrefEntry)++;
+				}
+				else {
+					relPrefMap.emplace(relPrefEntry, 1);
+				}
+
+				if (inRelPref == "#") {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "If TargetPreference is TRUE, RelPreference must be supplied." << endl;
+					nbErrors++;
+				}
+				if (stof(inRelPref) <= 0) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "RelPreference must be strictly positive." << endl;
+					nbErrors++;
+				}
+			}
+			else { // no preference
+				if (inRelPref != "#") {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "If Interference is FALSE, RelPreference must be #" << endl;
+					nbErrors++;
+				}
+			}
+		}
+		else { // Initiated interaction is off
+			if (inBeta != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If InitiatedInteraction is FALSE, Beta must be #" << endl;
+				nbErrors++;
+			}
+			if (inHandlingTime != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If InitiatedInteraction is FALSE, HandlingTime must be #" << endl;
+				nbErrors++;
+			}
+			if (inTargetDensity != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If InitiatedInteraction is FALSE, TargetDensity must be #" << endl;
+				nbErrors++;
+			}
+			if (inInterference != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If InitiatedInteraction is FALSE, Interference must be #" << endl;
+				nbErrors++;
+			}
+			if (inTargetPref != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If InitiatedInteraction is FALSE, TargetPreference must be #" << endl;
+				nbErrors++;
+			}
+		}
+
+		// Received interaction
+		if (inRecIntrct == "TRUE") {
+
+			// Check this entry is not already present
+			auto recdIntrctEntry = make_tuple(inSpLeft, inStgLeft, inSpRight, inStgRight, inProcess);
+			if (recdIntrctRecord.contains(recdIntrctEntry)) {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "Multiple entries for the same " << inProcess
+					<< " interaction involving stage " << to_string(inStgLeft)
+					<< " of species " << to_string(inSpLeft) << " and stage "
+					<< to_string(inStgRight) << " of species " << to_string(inSpRight) << endl;
+				nbErrors++;
+			}
+			else {
+				recdIntrctRecord.insert(recdIntrctEntry);
+			}
+
+			if (inDelta == "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If ReceivedInteraction is TRUE, Delta must not be #" << endl;
+				nbErrors++;
+			}
+		}
+		else {
+			if (inDelta != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If ReceivedInteraction is FALSE, Delta must be #" << endl;
+				nbErrors++;
+			}
+		}
+
+		// Preview next line
+		nextLineSimNb = simNbNotRead;
+		ifsInteraction >> nextLineSimNb;
+
+		if (nextLineSimNb == simNbNotRead
+			|| ifsInteraction.eof()) {
+			// Exit loop
+			stopReading = true;
+			if (!checkIntrctPairsMatch(initdIntrctRecord, recdIntrctRecord)) nbErrors++;
+			if (!checkRelPrefMap(relPrefMap)) nbErrors++;
+		}
+		else if (nextLineSimNb != simNb) {
+			simNb = nextLineSimNb;
+
+			if (!checkIntrctPairsMatch(initdIntrctRecord, recdIntrctRecord)) nbErrors++;
+			if (!checkRelPrefMap(relPrefMap)) nbErrors++;
+
+			// Clear records for the next sim
+			relPrefMap.clear();
+			initdIntrctRecord.clear();
+			recdIntrctRecord.clear();
+		} // else continue reading traits for same sim
+
+		lineNb++;
+
+	} // end of while loop
+
+	if (!ifsInteraction.eof()) {
+		EOFerror(whichInputFile);
+		nbErrors++;
+	}
+
+	if (simNbs.size() != gSpInputOpt.size()) {
+		SimulnCountError(whichInputFile);
+		nbErrors++;
+	}
+	return nbErrors == 0;
+}
+
+bool checkIntrctPairsMatch(const set<tuple<int, int, int, int, string>>& initdRecord, const set<tuple<int, int, int, int, string>>& recdRecord) {
+	bool isFine = true;
+
+	// Each initiated interaction must have a matching received interaction
+	for (auto& initdEntry : initdRecord) {
+		auto exptdRecdEntry = make_tuple(
+			get<2>(initdEntry), // SpeciesLeft -> SpeciesRight
+			get<3>(initdEntry), // StageLeft -> StageRight
+			get<0>(initdEntry), // SpeciesRight -> SpeciesLeft
+			get<1>(initdEntry), // StageRight -> StageLeft
+			get<4>(initdEntry) // Process
+		);
+		if (!recdRecord.contains(exptdRecdEntry)) {
+			isFine = false;
+			batchLogOfs << "Initiated interaction involving stage " 
+				<< to_string(get<1>(initdEntry)) << " of species " << to_string(get<0>(initdEntry)) 
+				<< " must be matched by a received interaction for stage " 
+				<< to_string(get<3>(initdEntry)) << " of species " << to_string(get<2>(initdEntry))
+				<< endl;
+		}
+	}
+
+	// Each received interaction must have a matching initiated interaction
+	for (auto& recEntry : recdRecord) {
+		auto exptdInitdEntry = make_tuple(
+			get<2>(recEntry), // SpeciesLeft -> SpeciesRight
+			get<3>(recEntry), // StageLeft -> StageRight
+			get<0>(recEntry), // SpeciesRight -> SpeciesLeft
+			get<1>(recEntry), // StageRight -> StageLeft
+			get<4>(recEntry) // Process
+		);
+		if (!initdRecord.contains(exptdInitdEntry)) {
+			isFine = false;
+			batchLogOfs << "Received interaction involving stage "
+				<< to_string(get<1>(recEntry)) << " of species " << to_string(get<0>(recEntry))
+				<< " must be matched by an initiated interaction for stage "
+				<< to_string(get<3>(recEntry)) << " of species " << to_string(get<2>(recEntry))
+				<< endl;
+		}
+	}
+
+	return isFine;
+}
+
+bool checkRelPrefMap(const map<tuple<int, int, string>, int>& relPrefMap) {
+	bool isFine = true;
+	for (auto& [entry, count] : relPrefMap) {
+		if (count == 1) {
+			isFine = false;
+			batchLogOfs << "TargetPreference is enabled only for a single target of stage "
+				<< to_string(get<1>(entry)) << " of species " << to_string(get<0>(entry))
+				<< " (there must be at least two)."
+				<< endl;
+		}
+	}
+	return isFine;
+}
+
+// -----------------------------------------------------------
+
 bool CheckEmigFile()
 {
 	string header;
