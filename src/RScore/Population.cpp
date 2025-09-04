@@ -1338,17 +1338,17 @@ void Population::resolveResMedtdInteractions() {
 
 			const auto& allResDepInteractions = pSpecies->getAllResDepInteractions(process, stg);
 
-			for (auto& interaction : allResDepInteractions) {
+			for (auto& [partnerSpStg, interaction] : allResDepInteractions) {
 
 				// Find all populations of target species that are in contact with this one
-				const auto& patchesInContact = pPatch->getOverlappingPatches(interaction.partnerSpecies);
+				const auto& patchesInContact = pPatch->getOverlappingPatches(partnerSpStg.first);
 				for (auto& [pContactPatch, overlap] : patchesInContact) {
 
 					auto pTargetPop = pContactPatch->getPop();
 					if (pTargetPop == nullptr) continue; // empty patch
 
 					// Get abundance scaled down by the % of overlap between the two patches
-					double partnerAbundance = pTargetPop->stagePop(interaction.partnerStage);
+					double partnerAbundance = pTargetPop->stagePop(partnerSpStg.second);
 					partnerAbundance *= overlap;
 
 					double effect = interaction.alpha * partnerAbundance;
@@ -1376,8 +1376,8 @@ void Population::resolveResMedtdInteractions() {
 void Population::resolveInitiatedInteractions() {
 
 	map<pair<Population*, int>, double> interactionRates; // C_i, one entry per target population and stage
-	double totalIntrctRate = 0.0;
-	double totalPreference = 0.0;
+	double totalIntrctRate = 0.0; // sum_k (h_k * C_k)
+	double totalPreference = 0.0; // sum_k (pi_k * N_k)
 
 	int nbStg = pSpecies->getStageParams().nStages;
 
@@ -1386,19 +1386,23 @@ void Population::resolveInitiatedInteractions() {
 
 		for (int stg = 0; stg < nbStg; stg++) {
 
+			// Loop through all initiated interactions involving this process and stage
 			const auto& allInitdInteractions = pSpecies->getAllInitdInteractions(process, stg);
 
-			for (auto& interaction : allInitdInteractions) {
+			for (auto& [targetSpStg, interaction] : allInitdInteractions) {
+
+				const species_id tgtSp = targetSpStg.first;
+				const int tgtStg = targetSpStg.second;
 
 				// Find all populations of target species that are in contact with this one
-				const auto& patchesInContact = pPatch->getOverlappingPatches(interaction.recipientSpecies);
+				const auto& patchesInContact = pPatch->getOverlappingPatches(tgtSp);
 				for (auto& [pContactPatch, overlap] : patchesInContact) {
 
 					auto pTargetPop = pContactPatch->getPop();
 					if (pTargetPop == nullptr) continue; // empty patch
 
 					// Get abundances scaled down by the % of overlap between the two patches
-					double targetAbundance = pTargetPop->stagePop(interaction.recipientStage);
+					double targetAbundance = pTargetPop->stagePop(tgtStg);
 					targetAbundance *= overlap;
 					double initiatorAbundance = stagePop(stg) * overlap;
 
@@ -1409,53 +1413,66 @@ void Population::resolveInitiatedInteractions() {
 					double intrctRate = interaction.attackRate * pow(targetAbundance, interaction.hullCoeff) // a_i * N_i^h
 						/ (interaction.interfIntercept + pow(initiatorAbundance, interaction.interfExponent)) // 1 / (omega_i + N_p^q)
 						* targetPreference;
-					interactionRates.emplace(make_pair(pTargetPop, interaction.recipientStage), intrctRate);
 
 					totalIntrctRate += interaction.handlingTime * intrctRate; // h_i * C_i
+
+					interactionRates.emplace(make_pair(pTargetPop, tgtStg), intrctRate);
+
 				}
 			}
 
 			// Re-scale the preference term once we know their sum
 			for (auto& [targetStgPop, intrctRate] : interactionRates) {
-				intrctRate /= totalPreference;
+				intrctRate /= totalPreference; // divide by sum_k (pi_k * c_k)
 			}
-			totalIntrctRate /= totalPreference;
+			totalIntrctRate /= totalPreference; // divide by sum_k(pi_k * c_k)
 
 			// Finish the calculation of the functional reponse
 			// and increment the corresponding sum of effects
 			for (auto& [targetStgPop, intrctRate] : interactionRates) {
+				
 				double funcResp = intrctRate / (1 + totalIntrctRate);
+
+				const species_id tgtSp = targetStgPop.first->getSpecies()->getID();
+				const int tgtStg = targetStgPop.second;
+				const initdInteraction intrct = allInitdInteractions.at(make_pair(tgtSp, tgtStg));
+
 				switch (process)
 				{
 				case FEC:
-					this->fecInitdEffects[stg] += funcResp;
+					this->fecInitdEffects[stg] += intrct.beta * funcResp;
 					break;
 				case DEV:
-					this->devInitdEffects[stg] += funcResp;
+					this->devInitdEffects[stg] += intrct.beta * funcResp;
 					break;
 				case SURV:
-					this->survInitdEffects[stg] += funcResp;
+					this->survInitdEffects[stg] += intrct.beta * funcResp;
 					break;
 				default:
 					break;
 				}
-				targetStgPop.first->addRecvdIntrctEffect(process, targetStgPop.second, funcResp);
+				auto initiatorSpStg = make_pair(pSpecies->getID(), stg);
+				targetStgPop.first->addRecvdIntrctEffect(process, tgtStg, initiatorSpStg, funcResp);
 			}
-		}
-	}
+
+		} // stage loop
+	} // process loop
 }
 
-void Population::addRecvdIntrctEffect(const demogrProcess_t& whichProcess, const int& stg, const double& funcResp) {
+void Population::addRecvdIntrctEffect(const demogrProcess_t& whichProcess, const int& stg, const pair<species_id, int>& initiatorSpStg, const double& funcResp) {
+	
+	const recdInteraction intrct = pSpecies->getAllRecdInteractions(whichProcess, stg).at(initiatorSpStg);
+
 	switch (whichProcess)
 	{
 	case FEC :
-		fecRecdEffects[stg] += funcResp;
+		fecRecdEffects[stg] += intrct.delta * funcResp;
 		break;
 	case DEV :
-		devRecdEffects[stg] += funcResp;
+		devRecdEffects[stg] += intrct.delta * funcResp;
 		break;
 	case SURV :
-		survRecdEffects[stg] += funcResp;
+		survRecdEffects[stg] += intrct.delta * funcResp;
 		break;
 	default:
 		break;
