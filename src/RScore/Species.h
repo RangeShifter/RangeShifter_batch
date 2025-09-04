@@ -214,7 +214,7 @@ struct settleTraits {
 // from P.O.V. of predator/parasite/pollinator
 // Effector species "owns" all parameters of the functional response
 struct initdInteraction {
-	Species* recipientSpecies; // host, prey...
+	species_id recipientSpecies; // host, prey...
 	int recipientStage; // which stage of recipient species is targeted
 	double beta; // conversion rate
 	double handlingTime; // how many such interactions resolved per generation?
@@ -229,15 +229,15 @@ struct initdInteraction {
 // e.g. predation/parasitism/pollination 
 // from P.O.V. of prey/host/flowering plant
 struct recdInteraction {
-	Species* initiatorSpecies; // predator, pollinator, parasite...
-	int initorStage; // which stage of the initiator is involved?
+	species_id initiatorSpecies; // predator, pollinator, parasite...
+	int initiatorStage; // which stage of the initiator is involved?
 	double delta; // effect of one unit interaction on the process
 };
 
 // Resource-mediated interactions,
 // e.g. scramble competition and mutualism
 struct resInteraction {
-	Species* partnerSpecies; // competitor or mutualist
+	species_id partnerSpecies; // competitor or mutualist
 	int partnerStage; // which partner stage this applies to?
 	double alpha; // effect of one individual of the partner species
 };
@@ -466,6 +466,10 @@ public:
 	bool isWithinLimits(const int& x, const int& y);
 
 	// Interaction functions
+	void addResMedtdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, const resInteraction& resDepIntrct);
+	void addInitdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, const initdInteraction& initiatdIntrct);
+	void addReceivdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, const recdInteraction& receivedIntrct);
+
 	vector<initdInteraction> getAllInitdInteractions(const demogrProcess_t& proc, const int& stg) const { 
 		auto key = make_pair(proc, stg);
 		return initiatedIntrcts.at(key); 
@@ -604,7 +608,7 @@ private:
 	float betaS[gMaxNbStages][gMaxNbSexes];				// inflection point of the settlement reaction norm to density
 
 	// Interaction parameters
-	// sorted by demogr. process and stage (of this species)
+	// sorted by demogr. process x stage (of this species)
 	map<pair<demogrProcess_t, int>, vector<initdInteraction>> initiatedIntrcts;	// species targeting this, e.g. predators and pollinators
 	map<pair<demogrProcess_t, int>, vector<recdInteraction>> receivedIntrcts;	// species this one targets, e.g. preys or hosts
 	map<pair<demogrProcess_t, int>, vector<resInteraction>> resDepIntrcts;	// species that affect carrying capacity (competitors/mutualists)

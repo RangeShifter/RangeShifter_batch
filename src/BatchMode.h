@@ -190,6 +190,8 @@ int ReadTransitionMatrix(
 	short season
 );
 int ReadStageWeights(Species* pSpecies, int option);
+demogrProcess_t stringToProcess(const string& strProcess);
+void ReadInteractions(const int& simNb, speciesMap_t& allSpecies);
 int ReadEmigration(speciesMap_t& simSpecies);
 int ReadTransferFile(speciesMap_t& simSpecies, landParams paramsLand, int transferType);
 int ReadTransferKernels(speciesMap_t& simSpecies, landParams paramsLand);

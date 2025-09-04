@@ -1341,7 +1341,7 @@ void Population::resolveResMedtdInteractions() {
 			for (auto& interaction : allResDepInteractions) {
 
 				// Find all populations of target species that are in contact with this one
-				const auto& patchesInContact = pPatch->getOverlappingPatches(interaction.partnerSpecies->getID());
+				const auto& patchesInContact = pPatch->getOverlappingPatches(interaction.partnerSpecies);
 				for (auto& [pContactPatch, overlap] : patchesInContact) {
 
 					auto pTargetPop = pContactPatch->getPop();
@@ -1391,7 +1391,7 @@ void Population::resolveInitiatedInteractions() {
 			for (auto& interaction : allInitdInteractions) {
 
 				// Find all populations of target species that are in contact with this one
-				const auto& patchesInContact = pPatch->getOverlappingPatches(interaction.recipientSpecies->getID());
+				const auto& patchesInContact = pPatch->getOverlappingPatches(interaction.recipientSpecies);
 				for (auto& [pContactPatch, overlap] : patchesInContact) {
 
 					auto pTargetPop = pContactPatch->getPop();

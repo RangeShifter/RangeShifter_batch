@@ -897,12 +897,16 @@ void Species::setSamplePatchList(const set<int>& samplePatchList) {
 
 // Interaction functions
 
-void Species::addInteractingSpecies(const species_id& sp) {
-	interactingSpecies.insert(sp);
+void Species::addResMedtdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, const resInteraction& resDepIntrct) {
+	resDepIntrcts.emplace(make_pair(whichProcess, whichStage), resDepIntrct);
 }
 
-set<species_id> Species::getInteractingSpecies() const {
-	return interactingSpecies;
+void Species::addInitdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, const initdInteraction& initiatdIntrct) {
+	initiatedIntrcts.emplace(make_pair(whichProcess, whichStage), initiatdIntrct);
+}
+
+void Species::addReceivdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, const recdInteraction& receivedIntrct) {
+	receivedIntrcts.emplace(make_pair(whichProcess, whichStage), receivedIntrct);
 }
 
 //---------------------------------------------------------------------------

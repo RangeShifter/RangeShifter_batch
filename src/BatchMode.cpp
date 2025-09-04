@@ -41,6 +41,7 @@ ofstream batchLogOfs;
 int gUsesPatches, gUsesStageStruct, gResol;
 int gTransferType, gLandType, gMaxNbHab;
 bool gAnyUsesGenetics;
+bool gUsesInteractions = false;
 int gNbLandscapes = 0;
 
 int gEnvStochType;
@@ -354,6 +355,7 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 	batchLogOfs << endl;
 	if (paramName == "InteractionFile" && !anyFormatError) {
 		if (filename != "NULL")  {
+			gUsesInteractions = true;
 			if (!gUsesStageStruct) {
 				batchLogOfs << "*** Stage-structure must be enabled to enable species interactions" << endl;
 				areInputFilesOk = false;
@@ -6172,6 +6174,89 @@ int ReadStageStructure(speciesMap_t& simSpecies)
 	return 0;
 }
 
+demogrProcess_t stringToProcess(const string& strProcess) {
+	if (strProcess == "fecundity") return FEC;
+	else if (strProcess == "survival") return SURV;
+	else if (strProcess == "development") return DEV;
+	else throw logic_error(strProcess + " is not a valid demographic process.\n");
+}
+
+void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
+
+	int inputSimNb, spLeft, spRight, stgLeft, stgRight;
+	string strProcess;
+	string isResMedIntrct, isInitiatedIntrct, isRecIntrt;
+	string usesTgtDensity, usesInterference, usesTgtPref;
+	float alpha, beta, omega, delta, attackRate, hullCoeff,
+		interfExpnt, handlingTime, relPref;
+
+	do {
+		ifsInteraction >> spLeft >> spRight >> stgLeft >> stgRight >> strProcess;
+
+		ifsInteraction >> isResMedIntrct >> alpha;
+		ifsInteraction >> isInitiatedIntrct >> beta >> handlingTime
+			>> usesTgtDensity >> attackRate >> hullCoeff
+			>> usesInterference >> omega >> interfExpnt
+			>> usesTgtPref >> relPref;
+		ifsInteraction >> isRecIntrt >> delta;
+
+		demogrProcess_t whichProcess = stringToProcess(strProcess);
+
+		if (isResMedIntrct == "TRUE") {
+			resInteraction resDepIntrct;
+			resDepIntrct.partnerSpecies = spRight;
+			resDepIntrct.partnerStage = stgRight;
+			resDepIntrct.alpha = alpha;
+
+			allSpecies.at(spLeft)->addResMedtdInteraction(stgLeft, whichProcess, resDepIntrct);
+		}
+
+		if (isInitiatedIntrct == "TRUE") {
+			initdInteraction initiatdIntrct;
+			initiatdIntrct.recipientSpecies = spRight;
+			initiatdIntrct.recipientStage = stgRight;
+			initiatdIntrct.beta = beta;
+			initiatdIntrct.handlingTime = handlingTime;
+
+			if (usesTgtDensity == "TRUE") {
+				initiatdIntrct.attackRate = attackRate;
+				initiatdIntrct.hullCoeff = hullCoeff;
+			}
+			else {
+				initiatdIntrct.attackRate = 1.0;
+				initiatdIntrct.hullCoeff = 0.0;
+			}
+
+			if (usesInterference == "TRUE") {
+				initiatdIntrct.interfIntercept = omega;
+				initiatdIntrct.interfExponent = interfExpnt;
+			}
+			else {
+				initiatdIntrct.interfIntercept = 0.0;
+				initiatdIntrct.interfExponent = 0.0;
+			}
+
+			if (usesTgtPref == "TRUE")
+				initiatdIntrct.relPreference = relPref;
+			else initiatdIntrct.relPreference = 1.0;
+
+			allSpecies.at(spLeft)->addInitdInteraction(stgLeft, whichProcess, initiatdIntrct);
+		}
+
+		if (isRecIntrt == "TRUE") {
+			recdInteraction receivdIntrct;
+			receivdIntrct.initiatorSpecies = spRight;
+			receivdIntrct.initiatorStage = stgRight;
+			receivdIntrct.delta = delta;
+
+			allSpecies.at(spLeft)->addReceivdInteraction(stgLeft, whichProcess, receivdIntrct);
+		}
+
+		ifsInteraction >> inputSimNb;
+
+	} while (inputSimNb == simNb);
+}
+
 //---------------------------------------------------------------------------
 int ReadTransitionMatrix(Species* pSpecies, short nstages, short nsexesDem, short hab, short season)
 {
@@ -7196,6 +7281,13 @@ void RunBatch()
 					flushHeaders(ifsStageStructFile);
 				}
 
+				if (gUsesInteractions) {
+					ifsInteraction.open(interactionFile);
+					flushHeaders(ifsInteraction);
+					string buffer;
+					ifsInteraction >> buffer; // sink the first sim number
+				}
+
 				ifsEmigrationFile.open(emigrationFile);
 				flushHeaders(ifsEmigrationFile);
 
@@ -7229,6 +7321,7 @@ void RunBatch()
 				// Load parameters for this simulation
 				areParamsOk = true;
 				ReadSimParameters();
+				if (gUsesInteractions) ReadInteractions(simNb, allSpecies);
 
 				// Read one line of input per simulation and species
 				for (int s = 0; s < simSpecies.size(); s++) {
