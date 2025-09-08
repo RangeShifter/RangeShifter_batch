@@ -365,33 +365,276 @@ void SubCommunity::recruitMany(std::vector<Individual*>& inds, Species* pSpecies
 int SubCommunity::resolveTransfer(std::map<Species*,vector<Individual*>>& dispersingInds, Landscape* pLandscape, short landIx)
 {
 	int nbStillDispersing = 0;
+	int disperser;
+	Patch* pPatch = nullptr;
+	Cell* pCell = nullptr;
+	simParams sim = paramsSim->getSim();
+
 	for (auto & it : dispersingInds) { // all species
+
 		Species* const& pSpecies = it.first;
+		short reptype = pSpecies->getRepType();
+		trfrRules trfr = pSpecies->getTrfr();
+
 		vector<Individual*>& inds = it.second;
-		nbStillDispersing += Population::resolveTransfer(pSpecies, inds, pLandscape, landIx);
+		
+		// each individual takes one step
+		// for dispersal by kernel, this should be the only step taken
+		for (auto& pInd : inds) {
+			if (trfr.moveModel) {
+				disperser = pInd->moveStep(pLandscape, pSpecies, landIx, sim.absorbing);
+			}
+			else {
+				disperser = pInd->moveKernel(pLandscape, pSpecies, reptype, sim.absorbing);
+			}
+			nbStillDispersing += disperser;
+			if (disperser) {
+				if (reptype > 0)
+				{ // sexual species - record as potential settler in new patch
+					if (pInd->getStatus() == 2)
+					{ // disperser has found a patch
+						pCell = pInd->getCurrCell();
+						pPatch = pCell->getPatch();
+						if (pPatch != nullptr) { // not no-data area
+							pPatch->incrPossSettler(pSpecies, pInd->getSex());
+						}
+					}
+				}
+			}
+		}
 	}
 	return nbStillDispersing;
 }
 
-// Transfer through the matrix - run for a per-species map of vectors of individuals
-#if RS_RCPP
-int SubCommunity::resolveSettlement(std::map<Species*,vector<Individual*>>& disperserPool, Landscape* pLandscape, short nextseason)
+// Transfer is run for populations in the matrix only
+#if RS_RCPP // included also SEASONAL
+int Population::resolveSettlement(std::map<Species*, vector<Individual*>>& dispersingInds, Landscape* pLandscape, short nextseason)
 #else
-int SubCommunity::resolveSettlement(std::map<Species*,vector<Individual*>>& dispersingInds, Landscape* pLandscape)
-#endif // RS_RCPP
+int Population::resolveSettlement(std::map<Species*, vector<Individual*>>& dispersingInds, Landscape* pLandscape)
+#endif
 {
-	int ndispersers = 0;
-	for (auto & it : dispersingInds) { // all species
-		Species* const& pSpecies = it.first;
-		vector<Individual*>& inds = it.second;
-#if RS_RCPP
-		nbStillDispersing += Population::resolveSettlement(pSpecies, inds, pLandscape, nextseason);
-#else
-		ndispersers += Population::resolveSettlement(pSpecies, inds, pLandscape);
-#endif // RS_RCPP
+	int nbStillDispersing = 0;
+	short othersex;
+	bool mateOK, densdepOK;
+	int patchnum;
+	double localK, popsize, settprob;
+	Patch* pPatch = 0;
+	Cell* pCell = 0;
+	indStats ind;
+	Population* pNewPopn = 0;
+	locn newloc, nbrloc;
 
-	}
-	return ndispersers;
+	landData ppLand = pLandscape->getLandData();
+	settleRules sett;
+	settleTraits settDD;
+	settlePatch settle;
+	simParams sim = paramsSim->getSim();
+
+	for (auto& it : dispersingInds) { // all species
+		Species* const& pSpecies = it.first;
+		trfrRules trfr = pSpecies->getTrfr();
+		settleType settletype = pSpecies->getSettle();
+
+		vector<Individual*>& inds = it.second;
+		
+		// each individual which has reached a potential patch decides whether to settle
+		for (auto& pInd : inds) {
+			ind = pInd->getStats();
+			if (ind.sex == 0) othersex = 1; else othersex = 0;
+			if (settletype.stgDep) {
+				if (settletype.sexDep) sett = pSpecies->getSettRules(ind.stage, ind.sex);
+				else sett = pSpecies->getSettRules(ind.stage, 0);
+			}
+			else {
+				if (settletype.sexDep) sett = pSpecies->getSettRules(0, ind.sex);
+				else sett = pSpecies->getSettRules(0, 0);
+			}
+			if (ind.status == 2)
+			{ // awaiting settlement
+				pCell = pInd->getCurrCell();
+				if (pCell == 0) {
+					// this condition can occur in a patch-based model at the time of a dynamic landscape
+					// change when there is a range restriction in place, since a patch can straddle the
+					// range restriction and an individual forced to disperse upon patch removal could
+					// start its trajectory beyond the boundary of the restrictyed range - such a model is 
+					// not good practice, but the condition must be handled by killing the individual conceerned
+					ind.status = 6;
+				}
+				else {
+					mateOK = false;
+					if (sett.findMate) {
+						// determine whether at least one individual of the opposite sex is present in the
+						// new population
+						if (matePresent(pSpecies, pCell, othersex)) mateOK = true;
+					}
+					else { // no requirement to find a mate
+						mateOK = true;
+					}
+
+					densdepOK = false;
+					settle = pInd->getSettPatch();
+					if (sett.densDep)
+					{
+						pPatch = pCell->getPatch();
+						if (pPatch != nullptr) { // not no-data area
+							if (settle.settleStatus == 0
+								|| settle.pSettPatch != pPatch)
+								// note: second condition allows for having moved from one patch to another
+								// adjacent one
+							{
+								// determine whether settlement occurs in the (new) patch
+								localK = (double)pPatch->getK();
+								pNewPopn = pPatch->getPopn(pSpecies);
+								if (pNewPopn == nullptr) { // population has not been set up in the new patch
+									popsize = 0.0;
+								}
+								else {
+									popsize = (double)pNewPopn->totalPop();
+								}
+								if (localK > 0.0) {
+									// make settlement decision
+									if (settletype.indVar) settDD = pInd->getSettTraits();
+#if RS_RCPP
+									else settDD = pSpecies->getSettTraits(ind.stage, ind.sex);
+#else
+									else {
+										if (settletype.sexDep) {
+											if (settletype.stgDep)
+												settDD = pSpecies->getSettTraits(ind.stage, ind.sex);
+											else
+												settDD = pSpecies->getSettTraits(0, ind.sex);
+										}
+										else {
+											if (settletype.stgDep)
+												settDD = pSpecies->getSettTraits(ind.stage, 0);
+											else
+												settDD = pSpecies->getSettTraits(0, 0);
+										}
+									}
+#endif //RS_RCPP
+									settprob = settDD.s0 /
+										(1.0 + exp(-(popsize / localK - (double)settDD.beta) * (double)settDD.alpha));
+
+									if (pRandom->Bernoulli(settprob)) { // settlement allowed
+										densdepOK = true;
+										settle.settleStatus = 2;
+									}
+									else { // settlement procluded
+										settle.settleStatus = 1;
+									}
+									settle.pSettPatch = pPatch;
+								}
+								pInd->setSettPatch(settle);
+							}
+							else {
+								if (settle.settleStatus == 2) { // previously allowed to settle
+									densdepOK = true;
+								}
+							}
+						}
+					}
+					else { // no density-dependent settlement
+						densdepOK = true;
+						settle.settleStatus = 2;
+						settle.pSettPatch = pPatch;
+						pInd->setSettPatch(settle);
+					}
+
+					if (mateOK && densdepOK) { // can recruit to patch
+						ind.status = 4;
+						nbStillDispersing--;
+					}
+					else { // does not recruit
+						if (trfr.moveModel) {
+							ind.status = 1; // continue dispersing, unless ...
+							// ... maximum steps has been exceeded
+							pathSteps steps = pInd->getSteps();
+							settleSteps settsteps = pSpecies->getSteps(ind.stage, ind.sex);
+							if (steps.year >= settsteps.maxStepsYr) {
+								ind.status = 3; // waits until next year
+							}
+							if (steps.total >= settsteps.maxSteps) {
+								ind.status = 6; // dies
+							}
+						}
+						else { // dispersal kernel
+							if (sett.wait) {
+								ind.status = 3; // wait until next dispersal event
+							}
+							else {
+								ind.status = 6; // (dies unless a neighbouring cell is suitable)
+							}
+							nbStillDispersing--;
+						}
+					}
+				}
+
+				pInd->setStatus(ind.status);
+			}
+#if RS_RCPP
+			// write each individuals current movement step and status to paths file
+			if (trfr.moveModel && sim.outPaths) {
+				if (nextseason >= sim.outStartPaths && nextseason % sim.outIntPaths == 0) {
+					pInd->outMovePath(nextseason);
+				}
+			}
+#endif
+
+			if (!trfr.moveModel && sett.go2nbrLocn && (ind.status == 3 || ind.status == 6))
+			{
+				// for kernel-based transfer only ...
+				// determine whether recruitment to a neighbouring cell is possible
+
+				pCell = pInd->getCurrCell();
+				newloc = pCell->getLocn();
+				vector <Cell*> nbrlist;
+				for (int dx = -1; dx < 2; dx++) {
+					for (int dy = -1; dy < 2; dy++) {
+						if (dx != 0 || dy != 0) { //cell is not the current cell
+							nbrloc.x = newloc.x + dx; nbrloc.y = newloc.y + dy;
+							if (nbrloc.x >= 0 && nbrloc.x <= ppLand.maxX
+								&& nbrloc.y >= 0 && nbrloc.y <= ppLand.maxY) { // within landscape
+								// add to list of potential neighbouring cells if suitable, etc.
+								pCell = pLandscape->findCell(nbrloc.x, nbrloc.y);
+								if (pCell != 0) { // not no-data area
+									pPatch = pCell->getPatch();
+									if (pPatch != nullptr) { // not no-data area
+										patchnum = pPatch->getPatchNum();
+										if (patchnum > 0 && pPatch != pInd->getNatalPatch())
+										{ // not the matrix or natal patch
+											if (pPatch->getK() > 0.0)
+											{ // suitable
+												if (sett.findMate) {
+													if (matePresent(pSpecies, pCell, othersex)) nbrlist.push_back(pCell);
+												}
+												else
+													nbrlist.push_back(pCell);
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				int listsize = (int)nbrlist.size();
+				if (listsize > 0) { // there is at least one suitable neighbouring cell
+					if (listsize == 1) {
+						pInd->moveto(nbrlist[0]);
+					}
+					else { // select at random from the list
+						int rrr = pRandom->IRandom(0, listsize - 1);
+						pInd->moveto(nbrlist[rrr]);
+					}
+				}
+				// else list empty - do nothing - individual retains its current location and status
+			}
+
+		} // loop through inds
+
+	} // loop through disperser map
+
+	return nbStillDispersing;
 }
 
 //---------------------------------------------------------------------------

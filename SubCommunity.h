@@ -91,6 +91,7 @@ public:
 		bool		// TRUE for a patch-based model, FALSE for a cell-based model
 	);
 	void emigration(void);
+	
 	// Remove emigrants from the matrix subcommunity and add to a map of vectors
 	void disperseMatrix(
 		std::map<Species*,std::vector<Individual*>>&
@@ -99,33 +100,36 @@ public:
 	void recruitDispersers(
 		std::map<Species*,std::vector<Individual*>>&
 	);
-// Add an individual into the local population of its species in the patch
+	// Add an individual into the local population of its species in the patch
 	void recruit(
 		Individual*,	// pointer to Individual
 		Species*			// pointer to Species
 	);
-// Add individuals into the local population of their species in the patch
+	// Add individuals into the local population of their species in the patch
 	void recruitMany(
 		std::vector<Individual*>&,	// vector of pointers to Individuals
 		Species*			// pointer to Species
 	);
-	static int resolveTransfer( // Transfer through matrix - run for a per-species map of vectors of individuals
-		std::map<Species*,vector<Individual*>>&,	// per-species map of vectors of individuals
+
+	static int resolveTransfer( // Executed for a given vector of individuals
+		std::map<Species*, vector<Individual*>>& dispersingInds,
 		Landscape*,	// pointer to Landscape
-		short			// landscape change index
+		short				// landscape change index
 	);
+
 #if RS_RCPP
-	static int resolveSettlement( // Transfer through matrix - run for a per-species map of vectors of individuals
-		std::map<Species*,vector<Individual*>>&,	// per-species map of vectors of individuals
+	static int resolveSettlement( // Executed for a given vector of individuals
+		std::map<Species*, vector<Individual*>>& dispersingInds,
 		Landscape*,	// pointer to Landscape
-		short				// season / year
+		short				// year
 	);
 #else
-	static int resolveSettlement( // Transfer through matrix - run for matrix SubCommunity only
-		std::map<Species*,vector<Individual*>>&,	// per-species map of vectors of individuals
+	static int resolveSettlement( // Executed for a given vector of individuals
+		std::map<Species*, vector<Individual*>>& dispersingInds, 
 		Landscape*	// pointer to Landscape
 	);
 #endif // RS_RCPP
+
 	// Remove emigrants from the vectors map and transfer to SubCommunity in which
 	// their destination co-ordinates fall
 	static void completeDispersal(

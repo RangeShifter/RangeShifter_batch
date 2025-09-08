@@ -157,26 +157,7 @@ public:
 	void recruitMany( // Add specified individuals to the population
 		std::vector<Individual*>&	// vector of pointers to Individuals
 	);
-	static int resolveTransfer( // Executed for a given vector of individuals
-		Species*,	// pointer to Species
-		std::vector<Individual*>&,	// vector of pointers to individuals
-		Landscape*,	// pointer to Landscape
-		short				// landscape change index
-	);
-#if RS_RCPP
-	static int resolveSettlement( // Executed for a given vector of individuals
-		Species*,	// pointer to Species
-		std::vector<Individual*>&,	// vector of pointers to individuals
-		Landscape*,	// pointer to Landscape
-		short				// year
-	);
-#else
-	static int resolveSettlement( // Executed for a given vector of individuals
-		Species*,	// pointer to Species
-		std::vector<Individual*>&,	// vector of pointers to individuals
-		Landscape*	// pointer to Landscape
-	);
-#endif // RS_RCPP
+	
 	// Determine whether there is a potential mate present in a patch which a potential
 	// settler has reached
 	static bool matePresent(
