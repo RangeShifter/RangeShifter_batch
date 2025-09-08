@@ -32,6 +32,7 @@
 #endif
 #include <atomic>
 #if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
+#define HAS_BARRIER_LIB
 #include <barrier>
 #include <optional>
 #else
@@ -452,7 +453,8 @@ void Community::emigration(void)
 }
 
 #ifdef _OPENMP
-#if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
+#ifdef HAS_BARRIER_LIB
+typedef std::optional<std::barrier<>> split_barrier;
 #else
 class split_barrier {
 private:
@@ -470,7 +472,7 @@ public:
 		may_leave(false)
 	{}
 
-	void init(int threads) {
+	void emplace(int threads) {
 		std::lock_guard<std::mutex> lock(m);
 		total_threads = threads;
 		may_enter = true;
@@ -498,25 +500,22 @@ public:
 		}
 	}
 };
-#endif
+#endif // HAS_BARRIER_LIB
 #endif // _OPENMP
 
-#if RS_RCPP // included also SEASONAL
+#if RS_RCPP
 void Community::dispersal(short landIx, short nextseason)
 #else
 void Community::dispersal(short landIx)
-#endif // SEASONAL || RS_RCPP
+#endif
 {
 #ifdef _OPENMP
 	std::atomic<int> nbStillDispersing;
-#if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
-	std::optional<std::barrier<>> barrier;
-#else
 	split_barrier barrier;
-#endif
 #else
 	int nbStillDispersing;
 #endif // _OPENMP
+
 #if RSDEBUG
 	int t0, t1, t2;
 	t0 = time(0);
@@ -543,11 +542,7 @@ void Community::dispersal(short landIx)
 
 #ifdef _OPENMP
 #pragma omp single
-#if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
 		barrier.emplace(omp_get_num_threads());
-#else
-		barrier.init(omp_get_num_threads());
-#endif
 #endif // _OPENMP
 
 #if RSDEBUG
@@ -577,21 +572,21 @@ void Community::dispersal(short landIx)
 			nbStillDispersing += localNbDispersers;
 
 #ifdef _OPENMP
-#if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
+#ifdef HAS_BARRIER_LIB
 			std::barrier<>::arrival_token token = barrier->arrive();
 #else
 			barrier.enter();
-#endif
+#endif // HAS_BARRIER_LIB
 #endif // _OPENMP
 
 			matrix->completeDispersal(disperserPool, pLandscape, sim.outConnect);
 
 #ifdef _OPENMP
-#if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
+#ifdef HAS_BARRIER_LIB
 			barrier->wait(std::move(token));
 #else
 			barrier.leave();
-#endif
+#endif // HAS_BARRIER_LIB
 #endif // _OPENMP
 
 		} while (nbStillDispersing > 0);
