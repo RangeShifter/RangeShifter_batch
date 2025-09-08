@@ -300,8 +300,8 @@ void SubCommunity::emigration(void)
 }
 
 // Remove emigrants from their natal patch and add to a map of vectors
-void SubCommunity::initiateDispersal(std::map<Species*,std::vector<Individual *>> &inds_map) {
-	if (subCommNum == 0) return; // no dispersal initiation in the matrix
+void SubCommunity::recruitDispersers(std::map<Species*,std::vector<Individual *>>& disperserPool) {
+	if (subCommNum == nullptr) return; // no dispersal initiation in the matrix
 	popStats pop;
 	disperser disp;
 
@@ -312,7 +312,7 @@ void SubCommunity::initiateDispersal(std::map<Species*,std::vector<Individual *>
 		for (int j = 0; j < pop.nInds; j++) {
 			disp = popns[i]->extractDisperser(j);
 			if (disp.yes) { // disperser - has already been removed from natal population
-				inds_map[pSpecies].push_back(disp.pInd);
+				disperserPool[pSpecies].push_back(disp.pInd);
 			}
 		}
 		// remove pointers to emigrants
@@ -321,13 +321,13 @@ void SubCommunity::initiateDispersal(std::map<Species*,std::vector<Individual *>
 
 }
 
-// Remove emigrants from the matrix subcommunity and add to a map of vectors
-void SubCommunity::initiateMatrixDispersal(std::map<Species*,std::vector<Individual *>> &inds_map) {
-	if (subCommNum != 0) return;
+// Add all individuals in the matrix to the disperser pool
+void SubCommunity::disperseMatrix(std::map<Species*,std::vector<Individual *>> &inds_map) {
+	if (subCommNum != nullptr) return;
 	popStats pop;
 
 	int npops = (int)popns.size();
-	for (int i = 0; i < npops; i++) { // all populations
+	for (int i = 0; i < npops; i++) {
 		pop = popns[i]->getStats();
 		Species* pSpecies = popns[i]->getSpecies();
 #pragma omp for schedule(static)
@@ -335,7 +335,6 @@ void SubCommunity::initiateMatrixDispersal(std::map<Species*,std::vector<Individ
 			Individual *pInd = popns[i]->extractIndividual(j);
 			inds_map[pSpecies].push_back(pInd);
 		}
-		// remove pointers to emigrants
 #pragma omp single
 		popns[i]->clean();
 	}
@@ -363,32 +362,32 @@ void SubCommunity::recruitMany(std::vector<Individual*>& inds, Species* pSpecies
 }
 
 // Transfer through the matrix - run for a per-species map of vectors of individuals
-int SubCommunity::transfer_move(std::map<Species*,vector<Individual*>>& inds_map, Landscape* pLandscape, short landIx)
+int SubCommunity::resolveTransfer(std::map<Species*,vector<Individual*>>& dispersingInds, Landscape* pLandscape, short landIx)
 {
-	int ndispersers = 0;
-	for (auto & it : inds_map) { // all species
+	int nbStillDispersing = 0;
+	for (auto & it : dispersingInds) { // all species
 		Species* const& pSpecies = it.first;
 		vector<Individual*>& inds = it.second;
-		ndispersers += Population::transfer_move(pSpecies, inds, pLandscape, landIx);
+		nbStillDispersing += Population::resolveTransfer(pSpecies, inds, pLandscape, landIx);
 	}
-	return ndispersers;
+	return nbStillDispersing;
 }
 
 // Transfer through the matrix - run for a per-species map of vectors of individuals
 #if RS_RCPP
-int SubCommunity::transfer_settle(std::map<Species*,vector<Individual*>>& inds_map, Landscape* pLandscape, short nextseason)
+int SubCommunity::resolveSettlement(std::map<Species*,vector<Individual*>>& disperserPool, Landscape* pLandscape, short nextseason)
 #else
-int SubCommunity::transfer_settle(std::map<Species*,vector<Individual*>>& inds_map, Landscape* pLandscape)
+int SubCommunity::resolveSettlement(std::map<Species*,vector<Individual*>>& dispersingInds, Landscape* pLandscape)
 #endif // RS_RCPP
 {
 	int ndispersers = 0;
-	for (auto & it : inds_map) { // all species
+	for (auto & it : dispersingInds) { // all species
 		Species* const& pSpecies = it.first;
 		vector<Individual*>& inds = it.second;
 #if RS_RCPP
-		ndispersers += Population::transfer_settle(pSpecies, inds, pLandscape, nextseason);
+		nbStillDispersing += Population::resolveSettlement(pSpecies, inds, pLandscape, nextseason);
 #else
-		ndispersers += Population::transfer_settle(pSpecies, inds, pLandscape);
+		ndispersers += Population::resolveSettlement(pSpecies, inds, pLandscape);
 #endif // RS_RCPP
 
 	}

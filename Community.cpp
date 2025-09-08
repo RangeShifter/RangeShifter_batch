@@ -508,14 +508,14 @@ void Community::dispersal(short landIx)
 #endif // SEASONAL || RS_RCPP
 {
 #ifdef _OPENMP
-	std::atomic<int> ndispersers;
+	std::atomic<int> nbStillDispersing;
 #if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
 	std::optional<std::barrier<>> barrier;
 #else
 	split_barrier barrier;
 #endif
 #else
-	int ndispersers;
+	int nbStillDispersing;
 #endif // _OPENMP
 #if RSDEBUG
 	int t0, t1, t2;
@@ -529,12 +529,18 @@ void Community::dispersal(short landIx)
 	SubCommunity* matrix = subComms[0]; // matrix community is always the first
 #pragma omp parallel
 	{
-		std::map<Species*, vector<Individual*>> inds_map;
-		matrix->initiateMatrixDispersal(inds_map);
+		std::map<Species*, vector<Individual*>> disperserPool;
+
+		// All individuals in the matrix disperse again
+		// (= unsettled dispersers from previous generation)
+		matrix->disperseMatrix(disperserPool);
+
+		// Recruit new emigrants
 #pragma omp for schedule(static,128) nowait
-		for (int i = 0; i < nsubcomms; i++) { // all populations
-			subComms[i]->initiateDispersal(inds_map);
+		for (int i = 0; i < nsubcomms; i++) {
+			subComms[i]->recruitDispersers(disperserPool);
 		}
+
 #ifdef _OPENMP
 #pragma omp single
 #if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
@@ -543,6 +549,7 @@ void Community::dispersal(short landIx)
 		barrier.init(omp_get_num_threads());
 #endif
 #endif // _OPENMP
+
 #if RSDEBUG
 #pragma omp master
 		{
@@ -550,25 +557,25 @@ void Community::dispersal(short landIx)
 			DEBUGLOG << "Community::dispersal(): this=" << this
 				<< " nsubcomms=" << nsubcomms << " initiation time=" << t1 - t0 << endl;
 		}
-#endif
+#endif // RSDEBUG
 
-		// dispersal is undertaken by all individuals now in the matrix patch
-		// (even if not physically in the matrix)
+		// 
 		do {
 #pragma omp for schedule(guided)
-			for (int i = 0; i < nsubcomms; i++) { // all populations
+			for (int i = 0; i < nsubcomms; i++) {
 				subComms[i]->resetPossSettlers();
 			}
-			int local_ndispersers = matrix->transfer_move(inds_map, pLandscape, landIx);
+			int localNbDispersers = matrix->resolveTransfer(disperserPool, pLandscape, landIx);
 #pragma omp single nowait
-			ndispersers = 0;
+			nbStillDispersing = 0;
 #pragma omp barrier
-#if RS_RCPP // included also SEASONAL
-			local_ndispersers += matrix->transfer_settle(inds_map, pLandscape, nextseason);
+#if RS_RCPP
+			localNbDispersers += matrix->resolveSettlement(disperserPool, pLandscape, nextseason);
 #else
-			local_ndispersers += matrix->transfer_settle(inds_map, pLandscape);
-#endif // SEASONAL || RS_RCPP
-			ndispersers += local_ndispersers;
+			localNbDispersers += matrix->resolveSettlement(disperserPool, pLandscape);
+#endif // RS_RCPP
+			nbStillDispersing += localNbDispersers;
+
 #ifdef _OPENMP
 #if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
 			std::barrier<>::arrival_token token = barrier->arrive();
@@ -576,7 +583,9 @@ void Community::dispersal(short landIx)
 			barrier.enter();
 #endif
 #endif // _OPENMP
-			matrix->completeDispersal(inds_map, pLandscape, sim.outConnect);
+
+			matrix->completeDispersal(disperserPool, pLandscape, sim.outConnect);
+
 #ifdef _OPENMP
 #if __cpp_lib_barrier >= 201907L && __cpp_lib_optional >= 201606L
 			barrier->wait(std::move(token));
@@ -584,10 +593,11 @@ void Community::dispersal(short landIx)
 			barrier.leave();
 #endif
 #endif // _OPENMP
-		} while (ndispersers > 0);
 
-		// All remaining migrants join the matrix community
-		for (auto & it : inds_map) {
+		} while (nbStillDispersing > 0);
+
+		// All unsettled dispersers are stored in matrix until next generation
+		for (auto & it : disperserPool) {
 			Species* const& pSpecies = it.first;
 			vector<Individual*>& inds = it.second;
 			matrix->recruitMany(inds, pSpecies);

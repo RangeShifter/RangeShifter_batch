@@ -840,7 +840,7 @@ void Population::recruitMany(std::vector<Individual*>& new_inds) {
 //---------------------------------------------------------------------------
 
 // Transfer is run for a given vector of individuals
-int Population::transfer_move(Species* pSpecies, std::vector<Individual*>& inds, Landscape* pLandscape, short landIx)
+int Population::resolveTransfer(Species* pSpecies, std::vector<Individual*>& inds, Landscape* pLandscape, short landIx)
 {
 	int ndispersers = 0;
 	int disperser;
@@ -881,9 +881,9 @@ int Population::transfer_move(Species* pSpecies, std::vector<Individual*>& inds,
 
 // Transfer is run for populations in the matrix only
 #if RS_RCPP // included also SEASONAL
-int Population::transfer_settle(Species* pSpecies, std::vector<Individual*>& inds, Landscape* pLandscape, short nextseason)
+int Population::resolveSettlement(Species* pSpecies, std::vector<Individual*>& inds, Landscape* pLandscape, short nextseason)
 #else
-int Population::transfer_settle(Species* pSpecies, std::vector<Individual*>& inds, Landscape* pLandscape)
+int Population::resolveSettlement(Species* pSpecies, std::vector<Individual*>& inds, Landscape* pLandscape)
 #endif
 {
 	int ndispersers = 0;

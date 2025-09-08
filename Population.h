@@ -157,21 +157,21 @@ public:
 	void recruitMany( // Add specified individuals to the population
 		std::vector<Individual*>&	// vector of pointers to Individuals
 	);
-	static int transfer_move( // Executed for a given vector of individuals
+	static int resolveTransfer( // Executed for a given vector of individuals
 		Species*,	// pointer to Species
 		std::vector<Individual*>&,	// vector of pointers to individuals
 		Landscape*,	// pointer to Landscape
 		short				// landscape change index
 	);
 #if RS_RCPP
-	static int transfer_settle( // Executed for a given vector of individuals
+	static int resolveSettlement( // Executed for a given vector of individuals
 		Species*,	// pointer to Species
 		std::vector<Individual*>&,	// vector of pointers to individuals
 		Landscape*,	// pointer to Landscape
 		short				// year
 	);
 #else
-	static int transfer_settle( // Executed for a given vector of individuals
+	static int resolveSettlement( // Executed for a given vector of individuals
 		Species*,	// pointer to Species
 		std::vector<Individual*>&,	// vector of pointers to individuals
 		Landscape*	// pointer to Landscape
