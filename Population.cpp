@@ -773,7 +773,7 @@ void Population::allEmigrate(void) {
 Individual* Population::extractIndividual(int ix) {
 	Individual* pInd = inds[ix];
 	indStats ind = pInd->getStats();
-	inds[ix] = 0;
+	inds[ix] = nullptr;
 	nInds[ind.stage][ind.sex]--;
 	return pInd;
 }
@@ -840,7 +840,7 @@ void Population::recruitMany(std::vector<Individual*>& new_inds) {
 //---------------------------------------------------------------------------
 
 // Transfer is run for a given vector of individuals
-int Population::transfer_move(Species* pSpecies, std::vector<Individual*>& inds, Landscape* pLandscape, short landIx)
+int Population::transfer_move(Species* pSpecies, std::vector<Individual*>& dispInds, Landscape* pLandscape, short landIx)
 {
 	int ndispersers = 0;
 	int disperser;
@@ -853,10 +853,10 @@ int Population::transfer_move(Species* pSpecies, std::vector<Individual*>& inds,
 
 	// each individual takes one step
 	// for dispersal by kernel, this should be the only step taken
-	int ninds = (int)inds.size();
+	int ninds = (int)dispInds.size();
 	for (int i = 0; i < ninds; i++) {
 		if (trfr.moveModel) {
-			disperser = inds[i]->moveStep(pLandscape, pSpecies, landIx, sim.absorbing);
+			disperser = dispInds[i]->moveStep(pLandscape, pSpecies, landIx, sim.absorbing);
 		}
 		else {
 			disperser = inds[i]->moveKernel(pLandscape, pSpecies, reptype, sim.absorbing);
@@ -881,7 +881,7 @@ int Population::transfer_move(Species* pSpecies, std::vector<Individual*>& inds,
 
 // Transfer is run for populations in the matrix only
 #if RS_RCPP // included also SEASONAL
-int Population::transfer_settle(Species* pSpecies, std::vector<Individual*>& inds, Landscape* pLandscape, short nextseason)
+int Population::transfer_settle(Species* pSpecies, std::vector<Individual*>& dispInds, Landscape* pLandscape, short nextseason)
 #else
 int Population::transfer_settle(Species* pSpecies, std::vector<Individual*>& inds, Landscape* pLandscape)
 #endif
@@ -1104,7 +1104,7 @@ int Population::transfer_settle(Species* pSpecies, std::vector<Individual*>& ind
 
 // Determine whether there is a potential mate present in a patch which a potential
 // settler has reached
-bool Population::matePresent(Species* pSpecies, Cell* pCell, short othersex)
+bool Population::matePresent(Cell* pCell, short othersex)
 {
 	Patch* pPatch;
 	Population* pNewPopn;
