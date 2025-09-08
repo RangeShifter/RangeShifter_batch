@@ -6204,17 +6204,13 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 
 		if (isResMedIntrct == "TRUE") {
 			resInteraction resDepIntrct;
-			resDepIntrct.partnerSpecies = spRight;
-			resDepIntrct.partnerStage = stgRight;
 			resDepIntrct.alpha = alpha;
 
-			allSpecies.at(spLeft)->addResMedtdInteraction(stgLeft, whichProcess, resDepIntrct);
+			allSpecies.at(spLeft)->addResMedtdInteraction(stgLeft, whichProcess, spRight, stgRight, resDepIntrct);
 		}
 
 		if (isInitiatedIntrct == "TRUE") {
 			initdInteraction initiatdIntrct;
-			initiatdIntrct.recipientSpecies = spRight;
-			initiatdIntrct.recipientStage = stgRight;
 			initiatdIntrct.beta = beta;
 			initiatdIntrct.handlingTime = handlingTime;
 
@@ -6240,16 +6236,14 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 				initiatdIntrct.relPreference = relPref;
 			else initiatdIntrct.relPreference = 1.0;
 
-			allSpecies.at(spLeft)->addInitdInteraction(stgLeft, whichProcess, initiatdIntrct);
+			allSpecies.at(spLeft)->addInitdInteraction(stgLeft, whichProcess, spRight, stgRight, initiatdIntrct);
 		}
 
 		if (isRecIntrt == "TRUE") {
 			recdInteraction receivdIntrct;
-			receivdIntrct.initiatorSpecies = spRight;
-			receivdIntrct.initiatorStage = stgRight;
 			receivdIntrct.delta = delta;
 
-			allSpecies.at(spLeft)->addReceivdInteraction(stgLeft, whichProcess, receivdIntrct);
+			allSpecies.at(spLeft)->addReceivdInteraction(stgLeft, whichProcess, spRight, stgRight, receivdIntrct);
 		}
 
 		ifsInteraction >> inputSimNb;

@@ -460,9 +460,12 @@ public:
 	bool isWithinLimits(const int& x, const int& y);
 
 	// Interaction functions
-	void addResMedtdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, const resInteraction& resDepIntrct);
-	void addInitdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, const initdInteraction& initiatdIntrct);
-	void addReceivdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, const recdInteraction& receivedIntrct);
+	void addResMedtdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, 
+		const species_id& otherSpecies, const int& otherStage, const resInteraction& resDepIntrct);
+	void addInitdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
+		const species_id& otherSpecies, const int& otherStage, const initdInteraction& initiatdIntrct);
+	void addReceivdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
+		const species_id& otherSpecies, const int& otherStage, const recdInteraction& receivedIntrct);
 
 	map<pair<species_id, int>, initdInteraction> getAllInitdInteractions(const demogrProcess_t& proc, const int& stg) const { 
 		auto key = make_pair(proc, stg);

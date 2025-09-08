@@ -897,16 +897,62 @@ void Species::setSamplePatchList(const set<int>& samplePatchList) {
 
 // Interaction functions
 
-void Species::addResMedtdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, const resInteraction& resDepIntrct) {
-	resDepIntrcts.emplace(make_pair(whichProcess, whichStage), resDepIntrct);
+/// Interaction setters
+///
+/// The parameters of each interaction network (resource-mediated interactions, 
+/// initiated and received interactions) are stored as nested maps.
+/// The outer map key specifies the attributes of the species owning the parameters
+/// (i.e., parameter "SpeciesLeft", or 'this'): the stage involved ("LeftStage") and the
+/// process affected (e.g. survival).
+/// The inner map key specifies the attributes of the other species: species
+/// identity (parameter "SpeciesRight") and which stage ("StageRight").
+
+void Species::addResMedtdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, 
+	const species_id& otherSpecies, const int& otherStage, const resInteraction& resDepIntrct) {
+	
+	auto outerKey = make_pair(whichProcess, whichStage);
+	auto innerKey = make_pair(otherSpecies, otherStage);
+
+	if (resDepIntrcts.contains(outerKey)) { // already an entry for this process x stg
+		resDepIntrcts.at(outerKey).emplace(innerKey, resDepIntrct);
+	}
+	else { // need to create an entry for outer map then inner map
+		map<pair<species_id, int>, resInteraction> innerMap;
+		innerMap.emplace(innerKey, resDepIntrct);
+		resDepIntrcts.emplace(outerKey, innerMap);
+	}
 }
 
-void Species::addInitdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, const initdInteraction& initiatdIntrct) {
-	initiatedIntrcts.emplace(make_pair(whichProcess, whichStage), initiatdIntrct);
+void Species::addInitdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
+	const species_id& otherSpecies, const int& otherStage, const initdInteraction& initiatdIntrct) {
+
+	auto outerKey = make_pair(whichProcess, whichStage);
+	auto innerKey = make_pair(otherSpecies, otherStage);
+
+	if (initiatedIntrcts.contains(outerKey)) {
+		initiatedIntrcts.at(outerKey).emplace(innerKey, initiatdIntrct);
+	}
+	else {
+		map<pair<species_id, int>, initdInteraction> innerMap;
+		innerMap.emplace(innerKey, initiatdIntrct);
+		initiatedIntrcts.emplace(outerKey, innerMap);
+	}
 }
 
-void Species::addReceivdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, const recdInteraction& receivedIntrct) {
-	receivedIntrcts.emplace(make_pair(whichProcess, whichStage), receivedIntrct);
+void Species::addReceivdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
+	const species_id& otherSpecies, const int& otherStage, const recdInteraction& receivedIntrct) {
+
+	auto outerKey = make_pair(whichProcess, whichStage);
+	auto innerKey = make_pair(otherSpecies, otherStage);
+
+	if (resDepIntrcts.contains(outerKey)) {
+		resDepIntrcts.at(outerKey).emplace(innerKey, receivedIntrct);
+	}
+	else {
+		map<pair<species_id, int>, recdInteraction> innerMap;
+		innerMap.emplace(innerKey, receivedIntrct);
+		resDepIntrcts.emplace(outerKey, innerMap);
+	}
 }
 
 //---------------------------------------------------------------------------
