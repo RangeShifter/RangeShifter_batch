@@ -111,6 +111,14 @@ public:
 		Species*			// pointer to Species
 	);
 
+	// Determine whether there is a potential mate present in a patch which a potential
+	// settler has reached
+	static bool matePresent(
+		Species* pSpecies,
+		Cell*,	// pointer to the Cell which the potential settler has reached
+		short		// sex of the required mate (0 = female, 1 = male)
+	);
+
 	static int resolveTransfer( // Executed for a given vector of individuals
 		std::map<Species*, vector<Individual*>>& dispersingInds,
 		Landscape*,	// pointer to Landscape
@@ -119,14 +127,14 @@ public:
 
 #if RS_RCPP
 	static int resolveSettlement( // Executed for a given vector of individuals
-		std::map<Species*, vector<Individual*>>& dispersingInds,
-		Landscape*,	// pointer to Landscape
+		std::map<Species*, vector<Individual*>>& dispersingInds, 
+		Landscape* pLandscape
 		short				// year
 	);
 #else
 	static int resolveSettlement( // Executed for a given vector of individuals
 		std::map<Species*, vector<Individual*>>& dispersingInds, 
-		Landscape*	// pointer to Landscape
+		Landscape* pLandscape
 	);
 #endif // RS_RCPP
 
@@ -221,9 +229,9 @@ public:
 		int,					// generation
 		bool					// true if called to summarise data at community level
 	);
-	int stagePop( // Population size of a specified stage
+	int getNbInds( // Population size of a specified stage
 		int	// stage
-	);
+	) const;
 
 private:
 	int subCommNum;	// SubCommunity number

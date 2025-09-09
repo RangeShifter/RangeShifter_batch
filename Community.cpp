@@ -956,14 +956,14 @@ void Community::outRange(Species* pSpecies, int rep, int yr, int gen)
 		for (int stg = 1; stg < sstruct.nStages; stg++) {
 			stagepop = 0;
 			for (int i = 0; i < nsubcomms; i++) { // all sub-communities
-				stagepop += subComms[i]->stagePop(stg);
+				stagepop += subComms[i]->getNbInds(stg);
 			}
 			outrange << "\t" << stagepop;
 		}
 		// juveniles born in current reproductive season
 		stagepop = 0;
 		for (int i = 0; i < nsubcomms; i++) { // all sub-communities
-			stagepop += subComms[i]->stagePop(0);
+			stagepop += subComms[i]->getNbInds(0);
 		}
 		outrange << "\t" << stagepop;
 	}

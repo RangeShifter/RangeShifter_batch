@@ -301,7 +301,7 @@ void SubCommunity::emigration(void)
 
 // Remove emigrants from their natal patch and add to a map of vectors
 void SubCommunity::recruitDispersers(std::map<Species*,std::vector<Individual *>>& disperserPool) {
-	if (subCommNum == nullptr) return; // no dispersal initiation in the matrix
+	if (subCommNum == 0) return; // no dispersal initiation in the matrix
 	popStats pop;
 	disperser disp;
 
@@ -323,7 +323,7 @@ void SubCommunity::recruitDispersers(std::map<Species*,std::vector<Individual *>
 
 // Add all individuals in the matrix to the disperser pool
 void SubCommunity::disperseMatrix(std::map<Species*,std::vector<Individual *>> &inds_map) {
-	if (subCommNum != nullptr) return;
+	if (subCommNum != 0) return;
 	popStats pop;
 
 	int npops = (int)popns.size();
@@ -406,11 +406,45 @@ int SubCommunity::resolveTransfer(std::map<Species*,vector<Individual*>>& disper
 	return nbStillDispersing;
 }
 
+
+// Determine whether there is a potential mate present in a patch which a potential
+// settler has reached
+bool SubCommunity::matePresent(Species* pSpecies, Cell* pCell, short othersex)
+{
+	Patch* pPatch;
+	Population* pNewPopn;
+	int popsize = 0;
+	bool matefound = false;
+
+	pPatch = pCell->getPatch();
+	if (pPatch != nullptr) {
+		if (pPatch->getPatchNum() > 0) { // not the matrix patch
+			if (pPatch->getK() > 0.0)
+			{ // suitable
+				pNewPopn = pPatch->getPopn(pSpecies);
+				if (pNewPopn != nullptr) {
+					const stageParams sstruct = pSpecies->getStage();
+					// count members of other sex already resident in the patch
+					for (int stg = 0; stg < sstruct.nStages; stg++) {
+						popsize += pNewPopn->getNbInds(stg, othersex);
+					}
+				}
+				if (popsize < 1) {
+					// add any potential settlers of the other sex
+					popsize += pPatch->getPossSettlers(pSpecies, othersex);
+				}
+			}
+		}
+	}
+	if (popsize > 0) matefound = true;
+	return matefound;
+}
+
 // Transfer is run for populations in the matrix only
 #if RS_RCPP // included also SEASONAL
-int Population::resolveSettlement(std::map<Species*, vector<Individual*>>& dispersingInds, Landscape* pLandscape, short nextseason)
+int SubCommunity::resolveSettlement(std::map<Species*, vector<Individual*>>& dispersingInds, Landscape* pLandscape, short nextseason)
 #else
-int Population::resolveSettlement(std::map<Species*, vector<Individual*>>& dispersingInds, Landscape* pLandscape)
+int SubCommunity::resolveSettlement(std::map<Species*, vector<Individual*>>& dispersingInds, Landscape* pLandscape)
 #endif
 {
 	int nbStillDispersing = 0;
@@ -489,7 +523,7 @@ int Population::resolveSettlement(std::map<Species*, vector<Individual*>>& dispe
 									popsize = 0.0;
 								}
 								else {
-									popsize = (double)pNewPopn->totalPop();
+									popsize = (double)pNewPopn->getNbInds();
 								}
 								if (localK > 0.0) {
 									// make settlement decision
@@ -842,7 +876,7 @@ void SubCommunity::outPop(Landscape* pLandscape, int rep, int yr, int gen)
 			popns[i]->outPopulation(rep, yr, gen, eps, land.patchModel, writeEnv, gradK);
 		}
 		else {
-			if (popns[i]->totalPop() > 0) {
+			if (popns[i]->getNbInds() > 0) {
 				popns[i]->outPopulation(rep, yr, gen, eps, land.patchModel, writeEnv, gradK);
 			}
 		}
@@ -892,11 +926,11 @@ void SubCommunity::outGenetics(int rep, int yr)
 }
 
 // Population size of a specified stage
-int SubCommunity::stagePop(int stage) {
+int SubCommunity::getNbInds(int stage) const {
 	int popsize = 0;
 	int npops = (int)popns.size();
 	for (int i = 0; i < npops; i++) { // all populations
-		popsize += popns[i]->stagePop(stage);
+		popsize += popns[i]->getNbInds(stage);
 	}
 	return popsize;
 }
@@ -1045,7 +1079,7 @@ traitsums SubCommunity::outTraits(Landscape* pLandscape, int rep, int yr, int ge
 
 	for (int i = 0; i < npops; i++) { // all populations
 		localK = pPatch->getK();
-		if (localK > 0.0 && popns[i]->getNInds() > 0) {
+		if (localK > 0.0 && popns[i]->getNbInds() > 0) {
 			pSpecies = popns[i]->getSpecies();
 			demogrParams dem = pSpecies->getDemogr();
 			emigRules emig = pSpecies->getEmig();

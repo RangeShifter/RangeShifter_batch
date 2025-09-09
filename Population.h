@@ -120,11 +120,9 @@ public:
 	traitsums getTraits(Species*);
 	popStats getStats(void);
 	Species* getSpecies(void);
-	int getNInds(void);
-	int totalPop(void);
-	int stagePop( // return no. of Individuals in a specified stage
-		int	// stage
-	);
+	int getNbInds() const;
+	int getNbInds(int stg) const ;
+	int getNbInds(int stg, int sex) const;
 	void extirpate(void); // Remove all individuals
 	void reproduction(
 		const float,	// local carrying capacity
@@ -158,12 +156,6 @@ public:
 		std::vector<Individual*>&	// vector of pointers to Individuals
 	);
 	
-	// Determine whether there is a potential mate present in a patch which a potential
-	// settler has reached
-	static bool matePresent(
-		Cell*,	// pointer to the Cell which the potential settler has reached
-		short		// sex of the required mate (0 = female, 1 = male)
-	);
 	// Determine survival and development and record in individual's status code
 	// Changes are NOT applied to the Population at this stage
 	void survival0(

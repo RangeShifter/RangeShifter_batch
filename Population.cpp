@@ -269,8 +269,6 @@ traitsums Population::getTraits(Species* pSpecies) {
 	return ts;
 }
 
-int Population::getNInds(void) { return (int)inds.size(); }
-
 popStats Population::getStats(void)
 {
 	popStats p;
@@ -311,23 +309,22 @@ popStats Population::getStats(void)
 
 Species* Population::getSpecies(void) { return pSpecies; }
 
-int Population::totalPop(void) {
-	int t = 0;
-	for (int stg = 0; stg < nStages; stg++) {
-		for (int sex = 0; sex < nSexes; sex++) {
-			t += nInds[stg][sex];
-		}
-	}
-	return t;
+int Population::getNbInds() const {
+	return inds.size();
 }
 
-int Population::stagePop(int stg) {
+int Population::getNbInds(int stg) const {
 	int t = 0;
-	if (stg < 0 || stg >= nStages) return t;
+	if (stg < 0 || stg >= nStages) throw runtime_error("Attempt to get nb individuals for stage " + to_string(stg) + ", no such stage.");
 	for (int sex = 0; sex < nSexes; sex++) {
 		t += nInds[stg][sex];
 	}
 	return t;
+}
+
+int Population::getNbInds(int stg, int sex) const {
+	if (stg < 0 || stg >= nStages) throw runtime_error("Attempt to get nb individuals for stage " + to_string(stg) + ", no such stage.");
+	return nInds[stg][sex];
 }
 
 //---------------------------------------------------------------------------
@@ -430,7 +427,7 @@ void Population::reproduction(const float localK, const float envval, const int 
 						}
 					}
 					else // not stage-specific
-						effect = (float)totalPop();
+						effect = (float)getNbInds();
 					if (localK > 0.0) fec[stg][0] *= exp(-effect / localK);
 				}
 			}
@@ -630,7 +627,7 @@ void Population::emigration(float localK)
 // to avoid division by zero, assume carrying capacity is at least one individual
 // localK can be zero if there is a moving gradient or stochasticity in K
 	if (localK < 1.0) localK = 1.0;
-	NK = (float)totalPop() / localK;
+	NK = (float)getNbInds() / localK;
 
 	int ninds = (int)inds.size();
 
@@ -697,7 +694,7 @@ void Population::emigration(float localK)
 				else { // non-structured or individual is in emigration stage
 					eparams = inds[i]->getEmigTraits();
 					if (emig.densDep) { // density-dependent
-						NK = (float)totalPop() / localK;
+						NK = (float)getNbInds() / localK;
 						Pdisp = eparams.d0 / (1.0 + exp(-(NK - eparams.beta) * eparams.alpha));
 					}
 					else { // density-independent
@@ -837,41 +834,6 @@ void Population::recruitMany(std::vector<Individual*>& recruits) {
 }
 
 //---------------------------------------------------------------------------
-
-// Determine whether there is a potential mate present in a patch which a potential
-// settler has reached
-bool Population::matePresent(Cell* pCell, short othersex)
-{
-	Patch* pPatch;
-	Population* pNewPopn;
-	int popsize = 0;
-	bool matefound = false;
-
-	pPatch = pCell->getPatch();
-	if (pPatch != nullptr) {
-		if (pPatch->getPatchNum() > 0) { // not the matrix patch
-			if (pPatch->getK() > 0.0)
-			{ // suitable
-				pNewPopn = pPatch->getPopn(pSpecies);
-				if (pNewPopn != nullptr) {
-					const stageParams sstruct = pSpecies->getStage();
-					// count members of other sex already resident in the patch
-					for (int stg = 0; stg < sstruct.nStages; stg++) {
-						popsize += pNewPopn->nInds[stg][othersex];
-					}
-				}
-				if (popsize < 1) {
-					// add any potential settlers of the other sex
-					popsize += pPatch->getPossSettlers(pSpecies, othersex);
-				}
-			}
-		}
-	}
-	if (popsize > 0) matefound = true;
-	return matefound;
-}
-
-//---------------------------------------------------------------------------
 // Determine survival and development and record in individual's status code
 // Changes are NOT applied to the Population at this stage
 
@@ -957,7 +919,7 @@ void Population::survival0(float localK, short option0, short option1)
 						}
 					}
 					else // not stage-specific
-						effect = (float)totalPop();
+						effect = (float)getNbInds();
 					if (localK > 0.0)
 						dev[stg][sex] *= exp(-(ddparams.devCoeff * effect) / localK);
 				} // end of if (sstruct.devDens && stg > 0)
@@ -983,7 +945,7 @@ void Population::survival0(float localK, short option0, short option1)
 						}
 					}
 					else // not stage-specific
-						effect = (float)totalPop();
+						effect = (float)getNbInds();
 					if (localK > 0.0)
 						surv[stg][sex] *= exp(-(ddparams.survCoeff * effect) / localK);
 				} // end of if (sstruct.survDens)
@@ -1180,7 +1142,7 @@ void Population::outPopulation(int rep, int yr, int gen, float eps,
 		}
 	}
 	else { // non-structured population
-		outPop << "\t" << totalPop();
+		outPop << "\t" << getNbInds();
 		if (dem.repType != 0)
 		{ // sexual model
 			outPop << "\t" << nInds[1][0] << "\t" << nInds[1][1];
