@@ -210,6 +210,7 @@ void testTransferKernels() {
 }
 
 void testTransferCRW() {
+
 	// Simple 5*5 cell-based landscape layout
 	int lsDim = 5;
 	landParams ls_params = createDefaultLandParams(lsDim);
@@ -279,11 +280,14 @@ void testTransferCRW() {
 	assert(ind0.getStatus() == 0); // status didn't change
 	assert(ind0.getCurrCell() == init_cell); // not emigrating so didn't move
 
-	// Per-step mortality
+	//---------------------//
+	// Test per-step mortality
+	//---------------------//
+
 	m.stepMort = 1.0; // should die 
 	sp.setSpMovtTraits(m);
 	Individual ind1(&sp, init_cell, init_patch, 0, 0, 0, 0.0, true, 2);
-	// force set path bc for some reason path gets deallocated upon exiting constructor??
+	// force-set path bc for some reason path gets deallocated upon exiting constructor??
 	ind1.setStatus(1);
 	isDispersing = ind1.moveStep(&ls, &sp, hab_index, false);
 	// Individual begins in natal patch so mortality is disabled
@@ -291,8 +295,8 @@ void testTransferCRW() {
 	// Individual should be in a different patch
 	Cell* first_step_cell = ind1.getCurrCell();
 	assert(first_step_cell != init_cell);
+	assert(first_step_cell->getPatch() != init_patch);
 
-	assert((Patch*)first_step_cell->getPatch() != init_patch);
 	ind1.setStatus(1); // emigrating again
 
 	// Individual should die on second step
@@ -302,10 +306,12 @@ void testTransferCRW() {
 	m.stepMort = 0.0; // not dying
 	sp.setSpMovtTraits(m);
 
-	// Habitat-dep mortality
+	// Test habitat-depdt mortality
 	// ...
 
-	// Step size
+	//----------------//
+	// Test step size
+	//----------------//
 
 	ls = Landscape();
 	ls.setLandParams(ls_params, true);
@@ -325,9 +331,9 @@ void testTransferCRW() {
 	ls.updateCarryingCapacity(&sp, 0, 0);
 	// Init cell is NOT in natal patch
 	Patch* natalPatch = new Patch(0, 0);
-	init_patch = (Patch*)init_cell->getPatch();
+	init_patch = init_cell->getPatch();
 
-	// Step length too short
+	// Step length is too short
 	m.stepLength = 0.1; // will not reach final cell
 	m.rho = 0.0; // random angle
 	sp.setSpMovtTraits(m);
@@ -340,16 +346,16 @@ void testTransferCRW() {
 	// First step - still in unsuitable cell so still dispersing
 	isDispersing = ind2.moveStep(&ls, &sp, hab_index, false);
 	assert(ind2.getCurrCell() == init_cell);
-	assert(ind2.getStatus() == 1);
+	assert(ind2.getStatus() == 1); // still dispersing
 	// Second step - reaching max steps this year, wait next year
 	isDispersing = ind2.moveStep(&ls, &sp, hab_index, false);
 	assert(ind2.getCurrCell() == init_cell);
-	assert(ind2.getStatus() == 3);
+	assert(ind2.getStatus() == 3); // waiting for next year
 	ind2.setStatus(1); // dispersing again
 	// Third step - reaching max steps, dies in unsuitable cell
 	isDispersing = ind2.moveStep(&ls, &sp, hab_index, false);
 	assert(ind2.getCurrCell() == init_cell);
-	assert(ind2.getStatus() == 6);
+	assert(ind2.getStatus() == 6); // died while dispersing
 
 	// Step length too long
 	m.stepLength = ls_params.dimX * SQRT2 * 1.5; // overshoots
