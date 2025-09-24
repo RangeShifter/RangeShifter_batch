@@ -360,7 +360,7 @@ void Landscape::calcPatchOverlap() {
 	}
 
 	for (int x = 0; x < dimX; x++) {
-		for (int y = 0; x < dimY; y++) {
+		for (int y = 0; y < dimY; y++) {
 			auto pCell = cells[y][x];
 			// Let each patch know which patches they overlap with
 			// and tally the nb of overlapping cells

@@ -196,8 +196,10 @@ unsigned long int Cell::getVisits(species_id sp) { return visits.at(sp); }
 // Let patches know which patches from other species they overlap with
 void Cell::declareOverlappingPatches() const {
 	for (auto& [sp, pPatch] : patches) {
+		if (pPatch == nullptr) continue; // not a patch
 		for (auto& [otherSp, pOverlappingPatch] : patches) {
-			if (sp == otherSp) continue;
+			if (sp == otherSp) continue; // species don't overlap with themselves!
+			else if (pOverlappingPatch == nullptr) continue; // no other patch here
 			else pPatch->incrementPatchOverlap(pOverlappingPatch);
 		}
 	}

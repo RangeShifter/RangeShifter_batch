@@ -361,7 +361,7 @@ void Patch::incrementPatchOverlap(Patch* pOverlappingPatch) {
 	const int otherPatchId = pOverlappingPatch->getPatchNum();
 	if (!overlappingPatches.contains(otherSp))
 		overlappingPatches.emplace(otherSp, map<int, double>());
-	auto& thisSpEntry = overlappingPatches.at(sp);
+	auto& thisSpEntry = overlappingPatches.at(otherSp);
 	if (!thisSpEntry.contains(otherPatchId))
 		thisSpEntry.emplace(otherPatchId, 0.0f);
 
