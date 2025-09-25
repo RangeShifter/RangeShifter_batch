@@ -654,7 +654,7 @@ int CheckParameterFile()
 	float inMinR, inMaxR, inMinK, inMaxK, sum_K, min_K, max_K;
 	float inGradSteep, inGradScalingFactor, inLocalExtOpt, inShiftRate;
 	float inStochAC, inStochStD, inLocalExtProb, inPropMales, inHarem;
-	float inBc, inRmax, inK;
+	float inBc, inRmax, inK, inFecSD;
 	int inOutStartPop, inOutStartInd, inOutStartTraitCell, inOutStartTraitRow;
 	int inOutStartConn, inOutIntRange, inOutIntOcc, inOutIntPop, inOutIntInd;
 	int inOutIntTraitCell, inOutIntTraitRow, inOutIntConn, inMapsInterval;
@@ -691,6 +691,7 @@ int CheckParameterFile()
 	bParamFile >> header; if (header != "Harem") nbErrors++;
 	bParamFile >> header; if (header != "bc") nbErrors++;
 	bParamFile >> header; if (header != "Rmax") nbErrors++;
+	bParamFile >> header; if (header != "FecSD") nbErrors++;
 	for (i = 0; i < maxNhab; i++) {
 		Kheader = "K" + to_string(i + 1);
 		bParamFile >> header; 
@@ -923,6 +924,13 @@ int CheckParameterFile()
 			BatchError(whichFile, whichLine, 10, "Rmax");
 			nbErrors++; 
 		}
+
+		bParamFile >> inFecSD;
+		if (inFecSD <= 0.0) {
+			BatchError(whichFile, whichLine, 10, "FecSD");
+			nbErrors++; 
+		}
+
 		sum_K = 0.0; 
 		min_K = 9999999.0; 
 		max_K = 0.0;
@@ -5477,7 +5485,7 @@ int ReadParameters(Landscape* pLandscape)
 	paramsStoch->setStoch(env);
 
 	// Demographic parameters
-	parameters >> dem.propMales >> dem.harem >> dem.bc >> dem.lambda;
+	parameters >> dem.propMales >> dem.harem >> dem.bc >> dem.lambda >> dem.fecSD;
 	pSpecies->setDemogr(dem);
 
 	// Artificial landscape
