@@ -228,10 +228,12 @@ void testPopulation()
 		}
 	}
 
-	// Genetic load meets Hardy-Weinberg expectation
+	// Genetic load meets Hardy-Weinberg expectation on first generation
 	// If a lethal (s = 1) recessive (h = 0) allele starts at freq 0.6,
-	// then (if no mutations) the prop. of unviable homozygote offspring should be 0.36
+	// then (if no mutations) next gen should have 0.6^2 = 0.36 homozygotes dying at birth
 	{
+		const float tolerance = 0.02; // high tolerance, still a lot of stochasticity
+
 		const float initFreqA = 0.6;
 		const float sA = 1.0; // lethal
 		const float hA = 0.0; // fully recessive
@@ -240,7 +242,6 @@ void testPopulation()
 		float mutationRate = 0.0;
 		const float localK = 10000.0;
 		const int initialNbInds = localK;
-		const float tolerance = 0.02; // high tolerance, still a lot of stochasticity
 		const float expectedFreqAA = initFreqA * initFreqA;
 
 		// Simple genetic layout
@@ -282,6 +283,7 @@ void testPopulation()
 		}
 
 		// Check allele frequencies conform to HW
+		pop.shuffleInds();
 		pop.reproduction(localK, 1, 1);
 		pop.fledge(); // replace initial pop with juveniles
 		double obsFreqUnviable = 1 - pop.getNInds() / localK;
