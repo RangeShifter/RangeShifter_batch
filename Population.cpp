@@ -1497,17 +1497,11 @@ void Population::clean(void)
 	int ninds = (int)inds.size();
 	if (ninds > 0) {
 		inds.erase(std::remove(inds.begin(), inds.end(), (Individual *)NULL), inds.end());
-#if RS_RCPP
-		shuffle(inds.begin(), inds.end(), pRandom->getRNG());
-#else
-
-#ifdef NDEBUG
+#ifdef RS_RCPP || NDEBUG
 		// do not randomise individuals in DEBUG mode, as the function uses rand()
 		// and therefore the randomisation will differ between identical runs of RS
 		shuffle(inds.begin(), inds.end(), pRandom->getRNG());
-#endif // NDEBUG
-
-#endif // RS_RCPP
+#endif
 	}
 }
 
