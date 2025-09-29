@@ -26,9 +26,3 @@ jobs:
           
       - name: run
         run: ${{ matrix.path_to_exe }} run_on_gha/rs_test_project/
-
-      - name: check_output
-        if: ${{ matrix.os != 'macos-13' }} # no check until I get access to a machine with Xcode 15
-        run: |
-          cd ./run_on_gha/rs_test_project 
-        #  bash check_output.bash # disable until new genetics stable
