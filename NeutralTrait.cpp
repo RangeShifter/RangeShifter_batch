@@ -294,7 +294,7 @@ float NeutralTrait::getAlleleValueAtLocus(short whichChromosome, int position) c
 	return it->second[whichChromosome];
 }
 
-#ifndef NDEBUG // Testing only
+#ifdef UNIT_TESTS // Testing only
 
 // Create a default set of neutral alleles for testing
 //
@@ -316,4 +316,4 @@ map<int, vector<unsigned char>> createTestNeutralGenotype(
 	return genotype;
 }
 
-#endif // NDEBUG
+#endif // UNIT_TESTS

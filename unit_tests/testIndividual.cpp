@@ -1,4 +1,4 @@
-#ifndef NDEBUG
+#ifdef UNIT_TESTS
 
 #include "../Individual.h"
 #include "../Population.h"
@@ -1403,4 +1403,4 @@ void testIndividual() {
 	
 }
 
-#endif //NDEBUG
+#endif // UNIT_TESTS

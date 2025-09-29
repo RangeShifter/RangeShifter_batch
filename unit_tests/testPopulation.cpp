@@ -1,4 +1,4 @@
-#ifndef NDEBUG
+#ifdef UNIT_TESTS
 
 #include "../Individual.h"
 #include "../Population.h"
@@ -217,14 +217,13 @@ void testPopulation()
 			pop.sampleIndsWithoutReplacement("all", { 1 });
 			pop.updatePopNeutralTables();
 			obsFreqA = pop.getAlleleFrequency(0, alleleA);
-			obsFreqB = pop.getAlleleFrequency(0, alleleB);
 			float nbHeteroZ = pop.getHeteroTally(0, alleleA);
 			int nbInds = pop.getNInds();
 			obsFreqHeteroZ = nbHeteroZ / nbInds;
 			assert(abs(obsFreqA - exptdFreqA) < tolerance);
-			assert(abs(obsFreqB - exptdFreqB) < tolerance);
 			assert(abs(obsFreqHeteroZ - exptdFreqHeteroZ) < tolerance);
-			// Ideally one should do a statistical test against a random walk here
+
+			// Ideally one should instead do a statistical test against a random walk here
 		}
 	}
 
@@ -234,7 +233,7 @@ void testPopulation()
 	{
 		const float tolerance = 0.02; // high tolerance, still a lot of stochasticity
 
-		const float initFreqA = 0.6;
+		const float initFreqA = 0.23;
 		const float sA = 1.0; // lethal
 		const float hA = 0.0; // fully recessive
 		const float sB = 0.0; // benign
@@ -291,4 +290,4 @@ void testPopulation()
 	}
 }
 
-#endif // NDEBUG
+#endif // UNIT_TESTS

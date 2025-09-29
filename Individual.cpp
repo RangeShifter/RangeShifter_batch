@@ -1674,7 +1674,7 @@ double cauchy(double location, double scale) {
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-#ifndef NDEBUG
+#ifdef UNIT_TESTS
 
 Cell* Individual::getCurrCell() const {
 	return pCurrCell;
@@ -1741,5 +1741,5 @@ void Individual::overrideGenotype(TraitType whichTrait, const map<int, vector<un
 	pNeutralTrait->getGenes() = newGenotype;
 };
 
-#endif // NDEBUG
+#endif // UNIT_TESTS
 

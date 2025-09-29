@@ -823,7 +823,7 @@ void Species::setSamplePatchList(const set<int>& samplePatchList) {
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 
-#ifndef NDEBUG
+#ifdef UNIT_TESTS
 // For testing purposes only
 
 Species* createDefaultSpecies() {
@@ -871,4 +871,4 @@ demogrParams createDefaultDiploidDemogrParams() {
 	return d;
 }
 
-#endif // NDEBUG
+#endif // UNIT_TESTS

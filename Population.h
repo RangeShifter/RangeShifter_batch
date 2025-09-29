@@ -239,11 +239,11 @@ public:
 	vector<int> countNbHeterozygotesEachLocus();
 	double computeHs();
 
-#ifndef NDEBUG
+#ifdef UNIT_TESTS
 	// Testing only
 	void clearInds() { inds.clear(); } // empty inds vector to avoid deallocating individual is used separately in test
 	void shuffleInds() { shuffle(inds.begin(), inds.end(), pRandom->getRNG()); }
-#endif // NDEBUG
+#endif // UNIT_TESTS
 
 private:
 	short nStages;
