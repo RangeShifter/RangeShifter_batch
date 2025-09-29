@@ -5074,12 +5074,18 @@ int ReadSettlement(int option)
 				if (findmate == 1) srules.findMate = true; else srules.findMate = false;
 				pSpecies->setSettRules(0, 0, srules);
 				pSpecies->setSteps(0, 0, ssteps);
+				if (dem.repType > 0) {
+					pSpecies->setSettRules(0, 1, srules);
+					pSpecies->setSteps(0, 1, ssteps);
+				}
 				if (srules.densDep) {
 					if (sett.indVar) {
 						pSpecies->setSettParams(0, 0, sparams);
+						if (dem.repType > 0) pSpecies->setSettParams(0, 1, sparams);;
 					}
 					else {
 						pSpecies->setSettTraits(0, 0, settleDD);
+						if (dem.repType > 0) pSpecies->setSettTraits(0, 1, settleDD);
 					}
 				}
 				if (dem.stageStruct) { // model is structured - also set parameters for all stages
@@ -5091,16 +5097,6 @@ int ReadSettlement(int option)
 							pSpecies->setSettRules(i, 1, srules);
 							pSpecies->setSteps(i, 1, ssteps);
 							if (srules.densDep && !sett.indVar) pSpecies->setSettTraits(i, 1, settleDD);
-						}
-					}
-				}
-				else {
-					if (dem.repType > 0) { // model is sexual - also set parameters for males
-						pSpecies->setSettRules(0, 1, srules);
-						pSpecies->setSteps(0, 1, ssteps);
-						if (srules.densDep) {
-							if (sett.indVar) pSpecies->setSettParams(0, 1, sparams);
-							else pSpecies->setSettTraits(0, 1, settleDD);
 						}
 					}
 				}
