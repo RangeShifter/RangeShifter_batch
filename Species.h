@@ -399,6 +399,13 @@ public:
 		const trfrKernelParams,	// structure holding transfer by kernel parameters
 		const int							// Landscape resolution
 	);
+
+#ifndef NDEBUG
+	// Testing: set dispersal but ignore resolution
+	void overrideKernels(const short stg, const short sex,
+		const trfrKernelParams k);
+# endif // NDEBUG
+
 	trfrKernelParams getSpKernTraits( // Get transfer by kernel parameters
 		short,	// stage
 		short		// sex

@@ -786,9 +786,12 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool 
 	}
 	else
 		meandist = kern.meanDist1 / (float)land.resol;
+	
 	// scaled mean may not be less than 1 unless emigration derives from the kernel
 	// (i.e. the 'use full kernel' option is applied)
+# ifdef NDEBUG // bypass this requirement for tests
 	if (!usefullkernel && meandist < 1.0) meandist = 1.0;
+# endif
 
 	int loopsteps = 0; // new counter to prevent infinite loop added 14/8/15
 	do {

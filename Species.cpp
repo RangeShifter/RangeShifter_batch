@@ -837,6 +837,16 @@ Species* createDefaultSpecies() {
 	return pSpecies;
 }
 
+// Set kernel parameters, but ignore constraints on values
+// Used to test dispersal with values < resolution
+void Species::overrideKernels(const short stg, const short sex,
+	const trfrKernelParams k)
+{
+	meanDist1[stg][sex] = k.meanDist1;
+	meanDist2[stg][sex] = k.meanDist2;
+	probKern1[stg][sex] = k.probKern1;
+}
+
 demogrParams createDefaultHaploidDemogrParams() {
 	demogrParams d;
 	d.repType = 0;
