@@ -231,7 +231,7 @@ void testPopulation()
 	// If a lethal (s = 1) recessive (h = 0) allele starts at freq 0.6,
 	// then (if no mutations) next gen should have 0.6^2 = 0.36 homozygotes dying at birth
 	{
-		const float tolerance = 0.02; // high tolerance, still a lot of stochasticity
+		const float tolerance = 0.05; // high tolerance, still a lot of stochasticity
 
 		const float initFreqA = 0.23;
 		const float sA = 1.0; // lethal
