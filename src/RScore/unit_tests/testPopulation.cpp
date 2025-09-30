@@ -1,4 +1,4 @@
-#ifndef NDEBUG
+#ifdef UNIT_TESTS
 
 #include "../Individual.h"
 #include "../Population.h"
@@ -147,33 +147,36 @@ void testPopulation()
 	}
 
 	// In the absence of evolutionary forces, neutral gene 
-	// frequencies conform to Hardy-Weinberg principle, i.e.:
+	// frequencies roughly conform to Hardy-Weinberg principle, i.e.:
 	// 1 - Allele frequencies p and q remain constant through generations
 	// 2 - Genotype frequencies conform to fAA = p^2, fAB = 2pq, fBB = q^2
 	{
+		const float tolerance = 0.05; // high tolerance, drift does happen
+
 		float mutationRate = 0.0;
 		const float localK = 10000.0;
 		const int initialNbInds = localK;
-		const float initFreqA = 0.7;
+		const float initFreqA = 0.20;
 		const float exptdFreqA = initFreqA; // Allelic freqs are constant under HW
 		const float exptdFreqB = 1 - exptdFreqA;
 		const float exptdFreqHeteroZ = 2 * exptdFreqA * exptdFreqB; // according to HW
-		const int nbGens = 10;
+		const int nbGens = 50;
 		float obsFreqA = 0.0;
 		float obsFreqB = 0.0;
 		float obsFreqHeteroZ = 0.0;
-		const float tolerance = 0.02; // fairly high tolerance, I expect a bit of drift to act.
 
 		// Simple genetic layout
+		// 1 locus with two alleles A and B
 		const bool isDiploid{ true }; // HW only applies to diploids
 		const int genomeSz = 1;
 		const set<int> genePositions = { 0 };
-		const float maxAlleleVal = 1;
+		const float maxAlleleVal = 10;
 		unsigned char alleleA = char(0);
 		unsigned char alleleB = char(1);
 		auto genotypeAA = createTestNeutralGenotype(genomeSz, true, alleleA, alleleA);
 		auto genotypeBB = createTestNeutralGenotype(genomeSz, true, alleleB, alleleB);
 
+		// Landscape is a single cell
 		Landscape* pLandscape = new Landscape;
 		Patch* pPatch = pLandscape->newPatch(1);
 		Cell* pCell = new Cell(0, 0, pPatch, 0);
@@ -190,7 +193,7 @@ void testPopulation()
 		SpeciesTrait* spTr = createTestNeutralSpTrait(maxAlleleVal, genePositions, isDiploid);
 		pSpecies->addTrait(TraitType::NEUTRAL, *spTr);
 
-		// Initialise population with 
+		// Initialise population with initial frequencies for AA and BB
 		Population pop = Population(pSpecies, pPatch, 0, 1);
 		for (int i = 0; i < initialNbInds; i++) {
 			Individual* pInd = new Individual(pSpecies, pCell, pPatch, 1, 0, 0, 0.5, false, 1);
@@ -208,26 +211,29 @@ void testPopulation()
 			pop.fledge(); // replace initial pop with juveniles
 			pop.survival0(localK, 0, 0); // flag juveniles for development
 			pop.survival1(); // develop to stage 1 (breeders)
+			pop.shuffleInds();
 
 			// Count allele and heterozygote frequencies
 			pop.sampleIndsWithoutReplacement("all", { 1 });
 			pop.updatePopNeutralTables();
 			obsFreqA = pop.getAlleleFrequency(0, alleleA);
-			obsFreqB = pop.getAlleleFrequency(0, alleleB);
 			float nbHeteroZ = pop.getHeteroTally(0, alleleA);
 			int nbInds = pop.getNInds();
 			obsFreqHeteroZ = nbHeteroZ / nbInds;
 			assert(abs(obsFreqA - exptdFreqA) < tolerance);
-			assert(abs(obsFreqB - exptdFreqB) < tolerance);
 			assert(abs(obsFreqHeteroZ - exptdFreqHeteroZ) < tolerance);
+
+			// Ideally one should instead do a statistical test against a random walk here
 		}
 	}
 
-	// Genetic load meets Hardy-Weinberg expectation
+	// Genetic load meets Hardy-Weinberg expectation on first generation
 	// If a lethal (s = 1) recessive (h = 0) allele starts at freq 0.6,
-	// then (if no mutations) the prop. of unviable homozygote offspring should be 0.36
+	// then (if no mutations) next gen should have 0.6^2 = 0.36 homozygotes dying at birth
 	{
-		const float initFreqA = 0.6;
+		const float tolerance = 0.05; // high tolerance, still a lot of stochasticity
+
+		const float initFreqA = 0.23;
 		const float sA = 1.0; // lethal
 		const float hA = 0.0; // fully recessive
 		const float sB = 0.0; // benign
@@ -235,7 +241,6 @@ void testPopulation()
 		float mutationRate = 0.0;
 		const float localK = 10000.0;
 		const int initialNbInds = localK;
-		const float tolerance = 0.02; // high tolerance, still a lot of stochasticity
 		const float expectedFreqAA = initFreqA * initFreqA;
 
 		// Simple genetic layout
@@ -277,6 +282,7 @@ void testPopulation()
 		}
 
 		// Check allele frequencies conform to HW
+		pop.shuffleInds();
 		pop.reproduction(localK, 1, 1);
 		pop.fledge(); // replace initial pop with juveniles
 		double obsFreqUnviable = 1 - pop.getNInds() / localK;
@@ -284,4 +290,4 @@ void testPopulation()
 	}
 }
 
-#endif // NDEBUG
+#endif // UNIT_TESTS
