@@ -26,3 +26,13 @@ jobs:
           
       - name: run
         run: ${{ matrix.path_to_exe }} run_on_gha/rs_test_project/
+
+#      block output checks for now
+#      - name: check_output
+#        if: ${{ matrix.os != 'macos-latest' }} # no check until I get access to a machine with Xcode 15
+#        run: |
+#         cd ./run_on_gha/rs_test_project 
+#          rm Outputs/DebugLog.txt
+#          bash check_output.bash
+        # DebugLog contains addresses, changes every run
+        
