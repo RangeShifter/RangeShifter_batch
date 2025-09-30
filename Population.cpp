@@ -473,23 +473,22 @@ popStats Population::getStats(void)
 
 Species* Population::getSpecies(void) { return pSpecies; }
 
-int Population::totalPop(void) {
-	int t = 0;
-	for (int stg = 0; stg < nStages; stg++) {
-		for (int sex = 0; sex < nSexes; sex++) {
-			t += nInds[stg][sex];
-		}
-	}
-	return t;
+int Population::getNbInds() const {
+	return inds.size();
 }
 
-int Population::stagePop(int stg) {
+int Population::getNbInds(int stg) const {
 	int t = 0;
-	if (stg < 0 || stg >= nStages) return t;
+	if (stg < 0 || stg >= nStages) throw runtime_error("Attempt to get nb individuals for stage " + to_string(stg) + ", no such stage.");
 	for (int sex = 0; sex < nSexes; sex++) {
 		t += nInds[stg][sex];
 	}
 	return t;
+}
+
+int Population::getNbInds(int stg, int sex) const {
+	if (stg < 0 || stg >= nStages) throw runtime_error("Attempt to get nb individuals for stage " + to_string(stg) + ", no such stage.");
+	return nInds[stg][sex];
 }
 
 //---------------------------------------------------------------------------
@@ -594,7 +593,7 @@ void Population::reproduction(const float localK, const float envval, const int 
 						}
 					}
 					else // not stage-specific
-						effect = (float)totalPop();
+						effect = (float)getNbInds();
 					if (localK > 0.0) fec[stg][0] *= exp(-effect / localK);
 				}
 			}
@@ -985,6 +984,15 @@ void Population::allEmigrate(void) {
 	}
 }
 
+// Remove an Individual from the Population
+Individual* Population::extractIndividual(int ix) {
+	Individual* pInd = inds[ix];
+	indStats ind = pInd->getStats();
+	inds[ix] = nullptr;
+	nInds[ind.stage][ind.sex]--;
+	return pInd;
+}
+
 // If an Individual has been identified as an emigrant, remove it from the Population
 disperser Population::extractDisperser(int ix) {
 	disperser d = disperser();
@@ -1031,18 +1039,17 @@ void Population::recruit(Individual* pInd) {
 	inds.push_back(pInd);
 }
 
-// Add specified individuals to the new/current dispersal group
 // Add specified individuals to the population
-void Population::recruitMany(std::vector<Individual*>& new_inds) {
-	if (new_inds.empty()) return;
-	for (Individual* pInd : new_inds) {
+void Population::recruitMany(std::vector<Individual*>& recruits) {
+	if (recruits.empty()) return;
+	for (Individual* pInd : recruits) {
 		indStats ind = pInd->getStats();
 		nInds[ind.stage][ind.sex]++;
 	}
 #ifdef _OPENMP
 	const std::lock_guard<std::mutex> lock(inds_mutex);
 #endif // _OPENMP
-	inds.insert(inds.end(), new_inds.begin(), new_inds.end());
+	inds.insert(inds.end(), recruits.begin(), recruits.end());
 }
 
 //---------------------------------------------------------------------------
@@ -1395,7 +1402,7 @@ void Population::survival0(float localK, short option0, short option1)
 						}
 					}
 					else // not stage-specific
-						effect = (float)totalPop();
+						effect = (float)getNbInds();
 					if (localK > 0.0)
 						dev[stg][sex] *= exp(-(ddparams.devCoeff * effect) / localK);
 				} // end of if (sstruct.devDens && stg > 0)
@@ -1422,7 +1429,7 @@ void Population::survival0(float localK, short option0, short option1)
 						}
 					}
 					else // not stage-specific
-						effect = (float)totalPop();
+						effect = (float)getNbInds();
 					if (localK > 0.0)
 						surv[stg][sex] *= exp(-(ddparams.survCoeff * effect) / localK);
 				} // end of if (sstruct.survDens)
@@ -1614,7 +1621,7 @@ void Population::outPopulation(int rep, int yr, int gen, float eps,
 		}
 	}
 	else { // non-structured population
-		outPop << "\t" << totalPop();
+		outPop << "\t" << getNbInds();
 		if (dem.repType != 0)
 		{ // sexual model
 			outPop << "\t" << nInds[1][0] << "\t" << nInds[1][1];
