@@ -138,6 +138,7 @@ void testPopulation()
 			for (int i = 0; i < popSize; i++) {
 				pop.extractDisperser(i); // rm emigrants from pop
 			}
+			pop.clean();
 			int nbEmigrating = popSize - pop.getNbInds(); // diff is nb of emigrants
 			if (mutationRate == 0.0)
 				assert(nbEmigrating == 0);

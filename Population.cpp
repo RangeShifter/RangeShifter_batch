@@ -779,7 +779,6 @@ void Population::fledge(void)
 		inds = std::move(juvs);
 	}
 	juvs.clear();
-
 }
 
 Individual* Population::sampleInd() const {
@@ -998,7 +997,7 @@ disperser Population::extractDisperser(int ix) {
 	if (ind.status == 1) { // emigrant
 		d.pInd = inds[ix]; 
 		d.yes = true;
-		inds[ix] = 0;
+		inds[ix] = nullptr;
 		nInds[ind.stage][ind.sex]--;
 	}
 	else {
@@ -1206,7 +1205,7 @@ void Population::survival1(void)
 		if (ind.status > 5) { // doomed to die
 			if (ind.status != 10) //not going into cold storage
 				delete inds[i];
-			inds[i] = NULL;
+			inds[i] = nullptr;
 			nInds[ind.stage][ind.sex]--;
 		}
 		else {
