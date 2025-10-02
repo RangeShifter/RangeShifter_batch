@@ -157,7 +157,7 @@ void testPopulation()
 		float mutationRate = 0.0;
 		const float localK = 10000.0;
 		const int initialNbInds = localK;
-		const float initFreqA = 0.20;
+		const float initFreqA = 0.30;
 		const float exptdFreqA = initFreqA; // Allelic freqs are constant under HW
 		const float exptdFreqB = 1 - exptdFreqA;
 		const float exptdFreqHeteroZ = 2 * exptdFreqA * exptdFreqB; // according to HW
@@ -171,7 +171,7 @@ void testPopulation()
 		const bool isDiploid{ true }; // HW only applies to diploids
 		const int genomeSz = 1;
 		const set<int> genePositions = { 0 };
-		const float maxAlleleVal = 10;
+		const float maxAlleleVal = 1;
 		unsigned char alleleA = char(0);
 		unsigned char alleleB = char(1);
 		auto genotypeAA = createTestNeutralGenotype(genomeSz, true, alleleA, alleleA);
@@ -223,8 +223,6 @@ void testPopulation()
 			obsFreqHeteroZ = nbHeteroZ / nbInds;
 			assert(abs(obsFreqA - exptdFreqA) < tolerance);
 			assert(abs(obsFreqHeteroZ - exptdFreqHeteroZ) < tolerance);
-
-			// Ideally one should instead do a statistical test against a random walk here
 		}
 	}
 

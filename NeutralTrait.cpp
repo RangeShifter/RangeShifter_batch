@@ -194,7 +194,7 @@ void NeutralTrait::inheritDiploid(const bool& fromMother, map<int, vector<unsign
 	
 	// Is the first parent gene position already recombinant?
 	auto distance = std::distance(recomPositions.begin(), recomIt);
-	if (distance - 1 % 2 != 0)
+	if (distance % 2 != 0)
 		parentChromosome = 1 - parentChromosome; //switch chromosome
 
 	for (auto const& [locus, allelePair] : parentGenes) {
