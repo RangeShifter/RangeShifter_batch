@@ -169,7 +169,7 @@ void testTransferKernels() {
 	init_cell = cells[4]; // central cell
 	init_patch = init_cell->getPatch();
 
-	kern.meanDist1 = 10; // overshoots *most* of the time...
+	kern.meanDist1 = 100; // overshoots *most* of the time...
 	sp.setSpKernTraits(0, 0, kern, ls_params.resol);
 	Individual ind9(&sp, init_cell, init_patch, 1, 0, 0, 0.0, false, 0); // reset individual
 

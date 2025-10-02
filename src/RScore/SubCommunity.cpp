@@ -368,18 +368,18 @@ int SubCommunity::resolveTransfer(std::map<Species*,vector<Individual*>>& disper
 
 		Species* const& pSpecies = it.first;
 		short reptype = pSpecies->getRepType();
-		trfrRules trfr = pSpecies->getTrfr();
+		transferRules trfr = pSpecies->getTransferRules();
 
 		vector<Individual*>& inds = it.second;
 		
 		// each individual takes one step
 		// for dispersal by kernel, this should be the only step taken
 		for (auto& pInd : inds) {
-			if (trfr.moveModel) {
+			if (trfr.usesMovtProc) {
 				disperser = pInd->moveStep(pLandscape, pSpecies, landIx, sim.absorbing);
 			}
 			else {
-				disperser = pInd->moveKernel(pLandscape, pSpecies, reptype, sim.absorbing);
+				disperser = pInd->moveKernel(pLandscape, pSpecies, sim.absorbing);
 			}
 			nbStillDispersing += disperser;
 			if (disperser) {
@@ -417,7 +417,7 @@ bool SubCommunity::matePresent(Species* pSpecies, Cell* pCell, short othersex)
 			{ // suitable
 				pNewPopn = pPatch->getPopn(pSpecies);
 				if (pNewPopn != nullptr) {
-					const stageParams sstruct = pSpecies->getStage();
+					const stageParams sstruct = pSpecies->getStageParams();
 					// count members of other sex already resident in the patch
 					for (int stg = 0; stg < sstruct.nStages; stg++) {
 						popsize += pNewPopn->getNbInds(stg, othersex);
@@ -460,7 +460,7 @@ int SubCommunity::resolveSettlement(std::map<Species*, vector<Individual*>>& dis
 
 	for (auto& it : dispersingInds) { // all species
 		Species* const& pSpecies = it.first;
-		trfrRules trfr = pSpecies->getTrfr();
+		transferRules trfr = pSpecies->getTransferRules();
 		settleType settletype = pSpecies->getSettle();
 
 		vector<Individual*>& inds = it.second;
@@ -521,22 +521,22 @@ int SubCommunity::resolveSettlement(std::map<Species*, vector<Individual*>>& dis
 								}
 								if (localK > 0.0) {
 									// make settlement decision
-									if (settletype.indVar) settDD = pInd->getSettTraits();
+									if (settletype.indVar) settDD = pInd->getIndSettTraits();
 #if RS_RCPP
 									else settDD = pSpecies->getSettTraits(ind.stage, ind.sex);
 #else
 									else {
 										if (settletype.sexDep) {
 											if (settletype.stgDep)
-												settDD = pSpecies->getSettTraits(ind.stage, ind.sex);
+												settDD = pSpecies->getSpSettTraits(ind.stage, ind.sex);
 											else
-												settDD = pSpecies->getSettTraits(0, ind.sex);
+												settDD = pSpecies->getSpSettTraits(0, ind.sex);
 										}
 										else {
 											if (settletype.stgDep)
-												settDD = pSpecies->getSettTraits(ind.stage, 0);
+												settDD = pSpecies->getSpSettTraits(ind.stage, 0);
 											else
-												settDD = pSpecies->getSettTraits(0, 0);
+												settDD = pSpecies->getSpSettTraits(0, 0);
 										}
 									}
 #endif //RS_RCPP
@@ -573,7 +573,7 @@ int SubCommunity::resolveSettlement(std::map<Species*, vector<Individual*>>& dis
 						nbStillDispersing--;
 					}
 					else { // does not recruit
-						if (trfr.moveModel) {
+						if (trfr.usesMovtProc) {
 							ind.status = 1; // continue dispersing, unless ...
 							// ... maximum steps has been exceeded
 							pathSteps steps = pInd->getSteps();
@@ -608,7 +608,7 @@ int SubCommunity::resolveSettlement(std::map<Species*, vector<Individual*>>& dis
 			}
 #endif
 
-			if (!trfr.moveModel && sett.go2nbrLocn && (ind.status == 3 || ind.status == 6))
+			if (!trfr.usesMovtProc && sett.go2nbrLocn && (ind.status == 3 || ind.status == 6))
 			{
 				// for kernel-based transfer only ...
 				// determine whether recruitment to a neighbouring cell is possible
@@ -1067,7 +1067,7 @@ traitsums SubCommunity::outTraits(Landscape* pLandscape, int rep, int yr, int ge
 
 	for (int iPop = 0; iPop < npops; iPop++) { // all populations
 
-		if (pPatch->getK() > 0.0 && popns[iPop]->getNInds() > 0) {
+		if (pPatch->getK() > 0.0 && popns[iPop]->getNbInds() > 0) {
 			pSpecies = popns[iPop]->getSpecies();
 			demogrParams dem = pSpecies->getDemogrParams();
 			emigRules emig = pSpecies->getEmigRules();

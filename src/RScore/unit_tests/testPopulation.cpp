@@ -62,7 +62,7 @@ void testPopulation()
 			Population pop = Population(pSpecies, pPatch, initialNbInds, 1);
 			pop.reproduction(localK, 1, 1); // juveniles are checked for viability at birth
 			pop.fledge(); // non-overlapping: adults are replaced with juveniles
-			survivingInds.push_back(pop.getNInds());
+			survivingInds.push_back(pop.getNbInds());
 		}
 		assert(survivingInds[0] > survivingInds[1] 
 			&& survivingInds[1] > survivingInds[2]);
@@ -80,7 +80,7 @@ void testPopulation()
 		const int genomeSz = 1;
 		const set<int> genePositions = { 0 };
 
-		// Wild-types nver emigrate, mutants always do
+		// Wild-types never emigrate, mutants always do
 		const map<GenParamType, float> initParams{
 			pair<GenParamType, float>{GenParamType::MIN, 0},
 			pair<GenParamType, float>{GenParamType::MAX, 0}
@@ -134,11 +134,12 @@ void testPopulation()
 			pop.reproduction(localK, 1, 1);
 			pop.fledge(); // replace initial pop with juveniles
 			pop.emigration(localK); // select and flag emigrants
-			int popSize = pop.totalPop();
+			int popSize = pop.getNbInds();
 			for (int i = 0; i < popSize; i++) {
 				pop.extractDisperser(i); // rm emigrants from pop
 			}
-			int nbEmigrating = popSize - pop.totalPop(); // diff is nb of emigrants
+			pop.clean();
+			int nbEmigrating = popSize - pop.getNbInds(); // diff is nb of emigrants
 			if (mutationRate == 0.0)
 				assert(nbEmigrating == 0);
 			emigratingInds.push_back(nbEmigrating);
@@ -156,7 +157,7 @@ void testPopulation()
 		float mutationRate = 0.0;
 		const float localK = 10000.0;
 		const int initialNbInds = localK;
-		const float initFreqA = 0.20;
+		const float initFreqA = 0.30;
 		const float exptdFreqA = initFreqA; // Allelic freqs are constant under HW
 		const float exptdFreqB = 1 - exptdFreqA;
 		const float exptdFreqHeteroZ = 2 * exptdFreqA * exptdFreqB; // according to HW
@@ -170,7 +171,7 @@ void testPopulation()
 		const bool isDiploid{ true }; // HW only applies to diploids
 		const int genomeSz = 1;
 		const set<int> genePositions = { 0 };
-		const float maxAlleleVal = 10;
+		const float maxAlleleVal = 1;
 		unsigned char alleleA = char(0);
 		unsigned char alleleB = char(1);
 		auto genotypeAA = createTestNeutralGenotype(genomeSz, true, alleleA, alleleA);
@@ -218,12 +219,10 @@ void testPopulation()
 			pop.updatePopNeutralTables();
 			obsFreqA = pop.getAlleleFrequency(0, alleleA);
 			float nbHeteroZ = pop.getHeteroTally(0, alleleA);
-			int nbInds = pop.getNInds();
+			int nbInds = pop.getNbInds();
 			obsFreqHeteroZ = nbHeteroZ / nbInds;
 			assert(abs(obsFreqA - exptdFreqA) < tolerance);
 			assert(abs(obsFreqHeteroZ - exptdFreqHeteroZ) < tolerance);
-
-			// Ideally one should instead do a statistical test against a random walk here
 		}
 	}
 
@@ -285,7 +284,7 @@ void testPopulation()
 		pop.shuffleInds();
 		pop.reproduction(localK, 1, 1);
 		pop.fledge(); // replace initial pop with juveniles
-		double obsFreqUnviable = 1 - pop.getNInds() / localK;
+		double obsFreqUnviable = 1 - pop.getNbInds() / localK;
 		assert(abs(obsFreqUnviable - expectedFreqAA) < tolerance);
 	}
 }
