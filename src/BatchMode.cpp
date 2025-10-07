@@ -2483,10 +2483,12 @@ bool CheckInteractionFile(string indir)
 			|| ifsInteraction.eof()) {
 			// Exit loop
 			stopReading = true;
+			simNbs.insert(simNb);
 			if (!checkIntrctPairsMatch(initdIntrctRecord, recdIntrctRecord)) nbErrors++;
 			if (!checkRelPrefMap(relPrefMap)) nbErrors++;
 		}
 		else if (nextLineSimNb != simNb) {
+			simNbs.insert(simNb);
 			simNb = nextLineSimNb;
 
 			if (!checkIntrctPairsMatch(initdIntrctRecord, recdIntrctRecord)) nbErrors++;
@@ -6169,36 +6171,36 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 	string strProcess;
 	string isResMedIntrct, isInitiatedIntrct, isRecIntrt;
 	string usesTgtDensity, usesInterference, usesTgtPref;
-	float alpha, beta, omega, delta, attackRate, hullCoeff,
-		interfExpnt, handlingTime, relPref;
-
+	string strAlpha, strBeta, strOmega, strDelta, strAttackRate, strHullCoeff,
+		strInterfExpnt, strHandlingTime, strRelPref;
+	
 	do {
-		ifsInteraction >> spLeft >> spRight >> stgLeft >> stgRight >> strProcess;
+		ifsInteraction >> spLeft >> stgLeft >> strProcess >> spRight >> stgRight ;
 
-		ifsInteraction >> isResMedIntrct >> alpha;
-		ifsInteraction >> isInitiatedIntrct >> beta >> handlingTime
-			>> usesTgtDensity >> attackRate >> hullCoeff
-			>> usesInterference >> omega >> interfExpnt
-			>> usesTgtPref >> relPref;
-		ifsInteraction >> isRecIntrt >> delta;
+		ifsInteraction >> isResMedIntrct >> strAlpha;
+		ifsInteraction >> isInitiatedIntrct >> strBeta >> strHandlingTime
+			>> usesTgtDensity >> strAttackRate >> strHullCoeff
+			>> usesInterference >> strOmega >> strInterfExpnt
+			>> usesTgtPref >> strRelPref;
+		ifsInteraction >> isRecIntrt >> strDelta;
 
 		demogrProcess_t whichProcess = stringToProcess(strProcess);
 
 		if (isResMedIntrct == "TRUE") {
 			resInteraction resDepIntrct;
-			resDepIntrct.alpha = alpha;
+			resDepIntrct.alpha = stof(strAlpha);
 
 			allSpecies.at(spLeft)->addResMedtdInteraction(stgLeft, whichProcess, spRight, stgRight, resDepIntrct);
 		}
 
 		if (isInitiatedIntrct == "TRUE") {
 			initdInteraction initiatdIntrct;
-			initiatdIntrct.beta = beta;
-			initiatdIntrct.handlingTime = handlingTime;
+			initiatdIntrct.beta = stof(strBeta);
+			initiatdIntrct.handlingTime = stof(strHandlingTime);
 
 			if (usesTgtDensity == "TRUE") {
-				initiatdIntrct.attackRate = attackRate;
-				initiatdIntrct.hullCoeff = hullCoeff;
+				initiatdIntrct.attackRate = stof(strAttackRate);
+				initiatdIntrct.hullCoeff = stof(strHullCoeff);
 			}
 			else {
 				initiatdIntrct.attackRate = 1.0;
@@ -6206,8 +6208,8 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 			}
 
 			if (usesInterference == "TRUE") {
-				initiatdIntrct.interfIntercept = omega;
-				initiatdIntrct.interfExponent = interfExpnt;
+				initiatdIntrct.interfIntercept = stof(strOmega);
+				initiatdIntrct.interfExponent = stof(strInterfExpnt);
 			}
 			else {
 				initiatdIntrct.interfIntercept = 0.0;
@@ -6215,7 +6217,7 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 			}
 
 			if (usesTgtPref == "TRUE")
-				initiatdIntrct.relPreference = relPref;
+				initiatdIntrct.relPreference = stof(strRelPref);
 			else initiatdIntrct.relPreference = 1.0;
 
 			allSpecies.at(spLeft)->addInitdInteraction(stgLeft, whichProcess, spRight, stgRight, initiatdIntrct);
@@ -6223,7 +6225,7 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 
 		if (isRecIntrt == "TRUE") {
 			recdInteraction receivdIntrct;
-			receivdIntrct.delta = delta;
+			receivdIntrct.delta = stof(strDelta);
 
 			allSpecies.at(spLeft)->addReceivdInteraction(stgLeft, whichProcess, spRight, stgRight, receivdIntrct);
 		}
