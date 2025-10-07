@@ -359,7 +359,7 @@ void Patch::incrementPatchOverlap(Patch* pOverlappingPatch) {
 	// Add entries if not already present
 	const species_id otherSp = pOverlappingPatch->getSpeciesID();
 	if (!overlappingPatches.contains(otherSp))
-		overlappingPatches.emplace(otherSp, map<int, double>());
+		overlappingPatches.emplace(otherSp, map<Patch*, double>());
 	auto& thisSpEntry = overlappingPatches.at(otherSp);
 	if (!thisSpEntry.contains(pOverlappingPatch))
 		thisSpEntry.emplace(pOverlappingPatch, 0.0f);
