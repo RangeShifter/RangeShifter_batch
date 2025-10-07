@@ -85,6 +85,9 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& s
 
 constexpr int gEmptyVal = -9;
 
+bool checkIntrctPairsMatch(const set<tuple<int, int, int, int, string>>& initdRecord, const set<tuple<int, int, int, int, string>>& recdRecord);
+bool checkRelPrefMap(const map<tuple<int, int, string>, int>& relPrefMap);
+
 struct simCheck {
 	bool sameInput;
 	int simNb, simLines, reqdSimLines, errors;
@@ -99,6 +102,7 @@ bool CheckSpLandFile(string inputDir, bool isInitial);
 bool CheckGeneticsFile(string inputDir);
 int CheckDynamicFile(string inputDir);
 bool CheckStageFile(string inputDir);
+bool CheckInteractionFile(string indir);
 bool CheckTransitionFile(short, short nbSexesDemogr);
 bool CheckWeightsFile(string fileType, int nbStages, int nbSexes);
 bool CheckEmigFile();
