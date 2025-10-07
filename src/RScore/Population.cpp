@@ -1421,12 +1421,13 @@ void Population::resolveInitiatedInteractions() {
 				}
 			}
 
-			// Re-scale the preference term once we know their sum
-			for (auto& [targetStgPop, intrctRate] : interactionRates) {
-				intrctRate /= totalPreference; // divide by sum_k (pi_k * c_k)
+			// Re-scale the preference terms once we know their sum
+			if (totalPreference > 0.0) {
+				for (auto& [targetStgPop, intrctRate] : interactionRates) {
+					intrctRate /= totalPreference; // divide by sum_k (pi_k * c_k)
+				}
+				totalIntrctRate /= totalPreference; // divide by sum_k(pi_k * c_k)
 			}
-			totalIntrctRate /= totalPreference; // divide by sum_k(pi_k * c_k)
-
 			// Finish the calculation of the functional reponse
 			// and increment the corresponding sum of effects
 			for (auto& [targetStgPop, intrctRate] : interactionRates) {
