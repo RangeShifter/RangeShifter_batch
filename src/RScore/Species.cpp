@@ -945,13 +945,13 @@ void Species::addReceivdInteraction(const int& whichStage, const demogrProcess_t
 	auto outerKey = make_pair(whichProcess, whichStage);
 	auto innerKey = make_pair(otherSpecies, otherStage);
 
-	if (resDepIntrcts.contains(outerKey)) {
-		resDepIntrcts.at(outerKey).emplace(innerKey, receivedIntrct);
+	if (receivedIntrcts.contains(outerKey)) {
+		receivedIntrcts.at(outerKey).emplace(innerKey, receivedIntrct);
 	}
 	else {
 		map<pair<species_id, int>, recdInteraction> innerMap;
 		innerMap.emplace(innerKey, receivedIntrct);
-		resDepIntrcts.emplace(outerKey, innerMap);
+		receivedIntrcts.emplace(outerKey, innerMap);
 	}
 }
 
