@@ -85,7 +85,7 @@ int checkTraitSetCoherency(const vector <TraitType>& allReadTraits, const int& s
 
 constexpr int gEmptyVal = -9;
 
-bool checkIntrctPairsMatch(const set<tuple<int, int, int, int, string>>& initdRecord, const set<tuple<int, int, int, int, string>>& recdRecord);
+bool checkIntrctPairsMatch(const set<tuple<int, int, int, int>>& initdRecord, const set<tuple<int, int, int, int>>& recdRecord);
 bool checkRelPrefMap(const map<tuple<int, int, string>, int>& relPrefMap);
 
 struct simCheck {

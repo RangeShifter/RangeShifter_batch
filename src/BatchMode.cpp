@@ -2178,7 +2178,7 @@ bool CheckInteractionFile(string indir)
 	const string whichInputFile = "InteractionFile";
 
 	// Track initiated and received interactions to check they are matched
-	set<tuple<int, int, int, int, string>> initdIntrctRecord, recdIntrctRecord;
+	set<tuple<int, int, int, int>> initdIntrctRecord, recdIntrctRecord;
 
 	// Track relative preference counts to make sure more than one target is supplied;
 	map<tuple<int, int, string>, int> relPrefMap; 
@@ -2186,10 +2186,10 @@ bool CheckInteractionFile(string indir)
 	// Parse header line
 	ifsInteraction >> header; if (header != "Simulation") nbErrors++;
 	ifsInteraction >> header; if (header != "SpeciesLeft") nbErrors++;
-	ifsInteraction >> header; if (header != "SpeciesRight") nbErrors++;
 	ifsInteraction >> header; if (header != "StageLeft") nbErrors++;
-	ifsInteraction >> header; if (header != "StageRight") nbErrors++;
 	ifsInteraction >> header; if (header != "Process") nbErrors++;
+	ifsInteraction >> header; if (header != "SpeciesRight") nbErrors++;
+	ifsInteraction >> header; if (header != "StageRight") nbErrors++;
 	ifsInteraction >> header; if (header != "ResMedInteraction") nbErrors++;
 	ifsInteraction >> header; if (header != "Alpha") nbErrors++;
 	ifsInteraction >> header; if (header != "InitiatedInteraction") nbErrors++;
@@ -2200,7 +2200,7 @@ bool CheckInteractionFile(string indir)
 	ifsInteraction >> header; if (header != "HullCoeff") nbErrors++;
 	ifsInteraction >> header; if (header != "Interference") nbErrors++;
 	ifsInteraction >> header; if (header != "Omega") nbErrors++;
-	ifsInteraction >> header; if (header != "IntereferenceExp") nbErrors++;
+	ifsInteraction >> header; if (header != "InterferenceExp") nbErrors++;
 	ifsInteraction >> header; if (header != "TargetPreference") nbErrors++;
 	ifsInteraction >> header; if (header != "RelPreference") nbErrors++;
 	ifsInteraction >> header; if (header != "ReceivedInteraction") nbErrors++;
@@ -2230,8 +2230,8 @@ bool CheckInteractionFile(string indir)
 			nbErrors++;
 		}
 
-		ifsEmigrationFile >> inSpLeft >> inSpRight 
-			>> inStgLeft >> inStgRight >> inProcess
+		ifsInteraction >> inSpLeft >> inStgLeft 
+			>> inProcess >> inSpRight >> inStgRight 
 			>> inResMedIntrct >> inAlpha
 			>> inInitIntrct >> inBeta >> inHandlingTime
 			>> inTargetDensity >> inAttackRate >> inHullCoeff
@@ -2319,16 +2319,8 @@ bool CheckInteractionFile(string indir)
 		if (inInitIntrct == "TRUE") {
 
 			// Check this entry is not already present
-			auto initdIntrctEntry = make_tuple(inSpLeft, inStgLeft, inSpRight, inStgRight, inProcess);
-			if (initdIntrctRecord.contains(initdIntrctEntry)) {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "Multiple entries for the same " << inProcess 
-					<< " interaction involving stage " << to_string(inStgLeft)
-					<< " of species " << to_string(inSpLeft) << " and stage "
-					<< to_string(inStgRight) << " of species " << to_string(inSpRight) << endl;
-				nbErrors++;
-			}
-			else {
+			auto initdIntrctEntry = make_tuple(inSpLeft, inStgLeft, inSpRight, inStgRight);
+			if (!initdIntrctRecord.contains(initdIntrctEntry)) {
 				initdIntrctRecord.insert(initdIntrctEntry);
 			}
 
@@ -2464,16 +2456,8 @@ bool CheckInteractionFile(string indir)
 		if (inRecIntrct == "TRUE") {
 
 			// Check this entry is not already present
-			auto recdIntrctEntry = make_tuple(inSpLeft, inStgLeft, inSpRight, inStgRight, inProcess);
-			if (recdIntrctRecord.contains(recdIntrctEntry)) {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "Multiple entries for the same " << inProcess
-					<< " interaction involving stage " << to_string(inStgLeft)
-					<< " of species " << to_string(inSpLeft) << " and stage "
-					<< to_string(inStgRight) << " of species " << to_string(inSpRight) << endl;
-				nbErrors++;
-			}
-			else {
+			auto recdIntrctEntry = make_tuple(inSpLeft, inStgLeft, inSpRight, inStgRight);
+			if (!recdIntrctRecord.contains(recdIntrctEntry)) {
 				recdIntrctRecord.insert(recdIntrctEntry);
 			}
 
@@ -2530,7 +2514,7 @@ bool CheckInteractionFile(string indir)
 	return nbErrors == 0;
 }
 
-bool checkIntrctPairsMatch(const set<tuple<int, int, int, int, string>>& initdRecord, const set<tuple<int, int, int, int, string>>& recdRecord) {
+bool checkIntrctPairsMatch(const set<tuple<int, int, int, int>>& initdRecord, const set<tuple<int, int, int, int>>& recdRecord) {
 	bool isFine = true;
 
 	// Each initiated interaction must have a matching received interaction
@@ -2539,8 +2523,7 @@ bool checkIntrctPairsMatch(const set<tuple<int, int, int, int, string>>& initdRe
 			get<2>(initdEntry), // SpeciesLeft -> SpeciesRight
 			get<3>(initdEntry), // StageLeft -> StageRight
 			get<0>(initdEntry), // SpeciesRight -> SpeciesLeft
-			get<1>(initdEntry), // StageRight -> StageLeft
-			get<4>(initdEntry) // Process
+			get<1>(initdEntry) // StageRight -> StageLeft
 		);
 		if (!recdRecord.contains(exptdRecdEntry)) {
 			isFine = false;
@@ -2558,8 +2541,7 @@ bool checkIntrctPairsMatch(const set<tuple<int, int, int, int, string>>& initdRe
 			get<2>(recEntry), // SpeciesLeft -> SpeciesRight
 			get<3>(recEntry), // StageLeft -> StageRight
 			get<0>(recEntry), // SpeciesRight -> SpeciesLeft
-			get<1>(recEntry), // StageRight -> StageLeft
-			get<4>(recEntry) // Process
+			get<1>(recEntry) // StageRight -> StageLeft
 		);
 		if (!initdRecord.contains(exptdInitdEntry)) {
 			isFine = false;
