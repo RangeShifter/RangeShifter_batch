@@ -2180,16 +2180,16 @@ bool CheckInteractionFile(string indir)
 	// Track initiated and received interactions to check they are matched
 	set<tuple<int, int, int, int>> initdIntrctRecord, recdIntrctRecord;
 
-	// Track relative preference counts to make sure more than one target is supplied;
+	// Track relative preference counts to make sure more than one target is supplied
 	map<tuple<int, int, string>, int> relPrefMap; 
 
 	// Parse header line
 	ifsInteraction >> header; if (header != "Simulation") nbErrors++;
 	ifsInteraction >> header; if (header != "SpeciesLeft") nbErrors++;
 	ifsInteraction >> header; if (header != "StageLeft") nbErrors++;
-	ifsInteraction >> header; if (header != "Process") nbErrors++;
 	ifsInteraction >> header; if (header != "SpeciesRight") nbErrors++;
 	ifsInteraction >> header; if (header != "StageRight") nbErrors++;
+	ifsInteraction >> header; if (header != "Process") nbErrors++;
 	ifsInteraction >> header; if (header != "ResMedInteraction") nbErrors++;
 	ifsInteraction >> header; if (header != "Alpha") nbErrors++;
 	ifsInteraction >> header; if (header != "InitiatedInteraction") nbErrors++;
@@ -2231,7 +2231,7 @@ bool CheckInteractionFile(string indir)
 		}
 
 		ifsInteraction >> inSpLeft >> inStgLeft 
-			>> inProcess >> inSpRight >> inStgRight 
+			 >> inSpRight >> inStgRight >> inProcess
 			>> inResMedIntrct >> inAlpha
 			>> inInitIntrct >> inBeta >> inHandlingTime
 			>> inTargetDensity >> inAttackRate >> inHullCoeff
@@ -2269,18 +2269,31 @@ bool CheckInteractionFile(string indir)
 			nbErrors++;
 		}
 
-		if (inProcess != "fecundity" && inProcess != "development" && inProcess != "survival") {
+		int nbProcesses = 0;
+		std::regex processSeq("^\"?((fecundity|development|survival)?;)*(fecundity|development|survival)\"?$");
+		bool isMatchPos = regex_search(inProcess, processSeq);
+		if (isMatchPos) {
+			std::regex process("(\\w+)"); // any word
+			auto inProcessBegin = std::sregex_iterator(inProcess.begin(), inProcess.end(), process);
+			auto inProcessEnd = std::sregex_iterator();
+			for (std::sregex_iterator i = inProcessBegin; i != inProcessEnd; ++i)
+			{
+				std::smatch match = *i;
+				std::string matchStr = match.str();
+				if (matchStr == "fecundity" && inStgLeft == 0) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "Species interactions cannot affect the fecundity of juveniles (stage 0) since they don't reproduce." << endl;
+					nbErrors++;
+				}
+				nbProcesses++;
+			}
+		}
+		else {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLogOfs << "Process must be either fecundity, development or survival" << endl;
+			batchLogOfs << "Process must be either one or multiple instances of fecundity, survival, and/or development, separated by semicolons." << endl;
 			nbErrors++;
 		}
-
-		if (inProcess == "fecundity" && inStgLeft == 0) {
-			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLogOfs << "Species interactions cannot affect the fecundity of juveniles (stage 0) since they don't reproduce." << endl;
-			nbErrors++;
-		}
-
+		
 		if (inResMedIntrct != "TRUE" && inResMedIntrct != "FALSE") {
 			BatchError(whichInputFile, lineNb, 0, " ");
 			batchLogOfs << "ResMedInteraction must be either TRUE or FALSE" << endl;
@@ -2299,11 +2312,33 @@ bool CheckInteractionFile(string indir)
 			nbErrors++;
 		}
 
+		const std::regex floatNbSeq("^\"?((-?\\d+(\.\\d+)?)?;)*(-?\\d+(\.\\d+)?)\"?$");
+		const std::regex floatNumber("(-?\\d+(\.\\d+))"); // any positive or negative floating point number
+
 		// Resource-mediated interaction
 		if (inResMedIntrct == "TRUE") {
 			if (inAlpha == "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
 				batchLogOfs << "If ResMedInteraction is TRUE, Alpha must not be #" << endl;
+				nbErrors++;
+			}
+
+			int nbAlphas = 0;
+			bool isMatchPos = regex_search(inAlpha, floatNbSeq);
+			if (isMatchPos) {
+				auto inAlphaBegin = std::sregex_iterator(inAlpha.begin(), inAlpha.end(), floatNumber);
+				auto inAlphaEnd = std::sregex_iterator();
+				for (std::sregex_iterator i = inAlphaBegin; i != inAlphaEnd; ++i)
+					nbAlphas++;
+				if (nbAlphas != nbProcesses) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "There must be one alpha value for each value in Process." << endl;
+					nbErrors++;
+				}
+			}
+			else {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "Alpha must be a sequence of one or more numbers separated by semicolons." << endl;
 				nbErrors++;
 			}
 		} 
@@ -2318,17 +2353,41 @@ bool CheckInteractionFile(string indir)
 		// Initiated interaction
 		if (inInitIntrct == "TRUE") {
 
-			// Check this entry is not already present
+			// Record this entry to check if there is at least one matching recipient entry
 			auto initdIntrctEntry = make_tuple(inSpLeft, inStgLeft, inSpRight, inStgRight);
-			if (!initdIntrctRecord.contains(initdIntrctEntry)) {
-				initdIntrctRecord.insert(initdIntrctEntry);
+			if (initdIntrctRecord.contains(initdIntrctEntry)) {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "There can only be one line for each combination of SpeciesLeft, StageLeft, SpeciesRight and StageRight" << endl;
+				nbErrors++;
 			}
+			else initdIntrctRecord.insert(initdIntrctEntry);
 
 			if (inBeta == "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
 				batchLogOfs << "If InitiatedInteraction is TRUE, Beta must not be #" << endl;
 				nbErrors++;
 			}
+			else {
+				int nbBetas = 0;
+				bool isMatchPos = regex_search(inBeta, floatNbSeq);
+				if (isMatchPos) {
+					auto inBetaBegin = std::sregex_iterator(inBeta.begin(), inBeta.end(), floatNumber);
+					auto inBetaEnd = std::sregex_iterator();
+					for (std::sregex_iterator i = inBetaBegin; i != inBetaEnd; ++i)
+						nbBetas++;
+					if (nbBetas != nbProcesses) {
+						BatchError(whichInputFile, lineNb, 0, " ");
+						batchLogOfs << "There must be one beta value for each value in Process." << endl;
+						nbErrors++;
+					}
+				}
+				else {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "Beta must be a sequence of one or more numbers separated by semicolons." << endl;
+					nbErrors++;
+				}
+			}
+
 			if (inHandlingTime == "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
 				batchLogOfs << "If InitiatedInteraction is TRUE, HandlingTime must not be #" << endl;
@@ -2455,16 +2514,39 @@ bool CheckInteractionFile(string indir)
 		// Received interaction
 		if (inRecIntrct == "TRUE") {
 
-			// Check this entry is not already present
+			// Record this entry to check if there is at least one matching initiator entry
 			auto recdIntrctEntry = make_tuple(inSpLeft, inStgLeft, inSpRight, inStgRight);
-			if (!recdIntrctRecord.contains(recdIntrctEntry)) {
-				recdIntrctRecord.insert(recdIntrctEntry);
+			if (recdIntrctRecord.contains(recdIntrctEntry)) {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "There can only be one line for each combination of SpeciesLeft, StageLeft, SpeciesRight and StageRight" << endl;
+				nbErrors++;
 			}
+			else recdIntrctRecord.insert(recdIntrctEntry);
 
 			if (inDelta == "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
 				batchLogOfs << "If ReceivedInteraction is TRUE, Delta must not be #" << endl;
 				nbErrors++;
+			}
+			else {
+				int nbDeltas = 0;
+				bool isMatchPos = regex_search(inDelta, floatNbSeq);
+				if (isMatchPos) {
+					auto inDeltaBegin = std::sregex_iterator(inDelta.begin(), inDelta.end(), floatNumber);
+					auto inDeltaEnd = std::sregex_iterator();
+					for (std::sregex_iterator i = inDeltaBegin; i != inDeltaEnd; ++i)
+						nbDeltas++;
+					if (nbDeltas != nbProcesses) {
+						BatchError(whichInputFile, lineNb, 0, " ");
+						batchLogOfs << "There must be one delta value for each value in Process." << endl;
+						nbErrors++;
+					}
+				}
+				else {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "Delta must be a sequence of one or more numbers separated by semicolons." << endl;
+					nbErrors++;
+				}
 			}
 		}
 		else {
@@ -2519,7 +2601,7 @@ bool CheckInteractionFile(string indir)
 bool checkIntrctPairsMatch(const set<tuple<int, int, int, int>>& initdRecord, const set<tuple<int, int, int, int>>& recdRecord) {
 	bool isFine = true;
 
-	// Each initiated interaction must have a matching received interaction
+	// Each initiated interaction must have at least one matching received interaction
 	for (auto& initdEntry : initdRecord) {
 		auto exptdRecdEntry = make_tuple(
 			get<2>(initdEntry), // SpeciesLeft -> SpeciesRight
@@ -2537,7 +2619,7 @@ bool checkIntrctPairsMatch(const set<tuple<int, int, int, int>>& initdRecord, co
 		}
 	}
 
-	// Each received interaction must have a matching initiated interaction
+	// Each received interaction must have at least one matching initiated interaction
 	for (auto& recEntry : recdRecord) {
 		auto exptdInitdEntry = make_tuple(
 			get<2>(recEntry), // SpeciesLeft -> SpeciesRight
@@ -6175,7 +6257,7 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 		strInterfExpnt, strHandlingTime, strRelPref;
 	
 	do {
-		ifsInteraction >> spLeft >> stgLeft >> strProcess >> spRight >> stgRight ;
+		ifsInteraction >> spLeft >> stgLeft >> spRight >> stgRight >> strProcess;
 
 		ifsInteraction >> isResMedIntrct >> strAlpha;
 		ifsInteraction >> isInitiatedIntrct >> strBeta >> strHandlingTime
@@ -6187,15 +6269,15 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 		demogrProcess_t whichProcess = stringToProcess(strProcess);
 
 		if (isResMedIntrct == "TRUE") {
-			resInteraction resDepIntrct;
-			resDepIntrct.alpha = stof(strAlpha);
+			resIntrctParams resDepIntrct;
+			//resDepIntrct.alpha = stof(strAlpha);
 
 			allSpecies.at(spLeft)->addResMedtdInteraction(stgLeft, whichProcess, spRight, stgRight, resDepIntrct);
 		}
 
 		if (isInitiatedIntrct == "TRUE") {
-			initdInteraction initiatdIntrct;
-			initiatdIntrct.beta = stof(strBeta);
+			initdIntrctParams initiatdIntrct;
+			//initiatdIntrct.beta = stof(strBeta);
 			initiatdIntrct.handlingTime = stof(strHandlingTime);
 
 			if (usesTgtDensity == "TRUE") {
@@ -6218,14 +6300,14 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 
 			if (usesTgtPref == "TRUE")
 				initiatdIntrct.relPreference = stof(strRelPref);
-			else initiatdIntrct.relPreference = 1.0;
+			else initiatdIntrct.relPreference = 0.0;
 
 			allSpecies.at(spLeft)->addInitdInteraction(stgLeft, whichProcess, spRight, stgRight, initiatdIntrct);
 		}
 
 		if (isRecIntrt == "TRUE") {
-			recdInteraction receivdIntrct;
-			receivdIntrct.delta = stof(strDelta);
+			recdIntrctParams receivdIntrct;
+			//receivdIntrct.delta = stof(strDelta);
 
 			allSpecies.at(spLeft)->addReceivdInteraction(stgLeft, whichProcess, spRight, stgRight, receivdIntrct);
 		}

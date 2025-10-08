@@ -1331,38 +1331,35 @@ void Population::resolveResMedtdInteractions() {
 
 	int nbStg = pSpecies->getStageParams().nStages;
 
-	set<demogrProcess_t> demogrProcesses = { FEC, DEV, SURV };
-	for (auto& process : demogrProcesses) {
+	for (int stg = 0; stg < nbStg; stg++) {
 
-		for (int stg = 0; stg < nbStg; stg++) {
+		const auto& allResDepInteractions = pSpecies->getAllResDepInteractions(stg);
 
-			const auto& allResDepInteractions = pSpecies->getAllResDepInteractions(process, stg);
+		for (auto& [partnerSpStg, interaction] : allResDepInteractions) {
 
-			for (auto& [partnerSpStg, interaction] : allResDepInteractions) {
+			// Find all populations of target species that are in contact with this one
+			const auto& patchesInContact = pPatch->getOverlappingPatches(partnerSpStg.first);
+			for (auto& [pContactPatch, overlap] : patchesInContact) {
 
-				// Find all populations of target species that are in contact with this one
-				const auto& patchesInContact = pPatch->getOverlappingPatches(partnerSpStg.first);
-				for (auto& [pContactPatch, overlap] : patchesInContact) {
+				auto pTargetPop = pContactPatch->getPop();
+				if (pTargetPop == nullptr) continue; // empty patch
 
-					auto pTargetPop = pContactPatch->getPop();
-					if (pTargetPop == nullptr) continue; // empty patch
+				// Get abundance scaled down by the % of overlap between the two patches
+				double partnerAbundance = pTargetPop->stagePop(partnerSpStg.second);
+				partnerAbundance *= overlap;
 
-					// Get abundance scaled down by the % of overlap between the two patches
-					double partnerAbundance = pTargetPop->stagePop(partnerSpStg.second);
-					partnerAbundance *= overlap;
-
-					double effect = interaction.alpha * partnerAbundance;
+				for (auto& [whichProcess, alpha] : interaction.alphas) {
 					
-					switch (process)
+					switch (whichProcess)
 					{
 					case FEC:
-						this->fecResDepEffects[stg] += effect;
+						this->fecResDepEffects[stg] += alpha * partnerAbundance;
 						break;
 					case DEV:
-						this->devResDepEffects[stg] += effect;
+						this->devResDepEffects[stg] += alpha * partnerAbundance;
 						break;
 					case SURV:
-						this->survResDepEffects[stg] += effect;
+						this->survResDepEffects[stg] += alpha * partnerAbundance;
 						break;
 					default:
 						break;

@@ -910,48 +910,45 @@ void Species::setSamplePatchList(const set<int>& samplePatchList) {
 void Species::addResMedtdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, 
 	const species_id& otherSpecies, const int& otherStage, const resIntrctParams& resDepIntrct) {
 	
-	auto outerKey = make_pair(whichProcess, whichStage);
-	auto innerKey = make_pair(otherSpecies, otherStage);
+	auto key = make_pair(otherSpecies, otherStage);
 
-	if (resDepIntrcts.contains(outerKey)) { // already an entry for this process x stg
-		resDepIntrcts.at(outerKey).emplace(innerKey, resDepIntrct);
+	if (resDepIntrcts.contains(whichStage)) { // already an entry for this process x stg
+		resDepIntrcts.at(whichStage).emplace(key, resDepIntrct);
 	}
 	else { // need to create an entry for outer map then inner map
 		map<pair<species_id, int>, resIntrctParams> innerMap;
-		innerMap.emplace(innerKey, resDepIntrct);
-		resDepIntrcts.emplace(outerKey, innerMap);
+		innerMap.emplace(key, resDepIntrct);
+		resDepIntrcts.emplace(whichStage, innerMap);
 	}
 }
 
 void Species::addInitdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
 	const species_id& otherSpecies, const int& otherStage, const initdIntrctParams& initiatdIntrct) {
 
-	auto outerKey = make_pair(whichProcess, whichStage);
-	auto innerKey = make_pair(otherSpecies, otherStage);
+	auto key = make_pair(otherSpecies, otherStage);
 
-	if (initiatedIntrcts.contains(outerKey)) {
-		initiatedIntrcts.at(outerKey).emplace(innerKey, initiatdIntrct);
+	if (initiatedIntrcts.contains(whichStage)) {
+		initiatedIntrcts.at(whichStage).emplace(key, initiatdIntrct);
 	}
 	else {
 		map<pair<species_id, int>, initdIntrctParams> innerMap;
-		innerMap.emplace(innerKey, initiatdIntrct);
-		initiatedIntrcts.emplace(outerKey, innerMap);
+		innerMap.emplace(key, initiatdIntrct);
+		initiatedIntrcts.emplace(whichStage, innerMap);
 	}
 }
 
 void Species::addReceivdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
 	const species_id& otherSpecies, const int& otherStage, const recdIntrctParams& receivedIntrct) {
 
-	auto outerKey = make_pair(whichProcess, whichStage);
-	auto innerKey = make_pair(otherSpecies, otherStage);
+	auto key = make_pair(otherSpecies, otherStage);
 
-	if (receivedIntrcts.contains(outerKey)) {
-		receivedIntrcts.at(outerKey).emplace(innerKey, receivedIntrct);
+	if (receivedIntrcts.contains(whichStage)) {
+		receivedIntrcts.at(whichStage).emplace(key, receivedIntrct);
 	}
 	else {
 		map<pair<species_id, int>, recdIntrctParams> innerMap;
-		innerMap.emplace(innerKey, receivedIntrct);
-		receivedIntrcts.emplace(outerKey, innerMap);
+		innerMap.emplace(key, receivedIntrct);
+		receivedIntrcts.emplace(whichStage, innerMap);
 	}
 }
 
