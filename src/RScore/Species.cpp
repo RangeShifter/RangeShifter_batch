@@ -907,8 +907,8 @@ void Species::setSamplePatchList(const set<int>& samplePatchList) {
 /// The inner map key specifies the attributes of the other species: species
 /// identity (parameter "SpeciesRight") and which stage ("StageRight").
 
-void Species::addResMedtdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, 
-	const species_id& otherSpecies, const int& otherStage, const resIntrctParams& resDepIntrct) {
+void Species::addResMedtdInteraction(const int& whichStage, const species_id& otherSpecies, 
+	const int& otherStage, const resIntrctParams& resDepIntrct) {
 	
 	auto key = make_pair(otherSpecies, otherStage);
 
@@ -922,8 +922,8 @@ void Species::addResMedtdInteraction(const int& whichStage, const demogrProcess_
 	}
 }
 
-void Species::addInitdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
-	const species_id& otherSpecies, const int& otherStage, const initdIntrctParams& initiatdIntrct) {
+void Species::addInitdInteraction(const int& whichStage, const species_id& otherSpecies, 
+	const int& otherStage, const initdIntrctParams& initiatdIntrct) {
 
 	auto key = make_pair(otherSpecies, otherStage);
 
@@ -937,8 +937,8 @@ void Species::addInitdInteraction(const int& whichStage, const demogrProcess_t& 
 	}
 }
 
-void Species::addReceivdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
-	const species_id& otherSpecies, const int& otherStage, const recdIntrctParams& receivedIntrct) {
+void Species::addReceivdInteraction(const int& whichStage, const species_id& otherSpecies, 
+	const int& otherStage, const recdIntrctParams& receivedIntrct) {
 
 	auto key = make_pair(otherSpecies, otherStage);
 

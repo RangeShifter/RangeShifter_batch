@@ -460,11 +460,11 @@ public:
 	bool isWithinLimits(const int& x, const int& y);
 
 	// Interaction functions
-	void addResMedtdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, 
+	void addResMedtdInteraction(const int& whichStage, 
 		const species_id& otherSpecies, const int& otherStage, const resIntrctParams& resDepIntrct);
-	void addInitdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
+	void addInitdInteraction(const int& whichStage, 
 		const species_id& otherSpecies, const int& otherStage, const initdIntrctParams& initiatdIntrct);
-	void addReceivdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
+	void addReceivdInteraction(const int& whichStage,
 		const species_id& otherSpecies, const int& otherStage, const recdIntrctParams& receivedIntrct);
 
 	map<pair<species_id, int>, initdIntrctParams> getAllInitdInteractions(const int& stg) const { 

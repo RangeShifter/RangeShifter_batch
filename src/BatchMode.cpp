@@ -6266,18 +6266,42 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 			>> usesTgtPref >> strRelPref;
 		ifsInteraction >> isRecIntrt >> strDelta;
 
-		demogrProcess_t whichProcess = stringToProcess(strProcess);
+		vector<demogrProcess_t> whichProcesses;
+		std::regex process("(\\w+)"); // match any word, since we know from check they are correct
+		auto inProcessBegin = std::sregex_iterator(strProcess.begin(), strProcess.end(), process);
+		auto inProcessEnd = std::sregex_iterator();
+		for (std::sregex_iterator i = inProcessBegin; i != inProcessEnd; ++i) {
+			std::smatch match = *i;
+			whichProcesses.push_back(stringToProcess(match.str()));
+		}
+
+		const std::regex floatNumber("(-?\\d+(\.\\d+))"); // any positive or negative floating point number
 
 		if (isResMedIntrct == "TRUE") {
 			resIntrctParams resDepIntrct;
-			//resDepIntrct.alpha = stof(strAlpha);
+			auto alphaIt = std::sregex_iterator(strAlpha.begin(), strAlpha.end(), floatNumber);
 
-			allSpecies.at(spLeft)->addResMedtdInteraction(stgLeft, whichProcess, spRight, stgRight, resDepIntrct);
+			for (auto& whichProcesses : whichProcesses) {
+				std::smatch match = *alphaIt;
+				double alpha = stof(match.str());
+				resDepIntrct.alphas.emplace(whichProcesses, alpha);
+				alphaIt++;
+			}
+			allSpecies.at(spLeft)->addResMedtdInteraction(stgLeft, spRight, stgRight, resDepIntrct);
 		}
 
 		if (isInitiatedIntrct == "TRUE") {
 			initdIntrctParams initiatdIntrct;
-			//initiatdIntrct.beta = stof(strBeta);
+			
+			auto betaIt = std::sregex_iterator(strBeta.begin(), strBeta.end(), floatNumber);
+
+			for (auto& whichProcesses : whichProcesses) {
+				std::smatch match = *betaIt;
+				double beta = stof(match.str());
+				initiatdIntrct.betas.emplace(whichProcesses, beta);
+				betaIt++;
+			}
+
 			initiatdIntrct.handlingTime = stof(strHandlingTime);
 
 			if (usesTgtDensity == "TRUE") {
@@ -6307,9 +6331,16 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 
 		if (isRecIntrt == "TRUE") {
 			recdIntrctParams receivdIntrct;
-			//receivdIntrct.delta = stof(strDelta);
+			auto deltaIt = std::sregex_iterator(strDelta.begin(), strDelta.end(), floatNumber);
 
-			allSpecies.at(spLeft)->addReceivdInteraction(stgLeft, whichProcess, spRight, stgRight, receivdIntrct);
+			for (auto& whichProcesses : whichProcesses) {
+				std::smatch match = *deltaIt;
+				double delta = stof(match.str());
+				receivdIntrct.deltas.emplace(whichProcesses, delta);
+				deltaIt++;
+			}
+
+			allSpecies.at(spLeft)->addReceivdInteraction(stgLeft, spRight, stgRight, receivdIntrct);
 		}
 
 		ifsInteraction >> inputSimNb;
