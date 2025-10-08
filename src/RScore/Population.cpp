@@ -1380,6 +1380,9 @@ void Population::resolveInitiatedInteractions() {
 
 	for (int stg = 0; stg < nbStg; stg++) {
 
+		// Initiator to recipient abundance ratios
+		map<pair<species_id, int>, double> ratios;
+
 		// Loop through all initiated interactions involving this process and stage
 		const auto& allInitdInteractions = pSpecies->getAllInitdInteractions(stg);
 
@@ -1387,6 +1390,7 @@ void Population::resolveInitiatedInteractions() {
 
 			const species_id tgtSp = targetSpStg.first;
 			const int tgtStg = targetSpStg.second;
+			double ratio = 0.0, denominator = 0.0;
 
 			// Find all populations of target species that are in contact with this one
 			const auto& patchesInContact = pPatch->getOverlappingPatches(tgtSp);
@@ -1399,6 +1403,8 @@ void Population::resolveInitiatedInteractions() {
 				double targetAbundance = pTargetPop->stagePop(tgtStg);
 				targetAbundance *= overlap;
 				double initiatorAbundance = stagePop(stg) * overlap;
+				ratio += initiatorAbundance;
+				denominator += targetAbundance;
 
 				// Calculate interaction rate terms
 				double targetPreference = interaction.relPreference * targetAbundance; // pi_i * N_i
@@ -1413,6 +1419,9 @@ void Population::resolveInitiatedInteractions() {
 				interactionRates.emplace(make_pair(pTargetPop, tgtStg), intrctRate);
 
 			}
+
+			ratio /= denominator;
+			ratios.emplace(targetSpStg, ratio);
 		}
 
 		// Re-scale the preference terms once we know their sum
@@ -1452,27 +1461,30 @@ void Population::resolveInitiatedInteractions() {
 			
 			// Add interaction effects on recipient 
 			auto initiatorSpStg = make_pair(pSpecies->getID(), stg);
-			targetStgPop.first->addRecvdIntrctEffect(tgtStg, initiatorSpStg, funcResp);
+			targetStgPop.first->addRecvdIntrctEffect(tgtStg, initiatorSpStg, ratios, funcResp);
 		}
 
 	} // stage loop
 }
 
-void Population::addRecvdIntrctEffect(const int& stg, const pair<species_id, int>& initiatorSpStg, const double& funcResp) {
+void Population::addRecvdIntrctEffect(const int& stg, const pair<species_id, int>& initiatorSpStg, 
+	const map<pair<species_id, int>, double>& ratios, const double& funcResp) {
 	
 	const recdIntrctParams intrct = pSpecies->getAllRecdInteractions(stg).at(initiatorSpStg);
+	const auto tgtSpStg = make_pair(pSpecies->getID(), stg);
+	double ratio = ratios.at(tgtSpStg);
 
 	for (auto& [whichProcess, delta] : intrct.deltas) {
 		switch (whichProcess)
 		{
 		case FEC:
-			fecRecdEffects[stg] += delta * funcResp;
+			fecRecdEffects[stg] += delta * funcResp * ratio;
 			break;
 		case DEV:
-			devRecdEffects[stg] += delta * funcResp;
+			devRecdEffects[stg] += delta * funcResp * ratio;
 			break;
 		case SURV:
-			survRecdEffects[stg] += delta * funcResp;
+			survRecdEffects[stg] += delta * funcResp * ratio;
 			break;
 		default:
 			break;

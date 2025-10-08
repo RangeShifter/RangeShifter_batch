@@ -210,7 +210,8 @@ public:
 	// Interactions
 	void resolveResMedtdInteractions();
 	void resolveInitiatedInteractions();
-	void addRecvdIntrctEffect(const int& stg, const pair<species_id, int>& initiatorSpStg, const double& funcResp);
+	void addRecvdIntrctEffect(const int& stg, const pair<species_id, int>& initiatorSpStg, 
+		const map<pair<species_id, int>, double>& ratios, const double& funcResp);
 	void resetIntrctEffects();
 
 #ifndef NDEBUG
