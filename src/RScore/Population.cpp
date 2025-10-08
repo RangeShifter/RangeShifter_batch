@@ -1381,102 +1381,105 @@ void Population::resolveInitiatedInteractions() {
 
 	int nbStg = pSpecies->getStageParams().nStages;
 
-	set<demogrProcess_t> demogrProcesses = { FEC, DEV, SURV };
-	for (auto& process : demogrProcesses) {
+	for (int stg = 0; stg < nbStg; stg++) {
 
-		for (int stg = 0; stg < nbStg; stg++) {
+		// Loop through all initiated interactions involving this process and stage
+		const auto& allInitdInteractions = pSpecies->getAllInitdInteractions(stg);
 
-			// Loop through all initiated interactions involving this process and stage
-			const auto& allInitdInteractions = pSpecies->getAllInitdInteractions(process, stg);
+		for (auto& [targetSpStg, interaction] : allInitdInteractions) {
 
-			for (auto& [targetSpStg, interaction] : allInitdInteractions) {
+			const species_id tgtSp = targetSpStg.first;
+			const int tgtStg = targetSpStg.second;
 
-				const species_id tgtSp = targetSpStg.first;
-				const int tgtStg = targetSpStg.second;
+			// Find all populations of target species that are in contact with this one
+			const auto& patchesInContact = pPatch->getOverlappingPatches(tgtSp);
+			for (auto& [pContactPatch, overlap] : patchesInContact) {
 
-				// Find all populations of target species that are in contact with this one
-				const auto& patchesInContact = pPatch->getOverlappingPatches(tgtSp);
-				for (auto& [pContactPatch, overlap] : patchesInContact) {
+				auto pTargetPop = pContactPatch->getPop();
+				if (pTargetPop == nullptr) continue; // empty patch
 
-					auto pTargetPop = pContactPatch->getPop();
-					if (pTargetPop == nullptr) continue; // empty patch
+				// Get abundances scaled down by the % of overlap between the two patches
+				double targetAbundance = pTargetPop->stagePop(tgtStg);
+				targetAbundance *= overlap;
+				double initiatorAbundance = stagePop(stg) * overlap;
 
-					// Get abundances scaled down by the % of overlap between the two patches
-					double targetAbundance = pTargetPop->stagePop(tgtStg);
-					targetAbundance *= overlap;
-					double initiatorAbundance = stagePop(stg) * overlap;
+				// Calculate interaction rate terms
+				double targetPreference = interaction.relPreference * targetAbundance; // pi_i * N_i
+				totalPreference += targetPreference; // sum_k (pi_k * N_k)
 
-					// Calculate interaction rate terms
-					double targetPreference = interaction.relPreference * targetAbundance; // pi_i * N_i
-					totalPreference += targetPreference; // sum_k (pi_k * N_k)
+				double intrctRate = interaction.attackRate * pow(targetAbundance, interaction.hullCoeff) // a_i * N_i^h
+					/ (interaction.interfIntercept + pow(initiatorAbundance, interaction.interfExponent)) // 1 / (omega_i + N_p^q)
+					* targetPreference;
 
-					double intrctRate = interaction.attackRate * pow(targetAbundance, interaction.hullCoeff) // a_i * N_i^h
-						/ (interaction.interfIntercept + pow(initiatorAbundance, interaction.interfExponent)) // 1 / (omega_i + N_p^q)
-						* targetPreference;
+				totalIntrctRate += interaction.handlingTime * intrctRate; // h_i * C_i
 
-					totalIntrctRate += interaction.handlingTime * intrctRate; // h_i * C_i
+				interactionRates.emplace(make_pair(pTargetPop, tgtStg), intrctRate);
 
-					interactionRates.emplace(make_pair(pTargetPop, tgtStg), intrctRate);
-
-				}
 			}
+		}
 
-			// Re-scale the preference terms once we know their sum
-			if (totalPreference > 0.0) {
-				for (auto& [targetStgPop, intrctRate] : interactionRates) {
-					intrctRate /= totalPreference; // divide by sum_k (pi_k * c_k)
-				}
-				totalIntrctRate /= totalPreference; // divide by sum_k(pi_k * c_k)
-			}
-			// Finish the calculation of the functional reponse
-			// and increment the corresponding sum of effects
+		// Re-scale the preference terms once we know their sum
+		if (totalPreference > 0.0) {
 			for (auto& [targetStgPop, intrctRate] : interactionRates) {
-				
-				double funcResp = intrctRate / (1 + totalIntrctRate);
+				intrctRate /= totalPreference; // divide by sum_k (pi_k * c_k)
+			}
+			totalIntrctRate /= totalPreference; // divide by sum_k(pi_k * c_k)
+		}
+		// Finish the calculation of the functional reponse
+		// and increment the corresponding sum of effects
+		for (auto& [targetStgPop, intrctRate] : interactionRates) {
 
-				const species_id tgtSp = targetStgPop.first->getSpecies()->getID();
-				const int tgtStg = targetStgPop.second;
-				const initdInteraction intrct = allInitdInteractions.at(make_pair(tgtSp, tgtStg));
+			double funcResp = intrctRate / (1 + totalIntrctRate);
 
-				switch (process)
+			const species_id tgtSp = targetStgPop.first->getSpecies()->getID();
+			const int tgtStg = targetStgPop.second;
+			const initdIntrctParams intrct = allInitdInteractions.at(make_pair(tgtSp, tgtStg));
+
+			// Add interaction effect on initiator to each relevant process
+			for (auto& [whichProcess, beta] : intrct.betas) {
+				switch (whichProcess)
 				{
 				case FEC:
-					this->fecInitdEffects[stg] += intrct.beta * funcResp;
+					this->fecInitdEffects[stg] += beta * funcResp;
 					break;
 				case DEV:
-					this->devInitdEffects[stg] += intrct.beta * funcResp;
+					this->devInitdEffects[stg] += beta * funcResp;
 					break;
 				case SURV:
-					this->survInitdEffects[stg] += intrct.beta * funcResp;
+					this->survInitdEffects[stg] += beta * funcResp;
 					break;
 				default:
 					break;
 				}
-				auto initiatorSpStg = make_pair(pSpecies->getID(), stg);
-				targetStgPop.first->addRecvdIntrctEffect(process, tgtStg, initiatorSpStg, funcResp);
 			}
+			
+			// Add interaction effects on recipient 
+			auto initiatorSpStg = make_pair(pSpecies->getID(), stg);
+			targetStgPop.first->addRecvdIntrctEffect(tgtStg, initiatorSpStg, funcResp);
+		}
 
-		} // stage loop
-	} // process loop
+	} // stage loop
 }
 
-void Population::addRecvdIntrctEffect(const demogrProcess_t& whichProcess, const int& stg, const pair<species_id, int>& initiatorSpStg, const double& funcResp) {
+void Population::addRecvdIntrctEffect(const int& stg, const pair<species_id, int>& initiatorSpStg, const double& funcResp) {
 	
-	const recdInteraction intrct = pSpecies->getAllRecdInteractions(whichProcess, stg).at(initiatorSpStg);
+	const recdIntrctParams intrct = pSpecies->getAllRecdInteractions(stg).at(initiatorSpStg);
 
-	switch (whichProcess)
-	{
-	case FEC :
-		fecRecdEffects[stg] += intrct.delta * funcResp;
-		break;
-	case DEV :
-		devRecdEffects[stg] += intrct.delta * funcResp;
-		break;
-	case SURV :
-		survRecdEffects[stg] += intrct.delta * funcResp;
-		break;
-	default:
-		break;
+	for (auto& [whichProcess, delta] : intrct.deltas) {
+		switch (whichProcess)
+		{
+		case FEC:
+			fecRecdEffects[stg] += delta * funcResp;
+			break;
+		case DEV:
+			devRecdEffects[stg] += delta * funcResp;
+			break;
+		case SURV:
+			survRecdEffects[stg] += delta * funcResp;
+			break;
+		default:
+			break;
+		}
 	}
 }
 

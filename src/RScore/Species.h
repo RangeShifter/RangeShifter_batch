@@ -213,8 +213,8 @@ struct settleTraits {
 // e.g. predation/parasitism/pollination 
 // from P.O.V. of predator/parasite/pollinator
 // Effector species "owns" all parameters of the functional response
-struct initdInteraction {
-	double beta; // conversion rate
+struct initdIntrctParams {
+	map<demogrProcess_t, double> betas; // conversion rate for each process
 	double handlingTime; // how many such interactions resolved per generation?
 	double attackRate; // e.g. attack rate
 	double hullCoeff; // shape of the functional response
@@ -226,14 +226,14 @@ struct initdInteraction {
 // Received interactions,
 // e.g. predation/parasitism/pollination 
 // from P.O.V. of prey/host/flowering plant
-struct recdInteraction {
-	double delta; // effect of one unit interaction on the process
+struct recdIntrctParams {
+	map<demogrProcess_t, double> deltas; // effect of one unit interaction on each process
 };
 
 // Resource-mediated interactions,
 // e.g. scramble competition and mutualism
-struct resInteraction {
-	double alpha; // effect of one individual of the partner species
+struct resIntrctParams {
+	map<demogrProcess_t, double> alphas; // effect of one individual of the other species
 };
 
 //---------------------------------------------------------------------------
@@ -461,23 +461,20 @@ public:
 
 	// Interaction functions
 	void addResMedtdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, 
-		const species_id& otherSpecies, const int& otherStage, const resInteraction& resDepIntrct);
+		const species_id& otherSpecies, const int& otherStage, const resIntrctParams& resDepIntrct);
 	void addInitdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
-		const species_id& otherSpecies, const int& otherStage, const initdInteraction& initiatdIntrct);
+		const species_id& otherSpecies, const int& otherStage, const initdIntrctParams& initiatdIntrct);
 	void addReceivdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
-		const species_id& otherSpecies, const int& otherStage, const recdInteraction& receivedIntrct);
+		const species_id& otherSpecies, const int& otherStage, const recdIntrctParams& receivedIntrct);
 
-	map<pair<species_id, int>, initdInteraction> getAllInitdInteractions(const demogrProcess_t& proc, const int& stg) const { 
-		auto key = make_pair(proc, stg);
-		return initiatedIntrcts.at(key); 
+	map<pair<species_id, int>, initdIntrctParams> getAllInitdInteractions(const int& stg) const { 
+		return initiatedIntrcts.at(stg); 
 	}
-	map<pair<species_id, int>, recdInteraction> getAllRecdInteractions(const demogrProcess_t& proc, const int& stg) const {
-		auto key = make_pair(proc, stg);
-		return receivedIntrcts.at(key);
+	map<pair<species_id, int>, recdIntrctParams> getAllRecdInteractions(const int& stg) const {
+		return receivedIntrcts.at(stg);
 	}
-	map<pair<species_id, int>, resInteraction> getAllResDepInteractions(const demogrProcess_t& proc, const int& stg) const {
-		auto key = make_pair(proc, stg);
-		return resDepIntrcts.at(key);
+	map<pair<species_id, int>, resIntrctParams> getAllResDepInteractions(const int& stg) const {
+		return resDepIntrcts.at(stg);
 	}
 
 private:
@@ -605,10 +602,10 @@ private:
 	float betaS[gMaxNbStages][gMaxNbSexes];				// inflection point of the settlement reaction norm to density
 
 	// Interaction parameters
-	// sorted by demogr. process x stage (of this species), target species x target stage
-	map<pair<demogrProcess_t, int>, map<pair<species_id, int>, initdInteraction>> initiatedIntrcts;	// species targeting this, e.g. predators and pollinators
-	map<pair<demogrProcess_t, int>, map<pair<species_id, int>, recdInteraction>> receivedIntrcts;	// species this one targets, e.g. preys or hosts
-	map<pair<demogrProcess_t, int>, map<pair<species_id, int>, resInteraction>> resDepIntrcts;	// species that affect carrying capacity (competitors/mutualists)
+	// sorted by stage (of this species), other species x other species' stage
+	map<int, map<pair<species_id, int>, initdIntrctParams>> initiatedIntrcts;	// interactions initiated by this species, e.g. as a predator/pollinator
+	map<int, map<pair<species_id, int>, recdIntrctParams>> receivedIntrcts;	// interactions received by this species, e.g. as a prey or host
+	map<int, map<pair<species_id, int>, resIntrctParams>> resDepIntrcts;	// species that affect carrying capacity (competitors/mutualists)
 
 	// Initialisation parameters
 	initParams init;

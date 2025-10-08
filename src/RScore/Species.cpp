@@ -908,7 +908,7 @@ void Species::setSamplePatchList(const set<int>& samplePatchList) {
 /// identity (parameter "SpeciesRight") and which stage ("StageRight").
 
 void Species::addResMedtdInteraction(const int& whichStage, const demogrProcess_t& whichProcess, 
-	const species_id& otherSpecies, const int& otherStage, const resInteraction& resDepIntrct) {
+	const species_id& otherSpecies, const int& otherStage, const resIntrctParams& resDepIntrct) {
 	
 	auto outerKey = make_pair(whichProcess, whichStage);
 	auto innerKey = make_pair(otherSpecies, otherStage);
@@ -917,14 +917,14 @@ void Species::addResMedtdInteraction(const int& whichStage, const demogrProcess_
 		resDepIntrcts.at(outerKey).emplace(innerKey, resDepIntrct);
 	}
 	else { // need to create an entry for outer map then inner map
-		map<pair<species_id, int>, resInteraction> innerMap;
+		map<pair<species_id, int>, resIntrctParams> innerMap;
 		innerMap.emplace(innerKey, resDepIntrct);
 		resDepIntrcts.emplace(outerKey, innerMap);
 	}
 }
 
 void Species::addInitdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
-	const species_id& otherSpecies, const int& otherStage, const initdInteraction& initiatdIntrct) {
+	const species_id& otherSpecies, const int& otherStage, const initdIntrctParams& initiatdIntrct) {
 
 	auto outerKey = make_pair(whichProcess, whichStage);
 	auto innerKey = make_pair(otherSpecies, otherStage);
@@ -933,14 +933,14 @@ void Species::addInitdInteraction(const int& whichStage, const demogrProcess_t& 
 		initiatedIntrcts.at(outerKey).emplace(innerKey, initiatdIntrct);
 	}
 	else {
-		map<pair<species_id, int>, initdInteraction> innerMap;
+		map<pair<species_id, int>, initdIntrctParams> innerMap;
 		innerMap.emplace(innerKey, initiatdIntrct);
 		initiatedIntrcts.emplace(outerKey, innerMap);
 	}
 }
 
 void Species::addReceivdInteraction(const int& whichStage, const demogrProcess_t& whichProcess,
-	const species_id& otherSpecies, const int& otherStage, const recdInteraction& receivedIntrct) {
+	const species_id& otherSpecies, const int& otherStage, const recdIntrctParams& receivedIntrct) {
 
 	auto outerKey = make_pair(whichProcess, whichStage);
 	auto innerKey = make_pair(otherSpecies, otherStage);
@@ -949,7 +949,7 @@ void Species::addReceivdInteraction(const int& whichStage, const demogrProcess_t
 		receivedIntrcts.at(outerKey).emplace(innerKey, receivedIntrct);
 	}
 	else {
-		map<pair<species_id, int>, recdInteraction> innerMap;
+		map<pair<species_id, int>, recdIntrctParams> innerMap;
 		innerMap.emplace(innerKey, receivedIntrct);
 		receivedIntrcts.emplace(outerKey, innerMap);
 	}
