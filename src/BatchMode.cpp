@@ -6346,7 +6346,7 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 
 		ifsInteraction >> inputSimNb;
 
-	} while (inputSimNb == simNb);
+	} while (inputSimNb == simNb && !ifsInteraction.eof());
 }
 
 //---------------------------------------------------------------------------
