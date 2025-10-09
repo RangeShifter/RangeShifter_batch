@@ -83,8 +83,9 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 		}
 	}
 
-	fecInitdEffects = fecRecdEffects = devInitdEffects 
-		= devRecdEffects = survInitdEffects = survRecdEffects
+	fecInitdEffects = fecRecdEffects = fecResDepEffects
+		= devInitdEffects = devRecdEffects = devResDepEffects
+		= survInitdEffects = survRecdEffects = survResDepEffects
 		= vector(nStages, 0.0);
 
 	// individuals of new population must be >= stage 1
