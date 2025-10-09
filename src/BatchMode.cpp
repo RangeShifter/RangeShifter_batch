@@ -2313,7 +2313,7 @@ bool CheckInteractionFile(string indir)
 		}
 
 		const std::regex floatNbSeq("^\"?((-?\\d+(\.\\d+)?)?;)*(-?\\d+(\.\\d+)?)\"?$");
-		const std::regex floatNumber("(-?\\d+(\.\\d+))"); // any positive or negative floating point number
+		const std::regex floatNumber("(-?\\d+(\.\\d+)?)"); // any positive or negative floating point number
 
 		// Resource-mediated interaction
 		if (inResMedIntrct == "TRUE") {
@@ -2523,6 +2523,7 @@ bool CheckInteractionFile(string indir)
 			}
 			else recdIntrctRecord.insert(recdIntrctEntry);
 
+			inDelta.erase(remove(inDelta.begin(), inDelta.end(), '\r'), inDelta.end());
 			if (inDelta == "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
 				batchLogOfs << "If ReceivedInteraction is TRUE, Delta must not be #" << endl;
@@ -6275,16 +6276,16 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 			whichProcesses.push_back(stringToProcess(match.str()));
 		}
 
-		const std::regex floatNumber("(-?\\d+(\.\\d+))"); // any positive or negative floating point number
+		const std::regex floatNumber("(-?\\d+(\.\\d+)?)"); // any positive or negative floating point number
 
 		if (isResMedIntrct == "TRUE") {
 			resIntrctParams resDepIntrct;
 			auto alphaIt = std::sregex_iterator(strAlpha.begin(), strAlpha.end(), floatNumber);
 
-			for (auto& whichProcesses : whichProcesses) {
+			for (auto& whichProcess : whichProcesses) {
 				std::smatch match = *alphaIt;
 				double alpha = stof(match.str());
-				resDepIntrct.alphas.emplace(whichProcesses, alpha);
+				resDepIntrct.alphas.emplace(whichProcess, alpha);
 				alphaIt++;
 			}
 			allSpecies.at(spLeft)->addResMedtdInteraction(stgLeft, spRight, stgRight, resDepIntrct);
@@ -6295,10 +6296,10 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 			
 			auto betaIt = std::sregex_iterator(strBeta.begin(), strBeta.end(), floatNumber);
 
-			for (auto& whichProcesses : whichProcesses) {
+			for (auto& whichProcess : whichProcesses) {
 				std::smatch match = *betaIt;
 				double beta = stof(match.str());
-				initiatdIntrct.betas.emplace(whichProcesses, beta);
+				initiatdIntrct.betas.emplace(whichProcess, beta);
 				betaIt++;
 			}
 
@@ -6326,17 +6327,17 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 				initiatdIntrct.relPreference = stof(strRelPref);
 			else initiatdIntrct.relPreference = 0.0;
 
-			allSpecies.at(spLeft)->addInitdInteraction(stgLeft, whichProcess, spRight, stgRight, initiatdIntrct);
+			allSpecies.at(spLeft)->addInitdInteraction(stgLeft, spRight, stgRight, initiatdIntrct);
 		}
 
 		if (isRecIntrt == "TRUE") {
 			recdIntrctParams receivdIntrct;
 			auto deltaIt = std::sregex_iterator(strDelta.begin(), strDelta.end(), floatNumber);
 
-			for (auto& whichProcesses : whichProcesses) {
+			for (auto& whichProcess : whichProcesses) {
 				std::smatch match = *deltaIt;
 				double delta = stof(match.str());
-				receivdIntrct.deltas.emplace(whichProcesses, delta);
+				receivdIntrct.deltas.emplace(whichProcess, delta);
 				deltaIt++;
 			}
 
