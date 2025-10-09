@@ -151,6 +151,9 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 			}
 		}
 
+		// Determine effects of interactions for first generation
+		pComm->resolveInteractions();
+
 #if BATCH && RS_RCPP && !R_CMD
 		Rcpp::Rcout << "RunModel(): completed initialisation " << endl;
 #endif
