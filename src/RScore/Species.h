@@ -468,13 +468,19 @@ public:
 		const species_id& otherSpecies, const int& otherStage, const recdIntrctParams& receivedIntrct);
 
 	map<pair<species_id, int>, initdIntrctParams> getAllInitdInteractions(const int& stg) const { 
-		return initiatedIntrcts.at(stg); 
+		if (initiatedIntrcts.contains(stg))
+			return initiatedIntrcts.at(stg);
+		else return map<pair<species_id, int>, initdIntrctParams>();
 	}
 	map<pair<species_id, int>, recdIntrctParams> getAllRecdInteractions(const int& stg) const {
-		return receivedIntrcts.at(stg);
+		if (receivedIntrcts.contains(stg))
+			return receivedIntrcts.at(stg);
+		else return map<pair<species_id, int>, recdIntrctParams>();
 	}
 	map<pair<species_id, int>, resIntrctParams> getAllResDepInteractions(const int& stg) const {
-		return resDepIntrcts.at(stg);
+		if (resDepIntrcts.contains(stg))
+			return resDepIntrcts.at(stg);
+		else return map<pair<species_id, int>, resIntrctParams>();
 	}
 
 private:

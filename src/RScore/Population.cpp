@@ -1373,13 +1373,13 @@ void Population::resolveResMedtdInteractions() {
 
 void Population::resolveInitiatedInteractions() {
 
-	map<pair<Population*, int>, double> interactionRates; // C_i, one entry per target population and stage
-	double totalIntrctRate = 0.0; // sum_k (h_k * C_k)
-	double totalPreference = 0.0; // sum_k (pi_k * N_k)
-
 	int nbStg = pSpecies->getStageParams().nStages;
 
 	for (int stg = 0; stg < nbStg; stg++) {
+
+		map<pair<Population*, int>, double> interactionRates; // C_i, one entry per target population and stage
+		double totalIntrctRate = 0.0; // sum_k (h_k * C_k)
+		double totalPreference = 0.0; // sum_k (pi_k * N_k)
 
 		// Initiator to recipient abundance ratios
 		map<pair<species_id, int>, double> ratios;
@@ -1432,6 +1432,7 @@ void Population::resolveInitiatedInteractions() {
 			}
 			totalIntrctRate /= totalPreference; // divide by sum_k(pi_k * c_k)
 		}
+		
 		// Finish the calculation of the functional reponse
 		// and increment the corresponding sum of effects
 		for (auto& [targetStgPop, intrctRate] : interactionRates) {
