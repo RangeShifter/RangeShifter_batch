@@ -160,14 +160,15 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 			}
 			else age = stg;
 
-			inds.push_back(new Individual(pSpecies, pCell, pPatch, stg, age, sstruct.repInterval,
-				probmale, trfr.usesMovtProc, trfr.moveType));
+			Individual* pInd = new Individual(pSpecies, pCell, pPatch, stg, age, sstruct.repInterval,
+				probmale, trfr.usesMovtProc, trfr.moveType);
+			inds.push_back(pInd);
 
 			if (pSpecies->getNTraits() > 0) {
 				// individual variation - set up genetics
-				inds.back()->setUpGenes(resol);
+				pInd->setUpGenes(resol);
 			}
-			nInds[stg][inds.back()->getSex()]++;
+			nInds[stg][pInd->getSex()]++;
 		}
 	}
 }
@@ -695,6 +696,7 @@ void Population::fledge()
 
 	if (dem.stageStruct) { // juveniles are added to the individuals vector
 		inds.insert(inds.end(), juvs.begin(), juvs.end());
+		// no update of nInds yet - juveniles remain in stage 0!
 	}
 	else { // all adults die and juveniles replace adults
 		int ninds = inds.size();
@@ -1306,7 +1308,7 @@ void Population::applySurvivalDevlpt()
 
 		if (!isAlive(ind.status)) {
 			delete inds[i];
-			inds[i] = NULL;
+			inds[i] = nullptr;
 			nInds[ind.stage][ind.sex]--;
 		}
 		else {
