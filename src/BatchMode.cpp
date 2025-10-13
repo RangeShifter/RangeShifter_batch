@@ -6323,9 +6323,14 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 				initiatdIntrct.interfExponent = 0.0;
 			}
 
-			if (usesTgtPref == "TRUE")
+			if (usesTgtPref == "TRUE") {
+				initiatdIntrct.usesRelPref = true;
 				initiatdIntrct.relPreference = stof(strRelPref);
-			else initiatdIntrct.relPreference = 0.0;
+			}
+			else {
+				initiatdIntrct.usesRelPref = false;
+				initiatdIntrct.relPreference = 1.0;
+			}
 
 			allSpecies.at(spLeft)->addInitdInteraction(stgLeft, spRight, stgRight, initiatdIntrct);
 		}

@@ -582,7 +582,7 @@ void Population::reproduction(const float localK, const int resol)
 			fec[stg][0] *= exp(fecResDepEffects[stg]);
 
 			// Contributions from initiated interspecific interactions
-			fec[stg][0] += exp(fecInitdEffects[stg]);
+			fec[stg][0] += fecInitdEffects[stg];
 		}
 	}
 	else { // Non-structured
@@ -1414,15 +1414,16 @@ void Population::resolveInitiatedInteractions() {
 				denominator += targetAbundance;
 
 				// Calculate interaction rate terms
-				double targetPreference = interaction.relPreference * targetAbundance; // pi_i * N_i
-				totalPreference += targetPreference; // sum_k (pi_k * N_k)
-
-				double intrctRate = interaction.attackRate 
-					* pow(targetAbundance, interaction.hullCoeff) // a_i * N_i^h
-					* targetPreference; // pi_i
+				double intrctRate = interaction.attackRate
+					* pow(targetAbundance, interaction.hullCoeff); // a_i * N_i^h
 				double interference = interaction.interfIntercept // omega_i + N_p^q
 					+ pow(effctvInitrAbundance, interaction.interfExponent);
 				if (interference != 0.0) intrctRate /= interference;
+
+				if (interaction.usesRelPref) {
+					double targetPreference = interaction.relPreference * targetAbundance; // pi_i * N_i
+					totalPreference += targetPreference; // sum_k (pi_k * N_k)
+				}
 
 				totalIntrctRate += interaction.handlingTime * intrctRate; // h_i * C_i
 

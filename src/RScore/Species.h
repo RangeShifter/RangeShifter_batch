@@ -220,6 +220,7 @@ struct initdIntrctParams {
 	double hullCoeff; // shape of the functional response
 	double interfIntercept; 
 	double interfExponent;
+	bool usesRelPref;
 	double relPreference; // weight for choosing this prey over others
 };
 
