@@ -1379,6 +1379,9 @@ void Population::resolveInitiatedInteractions() {
 
 	for (int stg = 0; stg < nbStg; stg++) {
 
+		double initiatorAbundance = stagePop(stg);
+		if (initiatorAbundance == 0.0) continue; // no eligible individuals for interaction
+
 		map<pair<Population*, int>, double> interactionRates; // C_i, one entry per target population and stage
 		double totalIntrctRate = 0.0; // sum_k (h_k * C_k)
 		double totalPreference = 0.0; // sum_k (pi_k * N_k)
@@ -1400,22 +1403,26 @@ void Population::resolveInitiatedInteractions() {
 			for (auto& [pContactPatch, overlap] : patchesInContact) {
 
 				auto pTargetPop = pContactPatch->getPop();
-				if (pTargetPop == nullptr) continue; // empty patch
+				if (pTargetPop == nullptr || overlap == 0.0) continue; // no interaction
 
 				// Get abundances scaled down by the % of overlap between the two patches
 				double targetAbundance = pTargetPop->stagePop(tgtStg);
+				if (targetAbundance == 0.0) continue; // no individuals of that stage here
 				targetAbundance *= overlap;
-				double initiatorAbundance = stagePop(stg) * overlap;
-				ratio += initiatorAbundance;
+				double effctvInitrAbundance = initiatorAbundance * overlap;
+				ratio += effctvInitrAbundance;
 				denominator += targetAbundance;
 
 				// Calculate interaction rate terms
 				double targetPreference = interaction.relPreference * targetAbundance; // pi_i * N_i
 				totalPreference += targetPreference; // sum_k (pi_k * N_k)
 
-				double intrctRate = interaction.attackRate * pow(targetAbundance, interaction.hullCoeff) // a_i * N_i^h
-					/ (interaction.interfIntercept + pow(initiatorAbundance, interaction.interfExponent)) // 1 / (omega_i + N_p^q)
-					* targetPreference;
+				double intrctRate = interaction.attackRate 
+					* pow(targetAbundance, interaction.hullCoeff) // a_i * N_i^h
+					* targetPreference; // pi_i
+				double interference = interaction.interfIntercept // omega_i + N_p^q
+					+ pow(effctvInitrAbundance, interaction.interfExponent);
+				if (interference != 0.0) intrctRate /= interference;
 
 				totalIntrctRate += interaction.handlingTime * intrctRate; // h_i * C_i
 
