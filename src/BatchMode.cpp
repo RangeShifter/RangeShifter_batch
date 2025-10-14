@@ -2041,6 +2041,11 @@ bool CheckTransitionFile(short nstages, short nsexesDem)
 				}
 				totfecundity += infloat;
 			}
+			else if (infloat != 0.0) {
+				BatchError(filetype, line, 0, "Fecundity");
+				batchLogOfs << "Fecundity must be 0 for stage 0 (juveniles)" << endl;
+				errors++;
+			}
 		}
 	}
 	if (totfecundity <= 0.0) {

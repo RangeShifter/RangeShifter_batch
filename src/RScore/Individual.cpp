@@ -325,10 +325,10 @@ void Individual::inheritTraits(Individual* mother, int resol)
 //---------------------------------------------------------------------------
 
 // Identify whether an individual is a potentially breeding female -
-// if so, return her stage, otherwise return 0
 bool Individual::isBreedingFem() {
-	return sex == FEM &&
-		(status == initial
+	return stage > 0 
+		&& sex == FEM 
+		&& (status == initial
 			|| status == settled
 			|| status == settledNeighbour);
 }

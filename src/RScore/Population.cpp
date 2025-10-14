@@ -518,13 +518,13 @@ void Population::reproduction(const float localK, const int resol)
 
 	// Base fecundity
 	float fec[gMaxNbStages][gMaxNbSexes];
-	for (int stg = 0; stg < sstruct.nStages; stg++) {
+	for (int stg = 1; stg < sstruct.nStages; stg++) {
 		for (int sex = 0; sex < nsexes; sex++) {
 			if (dem.stageStruct) {
 				fec[stg][sex] = pSpecies->getFec(stg, dem.repType == 0 ? 0 : sex);
 			}
 			else { // non-structured population
-				fec[stg][sex] = stg == 1 ? dem.lambda : 0.0;
+				fec[stg][sex] = dem.lambda;
 			}
 		}
 	}
@@ -606,7 +606,8 @@ void Population::reproduction(const float localK, const int resol)
 	case 0: // asexual model
 		for (auto& pInd : inds) {
 
-			if (!pInd->isBreedingFem()) continue; // proceed to next individual
+			// Skip juveniles, males and dispersing or dead females
+			if (!pInd->isBreedingFem()) continue;
 			
 			if (dem.stageStruct) // check for reproduction cooldown (fallow)
 				if (!pInd->breedsThisSeason(sstruct))
