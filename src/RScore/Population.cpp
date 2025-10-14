@@ -697,21 +697,16 @@ void Population::fledge()
 {
 	demogrParams dem = pSpecies->getDemogrParams();
 
-	if (dem.stageStruct) { // juveniles are added to the individuals vector
-		inds.insert(inds.end(), newborns.begin(), newborns.end());
-		// no update of nInds yet - juveniles remain in stage 0!
-	}
-	else { // all adults die and juveniles replace adults
+	if (!dem.stageStruct) { // all adults die
 		int ninds = inds.size();
-		for (int i = 0; i < ninds; i++) {
+		for (int i = 0; i < ninds; i++)
 			delete inds[i];
-		}
 		inds.clear();
-		for (int sex = 0; sex < nSexes; sex++) {
+		for (int sex = 0; sex < nSexes; sex++)
 			nInds[1][sex] = 0; // set count of adults to zero
-		}
-		inds = newborns;
 	}
+	// Offspring join the population
+	inds.insert(inds.end(), newborns.begin(), newborns.end());
 	newborns.clear();
 }
 
@@ -1181,44 +1176,54 @@ void Population::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool r
 		}
 	}
 
-	if (dem.stageStruct && localK > 0.0) {
+	if (dem.stageStruct) {
+		
+		// if (dev)
+		// += dev recd
+		// +=
+
+		// if resolve dev and devDD and stage > 0
+		// dev DD
+
+
+	}
+
+	if (dem.stageStruct) {
 
 		for (int stg = 0; stg < nStages; stg++) {
 			for (int sex = 0; sex < nsexes; sex++) {
 
-				// Contribution of received effects from interspecific interactions
-				dev[stg][sex] += devRecdEffects[stg];
+				if (resolveDev) {
 
-				// Calculate development density-dependence
-				if (resolveDev && sstruct.devDens && stg > 0) {
-				// NB DD in development does NOT apply to juveniles,
-					float density = 0.0;
+					// Contribution of received effects from interspecific interactions
+					dev[stg][sex] += devRecdEffects[stg];
 
-					if (sstruct.devStageDens) { // stage-specific density dependence
-						// NOTE: matrix entries represent effect of ROW on COLUMN 
-						// AND males precede females
-						float weight = 0.0;
+					// Calculate development density-dependence
+					if (sstruct.devDens && stg > 0 && localK > 0.0) {
+						// NB DD in development does NOT apply to juveniles,
+						float density = 0.0;
 
-						for (int effStg = 0; effStg < nStages; effStg++) {
-							for (int effSex = 0; effSex < nSexes; effSex++) {
-
-								if (dem.repType == 2) {
-									int rowIncr = effSex == 0 ? 1 : 0;
-									int colIncr = sex == 0 ? 1 : 0;
-									weight = pSpecies->getDDwtDev(2 * stg + colIncr, 2 * effStg + rowIncr);
+						if (sstruct.devStageDens) { // stage-specific density dependence
+							// NOTE: matrix entries represent effect of ROW on COLUMN 
+							// AND males precede females
+							float weight = 0.0;
+							for (int effStg = 0; effStg < nStages; effStg++) {
+								for (int effSex = 0; effSex < nSexes; effSex++) {
+									if (dem.repType == 2) {
+										int rowIncr = effSex == 0 ? 1 : 0;
+										int colIncr = sex == 0 ? 1 : 0;
+										weight = pSpecies->getDDwtDev(2 * stg + colIncr, 2 * effStg + rowIncr);
+									}
+									else weight = pSpecies->getDDwtDev(stg, effStg);
+									density += nInds[effStg][effSex] * weight;
 								}
-								else {
-									weight = pSpecies->getDDwtDev(stg, effStg);
-								}
-								density += nInds[effStg][effSex] * weight;
-
 							}
 						}
+						else density = totalPop(); // no stage-dependence
+
+						dev[stg][sex] *= exp(-(ddparams.devCoeff * density) / localK);
 					}
-					else density = totalPop(); // no stage-dependence
-
-					dev[stg][sex] *= exp(-(ddparams.devCoeff * density) / localK);
-
+					
 					// Contribution from interspecific resource-dependent interactions
 					dev[stg][sex] *= exp(devResDepEffects[stg]);
 
@@ -1228,36 +1233,35 @@ void Population::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool r
 					// Ensure development probability remains bounded between 0 and 1
 					dev[stg][sex] = max(0.0f, min(1.0f, dev[stg][sex]));
 				}
+				
+				if (resolveSurv) {
+					// Contribution of received effects from interspecific interactions
+					surv[stg][sex] += survRecdEffects[stg];
 
-				// Contribution of received effects from interspecific interactions
-				surv[stg][sex] += survRecdEffects[stg];
+					// Calculate survival density-dependence
+					if (sstruct.survDens) {
+						float density = 0.0;
 
-				// Calculate survival density-dependence
-				if (resolveSurv && sstruct.survDens) {
-					float density = 0.0;
-
-					if (sstruct.survStageDens) { // stage-specific density dependence
-						// NOTE: matrix entries represent effect of ROW on COLUMN 
-						// AND males precede females
-						float weight = 0.0;
-						for (int effStg = 0; effStg < nStages; effStg++) {
-							for (int effSex = 0; effSex < nSexes; effSex++) {
-								if (dem.repType == 2) {
-									int rowIncr = effSex == 0 ? 1 : 0;
-									int colIncr = sex == 0 ? 1 : 0;
-									weight = pSpecies->getDDwtSurv(2 * stg + colIncr, 2 * effStg + rowIncr);
+						if (sstruct.survStageDens) { // stage-specific density dependence
+							// NOTE: matrix entries represent effect of ROW on COLUMN 
+							// AND males precede females
+							float weight = 0.0;
+							for (int effStg = 0; effStg < nStages; effStg++) {
+								for (int effSex = 0; effSex < nSexes; effSex++) {
+									if (dem.repType == 2) {
+										int rowIncr = effSex == 0 ? 1 : 0;
+										int colIncr = sex == 0 ? 1 : 0;
+										weight = pSpecies->getDDwtSurv(2 * stg + colIncr, 2 * effStg + rowIncr);
+									}
+									else weight = pSpecies->getDDwtSurv(stg, effStg);
+									density += nInds[effStg][effSex] * weight;
 								}
-								else {
-									weight = pSpecies->getDDwtSurv(stg, effStg);
-								}
-								density += nInds[effStg][effSex] * weight;
 							}
 						}
-					}
-					else density = totalPop();
-					
-					surv[stg][sex] *= exp(-(ddparams.survCoeff * density) / localK);
+						else density = totalPop();
 
+						surv[stg][sex] *= exp(-(ddparams.survCoeff * density) / localK);
+					}
 					// Contribution from interspecific resource-dependent interactions
 					surv[stg][sex] *= exp(survResDepEffects[stg]);
 
@@ -1267,7 +1271,6 @@ void Population::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool r
 					// Ensure survival probability remains bounded between 0 and 1
 					surv[stg][sex] = max(0.0f, min(1.0f, surv[stg][sex]));
 				}
-
 			} // sex loop
 		} // stage loop
 
