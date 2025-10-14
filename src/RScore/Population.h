@@ -136,7 +136,7 @@ public:
 		const int landResol	// landscape resolution
 	);
 
-	// Following reproduction of ALL species, add juveniles to the population
+	// Following reproduction of ALL species, add newborns to the population
 	void fledge();
 
 	// Determine which individuals will disperse
@@ -227,7 +227,7 @@ private:
 	int nInds[gMaxNbStages][gMaxNbSexes]; // no. of individuals in each stage/sex
 
 	vector<Individual*> inds; // all individuals in population except ...
-	vector<Individual*> juvs; // ... juveniles until reproduction of ALL species
+	vector<Individual*> newborns; // individuals born this year
 	// has been completed
 
 	vector<Individual*> sampledInds;

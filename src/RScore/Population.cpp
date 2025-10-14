@@ -37,7 +37,7 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 
 	if (ninds > 0) {
 		inds.reserve(ninds);
-		juvs.reserve(ninds);
+		newborns.reserve(ninds);
 	}
 
 	pSpecies = pSp;
@@ -179,11 +179,11 @@ Population::~Population() {
 		if (inds[i] != nullptr) delete inds[i];
 	}
 	inds.clear();
-	int njuvs = static_cast<int>(juvs.size());
+	int njuvs = static_cast<int>(newborns.size());
 	for (int i = 0; i < njuvs; i++) {
-		if (juvs[i] != nullptr) delete juvs[i];
+		if (newborns[i] != nullptr) delete newborns[i];
 	}
-	juvs.clear();
+	newborns.clear();
 }
 
 traitsums Population::getIndTraitsSums() {
@@ -482,11 +482,11 @@ void Population::extirpate() {
 		if (inds[i] != nullptr) delete inds[i];
 	}
 	inds.clear();
-	int njuvs = (int)juvs.size();
+	int njuvs = (int)newborns.size();
 	for (int i = 0; i < njuvs; i++) {
-		if (juvs[i] != nullptr) delete juvs[i];
+		if (newborns[i] != nullptr) delete newborns[i];
 	}
-	juvs.clear();
+	newborns.clear();
 	for (int sex = 0; sex < nSexes; sex++) {
 		for (int stg = 0; stg < nStages; stg++) {
 			nInds[stg][sex] = 0;
@@ -495,7 +495,7 @@ void Population::extirpate() {
 }
 
 //---------------------------------------------------------------------------
-// Produce juveniles and hold them in the juvs vector
+// Produce new individuals and hold them in the newborns vector
 void Population::reproduction(const float localK, const int resol)
 {
 	if (inds.size() == 0) return;
@@ -624,7 +624,7 @@ void Population::reproduction(const float localK, const int resol)
 				if (!newJuv->isViable())
 					delete newJuv; 
 				else {
-					juvs.push_back(newJuv);
+					newborns.push_back(newJuv);
 					nInds[0][0]++;
 				}
 			}
@@ -682,7 +682,7 @@ void Population::reproduction(const float localK, const int resol)
 				if (!newJuv->isViable())
 					delete newJuv;
 				else {
-					juvs.push_back(newJuv);
+					newborns.push_back(newJuv);
 					sex = newJuv->getSex();
 					nInds[0][sex]++;
 				}
@@ -698,7 +698,7 @@ void Population::fledge()
 	demogrParams dem = pSpecies->getDemogrParams();
 
 	if (dem.stageStruct) { // juveniles are added to the individuals vector
-		inds.insert(inds.end(), juvs.begin(), juvs.end());
+		inds.insert(inds.end(), newborns.begin(), newborns.end());
 		// no update of nInds yet - juveniles remain in stage 0!
 	}
 	else { // all adults die and juveniles replace adults
@@ -710,9 +710,9 @@ void Population::fledge()
 		for (int sex = 0; sex < nSexes; sex++) {
 			nInds[1][sex] = 0; // set count of adults to zero
 		}
-		inds = juvs;
+		inds = newborns;
 	}
-	juvs.clear();
+	newborns.clear();
 }
 
 Individual* Population::sampleInd() const {
