@@ -298,12 +298,10 @@ void Species::setFec(short stg, short sex, float f) {
 }
 
 float Species::getFec(short stg, short sex) {
-	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes)
-		return fec[stg][sex];
-	else return 0.0;
+	return fec[stg][sex];
 }
 
-float Species::getMaxFec(void) {
+float Species::getMaxFec() {
 	float maxfec = 0.0;
 	if (stageStruct) {
 		for (int stg = 1; stg < gMaxNbStages; stg++) {
@@ -320,9 +318,7 @@ void Species::setDev(short stg, short sex, float d) {
 }
 
 float Species::getDev(short stg, short sex) {
-	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes)
-		return dev[stg][sex];
-	else return 0.0;
+	return dev[stg][sex];
 }
 
 void Species::setSurv(short stg, short sex, float s) {
@@ -331,9 +327,7 @@ void Species::setSurv(short stg, short sex, float s) {
 }
 
 float Species::getSurv(short stg, short sex) {
-	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes)
-		return surv[stg][sex];
-	else return 0.0;
+	return surv[stg][sex];
 }
 
 void Species::setMinAge(short stg, short sex, int age) {
@@ -343,9 +337,7 @@ void Species::setMinAge(short stg, short sex, int age) {
 }
 
 short Species::getMinAge(short stg, short sex) {
-	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes)
-		return minAge[stg][sex];
-	else return 0;
+	return minAge[stg][sex];
 }
 
 void Species::setDensDep(float d, float s) {
@@ -353,7 +345,7 @@ void Species::setDensDep(float d, float s) {
 	if (s > 0.0) survCoeff = s;
 }
 
-densDepParams Species::getDensDep(void) {
+densDepParams Species::getDensDep() {
 	densDepParams d;
 	d.devCoeff = devCoeff; d.survCoeff = survCoeff;
 	return d;
@@ -361,7 +353,7 @@ densDepParams Species::getDensDep(void) {
 
 void Species::createDDwtFec(short mSize) {
 	if (mSize >= 0 && mSize < (gMaxNbStages * gMaxNbSexes)) {
-		if (ddwtFec != 0) deleteDDwtFec();
+		if (ddwtFec != nullptr) deleteDDwtFec();
 		ddwtFecDim = mSize;
 		ddwtFec = new float* [mSize];
 		for (int i = 0; i < mSize; i++) {
