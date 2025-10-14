@@ -545,14 +545,14 @@ void Population::reproduction(const float localK, const int resol)
 		}
 	}
 
-	// Received contributions from interspecific interactions
-	for (int stg = 1; stg < nStages; stg++) {
-		fec[stg][0] += fecRecdEffects[stg];
-	}
-
-	// Intraspecific density-dependence
 	if (dem.stageStruct) {
 
+		// Received contributions from interspecific interactions
+		for (int stg = 1; stg < nStages; stg++) {
+			fec[stg][0] += fecRecdEffects[stg];
+		}
+
+		// Intraspecific density-dependence
 		for (int stg = 1; stg < nStages; stg++) {
 
 			if (fec[stg][0] <= 0.0 || !sstruct.fecDens) continue;
@@ -577,7 +577,10 @@ void Population::reproduction(const float localK, const int resol)
 			else densDepEffect = static_cast<float>(totalPop());
 
 			if (localK > 0.0) fec[stg][0] *= exp(-densDepEffect / localK);
+		}
 
+		// Other interaction effects
+		for (int stg = 1; stg < nStages; stg++) {
 			// Contribution from resource-dependent interactions
 			fec[stg][0] *= exp(fecResDepEffects[stg]);
 
