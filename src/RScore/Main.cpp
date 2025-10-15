@@ -40,6 +40,7 @@
 
 using namespace std;
 
+#ifdef UNIT_TESTS
 void testIndividual();
 void testNeutralStats();
 void testPopulation();
@@ -53,6 +54,7 @@ void run_unit_tests() {
 	testNeutralStats();
 	cout << endl << "************************" << endl;
 }
+#endif // UNIT_TESTS
 
 // Global vars
 string landFile;
@@ -67,8 +69,8 @@ int main(int argc, char* argv[])
 int _tmain(int argc, _TCHAR* argv[])
 #endif
 {
-#ifdef NDEBUG
-	cout << "This code is only for running tests and not meant to run in release." << endl;
+#ifndef UNIT_TESTS
+	cout << "This version is only for running unit tests." << endl;
 	return 1;
 #else
 

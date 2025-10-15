@@ -25,6 +25,9 @@
 #include "Population.h"
 #include "Patch.h"
 
+#include <algorithm>
+//---------------------------------------------------------------------------
+
 //---------------------------------------------------------------------------
 Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 {
@@ -263,8 +266,6 @@ traitsums Population::getIndTraitsSums() {
 	return ts;
 }
 
-int Population::getNInds() { return static_cast<int>(inds.size()); }
-
 // ----------------------------------------------------------------------------------------
 // reset allele table
 // ----------------------------------------------------------------------------------------
@@ -439,23 +440,22 @@ popStats Population::getStats()
 
 Species* Population::getSpecies() { return pSpecies; }
 
-int Population::totalPop() {
-	int t = 0;
-	for (int stg = 0; stg < nStages; stg++) {
-		for (int sex = 0; sex < nSexes; sex++) {
-			t += nInds[stg][sex];
-		}
-	}
-	return t;
+int Population::getNbInds() const {
+	return inds.size();
 }
 
-int Population::stagePop(int stg) {
+int Population::getNbInds(int stg) const {
 	int t = 0;
-	if (stg < 0 || stg >= nStages) return t;
+	if (stg < 0 || stg >= nStages) throw runtime_error("Attempt to get nb individuals for stage " + to_string(stg) + ", no such stage.");
 	for (int sex = 0; sex < nSexes; sex++) {
 		t += nInds[stg][sex];
 	}
 	return t;
+}
+
+int Population::getNbInds(int stg, int sex) const {
+	if (stg < 0 || stg >= nStages) throw runtime_error("Attempt to get nb individuals for stage " + to_string(stg) + ", no such stage.");
+	return nInds[stg][sex];
 }
 
 //---------------------------------------------------------------------------
@@ -549,46 +549,57 @@ void Population::reproduction(const float localK, const int resol)
 
 		// Received contributions from interspecific interactions
 		for (int stg = 1; stg < nStages; stg++) {
-			fec[stg][0] += fecRecdEffects[stg];
-		}
-
-		// Intraspecific density-dependence
-		for (int stg = 1; stg < nStages; stg++) {
-
-			if (fec[stg][0] <= 0.0 || !sstruct.fecDens) continue;
-
-			float densDepEffect = 0.0;
-			if (sstruct.fecStageDens) { // stage-specific density dependence
-				// NOTE: matrix entries represent effect of ROW on COLUMN 
-				// AND males precede females
-				float weight = 0.0;
-				for (int effstg = 0; effstg < nStages; effstg++) {
-					for (int effsex = 0; effsex < nSexes; effsex++) {
-						if (dem.repType == 2) {
-							int sexColIndex = effsex == 0 ? 1 : 0;
-							weight = pSpecies->getDDwtFec(2 * stg + 1, 2 * effstg + sexColIndex);
+			if (fec[stg][0] > 0.0) {
+				// apply any effect of environmental gradient and/or stochasticty
+				fec[stg][0] *= envval;
+				if (env.stoch && !env.inK) {
+					// fecundity (at low density) is constrained to lie between limits specified
+					// for the species
+					float limit;
+					limit = pSpecies->getMinMax(0);
+					if (fec[stg][0] < limit) fec[stg][0] = limit;
+					limit = pSpecies->getMinMax(1);
+					if (fec[stg][0] > limit) fec[stg][0] = limit;
+				}
+				if (sstruct.fecDens) { // apply density dependence
+					float effect = 0.0;
+					if (sstruct.fecStageDens) { // stage-specific density dependence
+						// NOTE: matrix entries represent effect of ROW on COLUMN 
+						// AND males precede females
+						float weight = 0.0;
+						for (int effstg = 0; effstg < nStages; effstg++) {
+							for (int effsex = 0; effsex < nSexes; effsex++) {
+								if (dem.repType == 2) {
+									if (effsex == 0) weight = pSpecies->getDDwtFec(2 * stg + 1, 2 * effstg + 1);
+									else weight = pSpecies->getDDwtFec(2 * stg + 1, 2 * effstg);
+								}
+								else {
+									weight = pSpecies->getDDwtFec(stg, effstg);
+								}
+								effect += (float)nInds[effstg][effsex] * weight;
+							}
 						}
-						else weight = pSpecies->getDDwtFec(stg, effstg);
-
-						densDepEffect += (float)nInds[effstg][effsex] * weight;
 					}
+					else // not stage-specific
+						effect = (float)totalPop();
+					if (localK > 0.0) fec[stg][0] *= exp(-effect / localK);
 				}
 			}
-			else densDepEffect = static_cast<float>(totalPop());
-
-			if (localK > 0.0) fec[stg][0] *= exp(-densDepEffect / localK);
-		}
-
-		// Other interaction effects
-		for (int stg = 1; stg < nStages; stg++) {
-			// Contribution from resource-dependent interactions
-			fec[stg][0] *= exp(fecResDepEffects[stg]);
-
-			// Contributions from initiated interspecific interactions
-			fec[stg][0] += fecInitdEffects[stg];
 		}
 	}
-	else { // Non-structured
+	else { // non-structured - set fecundity for adult females only
+		// apply any effect of environmental gradient and/or stochasticty
+		fec[1][0] *= envval;
+		if (env.stoch && !env.inK) {
+			// fecundity (at low density) is constrained to lie between limits specified
+			// for the species
+			float limit;
+			limit = pSpecies->getMinMax(0);
+			if (fec[1][0] < limit) fec[1][0] = limit;
+			limit = pSpecies->getMinMax(1);
+			if (fec[1][0] > limit) fec[1][0] = limit;
+		}
+		// apply density dependence
 		if (localK > 0.0) {
 			if (dem.repType != 0) // sexual model
 				fec[1][0] *= 2.0; // cf manual
@@ -705,9 +716,9 @@ void Population::fledge()
 		inds.clear();
 		for (int sex = 0; sex < nSexes; sex++)
 			nInds[1][sex] = 0; // set count of adults to zero
+		}
 	}
-	// Offspring join the population
-	inds.insert(inds.end(), newborns.begin(), newborns.end());
+	inds = std::move(newborns);
 	newborns.clear();
 }
 
@@ -774,7 +785,7 @@ void Population::emigration(float localK)
 	// to avoid division by zero, assume carrying capacity is at least one individual
 	// localK can be zero if there is a moving gradient or stochasticity in K
 	if (localK < 1.0) localK = 1.0;
-	NK = static_cast<float>(totalPop()) / localK;
+	NK = static_cast<float>(getNbInds()) / localK;
 
 	// set up local copy of emigration probability table
 	// used when there is no individual variability
@@ -816,7 +827,7 @@ void Population::emigration(float localK)
 				else { // non-structured or individual is in emigration stage
 					eparams = inds[i]->getIndEmigTraits();
 					if (emig.densDep) { // density-dependent
-						NK = (float)totalPop() / localK;
+						NK = (float)getNbInds() / localK;
 						pbDisp = eparams.d0 / (1.0 + exp(-(NK - eparams.beta) * eparams.alpha));
 					}
 					else { // density-independent
@@ -844,6 +855,15 @@ void Population::allEmigrate() {
 	}
 }
 
+// Remove an Individual from the Population
+Individual* Population::extractIndividual(int ix) {
+	Individual* pInd = inds[ix];
+	indStats ind = pInd->getStats();
+	inds[ix] = nullptr;
+	nInds[ind.stage][ind.sex]--;
+	return pInd;
+}
+
 // If an Individual has been identified as an emigrant, remove it from the Population
 disperser Population::extractDisperser(int ix) {
 	disperser d = disperser();
@@ -851,7 +871,7 @@ disperser Population::extractDisperser(int ix) {
 	if (ind.status == 1) { // emigrant
 		d.pInd = inds[ix]; 
 		d.isDispersing = true;
-		inds[ix] = 0;
+		inds[ix] = nullptr;
 		nInds[ind.stage][ind.sex]--;
 	}
 	else {
@@ -883,9 +903,12 @@ disperser Population::extractSettler(int ix) {
 
 // Add a specified individual to the new/current dispersal group
 void Population::recruit(Individual* pInd) {
-	inds.push_back(pInd);
 	indStats ind = pInd->getStats();
 	nInds[ind.stage][ind.sex]++;
+#ifdef _OPENMP
+	const std::lock_guard<std::mutex> lock(inds_mutex);
+#endif // _OPENMP
+	inds.push_back(pInd);
 }
 
 //---------------------------------------------------------------------------
@@ -1136,6 +1159,19 @@ bool Population::isMatePresent(Cell* pCell, short othersex)
 		}
 	}
 	return false; // no mates? :(
+}
+
+// Add specified individuals to the population
+void Population::recruitMany(std::vector<Individual*>& recruits) {
+	if (recruits.empty()) return;
+	for (Individual* pInd : recruits) {
+		indStats ind = pInd->getStats();
+		nInds[ind.stage][ind.sex]++;
+	}
+#ifdef _OPENMP
+	const std::lock_guard<std::mutex> lock(inds_mutex);
+#endif // _OPENMP
+	inds.insert(inds.end(), recruits.begin(), recruits.end());
 }
 
 //---------------------------------------------------------------------------
@@ -1531,17 +1567,8 @@ void Population::clean()
 {
 	int ninds = inds.size();
 	if (ninds > 0) {
-			// ALTERNATIVE METHOD: AVOIDS SLOW SORTING OF POPULATION
-		std::vector <Individual*> survivors; // all surviving individuals
-		for (int i = 0; i < ninds; i++) {
-			if (inds[i] != NULL) {
-				survivors.push_back(inds[i]);
-			}
-		}
-		inds.clear();
-		inds = survivors;
-
-#if RS_RCPP || NDEBUG
+		inds.erase(std::remove(inds.begin(), inds.end(), (Individual *)nullptr), inds.end());
+#ifdef RS_RCPP || NDEBUG
 		// do not randomise individuals in DEBUG mode, as the function uses rand()
 		// and therefore the randomisation will differ between identical runs of RS
 		shuffle(inds.begin(), inds.end(), pRandom->getRNG());
@@ -1597,7 +1624,7 @@ void Population::outPopulation(ofstream& outPopOfs, int rep, int yr, int gen, bo
 		}
 	}
 	else { // non-structured population
-		outPopOfs << "\t" << totalPop();
+		outPopOfs << "\t" << getNbInds();
 		if (dem.repType != 0)
 		{ // sexual model
 			outPopOfs << "\t" << nInds[1][0] << "\t" << nInds[1][1];
@@ -1647,11 +1674,11 @@ void Population::outIndividual(ofstream& outIndsOfs, Landscape* pLandscape, int 
 			else { // non-structured population
 				outIndsOfs << "\t" << to_string(ind.status);
 			}
-			pCell = inds[i]->getLocn(1);
-			locn loc = locn();
+			pCell = inds[i]->getCurrCell();
+			locn loc;
 			if (pCell == 0) loc.x = loc.y = -1; // beyond boundary or in no-data cell
 			else loc = pCell->getLocn();
-			pCell = inds[i]->getLocn(0);
+			pCell = inds[i]->getPrevCell();
 			locn natalloc = pCell->getLocn();
 			if (ppLand.usesPatches) {
 				outIndsOfs << "\t" << inds[i]->getNatalPatch()->getPatchNum();

@@ -2643,28 +2643,29 @@ void Landscape::outConnectHeaders(species_id sp)
 }
 
 #if RS_RCPP
-// Write movement paths file headers
-void Landscape::outPathsHeaders(int rep, int option)
+// Close movement paths file
+void Landscape::outPathsFinishReplicate()
 {
-	if (option == -999) { // close the file
-		if (outMovePaths.is_open()) outMovePaths.close();
-		outMovePaths.clear();
-	}
-	if (option == 0) { // open the file and write header
+	if (outMovePaths.is_open()) outMovePaths.close();
+	outMovePaths.clear();
+}
 
-		simParams sim = paramsSim->getSim();
-		string name = paramsSim->getDir(2);
-		if (sim.batchMode) {
-			name += "Batch" + to_string(sim.batchNum)
-				+ "_Sim" + to_string(sim.simulation)
-				+ "_Land" + to_string(landNum)
-				+ "_Rep" + to_string(rep);
-		}
-		else {
-			name += "Sim" + to_string(sim.simulation)
-				+ "_Rep" + to_string(rep);
-		}
-		name += "_MovePaths.txt";
+// Open movement paths file and write header record
+void Landscape::outPathsStartReplicate(int rep)
+{
+	simParams sim = paramsSim->getSim();
+	string name = paramsSim->getDir(2);
+	if (sim.batchMode) {
+		name += "Batch" + to_string(sim.batchNum)
+			+ "_Sim" + to_string(sim.simulation)
+			+ "_Land" + to_string(landNum)
+			+ "_Rep" + to_string(rep);
+	}
+	else {
+		name += "Sim" + to_string(sim.simulation)
+			+ "_Rep" + to_string(rep);
+	}
+	name += "_MovePaths.txt";
 
 		outMovePaths.open(name.c_str());
 		if (outMovePaths.is_open()) {
@@ -2850,8 +2851,8 @@ void Landscape::outVisits(species_id sp, int rep, int landNr) {
 
 //---------------------------------------------------------------------------
 
-#ifndef NDEBUG
-// Debug only: shortcut setup utilities
+#ifdef UNIT_TESTS
+// Tests only: shortcut setup utilities
 
 landParams createDefaultLandParams(const int& dim) {
 
@@ -2873,7 +2874,7 @@ landParams createDefaultLandParams(const int& dim) {
 void testLandscape() {
 	// test coordinate system...
 }
-#endif // NDEBUG
+#endif // UNIT_TESTS
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

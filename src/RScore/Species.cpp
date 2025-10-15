@@ -947,8 +947,18 @@ void Species::addReceivdInteraction(const int& whichStage, const species_id& oth
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 
-#ifndef NDEBUG
+#ifdef UNIT_TESTS
 // For testing purposes only
+// Set kernel parameters, but ignore constraints on values
+// Used to test dispersal with values < resolution
+void Species::overrideKernels(const short stg, const short sex,
+	const trfrKernelParams k)
+{
+	meanDist1[stg][sex] = k.meanDist1;
+	meanDist2[stg][sex] = k.meanDist2;
+	probKern1[stg][sex] = k.probKern1;
+}
+
 demogrParams createDefaultHaploidDemogrParams() {
 	demogrParams d;
 	d.repType = 0;
@@ -973,4 +983,4 @@ demogrParams createDefaultDiploidDemogrParams() {
 	return d;
 }
 
-#endif // NDEBUG
+#endif // UNIT_TESTS

@@ -42,7 +42,9 @@
 #include <iomanip>
 #include <stdlib.h>
 #include <cassert>
-
+#ifdef _OPENMP
+#include <omp.h>
+#endif // _OPENMP
 using namespace std;
 
 #include "./RScore/Parameters.h"
@@ -96,6 +98,18 @@ int _tmain(int argc, _TCHAR* argv[])
 	cout << "RangeShifter Release Mode" << endl;
 #else
 	cout << "RangeShifter Debug Mode" << endl;
+#endif
+
+#ifdef _OPENMP
+	cout << "OpenMP parallelisation enabled with up to " << omp_get_max_threads() << " threads." << endl;
+#endif //_OPENMP
+
+#ifndef NDEBUG
+	assert(0.1 > 0.0); // assert does run correctly
+	run_batch_unit_tests();
+#else
+	// assert does not run in Release mode
+	assert(1 == 2);
 #endif
 
 	int t0, t1;
@@ -157,14 +171,11 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	t1 = static_cast<int>(time(0));
 	cout << endl << "***** Elapsed time " << t1 - t0 << " seconds" << endl << endl;
+
 	cout << "*****" << endl;
-	cout << "***** Simulation completed." << endl;
+	cout << "***** Simulation completed - enter any number to terminate program" << endl;
 	cout << "*****" << endl;
 
 	return 0;
 }
-
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
 

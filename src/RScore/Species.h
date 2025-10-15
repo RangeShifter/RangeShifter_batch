@@ -370,6 +370,13 @@ public:
 	// Get settlement density dependence traits
 	settleTraits getSpSettTraits(short stg, short sex);
 
+	
+#ifdef UNIT_TESTS
+	// Testing: set dispersal but ignore resolution
+	void overrideKernels(const short stg, const short sex,
+		const trfrKernelParams k);
+# endif // UNIT_TESTS
+
 	// Genome management functions
 	void addTrait(TraitType traitType, const SpeciesTrait& trait);
 	void clearTraitTable();
@@ -629,11 +636,11 @@ typedef map<species_id, Species*> speciesMap_t;
 
 //---------------------------------------------------------------------------
 
-#ifndef NDEBUG
+#ifdef UNIT_TESTS
 // For testing purposes only
 demogrParams createDefaultHaploidDemogrParams();
 demogrParams createDefaultDiploidDemogrParams();
-#endif // NDEBUG
+#endif // UNIT_TESTS
 
 //---------------------------------------------------------------------------
 #endif

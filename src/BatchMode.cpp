@@ -6736,7 +6736,7 @@ int ReadTransferKernels(speciesMap_t& simSpecies, landParams paramsLand) {
 		else if (sexKernels == 2 || sexKernels == 3) 
 				errorCode = 403;
 
-		switch (sexKernels) {
+			switch (sexKernels) {
 
 		case 0: // no sex / stage dependence
 			ifsTransferFile >> kernParams.meanDist1 >> kernParams.meanDist2 >> kernParams.probKern1;
@@ -6980,6 +6980,7 @@ int ReadSettlement(speciesMap_t& simSpecies)
 			srules.densDep = (inBuffer == 1);
 			srules.findMate = (inFindMate == 1);
 
+			// Set parameters for this line (stg x sex or default, i.e. juveniles/females)
 			pSpecies->setSettRules(stageToSet, sexToSet, srules);
 			pSpecies->setSteps(stageToSet, sexToSet, ssteps);
 
@@ -6987,8 +6988,10 @@ int ReadSettlement(speciesMap_t& simSpecies)
 				pSpecies->setSpSettTraits(stageToSet, sexToSet, settleDD);
 			}
 
-			if (!sett.stgDep) {
-				if (!sett.sexDep) {
+			// Set the remaining sex and stages, if applicable
+			// e.g. if not stage-dep but has stage-struct, must set other stages
+			if (!sett.stgDep) { // then also need to set remaining stages
+				if (!sett.sexDep) { // then also need to set males 
 					if (dem.stageStruct) { // model is structured - also set parameters for all stages
 						for (int stg = 1; stg < sstruct.nStages; stg++) {
 							pSpecies->setSettRules(stg, 0, srules);
@@ -7002,38 +7005,32 @@ int ReadSettlement(speciesMap_t& simSpecies)
 							}
 						}
 					}
-					else {
-						if (hasMales) { // model is sexual - also set parameters for males
-							pSpecies->setSettRules(0, 1, srules);
-							pSpecies->setSteps(0, 1, ssteps);
-							if (srules.densDep) {
-								pSpecies->setSpSettTraits(0, 1, settleDD);
-							}
-						}
-					}
-				}
-				else { // stage-dep but not sex-dep
-					if (dem.stageStruct) { // model is structured - also set parameters for all stages
-						for (int stg = 1; stg < sstruct.nStages; stg++) {
-							pSpecies->setSettRules(stg, sexToSet, srules);
-							pSpecies->setSteps(stg, sexToSet, ssteps);
-							if (srules.densDep && !sett.indVar) 
-								pSpecies->setSpSettTraits(stg, sexToSet, settleDD);
-						}
-					}
-				}
-			}
-			else { // not stage-dep
-				if (!sett.sexDep) {
-					if (hasMales) { // model is sexual - also set parameters for males
-						pSpecies->setSettRules(stageToSet, 1, srules);
-						pSpecies->setSteps(stageToSet, 1, ssteps);
+					else if (hasMales) { // model is sexual - also set parameters for males
+						pSpecies->setSettRules(0, 1, srules);
+						pSpecies->setSteps(0, 1, ssteps);
 						if (srules.densDep) {
-							pSpecies->setSpSettTraits(stageToSet, 1, settleDD);
+							pSpecies->setSpSettTraits(0, 1, settleDD);
 						}
 					}
 				}
+				else if (dem.stageStruct) { // sex-dep but not stage-dep
+					for (int stg = 1; stg < sstruct.nStages; stg++) {
+						pSpecies->setSettRules(stg, sexToSet, srules);
+						pSpecies->setSteps(stg, sexToSet, ssteps);
+						if (srules.densDep && !sett.indVar)
+							pSpecies->setSpSettTraits(stg, sexToSet, settleDD);
+					}
+				}
 			}
+			else if (!sett.sexDep && hasMales) { // stg-struct, but not sex-dep
+				pSpecies->setSettRules(stageToSet, 1, srules);
+				pSpecies->setSteps(stageToSet, 1, ssteps);
+				if (srules.densDep) {
+					pSpecies->setSpSettTraits(stageToSet, 1, settleDD);
+				}
+			}
+			// else (stg-dep + sex-dep) nothing, already covered by the corresponding line in the input file!
+
 		} // end of movement model
 		else { // dispersal kernel
 
@@ -7049,6 +7046,7 @@ int ReadSettlement(speciesMap_t& simSpecies)
 			if (!sett.sexDep && mustFindMate && !hasMales)
 				errorCode = 504;
 
+			// Set parameters for this line (stg x sex or default, i.e. juveniles/females)
 			int stageToSet = sett.stgDep ? inStage : 0;
 			int sexToSet = sett.sexDep ? inSex : 0;
 			srules = pSpecies->getSettRules(stageToSet, sexToSet);
@@ -7061,7 +7059,7 @@ int ReadSettlement(speciesMap_t& simSpecies)
 			if (!sett.stgDep && dem.stageStruct) {
 				// Must set other stages
 				if (!sett.sexDep) {
-					for (int stg = 0; stg < sstruct.nStages; stg++) {
+					for (int stg = 1; stg < sstruct.nStages; stg++) {
 						pSpecies->setSettRules(stg, 0, srules);
 						if (hasMales) { // model is sexual - also set parameters for males
 							pSpecies->setSettRules(stg, 1, srules);
@@ -7072,6 +7070,13 @@ int ReadSettlement(speciesMap_t& simSpecies)
 					for (int stg = 1; stg < sstruct.nStages; stg++) {
 						pSpecies->setSettRules(stg, sexToSet, srules);
 					}
+				}
+			}
+			if (!sett.sexDep && hasMales) {
+				// Must set males
+				if (!sett.stgDep) {
+					pSpecies->setSettRules(0, 1, srules);
+					// males of other stages already set above
 				}
 			}
 			if (!sett.sexDep && hasMales) { // Must set males

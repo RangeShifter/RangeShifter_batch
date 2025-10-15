@@ -58,6 +58,10 @@ using namespace std;
 #include "Cell.h"
 #include "TraitFactory.h"
 
+#ifdef _OPENMP
+#include <atomic>
+#endif // _OPENMP
+
 //---------------------------------------------------------------------------
 
 enum indStatus {
@@ -185,6 +189,28 @@ struct smsData : trfrData {
 
 };
 
+// A class that mimicks std::queue with a fixed-size circular buffer.
+template <typename T>
+class MemoryQueue {
+	std::unique_ptr<T[]> data;
+	const std::size_t space;
+	std::size_t begin_idx;
+	std::size_t nb_elts;
+
+public:
+	MemoryQueue(std::size_t size);
+	T& front();
+	T const& front() const;
+	T& back();
+	T const& back() const;
+	void push(const T& value);
+	void push(T&& value);
+	void pop();
+	std::size_t size() const;
+	bool empty() const;
+	bool full() const;
+};
+
 struct kernelData : trfrData {
 	float	meanDist1;
 	float	meanDist2;
@@ -218,10 +244,15 @@ struct kernelData : trfrData {
 	}
 };
 
+
 class Individual {
 
 public:
+#ifdef _OPENMP
+	static std::atomic<int> indCounter; // used to create ID, held by class, not members of class
+#else
 	static int indCounter; // used to create ID, held by class, not members of class
+#endif
 	static TraitFactory traitFactory;
 	Individual( // Individual constructor
 		Species* pSpecies,
@@ -347,7 +378,7 @@ public:
 	// Write records to movement paths file
 	void outMovePath(const int year);
 #endif
-#ifndef NDEBUG
+#ifdef UNIT_TESTS
 	// Testing utilities
 	Cell* getCurrCell() const;
 	void setInitAngle(const float angle);
@@ -377,7 +408,7 @@ private:
 	std::unique_ptr <emigTraits> pEmigTraits;			// pointer to emigration traits
 	std::unique_ptr <settleTraits> pSettleTraits;		// pointer to settlement traits
 	std::unique_ptr <trfrData> pTrfrData; //can be sms, kernel, crw
-	std::queue <locn> memory;		// memory of last N squares visited for SMS
+	MemoryQueue<locn> memory;		// memory of last N squares visited for SMS
 	map<TraitType, unique_ptr<QuantitativeTrait>> spTraitTable;
 };
 

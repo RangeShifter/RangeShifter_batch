@@ -51,9 +51,16 @@ using namespace std;
 #include "Parameters.h"
 #include "Species.h"
 
+#ifdef _OPENMP
+#include <atomic>
+#include <mutex>
+#endif
+
 class Patch;
 
 //---------------------------------------------------------------------------
+
+class Patch; // Forward-declaration of the Patch class
 
 struct array3x3f { float cell[3][3]; }; 	// neighbourhood cell array (SMS)
 struct smscosts { int cost; array3x3f* effcosts; };	// cell costs for SMS
@@ -90,7 +97,9 @@ public:
 	void resetVisits();
 	void incrVisits(species_id sp);
 	unsigned long int getVisits(species_id sp);
-
+#ifdef _OPENMP
+	std::unique_lock<std::mutex> lockCost(void);
+#endif
 	void declareOverlappingPatches() const;
 private:
 	int x, y;		// cell co-ordinates
@@ -99,13 +108,21 @@ private:
 
 	float envDev;	// local environmental deviation (static, in range -1.0 to +1.0)
 	float eps;		// local environmental stochasticity (epsilon) (dynamic, from N(0,std))
+#ifdef _OPENMP
+	map<species_id, std::atomic<unsigned long int>> visits; // no. of times the cell is visited by each species
+#else
 	map<species_id, unsigned long int> visits; // no. of times the cell is visited by each species
+#endif
 	map<species_id, smscosts*> smsData;
 
 	vector <short> habIxx; 	// habitat indices (rasterType=0)
 							// initially, habitat codes are loaded, then converted to index nos.
 							// once landscape is fully loaded
 	vector <float> habitats;	// habitat proportions (rasterType=1) or quality (rasterType=2)
+
+#ifdef _OPENMP
+	std::mutex cost_mutex;
+#endif
 };
 
 //---------------------------------------------------------------------------

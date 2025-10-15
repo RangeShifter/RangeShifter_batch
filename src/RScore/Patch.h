@@ -73,10 +73,19 @@ using namespace std;
 #include "Species.h"
 #include "Patch.h"
 
+#ifdef _OPENMP
+#include <atomic>
+#include <mutex>
+#endif
+
+//---------------------------------------------------------------------------
 class Population;
 struct popStats;
 
  //---------------------------------------------------------------------------
+
+class Population;
+class SubCommunity;
 
 struct patchLimits {
 	int xMin, xMax, yMin, yMax;
@@ -145,6 +154,10 @@ public:
 	void resetPatchOverlap();
 	map<Patch*, double> getOverlappingPatches(const species_id& whichSpecies) const;
 
+#ifdef _OPENMP
+	std::unique_lock<std::mutex> lockPopns();
+#endif
+
 #ifndef NDEBUG
 	// Testing only
 	void overrideK(const float& k) { localK = k; }
@@ -161,11 +174,18 @@ private:
 	float localK;		// patch carrying capacity (individuals)
 	double gradVal;		// gradient value for cell-based landscapes
 	bool changed;
-	short nTemp[gMaxNbSexes];	// no. of potential settlers in each sex
+#ifdef _OPENMP
+	std::atomic<short> nTemp[gMaxNbSexes];						// no. of potential settlers in each sex
+#else
+	short nTemp[gMaxNbSexes];						// no. of potential settlers in each sex
+#endif
 	vector<int> occupancy;		// pointer to occupancy array
 
-	std::vector <Cell*> cells;
+#ifdef _OPENMP
+	std::mutex popns_mutex;
+#endif
 	map<species_id, map<Patch*, double>> overlappingPatches; // [other patch, % of overlap (in nb cells)]
+
 };
 
 //---------------------------------------------------------------------------

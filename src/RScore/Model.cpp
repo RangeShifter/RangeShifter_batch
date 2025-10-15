@@ -179,7 +179,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 #if RS_RCPP
 		// open a new movement paths file for each replicate
 		if (sim.outPaths)
-			pLandscape->outPathsHeaders(rep, 0);
+			pLandscape->outPathsStartReplicate(rep);
 #endif
 
 		// how often should the year be printed?
@@ -435,7 +435,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 
 #if RS_RCPP
 		if (sim.outPaths)
-			pLandscape->outPathsHeaders(rep, -999);
+			pLandscape->outPathsFinishReplicate();
 #endif
 
 		pComm->resetPopns();

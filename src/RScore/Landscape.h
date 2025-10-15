@@ -318,7 +318,8 @@ public:
 	void resetVisits();
 	void outVisits(species_id sp, int rep, int landNb);	// save SMS path visits map to raster text file
 #if RS_RCPP
-	void outPathsHeaders(int, int);
+	void outPathsFinishReplicate();
+	void outPathsStartReplicate(int);
 #endif
 
 private:
@@ -395,7 +396,7 @@ extern paramStoch* paramsStoch;
 extern paramSim* paramsSim;
 extern RSrandom* pRandom;
 
-#ifndef NDEBUG
+#ifdef UNIT_TESTS
 landParams createDefaultLandParams(const int& dim);
 void testLandscape();
 #endif

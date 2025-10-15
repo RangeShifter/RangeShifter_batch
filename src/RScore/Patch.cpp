@@ -311,9 +311,12 @@ void Patch::setPop(Population* p) {
 	pPop = p;
 }
 
-Population* Patch::getPop() {
-	return pPop;
-}
+#ifdef _OPENMP
+std::unique_lock<std::mutex> Patch::lockPopns() {
+	return std::unique_lock<std::mutex>(popns_mutex);
+#endif
+
+Population* Patch::getPop() { return pPop; }
 
 void Patch::resetPop() {
 	pPop = nullptr;

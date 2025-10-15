@@ -92,10 +92,10 @@ STEP MORTALITY:
 constant 0.01
 
 DISPERSAL - SETTLEMENT:
-MIN. No. OF STEPS:	 0
-MAX. No. OF STEPS:	 not applied
 SEX-DEPENDENT:   no
 STAGE-DEPENDENT: no
+MIN. No. OF STEPS:	 0
+MAX. No. OF STEPS:	 not applied
 SETTLE IF: find a suitable cell/patch + mating requirements
 MAX. No. OF STEPS/YEAR:	 not applied
 

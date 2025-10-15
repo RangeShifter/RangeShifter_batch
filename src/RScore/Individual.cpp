@@ -23,9 +23,84 @@
  //---------------------------------------------------------------------------
 
 #include "Individual.h"
+
+#ifdef _OPENMP
+#include <mutex>
+#endif
+
 //---------------------------------------------------------------------------
 
+template <typename T>
+MemoryQueue<T>::MemoryQueue(std::size_t size):
+	space(size),
+	data(new T[size]),
+	begin_idx(0),
+	nb_elts(0)
+{ }
+
+template <typename T>
+T &MemoryQueue<T>::front() {
+	return data[begin_idx];
+}
+
+template <typename T>
+T const &MemoryQueue<T>::front() const {
+	return data[begin_idx];
+}
+
+template <typename T>
+T &MemoryQueue<T>::back() {
+	return data[(begin_idx + nb_elts - 1) % space];
+}
+
+template <typename T>
+T const &MemoryQueue<T>::back() const {
+	return data[(begin_idx + nb_elts - 1) % space];
+}
+
+template <typename T>
+void MemoryQueue<T>::push(const T& value) {
+	size_t end_idx = (begin_idx + nb_elts) % space;
+	data[end_idx] = value;
+	nb_elts++;
+}
+
+template <typename T>
+void MemoryQueue<T>::push(T&& value) {
+	size_t end_idx = (begin_idx + nb_elts) % space;
+	data[end_idx] = std::move(value);
+	nb_elts++;
+}
+
+template <typename T>
+void MemoryQueue<T>::pop() {
+	begin_idx++;
+	begin_idx %= space;
+	nb_elts--;
+}
+
+template <typename T>
+std::size_t MemoryQueue<T>::size() const {
+	return nb_elts;
+}
+
+template <typename T>
+bool MemoryQueue<T>::empty() const {
+	return nb_elts == 0;
+}
+
+template <typename T>
+bool MemoryQueue<T>::full() const {
+	return nb_elts == space;
+}
+
+//---------------------------------------------------------------------------
+
+#ifdef _OPENMP
+std::atomic<int> Individual::indCounter = 0;
+#else // _OPENMP
 int Individual::indCounter = 0;
+#endif // _OPENMP
 TraitFactory Individual::traitFactory = TraitFactory();
 
 //---------------------------------------------------------------------------
@@ -54,9 +129,9 @@ string to_string(indStatus s) {
 }
 
 // Individual constructor
-Individual::Individual(Species* pSp, Cell* pCell, 
-	Patch* pPatch, short stg, short a, short repInt,
-	float probmale, bool movt, short moveType)
+Individual::Individual(Species* pSp, Cell* pCell, Patch* pPatch, short stg, short a, short repInt,
+	float probmale, bool movt, short moveType):
+	memory(pSpecies->getSpSMSTraits().memSize)
 {
 	pSpecies = pSp;
 	indId = indCounter; 
@@ -371,13 +446,12 @@ indStats Individual::getStats() {
 	return s;
 }
 
-Cell* Individual::getLocn(const short option) {
-	if (option == 0) { // return previous location
-		return pPrevCell;
-	}
-	else { // return current location
-		return pCurrCell;
-	}
+Cell* Individual::getPrevCell() {
+	return pPrevCell;
+}
+
+Cell* Individual::getCurrCell() {
+	return pCurrCell;
 }
 
 Patch* Individual::getNatalPatch() { return pNatalPatch; }
@@ -753,7 +827,9 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 
 	// scaled mean may not be less than 1 unless emigration derives from the kernel
 	// (i.e. the 'use full kernel' option is applied)
+# ifdef NDEBUG // bypass this requirement for tests
 	if (!usefullkernel && meandist < 1.0) meandist = 1.0;
+# endif
 
 	int loopsteps = 0; // new counter to prevent infinite loop added 14/8/15
 	do {
@@ -798,7 +874,7 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 				if (pSpecies->isWithinLimits(newX, newY)) { // beyond absorbing boundary
 					// this cannot be reached if not absorbing?
 					pCell = nullptr;
-					patch = nullptr;
+					pPatch = nullptr;
 					patchNum = -1;
 				}
 				else {
@@ -808,20 +884,18 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 						patchNum = -1;
 					}
 					else {
-						patch = pCell->getPatch(pSpecies->getID());
-						if (patch == nullptr) { // matrix
-							pPatch = nullptr;
+						pPatch = pCell->getPatch(pSpecies->getID());
+						if (pPatch == nullptr) { // matrix
 							patchNum = 0;
 						}
 						else {
-							pPatch = patch;
 							patchNum = pPatch->getPatchNum();
 						}
 					}
 				}
 			}
 			else { // exceeded 1000 attempts
-				patch = nullptr;
+				pPatch = nullptr;
 				patchNum = -1;
 			}
 		} while (!absorbing 
@@ -886,6 +960,7 @@ bool Individual::moveStep(Landscape* pLandscape,
 {
 	if (status != dispersing) return false; // not currently dispersing
 
+	int patchNum;
 	int newX, newY;
 	locn loc;
 	bool isDispersing = true;
@@ -901,19 +976,19 @@ bool Individual::moveStep(Landscape* pLandscape,
 	transferRules trfr = pSpecies->getTransferRules();
 	trfrCRWTraits movt = pSpecies->getSpCRWTraits();
 	settleSteps settsteps = pSpecies->getSteps(stage, sex);
-
 	pPatch = pCurrCell->getPatch(pSpecies->getID());
-
+	patch = pCurrCell->getPatch();
 	// Apply step-dependent mortality risk
 	if (pPatch == pNatalPatch
 		&& path->out == 0
 		&& path->year == path->total) {
 		// no mortality if ind. has not yet left natal patch
 		probMort = 0.0;
-	}
+		patchNum = 0;
 	else if (trfr.habMort) {
 		int habIndex = pCurrCell->getHabIndex(landIx);
 		probMort = habIndex < 0 ? 1.0 : pSpecies->getHabMort(habIndex);
+		patchNum = pPatch->getPatchNum();
 	}
 	else probMort = movt.stepMort;
 
@@ -924,11 +999,11 @@ bool Individual::moveStep(Landscape* pLandscape,
 	else { 
 		// Take a step
 		(path->year)++;
-		(path->total)++;
 
 		if (pPatch == nullptr || pPatch->isMatrix()) { // not in a patch
 			// Reset path settlement status
 			if (path != nullptr) path->settleStatus = 0; 
+			if (path != 0) path->settleStatus = 0; // reset path settlement status
 			(path->out)++;
 		}
 		loc = pCurrCell->getLocn();
@@ -945,11 +1020,11 @@ bool Individual::moveStep(Landscape* pLandscape,
 				status = diedInTransfer;
 				isDispersing = false;
 			}
-			else {
 				pPatch = pCurrCell->getPatch(pSpecies->getID());
 				if (pSpecies->savesVisits() && pPatch != pNatalPatch) {
 					pCurrCell->incrVisits(pSpecies->getID());
 				}
+			}
 			}
 			break;
 
@@ -982,7 +1057,6 @@ bool Individual::moveStep(Landscape* pLandscape,
 						|| pCurrCell == nullptr) {
 						// Random direction to avoid invalid area again
 						moveDirection = drawDirection(pCRW.prevdrn, 0.0);
-					}
 					else moveDirection = drawDirection(pCRW.prevdrn, rho);
 
 					// Get new coordinates
@@ -1001,8 +1075,8 @@ bool Individual::moveStep(Landscape* pLandscape,
 				else pCurrCell = pLandscape->findCell(newX, newY);
 				if (pCurrCell == nullptr) { // no-data or beyond absorbing boundary
 					pPatch = nullptr;
+					patch = 0;
 					if (absorbing) absorbed = true;
-				}
 				else pPatch = pCurrCell->getPatch(pSpecies->getID());
 
 			} while (!absorbing 
@@ -1014,6 +1088,7 @@ bool Individual::moveStep(Landscape* pLandscape,
 			pCRW.xc = xcnew; 
 			pCRW.yc = ycnew;
 
+			pCRW.xc = (float)xcnew; pCRW.yc = (float)ycnew;
 			if (absorbed) { // beyond absorbing boundary or in no-data square
 				status = diedInTransfer;
 				isDispersing = false;
@@ -1030,15 +1105,15 @@ bool Individual::moveStep(Landscape* pLandscape,
 			}
 			break;
 
-		} // end of switch (trfr.moveType)
 
 		// Update individual status
 		if (isDispersing 
 			&& pPatch != nullptr  // not no-data area or matrix
-			&& path->total >= settsteps.minSteps) {
+            patch > 0  // not no-data area or matrix
 			if (pPatch != pNatalPatch
 				&& pPatch->isSuitable()) {
 				status = waitSettlement;
+				}
 			}
 		}
 		if (status != waitSettlement 
@@ -1063,11 +1138,11 @@ bool Individual::moveStep(Landscape* pLandscape,
 // Move to a neighbouring cell according to the SMS algorithm
 movedata Individual::smsMove(Landscape* pLand, const short landIx, 
 	const bool isInNatalPatch, const bool indvar, const bool absorbing)
-{
 	array3x3d neighbourWeights; // to hold weights/costs/probs of moving to neighbouring cells
 	array3x3d goalBiasWeights;	// to hold weights for moving towards a goal location
 	array3x3f habDepWeights;	// to hold weights for habitat (includes percep range)
 	int newX = -9, newY = 9;
+	int newX = -9, newY = -9; // BUGFIX: must not be 0 because 0,0 is a valid landscape cell
 	Cell* pCell;
 	Cell* pNewCell = NULL;
 	double sum_nbrs = 0.0;
@@ -1110,10 +1185,12 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 		if (expArg > 100.0) expArg = 100.0;
 		gb = 1.0 + (goalBias - 1.0) / (1.0 + exp(expArg));
 	}
-	else gb = movt.gb;
 	goalBiasWeights = getGoalBias(currLoc.x, currLoc.y, movt.goalType, gb);
 
 	// Get habitat-dependent weights (mean effective costs, given perceptual range)
+#ifdef _OPENMP
+	const std::unique_lock<std::mutex> lock = pCurrCell->lockCost();
+#endif
 	habDepWeights = pCurrCell->getEffCosts(pSpecies->getID());
 	if (habDepWeights.cell[0][0] >= 0.0) { 
 		// already calculated in previous step, skip
@@ -1122,12 +1199,12 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 			landIx, absorbing);
 		pCurrCell->setEffCosts(pSpecies->getID(), habDepWeights);
 	}
-
 	// Determine effective costs for the 8 neighbours
 	for (int y = 2; y > -1; y--) { // N to S
 		for (int x = 0; x < 3; x++) { // W to E
 			if (x == 1 && y == 1) // current cell
 				neighbourWeights.cell[x][y] = 0.0;
+			if (x2 == 1 && y2 == 1) nbr.cell[x2][y2] = 0.0;
 			else {
 				float stepDist = (x == 1 || y == 1) ? 1.0 : SQRT2; // adjacent or diagonal?
 				neighbourWeights.cell[x][y] = stepDist 
@@ -1138,17 +1215,17 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 		}
 	}
 
-	// determine reciprocal of effective cost for the 8 neighbours
 	for (int y = 2; y > -1; y--) {
 		for (int x = 0; x < 3; x++) {
 			if (neighbourWeights.cell[x][y] > 0.0)
 				neighbourWeights.cell[x][y] = 1.0 / neighbourWeights.cell[x][y];
+			if (nbr.cell[x2][y2] > 0.0) nbr.cell[x2][y2] = 1.0f / nbr.cell[x2][y2];
 		}
 	}
-
 	// Dismiss cells outside landscape or no-data cells
 	for (int y = 2; y > -1; y--) {
 		for (int x = 0; x < 3; x++) {
+		for (x2 = 0; x2 < 3; x2++) {
 			if (!absorbing) {
 				int neighbourX = currLoc.x + x - 1;
 				int neighbourY = currLoc.y + y - 1;
@@ -1163,7 +1240,6 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 			sum_nbrs += neighbourWeights.cell[x][y];
 		}
 	}
-
 	// Scale effective costs as probabilities summing to 1
 	if (sum_nbrs <= 0.0) 
 		throw runtime_error("SMS probabilities have summed to zero or less.");
@@ -1171,17 +1247,18 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 		for (int y = 2; y > -1; y--) {
 			for (int x = 0; x < 3; x++) {
 				neighbourWeights.cell[x][y] = neighbourWeights.cell[x][y] / sum_nbrs;
+				nbr.cell[x2][y2] = nbr.cell[x2][y2] / (float)sum_nbrs;
 			}
 		}
 	}
 
 	// Set up cell selection probabilities
 	double cumulative[9];
-	int j = 0;
 	cumulative[0] = neighbourWeights.cell[0][0];
 	for (int y = 0; y < 3; y++) {
 		for (int x = 0; x < 3; x++) {
 			if (j != 0) cumulative[j] = cumulative[j - 1] + neighbourWeights.cell[x][y];
+			if (j != 0) cumulative[j] = cumulative[j - 1] + nbr.cell[x2][y2];
 			j++;
 		}
 	}
@@ -1196,11 +1273,11 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 	do {
 		do {
 			double rnd = pRandom->Random();
-			j = 0;
 
 			for (int y = 0; y < 3; y++) {
 				for (int x = 0; x < 3; x++) {
 
+				for (x2 = 0; x2 < 3; x2++) {
 					if (rnd < cumulative[j]) {
 						newX = currLoc.x + x - 1;
 						newY = currLoc.y + y - 1;
@@ -1242,8 +1319,7 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 	else {
 		newcellcost = pNewCell->getCost(pSpecies->getID());
 		move.cost = move.dist * 0.5 * (cellcost + newcellcost);
-		// make the selected move
-		if (memory.size() == movt.memSize) {
+		if (memory.full()) {
 			memory.pop(); // remove oldest memory element
 		}
 		memory.push(currLoc); // record previous location in memory
@@ -1573,6 +1649,10 @@ array3x3f Individual::getHabMatrix(Landscape* pLand,
 }
 
 #if RS_RCPP
+#ifdef _OPENMP
+std::mutex outMovePaths_mutex;
+#endif
+
 //---------------------------------------------------------------------------
 // Write records to movement paths file
 void Individual::outMovePath(const int year)
@@ -1581,6 +1661,9 @@ void Individual::outMovePath(const int year)
 
 	//if (pPatch != pNatalPatch) {
 	loc = pCurrCell->getLocn();
+#ifdef _OPENMP
+	const std::lock_guard<std::mutex> lock(outMovePaths_mutex);
+#endif
 	// if still dispersing...
 	if (status == dispersing) {
 		// at first step, record start cell first
@@ -1640,9 +1723,7 @@ double cauchy(double location, double scale) {
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-
-#ifndef NDEBUG
-// Testing utilities
+#ifdef UNIT_TESTS
 
 Cell* Individual::getCurrCell() const {
 	return pCurrCell;
@@ -1708,5 +1789,5 @@ void Individual::overrideGenotype(TraitType whichTrait, const map<int, vector<un
 	pNeutralTrait->getGenes() = newGenotype;
 };
 
-#endif // NDEBUG
+#endif // UNIT_TESTS
 

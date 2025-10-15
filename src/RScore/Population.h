@@ -61,6 +61,11 @@ using namespace std;
 #include "NeutralStatsManager.h"
 #include "Population.h"
 
+#ifdef _OPENMP
+#include <atomic>
+#include <mutex>
+#endif
+
 class Patch;
 
 //---------------------------------------------------------------------------
@@ -125,10 +130,9 @@ public:
 	popStats getStats();
 	Patch* getPatch() { return pPatch; }
 	Species* getSpecies();
-	int getNInds();
-	int totalPop();
-	// return no. of Individuals in a specified stage
-	int stagePop(int stg);
+	int getNbInds() const;
+	int getNbInds(int stg) const;
+	int getNbInds(int stg, int sex) const;
 	void applyLocalExtGrad();
 	void extirpate(); // Remove all individuals
 	void reproduction(
@@ -157,7 +161,10 @@ public:
 	void sampleIndsWithoutReplacement(string n, const set<int>& sampleStages);
 	int sampleSize() const;
 	vector<Individual*> getIndividualsInStage(int stage);
-
+	void recruitMany( // Add specified individuals to the population
+		std::vector<Individual*>&	// vector of pointers to Individuals
+	);
+	
 	int transfer( // Executed for the Population(s) in the matrix only
 		Landscape* pLandscape,
 		short landIx,
@@ -214,17 +221,22 @@ public:
 		const map<pair<species_id, int>, double>& ratios, const double& funcResp);
 	void resetIntrctEffects();
 
-#ifndef NDEBUG
+#ifndef UNIT_TESTS
 	// Testing only
-	void clearInds() { inds.clear(); } // empty inds vector to avoid deallocating inds when used in test
-#endif // NDEBUG
+	void clearInds() { inds.clear(); } // empty inds vector to avoid deallocating individual is used separately in test
+	void shuffleInds() { shuffle(inds.begin(), inds.end(), pRandom->getRNG()); }
+#endif // UNIT_TESTS
 
 private:
 	short nStages;
 	short nSexes;
-	Species* pSpecies;	// non-owning
-	Patch* pPatch;		// non-owning
-	int nInds[gMaxNbStages][gMaxNbSexes]; // no. of individuals in each stage/sex
+	Species* pSpecies;	// pointer to the species
+	Patch* pPatch;			// pointer to the patch
+#ifdef _OPENMP
+	std::atomic<int> nInds[gMaxNbStages][gMaxNbSexes];		// no. of individuals in each stage/sex
+#else
+	int nInds[gMaxNbStages][gMaxNbSexes];		// no. of individuals in each stage/sex
+#endif // _OPENMP
 
 	vector<Individual*> inds; // all individuals in population except ...
 	vector<Individual*> newborns; // individuals born this year
@@ -245,6 +257,10 @@ private:
 	vector<double> survInitdEffects;
 	vector<double> survRecdEffects;
 	vector<double> survResDepEffects;
+
+#ifdef _OPENMP
+	std::mutex inds_mutex;
+#endif // _OPENMP
 };
 
 //---------------------------------------------------------------------------
