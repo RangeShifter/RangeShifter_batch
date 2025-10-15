@@ -909,7 +909,7 @@ void Population::disperseMatrix(std::vector<Individual*>& dispPool)
 }
 
 // Transfer is run for populations in the matrix only
-int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
+int Population::resolveTransfer(vector<Individual*>& dispPool, Landscape* pLandscape, short landIx)
 {
 	int nbDispersers = 0;
 	bool isDispersing;
@@ -935,7 +935,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 	settlePatch settle;
 	simParams sim = paramsSim->getSim();
 
-	for (auto& pInd : inds) {
+	for (auto& pInd : dispPool) {
 
 		if (trfr.usesMovtProc) {
 			// Resolve a single movement step

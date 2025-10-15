@@ -168,10 +168,10 @@ public:
 
 	void disperseMatrix(std::vector<Individual*>& dispPool);
 	
-	int transfer( // Executed for the Population(s) in the matrix only
+	int resolveTransfer( // Executed for the Population(s) in the matrix only
+		vector<Individual*>& dispPool,
 		Landscape* pLandscape,
-		short landIx,
-		short nextseason
+		short landIx
 	);
 
 	// Determine whether there is a potential mate present in a patch which a potential
