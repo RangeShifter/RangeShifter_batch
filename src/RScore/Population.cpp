@@ -908,31 +908,18 @@ void Population::disperseMatrix(std::vector<Individual*>& dispPool)
 	dispPool = move(inds);
 }
 
-// Transfer is run for populations in the matrix only
+// Transfer between cells / patches
 int Population::resolveTransfer(vector<Individual*>& dispPool, Landscape* pLandscape, short landIx)
 {
 	int nbDispersers = 0;
 	bool isDispersing;
-	short oppositeSex;
-	bool mateOK, densdepOK;
-	Patch* patch;
-	Population* pPop;
-	int patchnum;
-	double localK, settProb;
-	int density;
-	Patch* pPatch = nullptr;
-	Cell* pCell = nullptr;
-	indStats ind;
-	locn newloc = locn();
-	locn neighbourLoc = locn();
-
-	landData ppLand = pLandscape->getLandData();
+	Cell* pCell;
+	Patch* pPatch;
+	
 	short reptype = pSpecies->getRepType();
 	transferRules trfr = pSpecies->getTransferRules();
 	settleType settletype = pSpecies->getSettle();
 	settleRules sett;
-	settleTraits settDensDep;
-	settlePatch settle;
 	simParams sim = paramsSim->getSim();
 
 	for (auto& pInd : dispPool) {
@@ -959,8 +946,37 @@ int Population::resolveTransfer(vector<Individual*>& dispPool, Landscape* pLands
 			}
 		}
 	}
+	return nbDispersers;
+}
 
-	for (auto& pInd : inds) {
+// Flag and count individuals ready to settle
+// Actual transfer to new population/patch is processed at end of dispersal
+int Population::resolveSettlement(vector<Individual*>& dispPool, Landscape* pLandscape, short landIx, short nextseason)
+{
+	int nbSettled;
+	short oppositeSex;
+	bool mateOK, densdepOK;
+	Patch* patch;
+	Population* pPop;
+	int patchnum;
+	double localK, settProb;
+	int density;
+	Patch* pPatch = nullptr;
+	Cell* pCell = nullptr;
+	indStats ind;
+	locn newloc = locn();
+	locn neighbourLoc = locn();
+
+	landData ppLand = pLandscape->getLandData();
+	short reptype = pSpecies->getRepType();
+	transferRules trfr = pSpecies->getTransferRules();
+	settleType settletype = pSpecies->getSettle();
+	settleRules sett;
+	settleTraits settDensDep;
+	settlePatch settle;
+	simParams sim = paramsSim->getSim();
+
+	for (auto& pInd : dispPool) {
 		ind = pInd->getStats();
 
 		short stgId = settletype.stgDep ? ind.stage : 0;
@@ -1038,7 +1054,7 @@ int Population::resolveTransfer(vector<Individual*>& dispPool, Landscape* pLands
 				// Update individual status
 				if (mateOK && densdepOK) { // can recruit to patch
 					ind.status = settled;
-					nbDispersers--;
+					nbSettled++;
 				} else { // does not recruit
 					if (trfr.usesMovtProc) {
 						ind.status = dispersing; // continue dispersing, 
@@ -1054,11 +1070,10 @@ int Population::resolveTransfer(vector<Individual*>& dispPool, Landscape* pLands
 					}
 					else { // dispersal kernel
 						ind.status = sett.wait ? waitNextDispersal : diedInTransfer;
-						nbDispersers--;
+						nbSettled++;
 					}
 				}
 			}
-
 			pInd->setStatus(ind.status);
 		}
 
@@ -1088,7 +1103,6 @@ int Population::resolveTransfer(vector<Individual*>& dispPool, Landscape* pLands
 
 					neighbourLoc.x = newloc.x + dx;
 					neighbourLoc.y = newloc.y + dy;
-
 					bool neighbourWithinLandscape = neighbourLoc.x >= 0 
 						&& neighbourLoc.x <= ppLand.maxX
 						&& neighbourLoc.y >= 0 
@@ -1124,10 +1138,9 @@ int Population::resolveTransfer(vector<Individual*>& dispPool, Landscape* pLands
 				pInd->moveTo(destCell[0]);
 			}
 		}
-
 	} // end of individuals loop
 
-	return nbDispersers;
+	return nbSettled;
 }
 
 // Determine whether there is a potential mate present in a patch which a potential

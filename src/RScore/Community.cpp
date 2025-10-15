@@ -463,12 +463,14 @@ void Community::dispersal(short landIx, short nextseason)
 				pop->getPatch()->resetPossSettlers();
 			}
 
+			// Resolve transfer and count how many are still moving
 			int localNbDispersers = matrixPops.at(sp)->resolveTransfer(disperserPool, pLandscape, landIx);
 
 #pragma omp single nowait
 			nbStillDispersing = 0;
 #pragma omp barrier
-			localNbDispersers += matrixPops.at(sp)->resolveSettlement(disperserPool, pLandscape, nextseason);
+			// Resolve settlement and substract nb settled from dispersers
+			localNbDispersers -= matrixPops.at(sp)->resolveSettlement(disperserPool, pLandscape, nextseason);
 			nbStillDispersing += localNbDispersers;
 
 #ifdef _OPENMP
@@ -479,6 +481,7 @@ void Community::dispersal(short landIx, short nextseason)
 #endif // HAS_BARRIER_LIB
 #endif // _OPENMP
 
+			// Dispatch settled individuals to destination populations
 			completeDispersal(sp, disperserPool, pLandscape);
 
 #ifdef _OPENMP
@@ -491,6 +494,7 @@ void Community::dispersal(short landIx, short nextseason)
 
 		} while (nbStillDispersing > 0);
 
+		// All individuals still dispersing are stored in matrix
 		matrixPops.at(sp)->recruitMany(disperserPool);
 	}
 

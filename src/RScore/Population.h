@@ -168,22 +168,29 @@ public:
 
 	void disperseMatrix(std::vector<Individual*>& dispPool);
 	
-	int resolveTransfer( // Executed for the Population(s) in the matrix only
+	int resolveTransfer(
 		vector<Individual*>& dispPool,
 		Landscape* pLandscape,
 		short landIx
+	);
+
+	int resolveSettlement(
+		vector<Individual*>& dispPool,
+		Landscape* pLandscape,
+		short landIx,
+		short nextseason
 	);
 
 	// Determine whether there is a potential mate present in a patch which a potential
 	// settler has reached
 	bool isMatePresent(Cell* pCell, short sex);
 
-	// Determine survival and development and record in individual's status code
+	// Determine val and development and record in individual's status code
 	// Changes are NOT applied to the Population at this stage
 	void drawSurvivalDevlpt(
 		bool resolveJuvs,
 		bool resolveAdults,
-		bool resolveDev,
+		bool resolveDsurviev,
 		bool resolveSurv
 	);
 	void applySurvivalDevlpt(); // Apply survival changes to the population
