@@ -426,9 +426,9 @@ public:
 #endif // HAS_BARRIER_LIB
 #endif // _OPENMP
 
-#if RS_RCPP
 void Community::dispersal(short landIx, short nextseason)
 {
+
 #ifdef _OPENMP
 	std::atomic<int> nbStillDispersing;
 	split_barrier barrier;
@@ -436,51 +436,39 @@ void Community::dispersal(short landIx, short nextseason)
 	int nbStillDispersing;
 #endif // _OPENMP
 
-#if RSDEBUG
-	int t0, t1, t2;
-	t0 = time(0);
-#endif
-
 	simParams sim = paramsSim->getSim();
 
-	int nsubcomms = (int)subComms.size();
-	// initiate dispersal - all emigrants leave their natal community and join matrix community
-	SubCommunity* matrix = subComms[0]; // matrix community is always the first
 #pragma omp parallel
-	{
-		std::map<Species*, vector<Individual*>> disperserPool;
+	for (auto& sp : activeSpecies) {
+		vector<Individual*> disperserPool;
 
 		// All individuals in the matrix disperse again
 		// (= unsettled dispersers from previous generation)
-		matrix->disperseMatrix(disperserPool);
+		matrixPops.at(sp)->disperseMatrix();
 
 		// Recruit new emigrants
 #pragma omp for schedule(static,128) nowait
-		for (int i = 0; i < nsubcomms; i++) {
-			subComms[i]->recruitDispersers(disperserPool);
-
+		for (auto& pop : allPopns.at(sp)) {
+			pop->recruitDispersers(disperserPool);
+		}
 
 #ifdef _OPENMP
 #pragma omp single
 		barrier.emplace(omp_get_num_threads());
 #endif // _OPENMP
 
-
-		// 
 		do {
 #pragma omp for schedule(guided)
-			for (int i = 0; i < nsubcomms; i++) {
-				subComms[i]->resetPossSettlers();
+			for (auto& pop : allPopns.at(sp)) {
+				pop->resetPossSettlers();
 			}
-			int localNbDispersers = matrix->resolveTransfer(disperserPool, pLandscape, landIx);
+
+			int localNbDispersers = matrixPops.at(sp)->resolveTransfer(disperserPool, pLandscape, landIx);
+
 #pragma omp single nowait
 			nbStillDispersing = 0;
 #pragma omp barrier
-#if RS_RCPP
-			localNbDispersers += matrix->resolveSettlement(disperserPool, pLandscape, nextseason);
-#else
-			localNbDispersers += matrix->resolveSettlement(disperserPool, pLandscape);
-#endif // RS_RCPP
+			localNbDispersers += matrixPops.at(sp)->resolveSettlement(disperserPool, pLandscape, nextseason);
 			nbStillDispersing += localNbDispersers;
 
 #ifdef _OPENMP
@@ -491,7 +479,7 @@ void Community::dispersal(short landIx, short nextseason)
 #endif // HAS_BARRIER_LIB
 #endif // _OPENMP
 
-			matrix->completeDispersal(disperserPool, pLandscape, sim.outConnect);
+			completeDispersal(sp, disperserPool, pLandscape);
 
 #ifdef _OPENMP
 #ifdef HAS_BARRIER_LIB
@@ -503,61 +491,56 @@ void Community::dispersal(short landIx, short nextseason)
 
 		} while (nbStillDispersing > 0);
 
-		// All unsettled dispersers are stored in matrix until next generation
-		for (auto & it : disperserPool) {
-			Species* const& pSpecies = it.first;
-			vector<Individual*>& inds = it.second;
-			matrix->recruitMany(inds, pSpecies);
-		}
+		matrixPops.at(sp)->recruitMany(disperserPool);
 	}
 
-
 }
-// Remove emigrants from patch 0 (matrix) and transfer to the population
+
+// Remove emigrants from pool of dispersers and transfer to the population
 // in which their destination co-ordinates fall
-// This function is executed for matrix patch populations only
-void Community::completeDispersal(Landscape* pLandscape, species_id sp)
+void Community::completeDispersal(species_id sp, vector<Individual*> disperserPool, Landscape* pLandscape)
 {
 	Population* pPop;
 	Patch* pPrevPatch;
 	Patch* pNewPatch;
 	Cell* pPrevCell;
+	Species* pSpecies = speciesMap.at(sp);
 
-	Population* mtxPop = matrixPops.at(sp);
-	int popsize = mtxPop->getNInds();
-	for (int j = 0; j < popsize; j++) {
+	for (auto& pInd : disperserPool) {
 
-		disperser settler = mtxPop->extractSettler(j);
-		if (settler.isSettling) {
+		indStatus status = pInd->getStatus();
+		if (status == settled || status == settledNeighbour) {
 			// settler - has already been removed from matrix population
 			// find new patch
-			pNewPatch = settler.pCell->getPatch(sp);
+			pNewPatch = pInd->getLocn(1)->getPatch(sp);
 
 			// find population within the patch (if there is one)
+#ifdef _OPENMP
+			const std::unique_lock<std::mutex> lock = pNewPatch->lockPopns();
+#endif // _OPENMP
 			pPop = pNewPatch->getPop();
 
 			if (pPop == nullptr) { // settler is the first in a previously uninhabited patch
 				// create a new population in the corresponding sub-community
-				pPop = new Population(mtxPop->getSpecies(), pNewPatch, 0, pLandscape->getLandParams().resol);
+				pPop = new Population(pSpecies, pNewPatch, 0, pLandscape->getLandParams().resol);
 				allPopns.at(sp).push_back(pPop); // add new pop to community list
 			}
 
-			pPop->recruit(settler.pInd);
+			pPop->recruit(pInd);
 
-			if (mtxPop->getSpecies()->doesOutputConnect()) { // increment connectivity totals
+			if (pSpecies->doesOutputConnect()) { // increment connectivity totals
 				int newpatch = pNewPatch->getSeqNum();
-				pPrevCell = settler.pInd->getLocn(0); // previous cell
-				Patch* pPatch = pPrevCell->getPatch(sp);
-				if (pPatch != nullptr) {
-					pPrevPatch = pPatch;
+				pPrevCell = pInd->getLocn(0);
+				Patch* pPrevPatch = pPrevCell->getPatch(sp);
+				if (pPrevPatch != nullptr) {
 					int prevpatch = pPrevPatch->getSeqNum();
 					pLandscape->incrConnectMatrix(sp, prevpatch, newpatch);
 				}
 			}
 		}
 	}
-	// remove pointers in the matrix popn to settlers
-	mtxPop->clean();
+	// remove settled individuals
+	disperserPool.erase(std::remove(disperserPool.begin(), disperserPool.end(), (Individual*)nullptr), disperserPool.end());
 }
 
 void Community::resolveInteractions() {

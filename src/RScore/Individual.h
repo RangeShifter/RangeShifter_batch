@@ -311,9 +311,8 @@ public:
 	float getGeneticFitness();
 	bool isViable() const;
 	indStats getStats();
-	Cell* getLocn( // Return location (as pointer to Cell)
-		const short	// option: 0 = get natal locn, 1 = get current locn
-	); //
+	Cell* getPrevCell();
+	Cell* getCurrCell();
 	Patch* getNatalPatch();
 	void setYearSteps(int t);
 	pathSteps getSteps();

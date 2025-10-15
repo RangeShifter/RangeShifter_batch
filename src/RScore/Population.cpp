@@ -549,57 +549,46 @@ void Population::reproduction(const float localK, const int resol)
 
 		// Received contributions from interspecific interactions
 		for (int stg = 1; stg < nStages; stg++) {
-			if (fec[stg][0] > 0.0) {
-				// apply any effect of environmental gradient and/or stochasticty
-				fec[stg][0] *= envval;
-				if (env.stoch && !env.inK) {
-					// fecundity (at low density) is constrained to lie between limits specified
-					// for the species
-					float limit;
-					limit = pSpecies->getMinMax(0);
-					if (fec[stg][0] < limit) fec[stg][0] = limit;
-					limit = pSpecies->getMinMax(1);
-					if (fec[stg][0] > limit) fec[stg][0] = limit;
-				}
-				if (sstruct.fecDens) { // apply density dependence
-					float effect = 0.0;
-					if (sstruct.fecStageDens) { // stage-specific density dependence
-						// NOTE: matrix entries represent effect of ROW on COLUMN 
-						// AND males precede females
-						float weight = 0.0;
-						for (int effstg = 0; effstg < nStages; effstg++) {
-							for (int effsex = 0; effsex < nSexes; effsex++) {
-								if (dem.repType == 2) {
-									if (effsex == 0) weight = pSpecies->getDDwtFec(2 * stg + 1, 2 * effstg + 1);
-									else weight = pSpecies->getDDwtFec(2 * stg + 1, 2 * effstg);
-								}
-								else {
-									weight = pSpecies->getDDwtFec(stg, effstg);
-								}
-								effect += (float)nInds[effstg][effsex] * weight;
-							}
+			fec[stg][0] += fecRecdEffects[stg];
+		}
+
+		// Intraspecific density-dependence
+		for (int stg = 1; stg < nStages; stg++) {
+
+			if (fec[stg][0] <= 0.0 || !sstruct.fecDens) continue;
+
+			float densDepEffect = 0.0;
+			if (sstruct.fecStageDens) { // stage-specific density dependence
+				// NOTE: matrix entries represent effect of ROW on COLUMN 
+				// AND males precede females
+				float weight = 0.0;
+				for (int effstg = 0; effstg < nStages; effstg++) {
+					for (int effsex = 0; effsex < nSexes; effsex++) {
+						if (dem.repType == 2) {
+							int sexColIndex = effsex == 0 ? 1 : 0;
+							weight = pSpecies->getDDwtFec(2 * stg + 1, 2 * effstg + sexColIndex);
 						}
+						else weight = pSpecies->getDDwtFec(stg, effstg);
+
+						densDepEffect += (float)nInds[effstg][effsex] * weight;
 					}
-					else // not stage-specific
-						effect = (float)totalPop();
-					if (localK > 0.0) fec[stg][0] *= exp(-effect / localK);
 				}
 			}
+			else densDepEffect = static_cast<float>(getNbInds());
+
+			if (localK > 0.0) fec[stg][0] *= exp(-densDepEffect / localK);
+		}
+
+		// Other interaction effects
+		for (int stg = 1; stg < nStages; stg++) {
+			// Contribution from resource-dependent interactions
+			fec[stg][0] *= exp(fecResDepEffects[stg]);
+
+			// Contributions from initiated interspecific interactions
+			fec[stg][0] += fecInitdEffects[stg];
 		}
 	}
 	else { // non-structured - set fecundity for adult females only
-		// apply any effect of environmental gradient and/or stochasticty
-		fec[1][0] *= envval;
-		if (env.stoch && !env.inK) {
-			// fecundity (at low density) is constrained to lie between limits specified
-			// for the species
-			float limit;
-			limit = pSpecies->getMinMax(0);
-			if (fec[1][0] < limit) fec[1][0] = limit;
-			limit = pSpecies->getMinMax(1);
-			if (fec[1][0] > limit) fec[1][0] = limit;
-		}
-		// apply density dependence
 		if (localK > 0.0) {
 			if (dem.repType != 0) // sexual model
 				fec[1][0] *= 2.0; // cf manual
@@ -716,7 +705,6 @@ void Population::fledge()
 		inds.clear();
 		for (int sex = 0; sex < nSexes; sex++)
 			nInds[1][sex] = 0; // set count of adults to zero
-		}
 	}
 	inds = std::move(newborns);
 	newborns.clear();
@@ -855,15 +843,6 @@ void Population::allEmigrate() {
 	}
 }
 
-// Remove an Individual from the Population
-Individual* Population::extractIndividual(int ix) {
-	Individual* pInd = inds[ix];
-	indStats ind = pInd->getStats();
-	inds[ix] = nullptr;
-	nInds[ind.stage][ind.sex]--;
-	return pInd;
-}
-
 // If an Individual has been identified as an emigrant, remove it from the Population
 disperser Population::extractDisperser(int ix) {
 	disperser d = disperser();
@@ -875,12 +854,11 @@ disperser Population::extractDisperser(int ix) {
 		nInds[ind.stage][ind.sex]--;
 	}
 	else {
-		d.pInd = NULL; 
+		d.pInd = nullptr; 
 		d.isDispersing = false;
 	}
 	return d;
 }
-
 
 // For an individual identified as being in the matrix population:
 // if it is a settler, return its new location and remove it from the current population
@@ -889,7 +867,7 @@ disperser Population::extractSettler(int ix) {
 	
 	disperser d = disperser();
 	indStats ind = inds[ix]->getStats();
-	Cell* pCell = inds[ix]->getLocn(1);
+	Cell* pCell = inds[ix]->getCurrCell();
 	d.pInd = inds[ix];  
 	d.pCell = pCell;
 	d.isSettling = false;
@@ -957,7 +935,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 			&& reptype > 0 // always settle if asexual 
 			&& pInd->getStatus() == waitSettlement // disperser has found a patch
 			) {
-			pCell = pInd->getLocn(1);
+			pCell = pInd->getCurrCell();
 			pPatch = pCell->getPatch(pSpecies->getID());
 			if (pPatch != nullptr) { // not no-data area
 				pPatch->incrPossSettler(pInd->getSex());
@@ -974,7 +952,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 
 		// Resolve candidate settlers
 		if (ind.status == waitSettlement) { // awaiting settlement
-			pCell = pInd->getLocn(1);
+			pCell = pInd->getCurrCell();
 			if (pCell == nullptr) {
 				// this condition can occur in a patch-based model at the time of a dynamic landscape
 				// change when there is a range restriction in place, since a patch can straddle the
@@ -1008,7 +986,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 							if (pPop == nullptr) { // empty patch
 								density = 0.0;
 							} else {
-								density = pPop->totalPop();
+								density = pPop->getNbInds();
 							}
 							if (localK > 0.0) {
 
@@ -1081,7 +1059,7 @@ int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
 			&& sett.goToNeighbourLocn 
 			&& (ind.status == waitNextDispersal || ind.status == diedInTransfer)) {
 
-			pCell = pInd->getLocn(1);
+			pCell = pInd->getCurrCell();
 			newloc = pCell->getLocn();
 			vector <Cell*> neighbourCells;
 
@@ -1172,6 +1150,7 @@ void Population::recruitMany(std::vector<Individual*>& recruits) {
 	const std::lock_guard<std::mutex> lock(inds_mutex);
 #endif // _OPENMP
 	inds.insert(inds.end(), recruits.begin(), recruits.end());
+	recruits.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -1256,7 +1235,7 @@ void Population::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool r
 								}
 							}
 						}
-						else density = totalPop(); // no stage-dependence
+						else density = getNbInds(); // no stage-dependence
 
 						dev[stg][sex] *= exp(-(ddparams.devCoeff * density) / localK);
 					}
@@ -1295,7 +1274,7 @@ void Population::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool r
 								}
 							}
 						}
-						else density = totalPop();
+						else density = getNbInds();
 
 						surv[stg][sex] *= exp(-(ddparams.survCoeff * density) / localK);
 					}
@@ -1391,7 +1370,7 @@ void Population::resolveResMedtdInteractions() {
 				if (pTargetPop == nullptr) continue; // empty patch
 
 				// Get abundance scaled down by the % of overlap between the two patches
-				double partnerAbundance = pTargetPop->stagePop(partnerSpStg.second);
+				double partnerAbundance = pTargetPop->getNbInds(partnerSpStg.second);
 				partnerAbundance *= overlap;
 
 				for (auto& [whichProcess, alpha] : interaction.alphas) {
@@ -1422,7 +1401,7 @@ void Population::resolveInitiatedInteractions() {
 
 	for (int stg = 0; stg < nbStg; stg++) {
 
-		double initiatorAbundance = stagePop(stg);
+		double initiatorAbundance = getNbInds(stg);
 		if (initiatorAbundance == 0.0) continue; // no eligible individuals for interaction
 
 		map<pair<Population*, int>, double> interactionRates; // C_i, one entry per target population and stage
@@ -1449,7 +1428,7 @@ void Population::resolveInitiatedInteractions() {
 				if (pTargetPop == nullptr || overlap == 0.0) continue; // no interaction
 
 				// Get abundances scaled down by the % of overlap between the two patches
-				double targetAbundance = pTargetPop->stagePop(tgtStg);
+				double targetAbundance = pTargetPop->getNbInds(tgtStg);
 				if (targetAbundance == 0.0) continue; // no individuals of that stage here
 				targetAbundance *= overlap;
 				double effctvInitrAbundance = initiatorAbundance * overlap;
@@ -1757,7 +1736,7 @@ void Population::outIndividual(ofstream& outIndsOfs, Landscape* pLandscape, int 
 
 void Population::outputTraitPatchInfo(ofstream& outtraits, int rep, int yr, int gen, bool usesPatches)
 {
-	if (pPatch->isSuitable() && this->getNInds() > 0) {
+	if (pPatch->isSuitable() && this->getNbInds() > 0) {
 		outtraits << rep << "\t" << yr << "\t" << gen;
 		if (usesPatches) {
 			outtraits << "\t" << pPatch->getPatchNum();
@@ -1780,7 +1759,7 @@ traitsums Population::outTraits(ofstream& outtraits, const bool& writefile)
 	// provided that the patch is suitable (i.e. non-zero carrying capacity)
 	
 	Species* pSpecies;
-	if (pPatch->isSuitable() && this->getNInds() > 0) {
+	if (pPatch->isSuitable() && this->getNbInds() > 0) {
 
 		pSpecies = this->getSpecies();
 		demogrParams dem = pSpecies->getDemogrParams();

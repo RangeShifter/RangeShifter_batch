@@ -263,7 +263,7 @@ void Individual::inheritGenes(const Individual* mother, const Individual* father
 			geneticFitness *= newTrait->express();
 
 		// Add the inherited trait and genes to the newborn's list
-		spTraitTable.insert(make_pair(trait, move(newTrait)));
+		spTraitTable.insert(make_pair(trait, std::move(newTrait)));
 	}
 }
 
@@ -291,7 +291,7 @@ void Individual::inheritGenes(const Individual* mother) {
 			geneticFitness *= newTrait->express();
 
 		// Add the inherited trait and genes to the newborn's list
-		spTraitTable.insert(make_pair(trait, move(newTrait)));
+		spTraitTable.insert(make_pair(trait, std::move(newTrait)));
 	}
 }
 
@@ -977,7 +977,7 @@ bool Individual::moveStep(Landscape* pLandscape,
 	trfrCRWTraits movt = pSpecies->getSpCRWTraits();
 	settleSteps settsteps = pSpecies->getSteps(stage, sex);
 	pPatch = pCurrCell->getPatch(pSpecies->getID());
-	patch = pCurrCell->getPatch();
+
 	// Apply step-dependent mortality risk
 	if (pPatch == pNatalPatch
 		&& path->out == 0
@@ -985,6 +985,7 @@ bool Individual::moveStep(Landscape* pLandscape,
 		// no mortality if ind. has not yet left natal patch
 		probMort = 0.0;
 		patchNum = 0;
+	}
 	else if (trfr.habMort) {
 		int habIndex = pCurrCell->getHabIndex(landIx);
 		probMort = habIndex < 0 ? 1.0 : pSpecies->getHabMort(habIndex);
@@ -996,18 +997,18 @@ bool Individual::moveStep(Landscape* pLandscape,
 		status = diedInTrfrMort;
 		return false;
 	}
-	else { 
+	else {
 		// Take a step
 		(path->year)++;
+		(path->total)++;
 
 		if (pPatch == nullptr || pPatch->isMatrix()) { // not in a patch
 			// Reset path settlement status
-			if (path != nullptr) path->settleStatus = 0; 
-			if (path != 0) path->settleStatus = 0; // reset path settlement status
+			if (path != nullptr) path->settleStatus = 0;
 			(path->out)++;
 		}
 		loc = pCurrCell->getLocn();
-		newX = loc.x; 
+		newX = loc.x;
 		newY = loc.y;
 
 		switch (trfr.moveType) {
@@ -1020,31 +1021,31 @@ bool Individual::moveStep(Landscape* pLandscape,
 				status = diedInTransfer;
 				isDispersing = false;
 			}
+			else {
 				pPatch = pCurrCell->getPatch(pSpecies->getID());
 				if (pSpecies->savesVisits() && pPatch != pNatalPatch) {
 					pCurrCell->incrVisits(pSpecies->getID());
 				}
 			}
-			}
 			break;
 
 		case 2: // CRW
 
-			auto& pCRW = dynamic_cast<crwData&>(*pTrfrData);
+			auto & pCRW = dynamic_cast<crwData&>(*pTrfrData);
 
 			if (trfr.indVar) {
 				movt.stepLength = pCRW.stepLength;
 				movt.rho = pCRW.rho;
 			}
-			stepLength = movt.stepLength; 
+			stepLength = movt.stepLength;
 			rho = movt.rho;
 
 			// Move in a straight line if...
-			if (pPatch == pNatalPatch 
+			if (pPatch == pNatalPatch
 				// ... still in natal patch or
-				|| (movt.straightenPath && path->settleStatus > 0) 
+				|| (movt.straightenPath && path->settleStatus > 0)
 				// ... must straighten path to (previously determined) settlement patch 
-				){
+				) {
 				rho = 0.99;
 				path->out = 0;
 			}
@@ -1057,6 +1058,7 @@ bool Individual::moveStep(Landscape* pLandscape,
 						|| pCurrCell == nullptr) {
 						// Random direction to avoid invalid area again
 						moveDirection = drawDirection(pCRW.prevdrn, 0.0);
+					}
 					else moveDirection = drawDirection(pCRW.prevdrn, rho);
 
 					// Get new coordinates
@@ -1066,26 +1068,26 @@ bool Individual::moveStep(Landscape* pLandscape,
 					newY = ycnew < 0.0 ? -1 : trunc(ycnew);
 
 					loopSteps++;
-				} while (!absorbing && 
+				} while (!absorbing &&
 					loopSteps < maxLoopSteps &&
 					!pSpecies->isWithinLimits(newX, newY));
-				
+
 				// Get cell and patch for new coordinates
 				if (!pSpecies->isWithinLimits(newX, newY)) pCurrCell = nullptr;
 				else pCurrCell = pLandscape->findCell(newX, newY);
 				if (pCurrCell == nullptr) { // no-data or beyond absorbing boundary
 					pPatch = nullptr;
-					patch = 0;
 					if (absorbing) absorbed = true;
+				}
 				else pPatch = pCurrCell->getPatch(pSpecies->getID());
 
-			} while (!absorbing 
-				&& pCurrCell == nullptr 
+			} while (!absorbing
+				&& pCurrCell == nullptr
 				&& loopSteps < maxLoopSteps);
 
 			// Update individual through ref
 			pCRW.prevdrn = moveDirection;
-			pCRW.xc = xcnew; 
+			pCRW.xc = xcnew;
 			pCRW.yc = ycnew;
 
 			pCRW.xc = (float)xcnew; pCRW.yc = (float)ycnew;
@@ -1105,18 +1107,19 @@ bool Individual::moveStep(Landscape* pLandscape,
 			}
 			break;
 
+		} // end of switch (trfr.moveType)
 
 		// Update individual status
-		if (isDispersing 
+		if (isDispersing
 			&& pPatch != nullptr  // not no-data area or matrix
-            patch > 0  // not no-data area or matrix
+			&& path->total >= settsteps.minSteps) {
 			if (pPatch != pNatalPatch
 				&& pPatch->isSuitable()) {
 				status = waitSettlement;
-				}
 			}
 		}
-		if (status != waitSettlement 
+
+		if (status != waitSettlement
 			&& status != diedInTransfer) { // no suitable patch but not dead yet
 			if (path->year >= settsteps.maxStepsYr) {
 				status = waitNextDispersal; // try again next year
@@ -1126,7 +1129,7 @@ bool Individual::moveStep(Landscape* pLandscape,
 				isDispersing = false;
 			}
 		}
-	} // end of single movement step
+	} // end of single movt step
 
 	return isDispersing;
 }
@@ -1137,12 +1140,12 @@ bool Individual::moveStep(Landscape* pLandscape,
 
 // Move to a neighbouring cell according to the SMS algorithm
 movedata Individual::smsMove(Landscape* pLand, const short landIx, 
-	const bool isInNatalPatch, const bool indvar, const bool absorbing)
+	const bool isInNatalPatch, const bool indvar, const bool absorbing) {
+	
 	array3x3d neighbourWeights; // to hold weights/costs/probs of moving to neighbouring cells
 	array3x3d goalBiasWeights;	// to hold weights for moving towards a goal location
 	array3x3f habDepWeights;	// to hold weights for habitat (includes percep range)
-	int newX = -9, newY = 9;
-	int newX = -9, newY = -9; // BUGFIX: must not be 0 because 0,0 is a valid landscape cell
+	int newX = -9, newY = -9; 
 	Cell* pCell;
 	Cell* pNewCell = NULL;
 	double sum_nbrs = 0.0;
@@ -1199,12 +1202,12 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 			landIx, absorbing);
 		pCurrCell->setEffCosts(pSpecies->getID(), habDepWeights);
 	}
+
 	// Determine effective costs for the 8 neighbours
 	for (int y = 2; y > -1; y--) { // N to S
 		for (int x = 0; x < 3; x++) { // W to E
 			if (x == 1 && y == 1) // current cell
 				neighbourWeights.cell[x][y] = 0.0;
-			if (x2 == 1 && y2 == 1) nbr.cell[x2][y2] = 0.0;
 			else {
 				float stepDist = (x == 1 || y == 1) ? 1.0 : SQRT2; // adjacent or diagonal?
 				neighbourWeights.cell[x][y] = stepDist 
@@ -1215,17 +1218,17 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 		}
 	}
 
+	// Determine reciprocal of effective cost for the 8 neighbours
 	for (int y = 2; y > -1; y--) {
 		for (int x = 0; x < 3; x++) {
 			if (neighbourWeights.cell[x][y] > 0.0)
 				neighbourWeights.cell[x][y] = 1.0 / neighbourWeights.cell[x][y];
-			if (nbr.cell[x2][y2] > 0.0) nbr.cell[x2][y2] = 1.0f / nbr.cell[x2][y2];
 		}
 	}
+
 	// Dismiss cells outside landscape or no-data cells
 	for (int y = 2; y > -1; y--) {
 		for (int x = 0; x < 3; x++) {
-		for (x2 = 0; x2 < 3; x2++) {
 			if (!absorbing) {
 				int neighbourX = currLoc.x + x - 1;
 				int neighbourY = currLoc.y + y - 1;
@@ -1240,6 +1243,7 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 			sum_nbrs += neighbourWeights.cell[x][y];
 		}
 	}
+
 	// Scale effective costs as probabilities summing to 1
 	if (sum_nbrs <= 0.0) 
 		throw runtime_error("SMS probabilities have summed to zero or less.");
@@ -1247,18 +1251,17 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 		for (int y = 2; y > -1; y--) {
 			for (int x = 0; x < 3; x++) {
 				neighbourWeights.cell[x][y] = neighbourWeights.cell[x][y] / sum_nbrs;
-				nbr.cell[x2][y2] = nbr.cell[x2][y2] / (float)sum_nbrs;
 			}
 		}
 	}
 
 	// Set up cell selection probabilities
 	double cumulative[9];
+	int j = 0;
 	cumulative[0] = neighbourWeights.cell[0][0];
 	for (int y = 0; y < 3; y++) {
 		for (int x = 0; x < 3; x++) {
 			if (j != 0) cumulative[j] = cumulative[j - 1] + neighbourWeights.cell[x][y];
-			if (j != 0) cumulative[j] = cumulative[j - 1] + nbr.cell[x2][y2];
 			j++;
 		}
 	}
@@ -1277,7 +1280,6 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 			for (int y = 0; y < 3; y++) {
 				for (int x = 0; x < 3; x++) {
 
-				for (x2 = 0; x2 < 3; x2++) {
 					if (rnd < cumulative[j]) {
 						newX = currLoc.x + x - 1;
 						newY = currLoc.y + y - 1;
@@ -1319,6 +1321,7 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 	else {
 		newcellcost = pNewCell->getCost(pSpecies->getID());
 		move.cost = move.dist * 0.5 * (cellcost + newcellcost);
+		// Make the selected move
 		if (memory.full()) {
 			memory.pop(); // remove oldest memory element
 		}
