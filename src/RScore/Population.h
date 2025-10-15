@@ -150,6 +150,7 @@ public:
 
 	// If an individual has been identified as an emigrant, remove it from the Population
 	disperser extractDisperser(int ix);
+	void recruitDispersers(std::vector<Individual*>& disperserPool);
 	// For an individual identified as being in the matrix population:
 	// if it is a settler, return its new location and remove it from the current population
 	// otherwise, leave it in the matrix population for possible reporting before deletion
@@ -164,6 +165,8 @@ public:
 	void recruitMany( // Add specified individuals to the population
 		std::vector<Individual*>&	// vector of pointers to Individuals
 	);
+
+	void disperseMatrix(std::vector<Individual*>& dispPool);
 	
 	int transfer( // Executed for the Population(s) in the matrix only
 		Landscape* pLandscape,

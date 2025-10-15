@@ -444,7 +444,7 @@ void Community::dispersal(short landIx, short nextseason)
 
 		// All individuals in the matrix disperse again
 		// (= unsettled dispersers from previous generation)
-		matrixPops.at(sp)->disperseMatrix();
+		matrixPops.at(sp)->disperseMatrix(disperserPool);
 
 		// Recruit new emigrants
 #pragma omp for schedule(static,128) nowait
@@ -460,7 +460,7 @@ void Community::dispersal(short landIx, short nextseason)
 		do {
 #pragma omp for schedule(guided)
 			for (auto& pop : allPopns.at(sp)) {
-				pop->resetPossSettlers();
+				pop->getPatch()->resetPossSettlers();
 			}
 
 			int localNbDispersers = matrixPops.at(sp)->resolveTransfer(disperserPool, pLandscape, landIx);
@@ -512,7 +512,7 @@ void Community::completeDispersal(species_id sp, vector<Individual*> disperserPo
 		if (status == settled || status == settledNeighbour) {
 			// settler - has already been removed from matrix population
 			// find new patch
-			pNewPatch = pInd->getLocn(1)->getPatch(sp);
+			pNewPatch = pInd->getCurrCell()->getPatch(sp);
 
 			// find population within the patch (if there is one)
 #ifdef _OPENMP
@@ -530,7 +530,7 @@ void Community::completeDispersal(species_id sp, vector<Individual*> disperserPo
 
 			if (pSpecies->doesOutputConnect()) { // increment connectivity totals
 				int newpatch = pNewPatch->getSeqNum();
-				pPrevCell = pInd->getLocn(0);
+				pPrevCell = pInd->getPrevCell();
 				Patch* pPrevPatch = pPrevCell->getPatch(sp);
 				if (pPrevPatch != nullptr) {
 					int prevpatch = pPrevPatch->getSeqNum();
@@ -823,11 +823,11 @@ void Community::outPop(species_id sp, int rep, int yr, int gen) {
 	}
 
 	// generate output for each population (patch x species) in the community
-	if (matrixPops.at(sp)->totalPop() > 0) {
+	if (matrixPops.at(sp)->getNbInds() > 0) {
 		matrixPops.at(sp)->outPopulation(outPopOfs.at(sp), rep, yr, gen, env.stochIsLocal, eps, land.usesPatches, writeEnv, gradK);
 	}
 	for (auto pop : allPopns.at(sp)) {
-		if (pop->getPatch()->isSuitable() || pop->totalPop() > 0) {
+		if (pop->getPatch()->isSuitable() || pop->getNbInds() > 0) {
 			pop->outPopulation(outPopOfs.at(sp), rep, yr, gen, env.stochIsLocal, eps, land.usesPatches, writeEnv, gradK);
 		}
 	}
@@ -1076,20 +1076,20 @@ void Community::outRange(species_id sp, int rep, int yr, int gen)
 		for (int stg = 1; stg < sstruct.nStages; stg++) {
 			stagepop = 0;
 			for (auto& [spId, mtxPop] : matrixPops) {
-				stagepop += mtxPop->stagePop(stg);
+				stagepop += mtxPop->getNbInds(stg);
 			}
 			for (auto pop : allPopns.at(sp)) {
-				stagepop += pop->stagePop(stg);
+				stagepop += pop->getNbInds(stg);
 			}
 			rangeOfs << "\t" << stagepop;
 		}
 		// juveniles born in current reproductive season
 		stagepop = 0;
 		for (auto& [spId, mtxPop] : matrixPops) {
-			stagepop += mtxPop->stagePop(0);
+			stagepop += mtxPop->getNbInds(0);
 		}
 		for (auto pop : allPopns.at(sp)) {
-			stagepop += pop->stagePop(0);
+			stagepop += pop->getNbInds(0);
 		}
 		rangeOfs << "\t" << stagepop;
 	}

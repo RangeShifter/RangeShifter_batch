@@ -860,6 +860,17 @@ disperser Population::extractDisperser(int ix) {
 	return d;
 }
 
+// Remove emigrants from their natal patch and add to a map of vectors
+void Population::recruitDispersers(std::vector<Individual*>& disperserPool) {
+	
+	for (auto& pInd : inds) {
+		if (pInd->getStatus() == dispersing) {
+			disperserPool.push_back(std::move(pInd));
+		}
+	}
+	clean();
+}
+
 // For an individual identified as being in the matrix population:
 // if it is a settler, return its new location and remove it from the current population
 // otherwise, leave it in the matrix population for possible reporting before deletion
@@ -890,6 +901,12 @@ void Population::recruit(Individual* pInd) {
 }
 
 //---------------------------------------------------------------------------
+
+// Add all individuals in the population to the disperser pool
+void Population::disperseMatrix(std::vector<Individual*>& dispPool) 
+{
+	dispPool = move(inds);
+}
 
 // Transfer is run for populations in the matrix only
 int Population::transfer(Landscape* pLandscape, short landIx, short nextseason)
