@@ -446,7 +446,8 @@ int Population::getNbInds() const {
 
 int Population::getNbInds(int stg) const {
 	int t = 0;
-	if (stg < 0 || stg >= nStages) throw runtime_error("Attempt to get nb individuals for stage " + to_string(stg) + ", no such stage.");
+	if (stg < 0 || stg >= nStages) 
+		throw runtime_error("Attempt to get nb individuals for stage " + to_string(stg) + ", no such stage.");
 	for (int sex = 0; sex < nSexes; sex++) {
 		t += nInds[stg][sex];
 	}

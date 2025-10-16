@@ -669,11 +669,11 @@ void Community::ageIncrement() {
 int Community::totalInds() {
 	int total = 0;
 	for (auto& [spId, mtxPop] : matrixPops) {
-		total += mtxPop->getStats().nInds;
+		total += mtxPop->getNbInds();
 	}
 	for (auto& [sp, popns] : allPopns) {
 		for (auto pop : popns) {
-			total += pop->getStats().nInds;
+			total += pop->getNbInds();;
 		}
 	}
 	return total;
@@ -1079,9 +1079,7 @@ void Community::outRange(species_id sp, int rep, int yr, int gen)
 		// all non-juvenile stages
 		for (int stg = 1; stg < sstruct.nStages; stg++) {
 			stagepop = 0;
-			for (auto& [spId, mtxPop] : matrixPops) {
-				stagepop += mtxPop->getNbInds(stg);
-			}
+			stagepop += matrixPops.at(sp)->getNbInds(stg);
 			for (auto pop : allPopns.at(sp)) {
 				stagepop += pop->getNbInds(stg);
 			}
@@ -1089,9 +1087,7 @@ void Community::outRange(species_id sp, int rep, int yr, int gen)
 		}
 		// juveniles born in current reproductive season
 		stagepop = 0;
-		for (auto& [spId, mtxPop] : matrixPops) {
-			stagepop += mtxPop->getNbInds(0);
-		}
+		stagepop += matrixPops.at(sp)->getNbInds(0);
 		for (auto pop : allPopns.at(sp)) {
 			stagepop += pop->getNbInds(0);
 		}
@@ -1118,26 +1114,24 @@ void Community::outRange(species_id sp, int rep, int yr, int gen)
 		traitsums ts = traitsums();
 		traitsums popTraits;
 		int ngenes, popsize;
-		for (auto& [spId, mtxPop] : matrixPops) {
-			popTraits = mtxPop->outTraits(outTraitsOfs.at(sp), false);
-			for (int j = 0; j < gMaxNbSexes; j++) {
-				ts.ninds[j] += popTraits.ninds[j];
-				ts.sumD0[j] += popTraits.sumD0[j];     ts.ssqD0[j] += popTraits.ssqD0[j];
-				ts.sumAlpha[j] += popTraits.sumAlpha[j];  ts.ssqAlpha[j] += popTraits.ssqAlpha[j];
-				ts.sumBeta[j] += popTraits.sumBeta[j];   ts.ssqBeta[j] += popTraits.ssqBeta[j];
-				ts.sumDist1[j] += popTraits.sumDist1[j];  ts.ssqDist1[j] += popTraits.ssqDist1[j];
-				ts.sumDist2[j] += popTraits.sumDist2[j];  ts.ssqDist2[j] += popTraits.ssqDist2[j];
-				ts.sumProp1[j] += popTraits.sumProp1[j];  ts.ssqProp1[j] += popTraits.ssqProp1[j];
-				ts.sumDP[j] += popTraits.sumDP[j];     ts.ssqDP[j] += popTraits.ssqDP[j];
-				ts.sumGB[j] += popTraits.sumGB[j];     ts.ssqGB[j] += popTraits.ssqGB[j];
-				ts.sumAlphaDB[j] += popTraits.sumAlphaDB[j]; ts.ssqAlphaDB[j] += popTraits.ssqAlphaDB[j];
-				ts.sumBetaDB[j] += popTraits.sumBetaDB[j];  ts.ssqBetaDB[j] += popTraits.ssqBetaDB[j];
-				ts.sumStepL[j] += popTraits.sumStepL[j];  ts.ssqStepL[j] += popTraits.ssqStepL[j];
-				ts.sumRho[j] += popTraits.sumRho[j];    ts.ssqRho[j] += popTraits.ssqRho[j];
-				ts.sumS0[j] += popTraits.sumS0[j];     ts.ssqS0[j] += popTraits.ssqS0[j];
-				ts.sumAlphaS[j] += popTraits.sumAlphaS[j]; ts.ssqAlphaS[j] += popTraits.ssqAlphaS[j];
-				ts.sumBetaS[j] += popTraits.sumBetaS[j];  ts.ssqBetaS[j] += popTraits.ssqBetaS[j];
-			}
+		popTraits = matrixPops.at(sp)->outTraits(outTraitsOfs.at(sp), false);
+		for (int j = 0; j < gMaxNbSexes; j++) {
+			ts.ninds[j] += popTraits.ninds[j];
+			ts.sumD0[j] += popTraits.sumD0[j];     ts.ssqD0[j] += popTraits.ssqD0[j];
+			ts.sumAlpha[j] += popTraits.sumAlpha[j];  ts.ssqAlpha[j] += popTraits.ssqAlpha[j];
+			ts.sumBeta[j] += popTraits.sumBeta[j];   ts.ssqBeta[j] += popTraits.ssqBeta[j];
+			ts.sumDist1[j] += popTraits.sumDist1[j];  ts.ssqDist1[j] += popTraits.ssqDist1[j];
+			ts.sumDist2[j] += popTraits.sumDist2[j];  ts.ssqDist2[j] += popTraits.ssqDist2[j];
+			ts.sumProp1[j] += popTraits.sumProp1[j];  ts.ssqProp1[j] += popTraits.ssqProp1[j];
+			ts.sumDP[j] += popTraits.sumDP[j];     ts.ssqDP[j] += popTraits.ssqDP[j];
+			ts.sumGB[j] += popTraits.sumGB[j];     ts.ssqGB[j] += popTraits.ssqGB[j];
+			ts.sumAlphaDB[j] += popTraits.sumAlphaDB[j]; ts.ssqAlphaDB[j] += popTraits.ssqAlphaDB[j];
+			ts.sumBetaDB[j] += popTraits.sumBetaDB[j];  ts.ssqBetaDB[j] += popTraits.ssqBetaDB[j];
+			ts.sumStepL[j] += popTraits.sumStepL[j];  ts.ssqStepL[j] += popTraits.ssqStepL[j];
+			ts.sumRho[j] += popTraits.sumRho[j];    ts.ssqRho[j] += popTraits.ssqRho[j];
+			ts.sumS0[j] += popTraits.sumS0[j];     ts.ssqS0[j] += popTraits.ssqS0[j];
+			ts.sumAlphaS[j] += popTraits.sumAlphaS[j]; ts.ssqAlphaS[j] += popTraits.ssqAlphaS[j];
+			ts.sumBetaS[j] += popTraits.sumBetaS[j];  ts.ssqBetaS[j] += popTraits.ssqBetaS[j];
 		}
 		int npops = static_cast<int>(allPopns.at(sp).size());
 		for (int i = 0; i < npops; i++) {
