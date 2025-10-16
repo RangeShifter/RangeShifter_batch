@@ -131,7 +131,7 @@ string to_string(indStatus s) {
 // Individual constructor
 Individual::Individual(Species* pSp, Cell* pCell, Patch* pPatch, short stg, short a, short repInt,
 	float probmale, bool movt, short moveType):
-	memory(pSpecies->getSpSMSTraits().memSize)
+	memory(pSp->getSpSMSTraits().memSize)
 {
 	pSpecies = pSp;
 	indId = indCounter; 
