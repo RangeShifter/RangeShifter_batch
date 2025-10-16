@@ -177,7 +177,6 @@ public:
 	int resolveSettlement(
 		vector<Individual*>& dispPool,
 		Landscape* pLandscape,
-		short landIx,
 		short nextseason
 	);
 

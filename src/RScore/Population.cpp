@@ -960,7 +960,7 @@ int Population::resolveTransfer(vector<Individual*>& dispPool, Landscape* pLands
 
 // Flag and count individuals ready to settle
 // Actual transfer to new population/patch is processed at end of dispersal
-int Population::resolveSettlement(vector<Individual*>& dispPool, Landscape* pLandscape, short landIx, short nextseason)
+int Population::resolveSettlement(vector<Individual*>& dispPool, Landscape* pLandscape, short nextseason)
 {
 	int nbSettled;
 	short oppositeSex;
@@ -1175,7 +1175,7 @@ bool Population::isMatePresent(Cell* pCell, short othersex)
 				return true;
 		}
 	}
-	return false; // no mates? :(
+	return false;
 }
 
 // Add specified individuals to the population

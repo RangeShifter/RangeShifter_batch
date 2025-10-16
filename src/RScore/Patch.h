@@ -174,18 +174,15 @@ private:
 	float localK;		// patch carrying capacity (individuals)
 	double gradVal;		// gradient value for cell-based landscapes
 	bool changed;
+	vector<int> occupancy;		// pointer to occupancy array
+	std::vector <Cell*> cells;
+	map<species_id, map<Patch*, double>> overlappingPatches; // [other patch, % of overlap (in nb cells)]
 #ifdef _OPENMP
+	std::mutex popns_mutex;
 	std::atomic<short> nTemp[gMaxNbSexes];						// no. of potential settlers in each sex
 #else
 	short nTemp[gMaxNbSexes];						// no. of potential settlers in each sex
 #endif
-	vector<int> occupancy;		// pointer to occupancy array
-
-#ifdef _OPENMP
-	std::mutex popns_mutex;
-#endif
-	map<species_id, map<Patch*, double>> overlappingPatches; // [other patch, % of overlap (in nb cells)]
-
 };
 
 //---------------------------------------------------------------------------
