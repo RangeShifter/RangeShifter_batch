@@ -864,7 +864,9 @@ disperser Population::extractDisperser(int ix) {
 void Population::recruitDispersers(std::vector<Individual*>& disperserPool) {
 	
 	for (auto& pInd : inds) {
-		if (pInd->getStatus() == dispersing) {
+		indStats indSts = pInd->getStats();
+		if (indSts.status == dispersing) {
+			nInds[indSts.stage][indSts.sex]--;
 			disperserPool.push_back(std::move(pInd));
 		}
 	}
@@ -906,6 +908,13 @@ void Population::recruit(Individual* pInd) {
 void Population::disperseMatrix(std::vector<Individual*>& dispPool) 
 {
 	dispPool = move(inds);
+
+	// Reset tallies
+	for (int stg = 0; stg < gMaxNbStages; stg++) {
+		for (int sex = 0; sex < gMaxNbSexes; sex++) {
+			nInds[stg][sex] = 0;
+		}
+	}
 }
 
 // Transfer between cells / patches
