@@ -98,7 +98,7 @@ public:
 
 	// Remove emigrants from patch 0 (matrix) and transfer to the Population in which
 	// their destination co-ordinates fall (executed for the matrix patch only)
-	void completeDispersal(species_id sp, vector<Individual*> disperserPool, Landscape* pLandscape);
+	void completeDispersal(species_id sp, vector<Individual*>& disperserPool, Landscape* pLandscape);
 
 	void drawSurvivalDevlpt(const int phase);
 	void applySurvivalDevlpt();

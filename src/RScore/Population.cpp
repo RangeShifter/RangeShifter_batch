@@ -873,7 +873,6 @@ void Population::recruitDispersers(std::vector<Individual*>& disperserPool) {
 		}
 	}
 	clean();
-	cout << endl;
 }
 
 // For an individual identified as being in the matrix population:

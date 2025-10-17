@@ -502,7 +502,7 @@ void Community::dispersal(short landIx, short nextseason)
 
 // Remove emigrants from pool of dispersers and transfer to the population
 // in which their destination co-ordinates fall
-void Community::completeDispersal(species_id sp, vector<Individual*> disperserPool, Landscape* pLandscape)
+void Community::completeDispersal(species_id sp, vector<Individual*>& disperserPool, Landscape* pLandscape)
 {
 	Population* pPop;
 	Patch* pPrevPatch;
@@ -542,12 +542,10 @@ void Community::completeDispersal(species_id sp, vector<Individual*> disperserPo
 				}
 			}
 			pInd = nullptr;
-			cout << endl;
 		}
 	}
 	// remove settled individuals
 	disperserPool.erase(std::remove(disperserPool.begin(), disperserPool.end(), (Individual*)nullptr), disperserPool.end());
-	cout << endl;
 }
 
 void Community::resolveInteractions() {
