@@ -869,9 +869,11 @@ void Population::recruitDispersers(std::vector<Individual*>& disperserPool) {
 		if (indSts.status == dispersing) {
 			nInds[indSts.stage][indSts.sex]--;
 			disperserPool.push_back(std::move(pInd));
+			pInd = nullptr;
 		}
 	}
 	clean();
+	cout << endl;
 }
 
 // For an individual identified as being in the matrix population:
@@ -963,7 +965,7 @@ int Population::resolveTransfer(vector<Individual*>& dispPool, Landscape* pLands
 // Actual transfer to new population/patch is processed at end of dispersal
 int Population::resolveSettlement(vector<Individual*>& dispPool, Landscape* pLandscape, short nextseason)
 {
-	int nbSettled;
+	int nbSettled = 0;
 	short oppositeSex;
 	bool mateOK, densdepOK;
 	Patch* patch;
@@ -1364,23 +1366,23 @@ void Population::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool r
 // Apply survival changes to the population
 void Population::applySurvivalDevlpt()
 {
-	int ninds = inds.size();
-	for (int i = 0; i < ninds; i++) {
-		indStats ind = inds[i]->getStats();
+	for (auto& pInd : inds) {
+		indStats ind = pInd->getStats();
 
 		if (!isAlive(ind.status)) {
-			delete inds[i];
-			inds[i] = nullptr;
+			delete pInd;
+			pInd = nullptr;
 			nInds[ind.stage][ind.sex]--;
 		}
 		else {
 			if (ind.isDeveloping) { // develops to next stage
 				nInds[ind.stage][ind.sex]--;
-				inds[i]->develop();
+				pInd->develop();
 				nInds[ind.stage + 1][ind.sex]++;
 			}
 		}
 	}
+
 	clean();
 }
 

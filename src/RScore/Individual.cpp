@@ -1175,7 +1175,7 @@ movedata Individual::smsMove(Landscape* pLand, const short landIx,
 	if (isInNatalPatch || path->settleStatus > 0) path->out = 0;
 
 	// Get goal bias weights
-	double gb;
+	double gb = 0.0;
 	if (movt.goalType == 2) { // dispersal bias
 		int nsteps = path->year == path->total ? 
 			path->out : // first year of dispersal - use no. of steps outside natal patch

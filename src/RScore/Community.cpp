@@ -541,10 +541,13 @@ void Community::completeDispersal(species_id sp, vector<Individual*> disperserPo
 					pLandscape->incrConnectMatrix(sp, prevpatch, newpatch);
 				}
 			}
+			pInd = nullptr;
+			cout << endl;
 		}
 	}
 	// remove settled individuals
 	disperserPool.erase(std::remove(disperserPool.begin(), disperserPool.end(), (Individual*)nullptr), disperserPool.end());
+	cout << endl;
 }
 
 void Community::resolveInteractions() {
