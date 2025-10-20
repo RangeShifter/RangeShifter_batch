@@ -147,28 +147,25 @@ void testPopulation()
 		assert(emigratingInds[0] < emigratingInds[1] && emigratingInds[1] < emigratingInds[2]);
 	}
 
-	// In the absence of evolutionary forces, neutral gene 
-	// frequencies roughly conform to Hardy-Weinberg principle, i.e.:
-	// 1 - Allele frequencies p and q remain constant through generations
-	// 2 - Genotype frequencies conform to fAA = p^2, fAB = 2pq, fBB = q^2
+	// In the absence of selection, drift is solely responsible
+	// for changes in allele frequencies
 	{
-		const float tolerance = 0.05; // high tolerance, drift does happen
+		const float tolerance = 0.02;
+		const float hetzTolerance = 0.05;
 
 		float mutationRate = 0.0;
 		const float localK = 10000.0;
 		const int initialNbInds = localK;
 		const float initFreqA = 0.30;
-		const float exptdFreqA = initFreqA; // Allelic freqs are constant under HW
-		const float exptdFreqB = 1 - exptdFreqA;
-		const float exptdFreqHeteroZ = 2 * exptdFreqA * exptdFreqB; // according to HW
+		const float exptdFreqHeteroZ = 2 * initFreqA * (1 - initFreqA); // according to HW
 		const int nbGens = 50;
-		float obsFreqA = 0.0;
-		float obsFreqB = 0.0;
-		float obsFreqHeteroZ = 0.0;
+		float obsFreqA = initFreqA;
+		float obsFreqHeteroZ;
+		int nbInds = static_cast<int>(localK);
 
 		// Simple genetic layout
 		// 1 locus with two alleles A and B
-		const bool isDiploid{ true }; // HW only applies to diploids
+		const bool isDiploid{ true };
 		const int genomeSz = 1;
 		const set<int> genePositions = { 0 };
 		const float maxAlleleVal = 1;
@@ -206,7 +203,8 @@ void testPopulation()
 			pop.recruit(pInd);
 		}
 
-		// Check allele frequencies conform to HW through generations
+		// Check allele frequencies conform to expectation through generations
+		float prevGenFreqA;
 		for (int yr = 0; yr < nbGens; yr++) {
 			pop.reproduction(localK, 1, 1);
 			pop.fledge(); // replace initial pop with juveniles
@@ -214,15 +212,27 @@ void testPopulation()
 			pop.survival1(); // develop to stage 1 (breeders)
 			pop.shuffleInds();
 
-			// Count allele and heterozygote frequencies
+			// Calculate expected allele frequency change from
+			// drift and previous generation frequencies
+			prevGenFreqA = obsFreqA;
+			float exptdChg = 2 * sqrt(prevGenFreqA * (1 - prevGenFreqA) / 2 * nbInds);
+			// ^ eq. 6.1 in Conservation and the Genomics of Populations, Allendorf et al.
+			// 95% CI for the allele frequency change
+
+			// Check allele frequency change match equation
 			pop.sampleIndsWithoutReplacement("all", { 1 });
 			pop.updatePopNeutralTables();
 			obsFreqA = pop.getAlleleFrequency(0, alleleA);
-			float nbHeteroZ = pop.getHeteroTally(0, alleleA);
-			int nbInds = pop.getNbInds();
-			obsFreqHeteroZ = nbHeteroZ / nbInds;
-			assert(abs(obsFreqA - exptdFreqA) < tolerance);
-			assert(abs(obsFreqHeteroZ - exptdFreqHeteroZ) < tolerance);
+			float freqChg = abs(prevGenFreqA - obsFreqA);
+			assert(abs(freqChg) < tolerance);
+
+			// If population is very large, heterozygosity should be roughly constant,
+			// i.e. inbreeding is negligible
+			nbInds = pop.getNbInds();
+			// couldn't find a source for exptd change in heterozygosity so 
+			// we assume Hardy-Weinberg equilibrium
+			obsFreqHeteroZ = static_cast<float>(pop.getHeteroTally(0, alleleA)) / nbInds;
+			assert(abs(obsFreqHeteroZ - exptdFreqHeteroZ) < hetzTolerance);
 		}
 	}
 
