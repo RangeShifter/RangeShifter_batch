@@ -82,14 +82,6 @@ string getProjectDir(const vector<string>& mainArgs) {
 	return pathToProjectDir;
 }
 
-#ifndef NDEBUG
-void run_batch_unit_tests() {
-	cout << "******* Unit test output for batch interface *******" << endl;
-	// call tests here
-	cout << endl << "************************" << endl;
-}
-#endif // NDEBUG
-
 paramGrad* paramsGrad;		// pointer to environmental gradient parameters
 paramStoch* paramsStoch;	// pointer to environmental stochasticity parameters
 paramInit* paramsInit;		// pointer to initialisation parameters
@@ -116,14 +108,6 @@ int _tmain(int argc, _TCHAR* argv[])
 #ifdef _OPENMP
 	cout << "OpenMP parallelisation enabled with up to " << omp_get_max_threads() << " threads." << endl;
 #endif //_OPENMP
-
-#ifndef NDEBUG
-	assert(0.1 > 0.0); // assert does run correctly
-	run_batch_unit_tests();
-#else
-	// assert does not run in Release mode
-	assert(1 == 2);
-#endif
 
 	int t0, t1;
 	t0 = (int)time(0);

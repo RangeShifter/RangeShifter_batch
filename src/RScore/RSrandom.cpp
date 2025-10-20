@@ -77,7 +77,7 @@ RSrandom::RSrandom() {
 
 #ifndef NDEBUG
 	// fixed seed
-	RS_random_seed = 155;
+	RS_random_seed = 11011;
 #else
 	// random seed
 #if LINUX_CLUSTER

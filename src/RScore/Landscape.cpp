@@ -1823,7 +1823,7 @@ int Landscape::readLandscape(int fileNum, string habfile, string pchfile, string
 
 	dimX = ncols;
 	dimY = nrows;
-	minX = maxY = 0;
+	minX = maxY = 0; // bottom-left / south-west corner
 	maxX = dimX - 1;
 	maxY = dimY - 1;
 
