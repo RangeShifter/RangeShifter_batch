@@ -203,7 +203,7 @@ void testTransferKernels() {
 	trfr.distMort = true;
 	sp.setTrfrRules(trfr);
 	mort.mortAlpha = 1000.0; // very steep threshold
-	mort.mortBeta = 0.5; // very small distance 
+	mort.mortBeta = 0.001; // very small distance 
 	sp.setMortParams(mort);
 	kern.meanDist1 = 5; // very likely to go over threshold
 	absorbing_boundaries = true;
