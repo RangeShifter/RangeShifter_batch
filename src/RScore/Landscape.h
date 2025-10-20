@@ -336,7 +336,7 @@ private:
 	int nHab;				// no. of habitats
 	int nHabMax;			// max. no. of habitats (used for batch input only)
 	int dimX, dimY;			// dimensions
-	int minX, minY;			// minimum available X and Y co-ordinates
+	int minX, minY;			// minimum available X and Y co-ordinates (bottom left corner)
 	int maxX, maxY;			// maximum available X and Y co-ordinates
 	float minPct, maxPct;	// min and max percentage of habitat in a cell
 	float propSuit;			// proportion of suitable cells
