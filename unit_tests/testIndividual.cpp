@@ -52,7 +52,7 @@ void testTransferKernels() {
 	Patch* init_patch = (Patch*)init_cell->getPatch();
 
 	// Create and set up individual
-	Individual ind1(&sp,init_cell, init_patch, 1, 0, 0, 0.0, false, 0);
+	Individual ind1(&sp, init_cell, init_patch, 1, 0, 0, 0.0, false, 0);
 	int isDispersing = ind1.moveKernel(&ls, &sp, false);
 
 	// After moving, individual should be in the only available cell
