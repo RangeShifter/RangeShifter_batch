@@ -34,9 +34,9 @@ The matrix Population(s) hold(s) Individuals which are currently in the process
 of transfer through the matrix.
 
 For full details of RangeShifter, please see:
-Bocedi G., Palmer S.C.F., Pe?er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+ Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
 and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
-eco-evolutionary dynamics and species? responses to environmental changes.
+ eco-evolutionary dynamics and species’ responses to environmental changes.
 Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
 Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
@@ -59,6 +59,11 @@ using namespace std;
 #include "Patch.h"
 #include "Cell.h"
 #include "NeutralStatsManager.h"
+
+#ifdef _OPENMP
+#include <atomic>
+#include <mutex>
+#endif
 
 //---------------------------------------------------------------------------
 
@@ -123,11 +128,9 @@ public:
 			std::vector <float>
 	);
 	Species* getSpecies(void);
-	int getNInds(void);
-	int totalPop(void);
-	int stagePop( // return no. of Individuals in a specified stage
-		int	// stage
-	);
+	int getNbInds() const;
+	int getNbInds(int stg) const ;
+	int getNbInds(int stg, int sex) const;
 	void extirpate(void); // Remove all individuals
 	void reproduction(
 		const float,	// local carrying capacity
@@ -141,6 +144,10 @@ public:
 		float   // local carrying capacity
 	);
 	void allEmigrate(void); // All individuals emigrate after patch destruction
+	// Remove an individual from the Population
+	Individual* extractIndividual(
+		int		// index no. to the Individual in the inds vector
+	);
 	// If an individual has been identified as an emigrant, remove it from the Population
 	disperser extractDisperser(
 		int		// index no. to the Individual in the inds vector
@@ -158,30 +165,10 @@ public:
 	void sampleIndsWithoutReplacement(string n, const set<int>& sampleStages);
 	int sampleSize() const;
 	vector<Individual*> getIndividualsInStage(int stage);
-#if RS_RCPP
-	int transfer( // Executed for the Population(s) in the matrix only
-		Landscape*,	// pointer to Landscape
-		short,				// landscape change index
-		short				// year
+	void recruitMany( // Add specified individuals to the population
+		std::vector<Individual*>&	// vector of pointers to Individuals
 	);
-	// Determine whether there is a potential mate present in a patch which a potential
-	// settler has reached
-	bool matePresent(
-		Cell*,	// pointer to the Cell which the potential settler has reached
-		short		// sex of the required mate (0 = female, 1 = male)
-	);
-#else
-	int transfer( // Executed for the Population(s) in the matrix only
-		Landscape*,	// pointer to Landscape
-		short				// landscape change index
-	);
-	// Determine whether there is a potential mate present in a patch which a potential
-	// settler has reached
-	bool matePresent(
-		Cell*,	// pointer to the Cell which the potential settler has reached
-		short		// sex of the required mate (0 = female, 1 = male)
-	);
-#endif // RS_RCPP
+
 	// Determine survival and development and record in individual's status code
 	// Changes are NOT applied to the Population at this stage
 	void survival0(
@@ -196,8 +183,9 @@ public:
 	);
 	void survival1(void); // Apply survival changes to the population
 	void ageIncrement(void);
-	bool outPopHeaders( // Open population file and write header record
-		int,	// Landscape number (-999 to close the file)
+	bool outPopFinishLandscape(); // Close population file
+	bool outPopStartLandscape( // Open population file and write header record
+		int,	// Landscape number
 		bool	// TRUE for a patch-based model, FALSE for a cell-based model
 	);
 	void outPopulation( // Write record to population file
@@ -210,9 +198,10 @@ public:
 		bool		// TRUE if there is a gradient in carrying capacity
 	);
 
-	void outIndsHeaders( // Open individuals file and write header record
+	void outIndsFinishReplicate(); // Close individuals file
+	void outIndsStartReplicate( // Open individuals file and write header record
 		int,	// replicate
-		int,	// Landscape number (-999 to close the file)
+		int,	// Landscape number
 		bool	// TRUE for a patch-based model, FALSE for a cell-based model
 	);
 	void outIndividual( // Write records to individuals file
@@ -267,17 +256,22 @@ public:
 	bool getSizeSampledInds(
 	);
 
-#ifndef NDEBUG
+#ifdef UNIT_TESTS
 	// Testing only
 	void clearInds() { inds.clear(); } // empty inds vector to avoid deallocating individual is used separately in test
-#endif // NDEBUG
+	void shuffleInds() { shuffle(inds.begin(), inds.end(), pRandom->getRNG()); }
+#endif // UNIT_TESTS
 
 private:
 	short nStages;
 	short nSexes;
 	Species *pSpecies;	// pointer to the species
 	Patch *pPatch;			// pointer to the patch
+#ifdef _OPENMP
+	std::atomic<int> nInds[gMaxNbStages][gMaxNbSexes];		// no. of individuals in each stage/sex
+#else
 	int nInds[gMaxNbStages][gMaxNbSexes];		// no. of individuals in each stage/sex
+#endif // _OPENMP
 
 	vector <Individual*> inds; // all individuals in population except ...
 	vector <Individual*> juvs; // ... juveniles until reproduction of ALL species
@@ -287,6 +281,9 @@ private:
 	//std::vector <Individual*> sampledInds; // individuals with specified characteristics from translocation!!! 
 	vector<NeutralCountsTable> popNeutralCountTables;
 	void resetPopNeutralTables();
+#ifdef _OPENMP
+	std::mutex inds_mutex;
+#endif // _OPENMP
 };
 
 //---------------------------------------------------------------------------

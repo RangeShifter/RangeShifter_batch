@@ -7,6 +7,7 @@ SpeciesTrait::SpeciesTrait(
 	const sex_t& sx,
 	const set<int>& pos,
 	const ExpressionType& expr,
+	const set<int>& initialPositions,
 	const DistributionType& initDist,
 	const map<GenParamType, float> initParams,
 	const DistributionType& initDomDist,
@@ -23,6 +24,7 @@ SpeciesTrait::SpeciesTrait(
 	sex{ sx },
 	genePositions{ pos },
 	expressionType{ expr },
+	initPositions{ initialPositions },
 	initialDistribution{ initDist },
 	initialParameters{ initParams },
 	initialDomDistribution{ initDomDist },
@@ -200,7 +202,7 @@ bool SpeciesTrait::isValidTraitVal(const float& val) const {
 	}
 }
 
-#ifndef NDEBUG // Testing only
+#ifdef UNIT_TESTS // Testing only
 
 // Create a default set of gene positions ranging from zero to genome size
 set<int> createTestGenePositions(const int genomeSz) {
@@ -220,6 +222,7 @@ SpeciesTrait* createTestEmigSpTrait(const set<int>& genePositions, const bool& i
 		sex_t::NA,
 		genePositions,
 		ExpressionType::ADDITIVE,
+		genePositions,
 		DistributionType::UNIFORM,
 		distParams,
 		DistributionType::NONE, // no dominance
@@ -247,6 +250,7 @@ SpeciesTrait* createTestGenLoadTrait(const set<int>& genePositions, const bool& 
 		sex_t::NA,
 		genePositions,
 		ExpressionType::MULTIPLICATIVE,
+		genePositions,
 		DistributionType::NONE,
 		distParams,
 		DistributionType::NONE, // initialise dominance to zero
@@ -274,6 +278,7 @@ SpeciesTrait* createTestNeutralSpTrait(const float& maxAlleleVal, const set<int>
 		sex_t::NA,
 		genePositions,
 		ExpressionType::NOTEXPR,
+		genePositions,
 		// Sample initial values from uniform(0, max)
 		DistributionType::UNIFORM, distParams,
 		DistributionType::NONE, // No dominance
@@ -291,4 +296,4 @@ SpeciesTrait* createTestNeutralSpTrait(const float& maxAlleleVal, const set<int>
 	return spTr;
 }
 
-#endif // NDEBUG
+#endif // UNIT_TESTS
