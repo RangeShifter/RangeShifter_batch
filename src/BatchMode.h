@@ -27,9 +27,9 @@
  Functions for running in BATCH MODE
 
  For full details of RangeShifter, please see:
- Bocedi G., Palmer S.C.F., Pe�er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+ Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
  and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
- eco-evolutionary dynamics and species� responses to environmental changes.
+ eco-evolutionary dynamics and species’ responses to environmental changes.
  Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
  Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
@@ -111,10 +111,12 @@ struct simCheck {
 batchfiles ParseControlAndCheckInputFiles(string, string, string);
 int CheckParameterFile();
 int CheckLandFile(int, string);
+int CheckSpatialDemogFile(string, string, rasterdata);
 int CheckDynamicFile(string, string);
 int CheckStageFile(string);
 int CheckTransitionFile(short, short);
 int CheckWeightsFile(string);
+int CheckLayerFile(string);
 int CheckEmigFile(void);
 int CheckTransferFile(string);
 int CheckSettleFile(void);
@@ -199,6 +201,7 @@ int ReadTransitionMatrix(
 	short		// season
 );
 int ReadStageWeights(int);
+int ReadDemogLayers(int);
 int ReadEmigration();
 int ReadTransferFile(Landscape*);
 int ReadTransferKernels(transferRules, const landParams&);
@@ -217,8 +220,8 @@ void setUpSpeciesTrait(vector<string>);
 DistributionType stringToDistributionType(const std::string& str);
 ExpressionType stringToExpressionType(const std::string& str);
 map<GenParamType, float> stringToParameterMap(string parameters);
-set<int> selectRandomLociPositions(int noLoci, const int& genomeSize);
-set<int> stringToLoci(string pos, string nLoci, const int& genomeSize);
+set<int> selectRandomLociPositions(int noLoci, vector<int> lociToSampleFrom);
+set<int> stringToLoci(string pos);
 TraitType stringToTraitType(const std::string& str);
 const sex_t stringToSex(const std::string& str);
 set<int> stringToPatches(const string&);

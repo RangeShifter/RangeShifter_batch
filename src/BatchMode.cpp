@@ -34,13 +34,14 @@ ifstream bEmigrationFile, bTransferFile, bSettlementFile;
 ifstream bTraitsFile, bGeneticsFile;
 ifstream bInitFile, bInitIndsFile;
 ifstream bTranslocFile, bManageFile;
+ifstream bLayerFile, bFecLayerFile, bDevLayerFile, bSurvLayerFile, bSpatialDemogFile;
 
 ofstream batchLog;
 
 // NOTE: THE STREAMS USED TO READ THE DATA AT RUN TIME COULD TAKE THE SAME NAMES AS
 // USED DURING PARSING (ABOVE)
 ifstream parameters;
-ifstream ssfile, tmfile, fdfile, ddfile, sdfile;
+ifstream ssfile, tmfile, fdfile, flfile, ddfile, dlfile, sdfile, slfile;
 ifstream emigFile, transFile, settFile, initFile, initIndsFile;
 ifstream landfile, dynLandIfs;
 ifstream ifsGenetics, ifsTraits;
@@ -59,10 +60,14 @@ int gFirstSimNb = 0; // not great, globals should not be modified.
 int fileNtraits; // no. of traits defined in genetic architecture file
 bool gHasGenetics = true;
 
+// global parameters for translocation feature
 int gHasTranslocation; // translocation feature
 
+// global parameters for spatial demography feature
 bool gHasSpatialDemography; // spatial demography feature
+bool firstCall = true; // to track first call to CheckSpatialDemogFile
 short nDSlayer=gMaxNbLayers;
+vector<vector<string>> allSpatialDemogFileNames;
 
 set<int> gSimNbs; // record of simulation numbers to check input file use the same numbers
 
@@ -75,7 +80,7 @@ rasterdata landraster;
 // ...including names of the input files
 string parameterFile;
 string landFile;
-string name_landscape, name_patch, name_dynland, name_sp_dist, gNameCostFile;
+string name_landscape, name_patch, name_spatialdemog, name_dynland, name_sp_dist, gNameCostFile;
 string stageStructFile, transMatrix;
 string emigrationFile, transferFile, settleFile, geneticsFile, traitsFile, initialFile, managementFile, translocationFile;
 string prevInitialIndsFile = " ";
@@ -1139,6 +1144,7 @@ int CheckLandFile(int landtype, string indir)
 		bLandFile >> header; if (header != "CostMapFile") errors++;
 		bLandFile >> header; if (header != "DynLandFile") errors++;
 		bLandFile >> header; if (header != "SpDistFile") errors++;
+		bLandFile >> header; if (header != "SpatialDemogFile") errors++;
 		if (errors > 0) {
 			FormatError(filetype, 0);
 			batchLog << "*** Ensure format is correct for real landscape" << endl;
@@ -1288,6 +1294,16 @@ int CheckLandFile(int landtype, string indir)
 					BatchError(filetype, line, 0, " "); errors++;
 					batchLog << ftype << " must be NULL if transfer model is not SMS" << endl;
 				}
+			}
+
+			// check spatially varying demography file
+			bLandFile >> intext;
+			if (intext == "NULL") {
+				gHasSpatialDemography = false;
+			}
+			else {
+				gHasSpatialDemography = true;
+				errors += CheckSpatialDemogFile(indir, intext, landraster);
 			}
 
 			// check dynamic landscape filename
@@ -1494,6 +1510,128 @@ int CheckLandFile(int landtype, string indir)
 
 }
 
+int CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landraster) {
+	string fname, header, intext, ftype;
+	int line = 0;
+	int inint, expectedLineNum = 0;
+	int errors = 0;
+	int maxNbOfLayer = -1;
+	rasterdata demograster;
+	vector<string> filenameList;
+
+	// Open the spatial demography file
+	ifstream bSpatialDemogFile(indir + demogFilename);
+	if (!bSpatialDemogFile.is_open()) {
+		OpenError("SpatialDemogFile", demogFilename);
+		return -111;
+	}
+
+	// Check header
+	bSpatialDemogFile >> header;
+	if (header != "NbOfLayer") errors++;
+	bSpatialDemogFile >> header;
+	if (header != "Filename") errors++;
+
+	if (errors > 0) {
+		FormatError("SpatialDemogFile", 0);
+		batchLog << "*** Ensure format is correct for spatial demography file" << endl;
+		bSpatialDemogFile.close();
+		return -111;
+	}
+
+	// Parse data lines
+	line = 1;
+	inint = -98765;
+	bSpatialDemogFile >> inint;
+
+	while (inint != -98765) {
+		// Check line number matches expected
+		if (inint != expectedLineNum) {
+			BatchError("SpatialDemogFile", line, 666, "LayerNum");
+			errors++;
+		}
+		expectedLineNum++;
+
+		// Update maxNbOfLayer
+		if (inint > maxNbOfLayer) {
+			maxNbOfLayer = inint;
+		}
+
+		// Check filename
+		bSpatialDemogFile >> intext;
+//	        if (intext.substr(intext.size() - 4) != ".txt") {
+//	            BatchError("SpatialDemogFile", line, 0, "Filename");
+//	            errors++;
+//	        } else {
+		fname = indir + intext;
+		demograster = CheckRasterFile(fname);
+		if (demograster.ok) {
+			// Similar checks to SpDistFile
+			if (demograster.cellsize == distresolution) {
+				if (demograster.ncols == landraster.ncols
+						&& demograster.nrows == landraster.nrows
+						&& (int)demograster.xllcorner == (int)landraster.xllcorner
+						&& (int)demograster.yllcorner == (int)landraster.yllcorner) {
+					batchLog << "SpatialDemogFile headers OK: " << fname << endl;
+				} else {
+					batchLog << "*** Extent or origin of " << ftype << " does not match those of LandscapeFile" << endl;
+					errors++;
+				}
+			} else {
+				batchLog << "*** Resolution of " << ftype << " " << fname << " does not match DistResolution in Control file" << endl;
+				errors++;
+			}
+			// if the first tests are ok, we can append it to the list of spatial demography rasters
+			filenameList.push_back(fname);
+		} else {
+			errors++;
+			if (demograster.errors == -111) {
+				OpenError(ftype, fname);
+			} else {
+				FormatError(fname, demograster.errors);
+			}
+	}
+//	        }
+
+	line++;
+	// Read first field on next line
+	inint = -98765;
+	bSpatialDemogFile >> inint;
+	} // end of while loop
+
+	// Check for EOF errors
+	if (!bSpatialDemogFile.eof()) {
+		EOFerror("SpatialDemogFile");
+		errors++;
+	}
+
+	bSpatialDemogFile.close();
+
+	if (maxNbOfLayer > gMaxNbLayers) {
+		BatchError("SpatialDemogFile", line, 0, "NbOfLayer");
+		batchLog << "*** MaxNbOfLayer exceeded the maximal number of layers allowed (3 * number of sexes * number of stages)" << endl;
+		errors++;
+	}
+
+	if (firstCall) {
+		nDSlayer = maxNbOfLayer;
+		firstCall = false;
+	} else {
+		if (nDSlayer != maxNbOfLayer) {
+			BatchError("SpatialDemogFile", line, 0, "MaxNbOfLayer inconsistency");
+			batchLog << "*** Subsequent maximal number of layers not consistant" << endl;
+			errors++;
+		}
+	}
+
+	// pushback the filenames into the global variable
+	allSpatialDemogFileNames.push_back(filenameList);
+
+
+	if (errors > 0) return -111;
+		else return errors; // number of lines successfully read
+}
+
 int CheckDynamicFile(string indir, string costfile) {
 
 	string header, filename, fname, ftype, intext;
@@ -1508,6 +1646,7 @@ int CheckDynamicFile(string indir, string costfile) {
 	bDynLandFile >> header; if (header != "LandChangeFile") errors++;
 	bDynLandFile >> header; if (header != "PatchChangeFile") errors++;
 	bDynLandFile >> header; if (header != "CostChangeFile") errors++;
+	bDynLandFile >> header; if (header != "SpatialDemogFile") errors++;
 
 	if (errors > 0) {
 		FormatError(filetype, errors);
@@ -1660,6 +1799,23 @@ int CheckDynamicFile(string indir, string costfile) {
 			}
 		}
 
+		// Check spatial demographics filename
+		ftype = "SpatialDemogFile";
+		bDynLandFile >> intext;
+		if (intext != "NULL") {
+			if (!gHasSpatialDemography) {
+				BatchError(filetype, line, 0, " "); errors++;
+				batchLog << ftype << " must be NULL to match LandFile " << endl;
+			} else{
+				errors += CheckSpatialDemogFile(indir, intext, landraster);
+			}
+		} else{
+			if (gHasSpatialDemography) {
+				BatchError(filetype, line, 0, " "); errors++;
+				batchLog << ftype << " must be supplied to match LandFile " << endl;
+			}
+		}
+
 		line++;
 		// read first field on next line
 		change = -98765;
@@ -1692,8 +1848,9 @@ int CheckStageFile(string indir)
 	int simuls = 0;
 	int prevsimul;
 	bool checkfile;
-	vector <string> transfiles, wtsfiles;
+	vector <string> transfiles, wtsfiles, layerfiles;
 	string filetype = "StageStructFile";
+	bool layerset =	 false; //to check that at least one layer file is set if spatially varying demography is used
 
 	// Parse header line;
 	bStageStructFile >> header; if (header != "Simulation") errors++;
@@ -1706,14 +1863,17 @@ int CheckStageFile(string indir)
 	bStageStructFile >> header; if (header != "FecDensDep") errors++;
 	bStageStructFile >> header; if (header != "FecStageWts") errors++;
 	bStageStructFile >> header; if (header != "FecStageWtsFile") errors++;
+	bStageStructFile >> header; if (header != "FecLayerFile") errors++;
 	bStageStructFile >> header; if (header != "DevDensDep") errors++;
 	bStageStructFile >> header; if (header != "DevDensCoeff") errors++;
 	bStageStructFile >> header; if (header != "DevStageWts") errors++;
 	bStageStructFile >> header; if (header != "DevStageWtsFile") errors++;
+	bStageStructFile >> header; if (header != "DevLayerFile") errors++;
 	bStageStructFile >> header; if (header != "SurvDensDep") errors++;
 	bStageStructFile >> header; if (header != "SurvDensCoeff") errors++;
 	bStageStructFile >> header; if (header != "SurvStageWts") errors++;
 	bStageStructFile >> header; if (header != "SurvStageWtsFile") errors++;
+	bStageStructFile >> header; if (header != "DurvLayerFile") errors++;
 	if (errors > 0) {
 		FormatError(filetype, errors);
 		return -111;
@@ -1833,6 +1993,39 @@ int CheckStageFile(string indir)
 			wtsfiles.push_back(filename);
 		}
 
+		ftype2 = "FecLayerFile";
+		bStageStructFile >> filename;
+		if (filename != "NULL"){
+			if(gHasSpatialDemography){
+				BatchError(filetype, line, 0, " ");
+				batchLog << ftype2 << " is not allowed when SpatialDemogFile is not used" << endl;
+				errors++;
+			}
+		}
+		else {
+			checkfile = true;
+			for (i = 0; i < (int)layerfiles.size(); i++) {
+				if (filename == layerfiles[i]) checkfile = false; // file has already been checked
+			}
+			if (checkfile){
+				fname = indir + filename;
+				batchLog << "Checking " << ftype2 << " " << fname << endl;
+				bLayerFile.open(fname.c_str());
+				if (bLayerFile.is_open()) {
+					err = CheckLayerFile(ftype2);
+					if (err == 0) FileHeadersOK(ftype2); else errors++;
+					bLayerFile.close();
+				}
+				else {
+					OpenError(ftype2, fname); errors++;
+				}
+				if (bLayerFile.is_open()) bLayerFile.close();
+				bLayerFile.clear();
+			}
+			layerfiles.push_back(filename);
+			if (err == 0) layerset = true;
+		}
+
 		bStageStructFile >> devdensdep;
 		if (devdensdep < 0 || devdensdep > 1)
 		{
@@ -1886,6 +2079,39 @@ int CheckStageFile(string indir)
 				bStageWeightsFile.clear();
 			}
 			wtsfiles.push_back(filename);
+		}
+
+		ftype2 = "DevLayerFile";
+		bStageStructFile >> filename;
+		if (filename != "NULL"){
+			if(gHasSpatialDemography){
+				BatchError(filetype, line, 0, " ");
+				batchLog << ftype2 << " is not allowed when SpatialDemogFile is not used" << endl;
+				errors++;
+			}
+		}
+		else {
+			checkfile = true;
+			for (i = 0; i < (int)layerfiles.size(); i++) {
+				if (filename == layerfiles[i]) checkfile = false; // file has already been checked
+			}
+			if (checkfile){
+				fname = indir + filename;
+				batchLog << "Checking " << ftype2 << " " << fname << endl;
+				bLayerFile.open(fname.c_str());
+				if (bLayerFile.is_open()) {
+					err = CheckLayerFile(ftype2);
+					if (err == 0) FileHeadersOK(ftype2); else errors++;
+					bLayerFile.close();
+				}
+				else {
+					OpenError(ftype2, fname); errors++;
+				}
+				if (bLayerFile.is_open()) bLayerFile.close();
+				bLayerFile.clear();
+			}
+			layerfiles.push_back(filename);
+			if (err == 0) layerset = true;
 		}
 
 		bStageStructFile >> survdensdep;
@@ -1943,6 +2169,45 @@ int CheckStageFile(string indir)
 			wtsfiles.push_back(filename);
 		}
 
+		ftype2 = "SurvLayerFile";
+		bStageStructFile >> filename;
+		if (filename != "NULL"){
+			if(gHasSpatialDemography){
+				BatchError(filetype, line, 0, " ");
+				batchLog << ftype2 << " is not allowed when SpatialDemogFile is not used" << endl;
+				errors++;
+			}
+		}
+		else {
+			checkfile = true;
+			for (i = 0; i < (int)layerfiles.size(); i++) {
+				if (filename == layerfiles[i]) checkfile = false; // file has already been checked
+			}
+			if (checkfile){
+				fname = indir + filename;
+				batchLog << "Checking " << ftype2 << " " << fname << endl;
+				bLayerFile.open(fname.c_str());
+				if (bLayerFile.is_open()) {
+					err = CheckLayerFile(ftype2);
+					if (err == 0) FileHeadersOK(ftype2); else errors++;
+					bLayerFile.close();
+				}
+				else {
+					OpenError(ftype2, fname); errors++;
+				}
+				if (bLayerFile.is_open()) bLayerFile.close();
+				bLayerFile.clear();
+			}
+			layerfiles.push_back(filename);
+			if (err == 0) layerset = true;
+		}
+
+		if (layerset == false && gHasSpatialDemography){
+			BatchError(filetype, line, 0, " "); // need to check output message
+			batchLog << "At least one layer file must be specified when SpatialDemogFile is used" << endl;
+			errors++;
+		}
+
 		// read next simulation
 		line++;
 		inint = -98765;
@@ -1965,6 +2230,7 @@ int CheckStageFile(string indir)
 
 	transfiles.clear();
 	wtsfiles.clear();
+	layerfiles.clear();
 
 	if (errors > 0) return -111;
 	else return simuls;
@@ -2157,6 +2423,72 @@ int CheckWeightsFile(string filetype)
 
 }
 
+//---------------------------------------------------------------------------
+
+// Check layer file
+
+int CheckLayerFile(string filetype)
+{
+	string header;
+	int layer, line;
+	int inint;
+	int errors = 0;
+
+	// check header records
+	bLayerFile >> header; if (header != "Stage") errors++;
+	bLayerFile >> header; if (header != "Sex") errors++;
+	bLayerFile >> header; if (header != "Layer") errors++;
+
+	if (errors > 0) {
+		FormatError(filetype, errors);
+		return -111;
+	}
+
+	// check entries for each row:
+	// 1.: stage, which should be between 0 and stages
+	// 2.: sex: 0 or 1, but 1 only if the model is sexual
+	// 3.: layer: between 0 and nDSlayer
+
+	//expected number of rows: stage * sex
+	int expectedRowNb = stages * sexesDem;
+
+	while (line++ < expectedRowNb){
+		bLayerFile >> inint; // stage
+		if (inint < 0 || inint >= stages) {
+			BatchError(filetype, line, 0, "Stage"); errors++;
+			batchLog << "Stages must be between 0 and the maximal number of stages -1" << endl;
+		}
+		bLayerFile >> inint; // sex
+		if (sexesDem == 2) {
+			if (inint < 0 || inint > 1) {
+				BatchError(filetype, line, 1, "Sex"); errors++;
+			}
+		} else {
+			if (inint != 0) {
+				BatchError(filetype, line, 0, "Sex"); errors++;
+				batchLog << "Sex must be 0" << endl;
+			}
+		}
+		bLayerFile >> inint; // layer
+		if (inint < 0 || inint >= nDSlayer)  {
+			BatchError(filetype, line, 0, "Layer"); errors++;
+			batchLog << "LayerNb must be between 0 and the maximal number of layer" << endl;
+		}
+	}
+	// final read should hit EOF
+	bLayerFile >> header;
+
+	if (!bFecLayerFile.eof()) {
+		EOFerror(filetype);
+		errors++;
+	}
+
+	return errors;
+}
+
+//---------------------------------------------------------------------------
+
+// Check emigration file
 //---------------------------------------------------------------------------
 int CheckEmigFile()
 {
@@ -3016,7 +3348,8 @@ int CheckTraitsFile(string indir)
 	int simNb, nextLineSimNb;
 	string filename, inTraitType, inSex, inInitDist, inInitParams, inInitDomDist, inInitDomParams,
 		inDominanceDist, inDominanceParams, inIsInherited, inMutationDist, 
-		inMutationParams, inPositions, inNbPositions, inExpressionType, inMutationRate, inIsOutput;
+		inMutationParams, inPositions, inNbPositions, inInitPos, inNbInitPos,
+		inExpressionType, inMutationRate, inIsOutput;
 	int nbErrors = 0;
 	int nbSims = 0;
 	int nbGenLoadTraits = 0;
@@ -3031,6 +3364,8 @@ int CheckTraitsFile(string indir)
 	bTraitsFile >> header; if (header != "Positions") nbErrors++;
 	bTraitsFile >> header; if (header != "NbrOfPositions") nbErrors++;
 	bTraitsFile >> header; if (header != "ExpressionType") nbErrors++;
+	bTraitsFile >> header; if (header != "InitialPositions") nbErrors++;
+	bTraitsFile >> header; if (header != "NbrInitialPositions") nbErrors++;
 	bTraitsFile >> header; if (header != "InitialAlleleDist") nbErrors++;
 	bTraitsFile >> header; if (header != "InitialAlleleParams") nbErrors++;
 	bTraitsFile >> header; if (header != "InitialDomDist") nbErrors++;
@@ -3077,7 +3412,7 @@ int CheckTraitsFile(string indir)
 
 		// read and validate columns relating to stage and sex-dependency (NB no IIV here)
 		bTraitsFile >> inTraitType >> inSex >> inPositions >> inNbPositions 
-			>> inExpressionType >> inInitDist >> inInitParams >> inInitDomDist >> inInitDomParams
+			>> inExpressionType >> inInitPos>> inNbInitPos >> inInitDist >> inInitParams >> inInitDomDist >> inInitDomParams
 			>> inIsInherited >> inMutationDist >> inMutationParams >> inDominanceDist >> inDominanceParams
 			>> inMutationRate >> inIsOutput;
 
@@ -3135,14 +3470,19 @@ int CheckTraitsFile(string indir)
 
 		// Check Positions and NbrOfPositions
 		const regex patternPositions{ "^\"?(([0-9]+-)?[0-9]+;)*([0-9]+-)?[0-9]+\"?$" };
-		bool isMatch = regex_search(inPositions, patternPositions);
-		if (!isMatch && inPositions != "random") {
+		bool isMatchPos = regex_search(inPositions, patternPositions);
+		if (!isMatchPos && inPositions != "random") {
 			BatchError(whichInputFile, lineNb, 0, " ");
 			batchLog << "Positions must be either a semicolon-separated list of integer ranges, or random." << endl;
 			nbErrors++;
 		}
 		if (inPositions == "random") {
-			if (stoi(inNbPositions) <= 0) {
+			if (inNbPositions == "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "NbrOfPositions must be an integer if Positions is random." << endl;
+				nbErrors++;
+			}
+			else if (stoi(inNbPositions) <= 0) {
 				BatchError(whichInputFile, lineNb, 0, " ");
 				batchLog << "NbrOfPositions must be a strictly positive integrer." << endl;
 				nbErrors++;
@@ -3172,6 +3512,41 @@ int CheckTraitsFile(string indir)
 			nbErrors++;
 		}
 
+		// Check initial positions
+		bool isMatchInitPos = regex_search(inInitPos, patternPositions);
+		if (tr != GENETIC_LOAD && tr != NEUTRAL && inInitPos != "all") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "InitialPositions must be set to all for dispersal traits." << endl;
+			nbErrors++;
+		}
+		if (isMatchInitPos && !isMatchPos) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "InitialPositions cannot be a list if Positions is not a list." << endl;
+			nbErrors++;
+		}
+		if (!isMatchInitPos && inInitPos != "random" && inInitPos != "all" && inInitPos != "#") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "InitialPositions must be either a semicolon-separated list of integer ranges, all, random, or # (none)." << endl;
+			nbErrors++;
+		}
+		if (inInitPos == "random") {
+			if (inNbInitPos == "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "NbrInitialPositions must be an integer if InitialPositions is random." << endl;
+				nbErrors++;
+			}
+			else if (stoi(inNbInitPos) <= 0) {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLog << "NbrInitialPositions must be a strictly positive integrer." << endl;
+				nbErrors++;
+			}
+		}
+		else if (inNbInitPos != "#") {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "If InitialPositions is not random NbrInitialPositions must be blank (#)." << endl;
+			nbErrors++;
+		}
+
 		// Check InitialAlleleDist
 		if (tr == NEUTRAL && inInitDist != "uniform") {
 			BatchError(whichInputFile, lineNb, 0, " ");
@@ -3190,7 +3565,7 @@ int CheckTraitsFile(string indir)
 		const regex patternParamsGamma{ "^\"?shape=[-]?([0-9]*[.])?[0-9]+;scale=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsMean{ "^\"?mean=[-]?([0-9]*[.])?[0-9]+\"?$" };
 		const regex patternParamsNeutral{ "^\"?max=[0-9]+\"?$" };
-
+		bool isMatch;
 		if (tr == NEUTRAL) {
 			if (inInitDist == "uniform") {
 				isMatch = regex_search(inInitParams, patternParamsNeutral);
@@ -5295,7 +5670,7 @@ int ReadLandFile(Landscape* pLandscape)
 	else { // imported raster map
 		string inNHabPlaceholder; // no longer necessary to read no. of habitats from landFile
 		landfile >> ppLand.landNum >> inNHabPlaceholder >> name_landscape >> name_patch;
-		landfile >> gNameCostFile >> name_dynland >> name_sp_dist;
+		landfile >> gNameCostFile >> name_spatialdemog >> name_dynland >> name_sp_dist;
 		if (landtype == 2) 
 			ppLand.nHab = 1; // habitat quality landscape has one habitat class
 	}
@@ -5309,7 +5684,7 @@ int ReadLandFile(Landscape* pLandscape)
 //---------------------------------------------------------------------------
 int ReadDynLandFile(Landscape* pLandscape) {
 
-	string landChangeFile, patchChangeFile, costChangeFile;
+	string landChangeFile, patchChangeFile, costChangeFile, spatialDemogFile;
 	int changeNb;
 	int nbChanges = 0;
 	landChange chg;
@@ -5333,11 +5708,12 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	dynLandIfs >> changeNb; // first change number
 	while (changeNb != -98765) {
 		chg.chgNb = changeNb;
-		dynLandIfs >> chg.chgYear >> landChangeFile >> patchChangeFile >> costChangeFile;
+		dynLandIfs >> chg.chgYear >> landChangeFile >> patchChangeFile >> costChangeFile >> spatialDemogFile;
 		chg.pathHabFile = paramsSim->getDir(1) + landChangeFile;
 		chg.pathPatchFile = paramsSim->getDir(1) + patchChangeFile;
 		chg.pathCostFile = costChangeFile == "NULL" ? "none" 
 			: paramsSim->getDir(1) + costChangeFile;
+		chg.pathSpatDemogFile = paramsSim->getDir(1) + spatialDemogFile;
 		nbChanges++;
 		pLandscape->addLandChange(chg);
 
@@ -5361,7 +5737,9 @@ int ReadDynLandFile(Landscape* pLandscape) {
 		pLandscape->createCostsChgMatrix();
 	}
 	for (int i = 0; i < nbChanges; i++) {
-		int imported = pLandscape->readLandChange(i, usesCosts);
+		// retrieve the previously stored vector for the filenames of the spatial demographic layers of that change (i+1)
+		vector<string> spatDemogLayerFiles = allSpatialDemogFileNames[i+1];
+		int imported = pLandscape->readLandChange(i, usesCosts, spatDemogLayerFiles);
 		if (imported != 0) {
 			return imported;
 		}
@@ -5495,51 +5873,88 @@ int ReadTraitsFile(ifstream& ifs, const int& nbRowsToRead) {
 
 // Set up a trait from input parameters and add it Species
 void setUpSpeciesTrait(vector<string> parameters) {
+
 	// Assumes all input is correct, errors have been handled by CheckTraits
 
 	const int genomeSize = pSpecies->getGenomeSize();
 	TraitType traitType = stringToTraitType(parameters[1]);
 	const sex_t sex = stringToSex(parameters[2]);
 	if (sex != NA) traitType = addSexDepToTrait(traitType, sex);
-	const set<int> positions = stringToLoci(parameters[3], parameters[4], genomeSize);
 	const ExpressionType expressionType = stringToExpressionType(parameters[5]);
 
+	set<int> positions;
+	string positionsArg = parameters[3];
+	if (positionsArg == "random") {
+		vector<int> lociToSampleFrom;
+		for (int pos = 0; pos < genomeSize; pos++) 
+			lociToSampleFrom.push_back(pos);
+		positions = selectRandomLociPositions(stoi(parameters[4]), lociToSampleFrom);
+	}
+	else { // semicolon-separated list
+		positions = stringToLoci(positionsArg);
+		for (auto position : positions) {
+			if (position >= genomeSize)
+				throw logic_error("Trait positions must not exceed genome size.\n");
+		}
+	}
+	
+	set<int> initialPositions;
+	positionsArg = parameters[6];
+	if (positionsArg == "all") {
+		initialPositions = positions;
+	}
+	else if (positionsArg == "random") {
+		vector<int> lociToSampleFrom(positions.begin(), positions.end());
+		initialPositions = selectRandomLociPositions(stoi(parameters[7]), lociToSampleFrom);
+	}
+	else if (positionsArg == "#") {
+		// nothing, set remains empty
+	}
+	else { // comma-separated list
+		initialPositions = stringToLoci(positionsArg);
+		for (auto position : initialPositions) {
+			if (!positions.contains(position))
+				throw logic_error("Initial trait positions must be a subset of Positions.\n");
+		}
+	}
+
 	// Initial allele distribution parameters
-	const DistributionType initDist = stringToDistributionType(parameters[6]);
-	const map<GenParamType, float> initParams = stringToParameterMap(parameters[7]);
+	const DistributionType initDist = stringToDistributionType(parameters[8]);
+	const map<GenParamType, float> initParams = stringToParameterMap(parameters[9]);
 
 	// Initial dominance distribution parameters
-	const DistributionType initDomDist = stringToDistributionType(parameters[8]);
-	const map<GenParamType, float> initDomParams = stringToParameterMap(parameters[9]);
+	const DistributionType initDomDist = stringToDistributionType(parameters[10]);
+	const map<GenParamType, float> initDomParams = stringToParameterMap(parameters[11]);
 
 	// Mutation parameters
-	bool isInherited = (parameters[10] == "TRUE");
+	bool isInherited = (parameters[12] == "TRUE");
 	DistributionType mutationDistribution = isInherited ? 
-		stringToDistributionType(parameters[11]) : 
+		stringToDistributionType(parameters[13]) : 
 		DistributionType::NONE;
 	map<GenParamType, float> mutationParameters;
 	if (isInherited) {
-		mutationParameters = stringToParameterMap(parameters[12]);
+		mutationParameters = stringToParameterMap(parameters[14]);
 	}
 
 	// Dominance distribution parameters
-	const DistributionType dominanceDist = stringToDistributionType(parameters[13]);
-	const map<GenParamType, float> dominanceParams = stringToParameterMap(parameters[14]);
+	const DistributionType dominanceDist = stringToDistributionType(parameters[15]);
+	const map<GenParamType, float> dominanceParams = stringToParameterMap(parameters[16]);
 
-	float mutationRate = isInherited ? stof(parameters[15]) : 0.0;
+	float mutationRate = isInherited ? stof(parameters[17]) : 0.0;
 	
-	parameters[16].erase(
+	parameters[18].erase(
 		// send windows line endings to hell where they belong
-		remove(parameters[16].begin(), parameters[16].end(), '\r'),
-		parameters[16].end()
+		remove(parameters[18].begin(), parameters[18].end(), '\r'),
+		parameters[18].end()
 	);
-	const bool isOutput = parameters[16] == "TRUE";
+	const bool isOutput = parameters[18] == "TRUE";
 
 	// Create species trait
 	int ploidy = gNbSexesDisp;
 	unique_ptr<SpeciesTrait> trait(new SpeciesTrait(
 		traitType, sex, 
 		positions, expressionType, 
+		initialPositions,
 		initDist, initParams, 
 		initDomDist, initDomParams,
 		isInherited, mutationRate, 
@@ -5700,66 +6115,51 @@ set<int> stringToChromosomeEnds(string str, const int& genomeSize) {
 	return chromosomeEnds;
 }
 
-set<int> selectRandomLociPositions(int nbLoci, const int& genomeSize) {
+set<int> selectRandomLociPositions(int nbLoci, vector<int> lociToSampleFrom) {
+	
+	// convert to vector to sample by index
 	set<int> positions;
-	if (nbLoci > genomeSize) throw logic_error("Number of random loci exceeds genome size.");
-	int rndLocus;
+	if (nbLoci > lociToSampleFrom.size()) throw logic_error("Number of random loci exceeds number of available positions.");
+	int rndIx;
 	for (int i = 0; i < nbLoci; ++i) {
-		do {
-			rndLocus = pRandom->IRandom(0, genomeSize - 1);
-		} while (positions.contains(rndLocus));
-		positions.insert(rndLocus);
+		rndIx = pRandom->IRandom(0, lociToSampleFrom.size() - 1);
+		positions.insert(lociToSampleFrom[rndIx]);
+		lociToSampleFrom.erase(lociToSampleFrom.begin() + rndIx); // rm element to not sample it again
 	}
 	return positions;
 }
 
-set<int> stringToLoci(string pos, string nLoci, const int& genomeSize) {
+set<int> stringToLoci(string pos) {
 
 	set<int> positions;
 
-	if (pos != "random") {
-
-		// Parse semicolon-separated list from input string
-		stringstream ss(pos);
-		string value, valueWithin;
-		// Read semicolon-separated positions
-		while (std::getline(ss, value, ';')) {
-			stringstream sss(value);
-			vector<int> positionRange;
-			// Read single positions and dash-separated ranges
-			while (std::getline(sss, valueWithin, '-')) {
-				valueWithin.erase(remove(valueWithin.begin(), valueWithin.end(), '\"'), valueWithin.end());
-				positionRange.push_back(stoi(valueWithin));
-			}
-			switch (positionRange.size()) {
-			case 1: // single position
-				if (positionRange[0] >= genomeSize)
-					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
-				positions.insert(positionRange[0]);
-				break;
-			case 2: // dash-separated range
-				if (positionRange[0] >= genomeSize || positionRange[1] >= genomeSize) {
-					throw logic_error("Traits file: ERROR - trait positions must not exceed genome size");
-				}
-				if (positionRange[0] >= positionRange[1])
-					throw logic_error("Position ranges must be in ascending order");
-				for (int i = positionRange[0]; i < positionRange[1] + 1; ++i) {
-					positions.insert(i);
-				}
-				break;
-			default: // zero or more than 2 values between semicolons: error
-				throw logic_error("Traits file: ERROR - incorrectly formatted position range.");
-				break;
-			}
+	// Parse semicolon-separated list from input string
+	stringstream ss(pos);
+	string value, valueWithin;
+	// Read semicolon-separated positions
+	while (std::getline(ss, value, ';')) {
+		stringstream sss(value);
+		vector<int> positionRange;
+		// Read single positions and dash-separated ranges
+		while (std::getline(sss, valueWithin, '-')) {
+			valueWithin.erase(remove(valueWithin.begin(), valueWithin.end(), '\"'), valueWithin.end());
+			positionRange.push_back(stoi(valueWithin));
 		}
-
-		for (auto position : positions) {
-			if (position >= genomeSize)
-				throw logic_error("Traits file: ERROR - trait positions " + to_string(position) + " must not exceed genome size.\n");
+		switch (positionRange.size()) {
+		case 1: // single position
+			positions.insert(positionRange[0]);
+			break;
+		case 2: // dash-separated range
+			if (positionRange[0] >= positionRange[1])
+				throw logic_error("Position ranges must be in ascending order");
+			for (int i = positionRange[0]; i < positionRange[1] + 1; ++i) {
+				positions.insert(i);
+			}
+			break;
+		default: // zero or more than 2 values between semicolons: error
+			throw logic_error("Traits file: ERROR - incorrectly formatted position range.");
+			break;
 		}
-	}
-	else { // random
-		positions = selectRandomLociPositions(stoi(nLoci), genomeSize);
 	}
 	return positions;
 }
@@ -5934,12 +6334,43 @@ int ReadStageStructure()
 		ReadStageWeights(1);
 		fdfile.close(); fdfile.clear();
 	}
+
+	ssfile >> name; // name is FecLayerFile
+	if (gHasSpatialDemography) {
+		if (landtype == 2){
+			if (name != "NULL") {
+					flfile.open((Inputs + name).c_str());
+					ReadDemogLayers(1);
+					flfile.close(); flfile.clear();
+				}
+			else {
+				// set default values for fecundity if no file is provided:
+			}
+		}
+	}
+
+
 	ssfile >> sstruct.devDens >> devCoeff >> sstruct.devStageDens >> name; // 'name' is DevStageWtsFile
 	if (name != "NULL") {
 		ddfile.open((Inputs + name).c_str());
 		ReadStageWeights(2);
 		ddfile.close(); ddfile.clear();
 	}
+
+	ssfile >> name; // name is DevLayerFile
+	if (gHasSpatialDemography) {
+			if (landtype == 2){
+				if (name != "NULL") {
+						dlfile.open((Inputs + name).c_str());
+						ReadDemogLayers(2);
+						dlfile.close(); dlfile.clear();
+					}
+				else {
+					// set default values for fecundity if no file is provided:
+				}
+			}
+		}
+
 	ssfile >> sstruct.survDens >> survCoeff >> sstruct.survStageDens >> name; // 'name' is SurvStageWtsFile
 	if (name != "NULL") {
 		sdfile.open((Inputs + name).c_str());
@@ -5947,10 +6378,66 @@ int ReadStageStructure()
 		sdfile.close(); sdfile.clear();
 	}
 
+	ssfile >> name; // name is SurvLayerFile
+	if (gHasSpatialDemography) {
+			if (landtype == 2){
+				if (name != "NULL") {
+						slfile.open((Inputs + name).c_str());
+						ReadDemogLayers(3);
+						slfile.close(); slfile.clear();
+					}
+				else {
+					// set default values for fecundity if no file is provided:
+				}
+			}
+		}
+
 	pSpecies->setStage(sstruct);
 
 	if (sstruct.devDens || sstruct.survDens) {
 		pSpecies->setDensDep(devCoeff, survCoeff);
+	}
+
+	return 0;
+}
+
+//---------------------------------------------------------------------------
+int ReadDemogLayers(int option){
+	string header;
+	int stg, sex, layerNb;
+	int maxNb = stages * sexesDem; // the number of the expected lines
+	// distinguish between fecundity (1), development (2) and survival (3) layers
+	switch (option) {
+	case 1:
+		{
+			flushHeaders(flfile);
+			for (int line = 0; line < maxNb; line ++){
+				flfile >> stg >> sex >> layerNb;
+				pSpecies->setFecLayer(stg, sex, layerNb);
+				pSpecies->setFecSpatial(true);
+			}
+			break;
+		}
+	case 2:
+		{
+			flushHeaders(dlfile);
+			for (int line = 0; line < maxNb; line ++){
+				dlfile >> stg >> sex >> layerNb;
+				pSpecies->setDevLayer(stg, sex, layerNb);
+				pSpecies->setDevSpatial(true);
+			}
+			break;
+		}
+	case 3:
+		{
+			flushHeaders(slfile);
+			for (int line = 0; line < maxNb; line ++){
+				slfile >> stg >> sex >> layerNb;
+				pSpecies->setSurvLayer(stg, sex, layerNb);
+				pSpecies->setSurvSpatial(true);
+			}
+			break;
+		}
 	}
 
 	return 0;
@@ -6627,14 +7114,17 @@ int ReadSettlement()
 			srules.densDep = (inDensDep == 1);
 			srules.findMate = (inFindMate == 1);
 
+			// Set parameters for this line (stg x sex or default, i.e. juveniles/females)
 			pSpecies->setSettRules(stageToSet, sexToSet, srules);
 			pSpecies->setSteps(stageToSet, sexToSet, ssteps);
 			if (srules.densDep) {
 				pSpecies->setSpSettTraits(stageToSet, sexToSet, settleDD);
 			}
 
-			if (!sett.stgDep) {
-				if (!sett.sexDep) {
+			// Set the remaining sex and stages, if applicable
+			// e.g. if not stage-dep but has stage-struct, must set other stages
+			if (!sett.stgDep) { // then also need to set remaining stages
+				if (!sett.sexDep) { // then also need to set males 
 					if (dem.stageStruct) { // model is structured - also set parameters for all stages
 						for (int stg = 1; stg < sstruct.nStages; stg++) {
 							pSpecies->setSettRules(stg, 0, srules);
@@ -6648,8 +7138,7 @@ int ReadSettlement()
 							}
 						}
 					}
-					else {
-						if (hasMales) { // model is sexual - also set parameters for males
+					else if (hasMales) { // model is sexual - also set parameters for males
 							pSpecies->setSettRules(0, 1, srules);
 							pSpecies->setSteps(0, 1, ssteps);
 							if (srules.densDep) {
@@ -6657,9 +7146,7 @@ int ReadSettlement()
 							}
 						}
 					}
-				}
-				else { // stage-dep but not sex-dep
-					if (dem.stageStruct) { // model is structured - also set parameters for all stages
+				else if (dem.stageStruct) { // sex-dep but not stage-dep
 						for (int stg = 1; stg < sstruct.nStages; stg++) {
 							pSpecies->setSettRules(stg, sexToSet, srules);
 							pSpecies->setSteps(stg, sexToSet, ssteps);
@@ -6668,18 +7155,15 @@ int ReadSettlement()
 						}
 					}
 				}
-			}
-			else { // not stage-dep
-				if (!sett.sexDep) {
-					if (hasMales) { // model is sexual - also set parameters for males
+			else if (!sett.sexDep && hasMales) { // stg-struct, but not sex-dep
 						pSpecies->setSettRules(stageToSet, 1, srules);
 						pSpecies->setSteps(stageToSet, 1, ssteps);
 						if (srules.densDep) {
 							pSpecies->setSpSettTraits(stageToSet, 1, settleDD);
 						}
 					}
-				}
-			}
+			// else (stg-dep + sex-dep) nothing, already covered by the corresponding line in the input file!
+
 		} // end of movement model
 		else { // dispersal kernel
 
@@ -6693,10 +7177,10 @@ int ReadSettlement()
 			if (!sett.sexDep && mustFindMate && !hasMales)
 				errorCode = 504;
 
+			// Set parameters for this line (stg x sex or default, i.e. juveniles/females)
 			int stageToSet = sett.stgDep ? inStage : 0;
 			int sexToSet = sett.sexDep ? inSex : 0;
 			srules = pSpecies->getSettRules(stageToSet, sexToSet);
-
 			switch (inSettleType) {
 			case 0:
 				srules.wait = false;
@@ -6718,11 +7202,12 @@ int ReadSettlement()
 			srules.findMate = mustFindMate;
 			pSpecies->setSettRules(stageToSet, sexToSet, srules);
 
-			// Surely this can be simplified further
+			// Set the remaining sex and stages, if applicable
+			// e.g. if not stage-dep but has stage-struct, must set other stages
 			if (!sett.stgDep && dem.stageStruct) {
 				// Must set other stages
 				if (!sett.sexDep) {
-					for (int stg = 0; stg < sstruct.nStages; stg++) {
+					for (int stg = 1; stg < sstruct.nStages; stg++) {
 						pSpecies->setSettRules(stg, 0, srules);
 						if (hasMales) { // model is sexual - also set parameters for males
 							pSpecies->setSettRules(stg, 1, srules);
@@ -7288,15 +7773,25 @@ void RunBatch(int nSimuls, int nLandscapes)
 			string hname = paramsSim->getDir(1) + name_landscape;
 			int landcode;
 			string cname;
+			vector <string> scalinglayers_fnames_vec; // vector of demographic scaling layers for a given year (initialise empty vector)
 			if (gNameCostFile == "NULL" || gNameCostFile == "none") cname = "NULL";
 			else cname = paramsSim->getDir(1) + gNameCostFile;
+
+			if(gHasSpatialDemography){
+				if(landtype == 2 && stagestruct) {
+					if(nDSlayer>0){
+						scalinglayers_fnames_vec = allSpatialDemogFileNames[0]; // get vector  of scaling layers file names of year 0; includes the directory path
+					}
+				}
+			}
+
 			if (paramsLand.patchModel) {
 				string pname = paramsSim->getDir(1) + name_patch;
 
-				landcode = pLandscape->readLandscape(0, hname, pname, cname);
+				landcode = pLandscape->readLandscape(0, hname, pname, cname, scalinglayers_fnames_vec);
 			}
 			else {
-				landcode = pLandscape->readLandscape(0, hname, " ", cname);
+				landcode = pLandscape->readLandscape(0, hname, " ", cname, scalinglayers_fnames_vec);
 			}
 			if (landcode != 0) {
 				cout << "Error reading landscape" << endl;
