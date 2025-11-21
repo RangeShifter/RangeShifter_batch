@@ -22,7 +22,7 @@
 
  /*------------------------------------------------------------------------------
 
- RangeShifter v2.0 BatchMode
+ RangeShifter v3.0 BatchMode
 
  Functions for running in BATCH MODE
 

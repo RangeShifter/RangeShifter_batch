@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  *
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Theo Pannetier, Jette Wolff, Damaris Zurell
  *
  *	This file is part of RangeShifter.
  *
@@ -5739,6 +5739,12 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	for (int i = 0; i < nbChanges; i++) {
 		// retrieve the previously stored vector for the filenames of the spatial demographic layers of that change (i+1)
 		vector<string> spatDemogLayerFiles = allSpatialDemogFileNames[i+1];
+
+		for (std::string& scaling_fname : spatDemogLayerFiles) {
+			// Update each entry in spatDemogLayerFiles
+			scaling_fname = paramsSim->getDir(1) + scaling_fname;
+		}
+
 		int imported = pLandscape->readLandChange(i, usesCosts, spatDemogLayerFiles);
 		if (imported != 0) {
 			return imported;
@@ -7781,6 +7787,12 @@ void RunBatch(int nSimuls, int nLandscapes)
 				if(landtype == 2 && stagestruct) {
 					if(nDSlayer>0){
 						scalinglayers_fnames_vec = allSpatialDemogFileNames[0]; // get vector  of scaling layers file names of year 0; includes the directory path
+
+					    for (std::string& scaling_fname : scalinglayers_fnames_vec) {
+					        // Update each entry in scalinglayers_fnames_vec
+					        scaling_fname = paramsSim->getDir(1) + scaling_fname;
+					    }
+
 					}
 				}
 			}
