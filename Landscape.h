@@ -58,9 +58,9 @@ to be intialised, which are specified by the user in FormSeeding. This option is
 available in the GUI version only.
 
 For full details of RangeShifter, please see:
-Bocedi G., Palmer S.C.F., Pe?er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+ Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
 and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
-eco-evolutionary dynamics and species? responses to environmental changes.
+ eco-evolutionary dynamics and species’ responses to environmental changes.
 Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
 Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
@@ -118,7 +118,7 @@ public:
 	        string // name of species distribution file
 	);
 	void setDistribution(
-		int	// no. of distribution cells to be initlandOriginialised (0 for all cells)
+		int	// no. of distribution cells to be initialised (0 for all cells)
 	);
 	void setDistCell( // Set a specified cell (by position in cells vector)
 		int,	// index no. of DistCell in cells vector
@@ -199,7 +199,7 @@ struct patchData {
 };
 struct landChange {
 	int chgNb, chgYear; 
-	string pathHabFile, pathPatchFile, pathCostFile;
+	string pathHabFile, pathPatchFile, pathCostFile, pathSpatDemogFile;
 };
 struct patchChange {
 	int chgnum, x, y, oldpatch, newpatch;
@@ -379,8 +379,9 @@ public:
 #else
 	// TODO: add spatial demography for batch version
 	int readLandChange(
-		int,	// change file number
-		bool	// change SMS costs?
+		int,	// change file numbers
+		bool,	// change SMS costs?
+		vector <string> // vector of demographic scaling layers
 	);
 #endif
 	void createPatchChgMatrix(void);
@@ -538,7 +539,7 @@ private:
 	int nHab;							// no. of habitats
 	int nHabMax;					// max. no. of habitats (used for batch input only)
 	int dimX,dimY;				// dimensions
-	int minX,minY;				// minimum available X and Y co-ordinates
+	int minX, minY;				// minimum available X and Y co-ordinates, i.e. coordinates of the bottom-right corner
 	int maxX,maxY;				// maximum available X and Y co-ordinates
 	float minPct,maxPct;  // min and max percentage of habitat in a cell
 	float propSuit;				// proportion of suitable cells
@@ -595,7 +596,7 @@ extern paramInit *paramsInit;
 extern paramSim *paramsSim;
 extern RSrandom *pRandom;
 
-#ifndef NDEBUG
+#ifdef UNIT_TESTS
 landParams createDefaultLandParams(const int& dim);
 void testLandscape();
 #endif

@@ -1360,7 +1360,7 @@ int Landscape::readLandChange(int filenum, Rcpp::NumericMatrix habfile, Rcpp::Nu
 #if RS_RCPP && !R_CMD // normal file input
 int Landscape::readLandChange(int filenum, bool costs, wifstream& hfile, wifstream& pfile, wifstream& cfile, int habnodata, int pchnodata, int costnodata, vector <string>  scalinglayers)
 #else
-int Landscape::readLandChange(int filenum, bool costs)
+int Landscape::readLandChange(int filenum, bool costs, vector <string>  scalinglayers)
 #endif
 {
 
@@ -1718,6 +1718,13 @@ default:
 	if (hfile.is_open()) { hfile.close(); hfile.clear(); }
 	if (pfile.is_open()) { pfile.close(); pfile.clear(); }
 	if (cfile.is_open()) { cfile.close(); cfile.clear(); }
+
+	// add here the reading of demographic scaling layers
+	if(scalinglayers.size()>0){
+		int retcode = readDemographicScaling(scalinglayers);
+		if (retcode < 0) return 54; //change number
+	}
+
 	return 0;
 
 }
@@ -2378,7 +2385,7 @@ resol = (int) tmpresol;
 
 	dimX = ncols;
 	dimY = nrows;
-	minX = maxY = 0;
+	minX = maxY = 0; // bottom-left / south-west corner
 	maxX = dimX - 1;
 	maxY = dimY - 1;
 
@@ -2437,15 +2444,11 @@ resol = (int) tmpresol;
 				habFloat = badHabFloat;
 #if RS_RCPP
 				if (ifsHabMap >> habFloat) {
-					habCode = static_cast<int>(habFloat);
-				if (patchModel) {
+					habCode = (int)habFloat;
+					if (patchModel) {
 						patchFloat = badPatchFloat;
-// #if RS_RCPP
 						if (ifsPatchMap >> patchFloat) {
-// #else
-//						ifsPatchMap >> patchFloat;
-// #endif
-							patchCode = static_cast<int>(patchFloat);
+							patchCode = (int)patchFloat;
 						}
 						else { // corrupt file stream
 #if !R_CMD
@@ -3327,8 +3330,8 @@ void Landscape::outVisits(int rep, int landNr) {
 
 //---------------------------------------------------------------------------
 
-#ifndef NDEBUG
-// Debug only: shortcut setup utilities
+#ifdef UNIT_TESTS
+// Tests only: shortcut setup utilities
 
 Landscape createLandscapeFromCells(vector<Cell*> cells, const landParams& lp, Species sp) {
 	// Set up landscape
@@ -3364,7 +3367,7 @@ landParams createDefaultLandParams(const int& dim) {
 void testLandscape() {
 	// test coordinate system...
 }
-#endif // NDEBUG
+#endif // UNIT_TESTS
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
