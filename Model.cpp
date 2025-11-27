@@ -891,6 +891,7 @@ void OutParameters(Landscape* pLandscape)
 			if (chg.pathCostFile != "none" && chg.pathCostFile != "NULL") {
 				outPar << "Costs    : " << chg.pathCostFile << endl;
 			}
+
 		}
 	}
 	outPar << endl << "SPECIES DISTRIBUTION LOADED: \t";
@@ -1141,6 +1142,49 @@ void OutParameters(Landscape* pLandscape)
 			else outPar << "not stage-dependent" << endl;
 		}
 		else outPar << "no" << endl;
+
+		if (ppLand.spatialdemog){
+			outPar << "SPATIALLY VARYING DEMOGRAPHY:\t in" << endl;
+			// file names for the spatial layers
+
+			if(pSpecies->getFecSpatial()){
+				outPar << "FECUNDITY" << endl;
+				outPar << "LAYERS:" << endl;
+				for (int i = 0; i < sstruct.nStages; i++) {
+								if (dem.repType == 2){
+									outPar << "stage: " << i << "females: \t" << pSpecies->getFecLayer(i,0) << "\tmales: \t" << pSpecies->getFecLayer(i,1) << endl;
+								} else{
+									outPar << "stage: " << i << pSpecies->getFecLayer(i,0) << endl;
+								}
+							}
+			}
+
+			if(pSpecies->getDevSpatial()){
+				outPar << "DEVELOPMENT" << endl;
+				outPar << "LAYERS:" << endl;
+				for (int i = 0; i < sstruct.nStages; i++) {
+								if (dem.repType == 2){
+									outPar << "stage: " << i << "females: \t" << pSpecies->getDevLayer(i,0) << "\tmales: \t" << pSpecies->getDevLayer(i,1) << endl;
+								} else{
+									outPar << "stage: " << i << pSpecies->getDevLayer(i,0) << endl;
+								}
+							}
+			}
+			if(pSpecies->getSurvSpatial()){
+				outPar << "SURVIVAL" << endl;
+				outPar << "LAYERS:" << endl;
+				for (int i = 0; i < sstruct.nStages; i++) {
+								if (dem.repType == 2){
+									outPar << "stage: " << i << "females: \t" << pSpecies->getSurvLayer(i,0) << "\tmales: \t" << pSpecies->getSurvLayer(i,1) << endl;
+								} else{
+									outPar << "stage: " << i << pSpecies->getSurvLayer(i,0) << endl;
+								}
+							}
+			}
+		}
+		else {
+			outPar << "SPATIALLY VARYING DEMOGRAPHY:\t no" << endl;
+		}
 	} // end of if (dem.stageStruct)
 	else { // not stage-strutured
 		outPar << "no" << endl;
