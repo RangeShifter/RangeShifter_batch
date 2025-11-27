@@ -1142,9 +1142,9 @@ int CheckLandFile(int landtype, string indir)
 		bLandFile >> header; if (header != "LandscapeFile") errors++;
 		bLandFile >> header; if (header != "PatchFile") errors++;
 		bLandFile >> header; if (header != "CostMapFile") errors++;
+		bLandFile >> header; if (header != "SpatialDemogFile") errors++;
 		bLandFile >> header; if (header != "DynLandFile") errors++;
 		bLandFile >> header; if (header != "SpDistFile") errors++;
-		bLandFile >> header; if (header != "SpatialDemogFile") errors++;
 		if (errors > 0) {
 			FormatError(filetype, 0);
 			batchLog << "*** Ensure format is correct for real landscape" << endl;
@@ -1528,9 +1528,9 @@ int CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landras
 
 	// Check header
 	bSpatialDemogFile >> header;
-	if (header != "NbOfLayer") errors++;
+	if (header != "NbOfLayer") {errors++; cout << header << endl;}
 	bSpatialDemogFile >> header;
-	if (header != "Filename") errors++;
+	if (header != "Filename") {errors++; cout << header << endl;}
 
 	if (errors > 0) {
 		FormatError("SpatialDemogFile", 0);
@@ -1553,8 +1553,8 @@ int CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landras
 		expectedLineNum++;
 
 		// Update maxNbOfLayer
-		if (inint > maxNbOfLayer) {
-			maxNbOfLayer = inint;
+		if (inint+1 > maxNbOfLayer) {
+			maxNbOfLayer = inint+1;
 		}
 
 		// Check filename
@@ -1609,7 +1609,7 @@ int CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landras
 
 	if (maxNbOfLayer > gMaxNbLayers) {
 		BatchError("SpatialDemogFile", line, 0, "NbOfLayer");
-		batchLog << "*** MaxNbOfLayer exceeded the maximal number of layers allowed (3 * number of sexes * number of stages)" << endl;
+		batchLog << "*** MaxNbOfLayer exceeded the maximal number of layers allowed (3 * number of sexes * number of stages, counting from 0)" << endl;
 		errors++;
 	}
 
@@ -1873,7 +1873,7 @@ int CheckStageFile(string indir)
 	bStageStructFile >> header; if (header != "SurvDensCoeff") errors++;
 	bStageStructFile >> header; if (header != "SurvStageWts") errors++;
 	bStageStructFile >> header; if (header != "SurvStageWtsFile") errors++;
-	bStageStructFile >> header; if (header != "DurvLayerFile") errors++;
+	bStageStructFile >> header; if (header != "SurvLayerFile") errors++;
 	if (errors > 0) {
 		FormatError(filetype, errors);
 		return -111;
@@ -1996,34 +1996,40 @@ int CheckStageFile(string indir)
 		ftype2 = "FecLayerFile";
 		bStageStructFile >> filename;
 		if (filename != "NULL"){
-			if(gHasSpatialDemography){
+			if(!gHasSpatialDemography){
 				BatchError(filetype, line, 0, " ");
 				batchLog << ftype2 << " is not allowed when SpatialDemogFile is not used" << endl;
 				errors++;
 			}
-		}
-		else {
-			checkfile = true;
-			for (i = 0; i < (int)layerfiles.size(); i++) {
-				if (filename == layerfiles[i]) checkfile = false; // file has already been checked
-			}
-			if (checkfile){
-				fname = indir + filename;
-				batchLog << "Checking " << ftype2 << " " << fname << endl;
-				bLayerFile.open(fname.c_str());
-				if (bLayerFile.is_open()) {
-					err = CheckLayerFile(ftype2);
-					if (err == 0) FileHeadersOK(ftype2); else errors++;
-					bLayerFile.close();
+			else {
+				checkfile = true;
+				for (i = 0; i < (int)layerfiles.size(); i++) {
+					if (filename == layerfiles[i]) checkfile = false; // file has already been checked
 				}
-				else {
-					OpenError(ftype2, fname); errors++;
+				if (checkfile){
+					fname = indir + filename;
+					batchLog << "Checking " << ftype2 << " " << fname << endl;
+					bLayerFile.open(fname.c_str());
+					if (bLayerFile.is_open()) {
+						err = CheckLayerFile(ftype2);
+						if (err == 0) FileHeadersOK(ftype2); else errors++;
+						bLayerFile.close();
+					}
+					else {
+						OpenError(ftype2, fname); errors++;
+					}
+					if (bLayerFile.is_open()) bLayerFile.close();
+					bLayerFile.clear();
 				}
-				if (bLayerFile.is_open()) bLayerFile.close();
-				bLayerFile.clear();
+				layerfiles.push_back(filename);
+				if (err == 0) layerset = true;
 			}
-			layerfiles.push_back(filename);
-			if (err == 0) layerset = true;
+		} else{
+			if(gHasSpatialDemography){
+				BatchError(filetype, line, 0, " ");
+				batchLog << ftype2 << " is compulsory when SpatialDemogFile is used" << endl;
+				errors++;
+			}
 		}
 
 		bStageStructFile >> devdensdep;
@@ -2084,34 +2090,40 @@ int CheckStageFile(string indir)
 		ftype2 = "DevLayerFile";
 		bStageStructFile >> filename;
 		if (filename != "NULL"){
-			if(gHasSpatialDemography){
+			if(!gHasSpatialDemography){
 				BatchError(filetype, line, 0, " ");
 				batchLog << ftype2 << " is not allowed when SpatialDemogFile is not used" << endl;
 				errors++;
 			}
-		}
-		else {
-			checkfile = true;
-			for (i = 0; i < (int)layerfiles.size(); i++) {
-				if (filename == layerfiles[i]) checkfile = false; // file has already been checked
-			}
-			if (checkfile){
-				fname = indir + filename;
-				batchLog << "Checking " << ftype2 << " " << fname << endl;
-				bLayerFile.open(fname.c_str());
-				if (bLayerFile.is_open()) {
-					err = CheckLayerFile(ftype2);
-					if (err == 0) FileHeadersOK(ftype2); else errors++;
-					bLayerFile.close();
+			else {
+				checkfile = true;
+				for (i = 0; i < (int)layerfiles.size(); i++) {
+					if (filename == layerfiles[i]) checkfile = false; // file has already been checked
 				}
-				else {
-					OpenError(ftype2, fname); errors++;
+				if (checkfile){
+					fname = indir + filename;
+					batchLog << "Checking " << ftype2 << " " << fname << endl;
+					bLayerFile.open(fname.c_str());
+					if (bLayerFile.is_open()) {
+						err = CheckLayerFile(ftype2);
+						if (err == 0) FileHeadersOK(ftype2); else errors++;
+						bLayerFile.close();
+					}
+					else {
+						OpenError(ftype2, fname); errors++;
+					}
+					if (bLayerFile.is_open()) bLayerFile.close();
+					bLayerFile.clear();
 				}
-				if (bLayerFile.is_open()) bLayerFile.close();
-				bLayerFile.clear();
+				layerfiles.push_back(filename);
+				if (err == 0) layerset = true;
 			}
-			layerfiles.push_back(filename);
-			if (err == 0) layerset = true;
+		} else{
+			if(gHasSpatialDemography){
+				BatchError(filetype, line, 0, " ");
+				batchLog << ftype2 << " is compulsory when SpatialDemogFile is used" << endl;
+				errors++;
+			}
 		}
 
 		bStageStructFile >> survdensdep;
@@ -2172,34 +2184,40 @@ int CheckStageFile(string indir)
 		ftype2 = "SurvLayerFile";
 		bStageStructFile >> filename;
 		if (filename != "NULL"){
-			if(gHasSpatialDemography){
+			if(!gHasSpatialDemography){
 				BatchError(filetype, line, 0, " ");
 				batchLog << ftype2 << " is not allowed when SpatialDemogFile is not used" << endl;
 				errors++;
 			}
-		}
-		else {
-			checkfile = true;
-			for (i = 0; i < (int)layerfiles.size(); i++) {
-				if (filename == layerfiles[i]) checkfile = false; // file has already been checked
-			}
-			if (checkfile){
-				fname = indir + filename;
-				batchLog << "Checking " << ftype2 << " " << fname << endl;
-				bLayerFile.open(fname.c_str());
-				if (bLayerFile.is_open()) {
-					err = CheckLayerFile(ftype2);
-					if (err == 0) FileHeadersOK(ftype2); else errors++;
-					bLayerFile.close();
+			else {
+				checkfile = true;
+				for (i = 0; i < (int)layerfiles.size(); i++) {
+					if (filename == layerfiles[i]) checkfile = false; // file has already been checked
 				}
-				else {
-					OpenError(ftype2, fname); errors++;
+				if (checkfile){
+					fname = indir + filename;
+					batchLog << "Checking " << ftype2 << " " << fname << endl;
+					bLayerFile.open(fname.c_str());
+					if (bLayerFile.is_open()) {
+						err = CheckLayerFile(ftype2);
+						if (err == 0) FileHeadersOK(ftype2); else errors++;
+						bLayerFile.close();
+					}
+					else {
+						OpenError(ftype2, fname); errors++;
+					}
+					if (bLayerFile.is_open()) bLayerFile.close();
+					bLayerFile.clear();
 				}
-				if (bLayerFile.is_open()) bLayerFile.close();
-				bLayerFile.clear();
+				layerfiles.push_back(filename);
+				if (err == 0) layerset = true;
 			}
-			layerfiles.push_back(filename);
-			if (err == 0) layerset = true;
+		} else{
+			if(gHasSpatialDemography){
+				BatchError(filetype, line, 0, " ");
+				batchLog << ftype2 << " is compulsory when SpatialDemogFile is used" << endl;
+				errors++;
+			}
 		}
 
 		if (layerset == false && gHasSpatialDemography){
@@ -2430,7 +2448,7 @@ int CheckWeightsFile(string filetype)
 int CheckLayerFile(string filetype)
 {
 	string header;
-	int layer, line;
+	int layer, line=0;
 	int inint;
 	int errors = 0;
 
@@ -2460,7 +2478,7 @@ int CheckLayerFile(string filetype)
 		}
 		bLayerFile >> inint; // sex
 		if (sexesDem == 2) {
-			if (inint < 0 || inint > 1) {
+			if (inint != 0 || inint != 1) {
 				BatchError(filetype, line, 1, "Sex"); errors++;
 			}
 		} else {
@@ -2470,15 +2488,18 @@ int CheckLayerFile(string filetype)
 			}
 		}
 		bLayerFile >> inint; // layer
-		if (inint < 0 || inint >= nDSlayer)  {
-			BatchError(filetype, line, 0, "Layer"); errors++;
-			batchLog << "LayerNb must be between 0 and the maximal number of layer" << endl;
+		if(inint != -9){
+			if (inint < 0 || inint >= nDSlayer)  {
+				BatchError(filetype, line, 0, "Layer"); errors++;
+				batchLog << "LayerNb must be between 0 and the maximal number of layer-1" << endl;
+			}
 		}
+
 	}
 	// final read should hit EOF
 	bLayerFile >> header;
 
-	if (!bFecLayerFile.eof()) {
+	if (!bLayerFile.eof()) {
 		EOFerror(filetype);
 		errors++;
 	}
@@ -5673,6 +5694,8 @@ int ReadLandFile(Landscape* pLandscape)
 		landfile >> gNameCostFile >> name_spatialdemog >> name_dynland >> name_sp_dist;
 		if (landtype == 2) 
 			ppLand.nHab = 1; // habitat quality landscape has one habitat class
+		if(gHasSpatialDemography)
+			ppLand.spatialdemog=true;
 	}
 
 	pLandscape->setLandParams(ppLand, true);
@@ -5694,7 +5717,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	dynLandIfs.open(pathToFile.c_str());
 	if (dynLandIfs.is_open()) {
 		string header;
-		int nbHeaders = 5;
+		int nbHeaders = 6;
 		for (int i = 0; i < nbHeaders; i++) 
 			dynLandIfs >> header;
 	}
@@ -5739,11 +5762,6 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	for (int i = 0; i < nbChanges; i++) {
 		// retrieve the previously stored vector for the filenames of the spatial demographic layers of that change (i+1)
 		vector<string> spatDemogLayerFiles = allSpatialDemogFileNames[i+1];
-
-		for (std::string& scaling_fname : spatDemogLayerFiles) {
-			// Update each entry in spatDemogLayerFiles
-			scaling_fname = paramsSim->getDir(1) + scaling_fname;
-		}
 
 		int imported = pLandscape->readLandChange(i, usesCosts, spatDemogLayerFiles);
 		if (imported != 0) {
@@ -6419,7 +6437,7 @@ int ReadDemogLayers(int option){
 			flushHeaders(flfile);
 			for (int line = 0; line < maxNb; line ++){
 				flfile >> stg >> sex >> layerNb;
-				pSpecies->setFecLayer(stg, sex, layerNb);
+				if(layerNb>=0)	pSpecies->setFecLayer(stg, sex, layerNb);
 				pSpecies->setFecSpatial(true);
 			}
 			break;
@@ -6429,7 +6447,7 @@ int ReadDemogLayers(int option){
 			flushHeaders(dlfile);
 			for (int line = 0; line < maxNb; line ++){
 				dlfile >> stg >> sex >> layerNb;
-				pSpecies->setDevLayer(stg, sex, layerNb);
+				if(layerNb>=0)	pSpecies->setDevLayer(stg, sex, layerNb);
 				pSpecies->setDevSpatial(true);
 			}
 			break;
@@ -6439,7 +6457,7 @@ int ReadDemogLayers(int option){
 			flushHeaders(slfile);
 			for (int line = 0; line < maxNb; line ++){
 				slfile >> stg >> sex >> layerNb;
-				pSpecies->setSurvLayer(stg, sex, layerNb);
+				if(layerNb>=0)	pSpecies->setSurvLayer(stg, sex, layerNb);
 				pSpecies->setSurvSpatial(true);
 			}
 			break;
@@ -7787,12 +7805,6 @@ void RunBatch(int nSimuls, int nLandscapes)
 				if(landtype == 2 && stagestruct) {
 					if(nDSlayer>0){
 						scalinglayers_fnames_vec = allSpatialDemogFileNames[0]; // get vector  of scaling layers file names of year 0; includes the directory path
-
-					    for (std::string& scaling_fname : scalinglayers_fnames_vec) {
-					        // Update each entry in scalinglayers_fnames_vec
-					        scaling_fname = paramsSim->getDir(1) + scaling_fname;
-					    }
-
 					}
 				}
 			}

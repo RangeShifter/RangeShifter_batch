@@ -71,3 +71,4 @@ run_on_gha/rs_test_project/Outputs/*
 run_on_gha/rs_test_project/OutputMaps/*
 !run_on_gha/rs_test_project/OutputMaps/git_anchor.txt
 /run_on_gha/test_scenario_01/Outputs
+/Default/
