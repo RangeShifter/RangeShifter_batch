@@ -103,7 +103,9 @@ public:
 	
 	// F-stats calculations
 	void calculateFstatWC(set<int> const& patchList, const int nInds, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape);
-	void calcPairwiseWeightedFst(set<int> const& patchList, const int nInds, const int nLoci, Species* pSpecies, Landscape* pLandscape);
+	void calculatePairwiseFst(set<int> const& patchList, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape);
+
+	//void calcPairwiseWeightedFst(set<int> const& patchList, const int nInds, const int nLoci, Species* pSpecies, Landscape* pLandscape);
 
 	// Getters
 	int getNbPopulatedSampledPatches() const { return nbExtantPops; }
@@ -124,7 +126,7 @@ public:
 	double getFisWC() const { return fis; }
 	double getFitWC() const { return fit; }
 
-	double getWeightedFst() { return weightedFst; }
+	//double getWeightedFst() { return weightedFst; }
 
 	double getPerLocusFst(int i) const { return perLocusFst[i]; }
 	double getPerLocusFis(int i) const { return perLocusFis[i]; }
