@@ -1,3 +1,4 @@
+#include "NeutralStatsManager.h"
 
 #include "NeutralStatsManager.h"
 #include "Population.h"
@@ -269,13 +270,16 @@ void NeutralStatsManager::calculatePerLocusHo(set<int> const& patchList, const i
 // ----------------------------------------------------------------------------------------
 // Fstat Weir & Cockerham
 // ----------------------------------------------------------------------------------------
-void NeutralStatsManager::calculateFstatWC(set<int> const& patchList, const int nbSampledIndsInComm, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape) {
+void NeutralStatsManager::calculateFstatWC(set<int> const& patchList, const int nbSampledIndsInComm, const int nLoci, const int nAlleles, 
+	Species* pSpecies, Landscape* pLandscape, bool isPairwise) {
 
 	double inverseNtotal;
 	double sumWeights = 0;
 	double nBar, nC, inverseNbar;
 	unsigned int nbPops = 0;
 	const int totalSampleSize = nbSampledIndsInComm; // r * n_bar
+	const double ploidy = pSpecies->isDiploid() ? 2.0 : 1.0;
+
 
 	// Reset per-locus vectors between generations
 	perLocusFst = perLocusFis = perLocusFit = vector<double>(nLoci, 0.0);
@@ -306,6 +310,7 @@ void NeutralStatsManager::calculateFstatWC(set<int> const& patchList, const int 
 
 		double var, intermediateTerm;
 		double s2, pBar, hBar;
+		int pairwiseAlleleCount;
 		double s2Denom = (nbPops - 1) * nBar;
 		double rTerm = static_cast<double>(nbPops - 1) / nbPops;
 		double hBarFactor = (2 * nBar - 1) / (4 * nBar);
@@ -320,8 +325,26 @@ void NeutralStatsManager::calculateFstatWC(set<int> const& patchList, const int 
 
 			for (int u = 0; u < nAlleles; ++u) {
 
-				s2 = hBar = 0;
-				pBar = commNeutralCountTables[l].getFrequency(u);
+				pBar = s2 = hBar = 0;
+				pairwiseAlleleCount = 0;
+
+				//if global wc approach use this
+				if (!isPairwise) {
+					pBar = commNeutralCountTables[l].getFrequency(u);
+				}
+				//else calculate total frequencies just in pair of patches for pairwise 
+				else {
+					for (int patchId : patchList) {
+						const auto patch = pLandscape->findPatch(patchId);
+						const auto pPop = patch->getPopn(pSpecies);
+						double patchLocusAlleleTally = pPop->getAlleleTally(l, u);
+						pairwiseAlleleCount += patchLocusAlleleTally;
+						}
+					const double denomAlleleCount = totalSampleSize * ploidy;
+					pBar = pairwiseAlleleCount / denomAlleleCount;
+
+				}
+			
 				for (int patchId : patchList) {
 					const auto patch = pLandscape->findPatch(patchId);
 					const auto pPop = patch->getPopn(pSpecies);
@@ -330,6 +353,7 @@ void NeutralStatsManager::calculateFstatWC(set<int> const& patchList, const int 
 						var *= var;
 						s2 += var * pPop->sampleSize();
 						hBar += pPop->getHeteroTally(l, u); // n_i * h_i
+
 					}
 				} //end for pop
 
@@ -418,7 +442,7 @@ void NeutralStatsManager::calculatePairwiseFst(set<int> const& patchList, const 
 
 			//NB this overwrites global fst variable so be careful!!
 			calculateFstatWC(pairofPatchesList, nbSampledIndsInPair,
-				 nLoci, nAlleles,pSpecies, pLandscape);
+				 nLoci, nAlleles,pSpecies, pLandscape, true);
 
 			pairwiseFstMatrix.set(i, j, fst);
 			// else remain 0
