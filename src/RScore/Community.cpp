@@ -1800,7 +1800,7 @@ bool Community::openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, co
 		name = paramsSim->getDir(2) + "Sim" + to_string(sim.simulation) + "_Rep" + to_string(rep) + "_pairwisePatchNeutralGenetics.txt";
 	}
 	outpairwisefst.open(name.c_str());
-	outpairwisefst << "Year\tRepSeason\tpatchA\tpatchB\tFst";
+	outpairwisefst << "Year\tRepSeason\tpatchA\tpatchA_x\tpatchA_y\tpatchB\tpatchB_x\tpatchB_y\tFst";
 	outpairwisefst << endl;
 
 	return outpairwisefst.is_open();
@@ -1920,12 +1920,21 @@ void Community::writePairwiseFstFile(Species* pSpecies, const int yr, const int 
 
 	for (int i = 0; i < nPatches; ++i)
 	{
+		const auto patchA = pLandscape->findPatch(patchVect[i]);
+
 		for (int j = i; j < nPatches; ++j)
 		{
+
+			const auto patchB = pLandscape->findPatch(patchVect[j]);
+
 			outpairwisefst << yr << "\t"
 				<< gen << "\t"
 				<< patchVect[i] << "\t"
+				<< patchA->getSubComm()->getLocn().x << "\t"
+				<< patchA->getSubComm()->getLocn().y << "\t"
 				<< patchVect[j] << "\t"
+				<< patchB->getSubComm()->getLocn().x << "\t"
+				<< patchB->getSubComm()->getLocn().y << "\t"
 				<< pNeutralStatistics->getPairwiseFst(i, j)
 				<< "\n";
 		}
@@ -1971,7 +1980,7 @@ void Community::outNeutralGenetics(Species* pSpecies, int rep, int yr, int gen, 
 		pNeutralStatistics->calculatePairwiseFst(patchList, nLoci, maxNbNeutralAlleles, pSpecies, pLandscape);
 	}
 	if (outWeirCockerham) {
-		pNeutralStatistics->calculateFstatWC(patchList, nInds, nLoci, maxNbNeutralAlleles, pSpecies, pLandscape);
+		pNeutralStatistics->calculateFstatWC(patchList, nInds, nLoci, maxNbNeutralAlleles, pSpecies, pLandscape, false);
 	}
 
 

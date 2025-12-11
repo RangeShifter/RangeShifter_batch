@@ -100,9 +100,11 @@ public:
 	void calculateHs(set<int> const& patchList, const int nbrLoci, Species* pSpecies, Landscape* pLandscape);
 	void calculateHt(Species* pSpecies, Landscape* pLandscape, const int nLoci, const int nAlleles);
 	void calculatePerLocusHo(set<int> const& patchList, const int totalNbSampledInds, const int nbrLoci, Species* pSpecies, Landscape* pLandscape);
+
 	
 	// F-stats calculations
-	void calculateFstatWC(set<int> const& patchList, const int nInds, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape);
+	void calculateFstatWC(set<int> const& patchList, const int nbSampledIndsInComm, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape, bool isPairwise);
+
 	void calculatePairwiseFst(set<int> const& patchList, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape);
 
 	//void calcPairwiseWeightedFst(set<int> const& patchList, const int nInds, const int nLoci, Species* pSpecies, Landscape* pLandscape);
