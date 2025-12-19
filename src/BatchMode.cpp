@@ -5761,7 +5761,8 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	}
 	for (int i = 0; i < nbChanges; i++) {
 		// retrieve the previously stored vector for the filenames of the spatial demographic layers of that change (i+1)
-		vector<string> spatDemogLayerFiles = allSpatialDemogFileNames[i+1];
+		vector<string> spatDemogLayerFiles;
+		if(gHasSpatialDemography) spatDemogLayerFiles = allSpatialDemogFileNames[i+1];
 
 		int imported = pLandscape->readLandChange(i, usesCosts, spatDemogLayerFiles);
 		if (imported != 0) {
