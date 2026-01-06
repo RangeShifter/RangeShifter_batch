@@ -493,7 +493,7 @@ void Community::dispersal(short landIx)
 #pragma omp for schedule(static,128) nowait
 		for (int i = 0; i < nsubcomms; i++) {
 			subComms[i]->recruitDispersers(disperserPool);
-	}
+		}
 
 #ifdef _OPENMP
 #pragma omp single
@@ -502,11 +502,11 @@ void Community::dispersal(short landIx)
 
 
 		// 
-	do {
+		do {
 #pragma omp for schedule(guided)
 			for (int i = 0; i < nsubcomms; i++) {
-			subComms[i]->resetPossSettlers();
-		}
+				subComms[i]->resetPossSettlers();
+			}
 			int localNbDispersers = matrix->resolveTransfer(disperserPool, pLandscape, landIx);
 #pragma omp single nowait
 			nbStillDispersing = 0;
@@ -715,10 +715,10 @@ void Community::outIndividuals(int rep, int yr, int gen) {
 // Close range file
 bool Community::outRangeFinishLandscape()
 {
-		if (outrange.is_open()) outrange.close();
-		outrange.clear();
-		return true;
-	}
+	if (outrange.is_open()) outrange.close();
+	outrange.clear();
+	return true;
+}
 
 // Open range file and write header record
 bool Community::outRangeStartLandscape(Species* pSpecies, int landNr)
@@ -1130,11 +1130,11 @@ void Community::outRange(Species* pSpecies, int rep, int yr, int gen)
 // Close occupancy file
 bool Community::outOccupancyFinishLandscape()
 {
-		if (outsuit.is_open()) outsuit.close();
-		if (outoccup.is_open()) outoccup.close();
-		outsuit.clear(); outoccup.clear();
-		return true;
-	}
+	if (outsuit.is_open()) outsuit.close();
+	if (outoccup.is_open()) outoccup.close();
+	outsuit.clear(); outoccup.clear();
+	return true;
+}
 
 // Open occupancy file, write header record and set up occupancy array
 bool Community::outOccupancyStartLandscape()
@@ -1474,10 +1474,10 @@ void Community::writeTraitsRows(Species* pSpecies, int rep, int yr, int gen, int
 
 // Close trait rows file
 bool Community::outTraitsRowsFinishLandscape() {
-		if (outtraitsrows.is_open()) outtraitsrows.close();
-		outtraitsrows.clear();
-		return true;
-	}
+	if (outtraitsrows.is_open()) outtraitsrows.close();
+	outtraitsrows.clear();
+	return true;
+}
 
 // Open trait rows file and write header record
 bool Community::outTraitsRowsStartLandscape(Species* pSpecies, int landNr) {
