@@ -61,8 +61,17 @@ out/
 x64/
 *.json
 
+# Eclipse
+.metadata/
+src/RScore/.cproject
+.cproject
+.settings/
+Model/
+
 # Ignore test project outputs, except anchors
 run_on_gha/rs_test_project/Outputs/*
 !run_on_gha/rs_test_project/Outputs/git_anchor.txt
 run_on_gha/rs_test_project/OutputMaps/*
 !run_on_gha/rs_test_project/OutputMaps/git_anchor.txt
+/run_on_gha/test_scenario_01/Outputs
+/Default/

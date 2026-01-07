@@ -100,7 +100,11 @@ SETTLE IF: find a suitable cell/patch + mating requirements
 MAX. No. OF STEPS/YEAR:	 not applied
 
 GENETICS:
-No. of variable traits:  0
+DIPLOID
+Genome size: -9999
+Chromosome breaks : 
+Recombination rate: -9999
+Traits modelled:  
 
 INITIALISATION CONDITIONS:
 From species distribution: 	

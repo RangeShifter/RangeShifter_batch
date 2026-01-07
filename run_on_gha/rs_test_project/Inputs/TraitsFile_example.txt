@@ -1,0 +1,6 @@
+Simulation	TraitType	ExprSex	Positions	NbrOfPositions	ExpressionType	 InitialDistribution	InitialParameters	DominanceDistribution	DominanceParameters	IsInherited	MutationDistribution	MutationParameters	MutationRate	OutputValues
+1	genetic_load	#	200-210	#	multiplicative	#	#	scaled	mean=0.1	TRUE	gamma	"shape=0.2,scale=0.15"	0.0001	FALSE
+1	genetic_load	#	230-240	#	multiplicative	#	#	normal	"mean=0.5,sd=0.1"	TRUE	normal	"mean=0.5,sd=0.2"	0.0001	FALSE
+1	emigration_d0	male	200-210	#	average	uniform	"min=0.3,max=1.0"	#	#	TRUE	normal	"mean=0,sd=0.2"	0.0001	FALSE
+1	emigration_d0	female	230-240	#	average	uniform	"min=0.0,max=1.0"	#	#	TRUE	normal	"mean=0,sd=0.2"	0.0001	FALSE
+1	neutral	#	random	20	#	uniform	max=1	#	#	TRUE	SSM	max=200	0.001

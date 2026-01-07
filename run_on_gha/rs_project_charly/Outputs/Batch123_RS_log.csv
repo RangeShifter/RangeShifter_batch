@@ -1,0 +1,6 @@
+Event,Number,Reps,Years,Time
+RANDOM SEED,666,,,
+Landscape,1,,,0
+Simulation,10,1,5,3
+
+Batch,,,,3

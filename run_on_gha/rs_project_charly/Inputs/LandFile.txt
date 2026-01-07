@@ -1,0 +1,2 @@
+LandNum	Nhabitats	LandscapeFile	PatchFile	CostMapFile	DynLandFile	SpDistFile
+1	1	initial_map.asc	NULL	NULL	DynLandFile_Rep1_pVal0.5_natHab0.1_consAgri0.1_covAgri0.8_distubanceSurvival0.15_distubanceFreq4.txt	NULL
