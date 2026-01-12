@@ -3938,7 +3938,7 @@ int CheckGeneticsFile(string inputDirectory) {
 	string header;
 	int simNb, prevSimNb, errCode;
 	string inChromosomeEnds, inRecombinationRate, inTraitsFile, inPatchList, inStages,
-		inOutGeneValues, inOutWeirCockerham, inOutWeirHill,
+		inOutGeneValues, inOutWeirCockerham, inOutPairwiseFst,
 		inOutStartGenetics, inOutputInterval, inNbrPatchesToSample, inNIndsToSample;
 	int inGenomeSize;
 	int nbErrors = 0;
@@ -3955,7 +3955,7 @@ int CheckGeneticsFile(string inputDirectory) {
 	bGeneticsFile >> header; if (header != "RecombinationRate") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputGeneValues") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputFstatsWeirCockerham") nbErrors++;
-	bGeneticsFile >> header; if (header != "OutputFstatsWeirHill") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputPairwiseFst") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputStartGenetics") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputInterval") nbErrors++;
 	bGeneticsFile >> header; if (header != "PatchList") nbErrors++;
@@ -3987,7 +3987,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 
 		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutWeirCockerham >>
-			inOutWeirHill >> inOutStartGenetics >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
+			inOutPairwiseFst >> inOutStartGenetics >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
 			>> inNIndsToSample >> inStages;
 
 		//// Validate parameters
@@ -4039,13 +4039,13 @@ int CheckGeneticsFile(string inputDirectory) {
 			batchLog << "OutputFstatsWeirCockerham must be either TRUE or FALSE" << endl;
 			nbErrors++;
 		}
-		if (inOutWeirHill != "TRUE" && inOutWeirHill != "FALSE") {
+		if (inOutPairwiseFst != "TRUE" && inOutPairwiseFst != "FALSE") {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLog << "OutputFstatsWeirHill must be either TRUE or FALSE" << endl;
 			nbErrors++;
 		}
 		gTraitOptions.at(simNb).anyNeutral = inOutWeirCockerham == "TRUE"
-			|| inOutWeirHill == "TRUE";
+			|| inOutPairwiseFst == "TRUE";
 		bool anyGeneticsOutput = inOutGeneValues == "TRUE" 
 			|| gTraitOptions.at(simNb).anyNeutral;
 
