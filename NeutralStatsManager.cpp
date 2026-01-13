@@ -1,6 +1,4 @@
 #include "NeutralStatsManager.h"
-
-#include "NeutralStatsManager.h"
 #include "Population.h"
 
 /*----------------------------------------------------------------------------
