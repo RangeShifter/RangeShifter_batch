@@ -102,6 +102,7 @@ public:
 	void calculatePerLocusHo(set<int> const& patchList, const int totalNbSampledInds, const int nbrLoci, Species* pSpecies, Landscape* pLandscape);
 	
 	
+	
 	// F-stats calculations
 	void calculateFstatWC(set<int> const& patchList, const int nbSampledIndsInComm, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape, bool isPairwise);
 
