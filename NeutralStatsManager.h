@@ -103,6 +103,7 @@ public:
 
 	
 	
+	
 	// F-stats calculations
 	void calculateFstatWC(set<int> const& patchList, const int nbSampledIndsInComm, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape, bool isPairwise);
 
