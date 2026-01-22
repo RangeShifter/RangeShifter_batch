@@ -171,7 +171,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				if (!pLandscape->outConnectStartLandscape()) {
 					filesOK = false;
 				}
-			if (sim.outputWeirCockerham || sim.outPairwiseFst) { // open neutral genetics file
+			if (sim.outputGlobalFst) { // open neutral genetics file
 				if (!pComm->openNeutralOutputFile(pSpecies, ppLand.landNum)) {
 					filesOK = false;
 				}
@@ -193,7 +193,7 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				pComm->outTraitsRowsFinishLandscape();
 			if (sim.outConnect && ppLand.patchModel)
 				pLandscape->outConnectFinishLandscape();
-			if (sim.outputWeirCockerham || sim.outPairwiseFst) {
+			if (sim.outputGlobalFst) {
 				pComm->openNeutralOutputFile(pSpecies, -999);
 			}
 #if RS_RCPP && !R_CMD
@@ -235,13 +235,16 @@ int RunModel(Landscape* pLandscape, int seqsim)
 		if (sim.outInds)
 			pComm->outIndsStartReplicate(rep, ppLand.landNum);
 		// open a new genetics file for each replicate
-		if (sim.outputGeneValues) {
+		if (sim.outputGenes) {
 			bool geneOutFileHasOpened = pComm->openOutGenesFile(pSpecies->isDiploid(), ppLand.landNum, rep);
 			if (!geneOutFileHasOpened) throw logic_error("Output gene value file could not be initialised.");
 		}
 
 		// open a new genetics file for each replicate for per locus and pairwise stats
-		if (sim.outputWeirCockerham) {
+		if (sim.outputGlobalFst) {
+			pComm->openNeutralOutputFile(pSpecies, ppLand.landNum);
+		}
+		if (sim.outputPerLocusFst) {
 			pComm->openPerLocusFstFile(pSpecies, pLandscape, ppLand.landNum, rep);
 		}
 		if (sim.outPairwiseFst) {
@@ -459,27 +462,53 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				if (sim.outInds && yr >= sim.outStartInd && yr % sim.outIntInd == 0)
 					pComm->outIndividuals(rep, yr, gen);
 
-				if ((sim.outputGeneValues || sim.outputWeirCockerham || sim.outPairwiseFst)
-					&& yr >= sim.outStartGenetics
-					&& yr % sim.outputGeneticInterval == 0) {
+				bool doGenes =
+					sim.outputGenes &&
+					yr >= sim.outputGenesStart &&
+					sim.outputGenesInterval > 0 &&
+					yr % sim.outputGenesInterval == 0;
 
-					simParams sim = paramsSim->getSim();
-					if (sim.patchSamplingOption != "list" && sim.patchSamplingOption != "random") {
-						// then patches must be re-sampled every gen
+				bool doGlobalFst =
+					sim.outputGlobalFst &&
+					yr >= sim.outputGlobalFstStart &&
+					sim.outputGlobalFstInterval > 0 &&
+					yr % sim.outputGlobalFstInterval == 0;
+
+				bool doPairwiseFst =
+					sim.outPairwiseFst &&
+					yr >= sim.outputPairwiseFstStart &&
+					sim.outputPairwiseFstInterval > 0 &&
+					yr % sim.outputPairwiseFstInterval == 0;
+
+				if (doGenes || doGlobalFst || doPairwiseFst) {
+
+					if (sim.patchSamplingOption != "list" &&
+						sim.patchSamplingOption != "random") {
+
 						int nbToSample = pSpecies->getNbPatchesToSample();
-						auto patchesToSample = pLandscape->samplePatches(sim.patchSamplingOption, nbToSample, pSpecies);
+						auto patchesToSample =
+							pLandscape->samplePatches(sim.patchSamplingOption, nbToSample, pSpecies);
 						pSpecies->setSamplePatchList(patchesToSample);
 					}
-					// otherwise always use the user-specified list (even if patches are empty)
+
 					pComm->sampleIndividuals(pSpecies);
 
-					if (sim.outputGeneValues) {
+					if (doGenes) {
 						pComm->outputGeneValues(yr, gen, pSpecies);
 					}
-					if (sim.outputWeirCockerham || sim.outPairwiseFst) {
-						pComm->outNeutralGenetics(pSpecies, rep, yr, gen, sim.outputWeirCockerham, sim.outPairwiseFst);
+
+					if (doGlobalFst || doPairwiseFst) {
+						pComm->calculateNeutralGenetics(
+							pSpecies, rep, yr, gen,
+							doGlobalFst, sim.outputGlobalFstStart, sim.outputGlobalFstInterval,
+							doPairwiseFst, sim.outputPairwiseFstStart, sim.outputPairwiseFstInterval,
+							sim.outputPerLocusFst);
 					}
 				}
+				
+				
+
+
 
 				// Resolve survival and devlpt
 				pComm->survival1();
@@ -587,11 +616,13 @@ int RunModel(Landscape* pLandscape, int seqsim)
 		if (sim.outInds) // close Individuals output file
 			pComm->outIndsFinishReplicate();
 
-		if (sim.outputGeneValues) { // close genetic values output file
+		if (sim.outputGenes) { // close genetic values output file
 			pComm->openOutGenesFile(false, -999, rep);
 		}
 
-		if (sim.outputWeirCockerham) //close per locus file 
+		if (sim.outputGlobalFst) //close per locus file 
+			pComm->openNeutralOutputFile(pSpecies, -999);
+		if (sim.outputPerLocusFst) //close per locus file 
 			pComm->openPerLocusFstFile(pSpecies, pLandscape, -999, rep);
 		if (sim.outPairwiseFst) //close per locus file 
 			pComm->openPairwiseFstFile(pSpecies, pLandscape, -999, rep);
@@ -634,11 +665,11 @@ int RunModel(Landscape* pLandscape, int seqsim)
 	// close Individuals & Genetics output files if open
 	// they can still be open if the simulation was stopped by the user
 	if (sim.outInds) pComm->outIndsFinishReplicate();
-	if (sim.outputGeneValues) pComm->openOutGenesFile(0, -999, 0);
-	if (sim.outputWeirCockerham || sim.outPairwiseFst) {
+	if (sim.outputGenes) pComm->openOutGenesFile(0, -999, 0);
+	if (sim.outputGlobalFst) {
 		pComm->openNeutralOutputFile(pSpecies, -999);
 	}
-	if (sim.outputWeirCockerham) {
+	if (sim.outputPerLocusFst) {
 		pComm->openPerLocusFstFile(pSpecies, pLandscape, -999, 0);
 	}
 	if (sim.outPairwiseFst) pComm->openPairwiseFstFile(pSpecies, pLandscape, -999, 0);
@@ -1666,13 +1697,19 @@ void OutParameters(Landscape* pLandscape)
 		if (sim.outStartInd > 0) outPar << " starting year " << sim.outStartInd;
 		outPar << endl;
 	}
-	if (sim.outputWeirCockerham || sim.outPairwiseFst) {
-		outPar << "Neutral genetics - every " << sim.outputGeneticInterval << " year";
-		if (sim.outputGeneticInterval > 1) outPar << "s";
-		if (sim.outPairwiseFst) outPar << " outputting pairwise patch fst";
-		if (sim.outputWeirCockerham) outPar << " outputting per locus fst ";
+	if (sim.outputGlobalFst) {
+		outPar << "Global Fst and neutral genetics - every " << sim.outputGlobalFstInterval << " year";
+		if (sim.outputGlobalFstInterval > 1) outPar << "s";
+		if (sim.outputPerLocusFst) outPar << "outputting per locus Fst too";
 		outPar << endl;
 	}
+
+	if (sim.outPairwiseFst) {
+		outPar << "Pairwise Fst - every " << sim.outputPairwiseFstInterval << " year";
+		if (sim.outputPairwiseFstInterval > 1) outPar << "s";
+		outPar << endl;
+	}
+
 
 	if (sim.outTraitsCells) {
 		outPar << "Traits per ";
