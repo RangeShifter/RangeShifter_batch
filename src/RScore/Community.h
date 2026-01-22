@@ -197,7 +197,10 @@ public:
 	void outputGeneValues(const int& year, const int& gen, Species* pSpecies);
 
 	//control neutral stat output
-	void outNeutralGenetics(Species* pSpecies, int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill);
+
+	void calculateNeutralGenetics(Species* pSpecies, int rep, int yr, int gen, bool outPairwiseFst, int outputPairwiseFstStart, int outputPairwiseFstInterval,
+		bool outputGlobalFst, int outputGlobalFstStart, int outputGlobalFstInterval, bool outputPerLocusFst);
+
 
 	//file openers
 	bool openNeutralOutputFile(Species* pSpecies, const int landNr);
@@ -205,7 +208,7 @@ public:
 	bool openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, const int landNr, const int rep);
 
 	//file writers
-	void writeNeutralOutputFile(int rep, int yr, int gen, bool outWeirCockerham, bool pairwiseFst);
+	void writeNeutralOutputFile(int rep, int yr, int gen);
 	void writePerLocusFstatFile(Species* pSpecies, const int yr, const int gen, const int nLoci, set<int> const& patchList);
 	void writePairwiseFstFile(Species* pSpecies, const int yr, const int gen, set<int> const& patchList);
 	float getPatchHet(Species* pSpecies, int patchId, int whichLocus) const;
