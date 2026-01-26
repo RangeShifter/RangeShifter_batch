@@ -500,8 +500,8 @@ int RunModel(Landscape* pLandscape, int seqsim)
 					if (doGlobalFst || doPairwiseFst) {
 						pComm->calculateNeutralGenetics(
 							pSpecies, rep, yr, gen,
-							doGlobalFst, sim.outputGlobalFstStart, sim.outputGlobalFstInterval,
 							doPairwiseFst, sim.outputPairwiseFstStart, sim.outputPairwiseFstInterval,
+							doGlobalFst, sim.outputGlobalFstStart, sim.outputGlobalFstInterval,
 							sim.outputPerLocusFst);
 					}
 				}
