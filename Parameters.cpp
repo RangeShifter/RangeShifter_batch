@@ -276,11 +276,11 @@ void paramSim::setGeneticSim(string patchSamplingOption, bool outputGenes, int o
 	this->outputGenesStart = outputGenesStart;
 	this->outputGenesInterval = outputGenesInterval;
 	this->outputGlobalFst = outputGlobalFst;
-	this->outputGlobalFstStart = outputGlobalFstStart;
+	this->outputGlobalFstStart = outputStartGlobalFst;
 	this->outputGlobalFstInterval = outputGlobalFstInterval;
 	this->outPairwiseFst = outPairwiseFst;
-	this->outputPairwiseFstStart = outputPairwiseFstStart;
-	this->outputPairwiseFstInterval = outputPairwiseFstInterval;
+	this->outputPairwiseFstStart = outputStartPairwiseFst;
+	this->outputPairwiseFstInterval = outputPairwiseFstIntervals;
 	this->outputPerLocusFst = outputPerLocusFst;
 }
 
