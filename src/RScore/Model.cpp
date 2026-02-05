@@ -241,9 +241,6 @@ int RunModel(Landscape* pLandscape, int seqsim)
 		}
 
 		// open a new genetics file for each replicate for per locus and pairwise stats
-		if (sim.outputGlobalFst) {
-			pComm->openNeutralOutputFile(pSpecies, ppLand.landNum);
-		}
 		if (sim.outputPerLocusFst) {
 			pComm->openPerLocusFstFile(pSpecies, pLandscape, ppLand.landNum, rep);
 		}
@@ -620,8 +617,8 @@ int RunModel(Landscape* pLandscape, int seqsim)
 			pComm->openOutGenesFile(false, -999, rep);
 		}
 
-		if (sim.outputGlobalFst) //close per locus file 
-			pComm->openNeutralOutputFile(pSpecies, -999);
+		//if (sim.outputGlobalFst) //close per locus file 
+		//	pComm->openNeutralOutputFile(pSpecies, -999);
 		if (sim.outputPerLocusFst) //close per locus file 
 			pComm->openPerLocusFstFile(pSpecies, pLandscape, -999, rep);
 		if (sim.outPairwiseFst) //close per locus file 
