@@ -1,3 +1,4 @@
+#include "Community.h"
 /*----------------------------------------------------------------------------
  *
  *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
@@ -1810,21 +1811,18 @@ bool Community::openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, co
 // Write population level FST results file
 // ----------------------------------------------------------------------------------------
 
-void Community::writeNeutralOutputFile(int rep, int yr, int gen, bool outWeirCockerham, bool outPairwiseFst) {
+void Community::writeNeutralOutputFile(int rep, int yr, int gen) {
 
 	outwcfstat << rep << "\t" << yr << "\t" << gen << "\t";
 	outwcfstat << pNeutralStatistics->getNbPopulatedSampledPatches() 
 		<< "\t" << pNeutralStatistics->getTotalNbSampledInds() << "\t";
 
-	if (outWeirCockerham) {
-		outwcfstat << pNeutralStatistics->getFstWC() << "\t"
+	
+	outwcfstat << pNeutralStatistics->getFstWC() << "\t"
 			<< pNeutralStatistics->getFisWC() << "\t"
 			<< pNeutralStatistics->getFitWC() << "\t";
-	}
-	else outwcfstat << "NA" << "\t" << "NA" << "\t" << "NA" << "\t";
 
-	//if (outPairwiseFst) outwcfstat << pNeutralStatistics->getWeightedFst() << "\t";
-	//else outwcfstat << "NA" << "\t";
+
 	
 	outwcfstat << pNeutralStatistics->getMeanNbAllPerLocus() << "\t"
 		<< pNeutralStatistics->getMeanNbAllPerLocusPerPatch() << "\t"
@@ -1935,7 +1933,7 @@ void Community::writePairwiseFstFile(Species* pSpecies, const int yr, const int 
 				<< patchVect[j] << "\t"
 				<< patchB->getSubComm()->getLocn().x << "\t"
 				<< patchB->getSubComm()->getLocn().y << "\t"
-				<< pNeutralStatistics->getPairwiseFst(i, j) 
+				<< pNeutralStatistics->getPairwiseFst(i, j)
 				<< "\n";
 		}
 	}
@@ -1949,7 +1947,8 @@ void Community::writePairwiseFstFile(Species* pSpecies, const int yr, const int 
 // ----------------------------------------------------------------------------------------
 
 
-void Community::outNeutralGenetics(Species* pSpecies, int rep, int yr, int gen, bool outWeirCockerham, bool outPairwiseFst) {
+void Community::calculateNeutralGenetics(Species* pSpecies, int rep, int yr, int gen, bool outPairwiseFst, int outputPairwiseFstStart, int outputPairwiseFstInterval,
+	bool outputGlobalFst, int outputGlobalFstStart, int outputGlobalFstInterval, bool outputPerLocusFst) {
 
 	const int maxNbNeutralAlleles = pSpecies->getSpTrait(NEUTRAL)->getNbNeutralAlleles();
 	const int nLoci = (int)pSpecies->getNPositionsForTrait(NEUTRAL);
@@ -1978,22 +1977,23 @@ void Community::outNeutralGenetics(Species* pSpecies, int rep, int yr, int gen, 
 
 	if (outPairwiseFst) {
 		pNeutralStatistics->calculatePairwiseFst(patchList, nLoci, maxNbNeutralAlleles, pSpecies, pLandscape);
+
+		if (yr >= outputPairwiseFstStart && yr % outputPairwiseFstInterval == 0) {
+			writePairwiseFstFile(pSpecies, yr, gen, patchList);
+		}
 	}
-	if (outWeirCockerham) {
+	if (outputGlobalFst) {
 		pNeutralStatistics->calculateFstatWC(patchList, nInds, nLoci, maxNbNeutralAlleles, pSpecies, pLandscape, false);
-	}
 
-
-	writeNeutralOutputFile(rep, yr, gen, outWeirCockerham, outPairwiseFst);
-
-	if (outPairwiseFst) {
-		writePairwiseFstFile(pSpecies, yr, gen, patchList);
-	}
-	if (outWeirCockerham) {
-		writePerLocusFstatFile(pSpecies, yr, gen, nLoci, patchList);
+		if (yr >= outputGlobalFstStart && yr % outputGlobalFstInterval == 0) {
+			writeNeutralOutputFile(rep, yr, gen);
+			if (outputPerLocusFst)
+				writePerLocusFstatFile(pSpecies, yr, gen, nLoci, patchList);
+		}
 	}
 
 }
+
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
