@@ -334,9 +334,12 @@ struct simParams {
 #endif
 	bool fixReplicateSeed;
 	string patchSamplingOption;
-	bool outputGeneValues;
-	bool outputWeirCockerham, outPairwiseFst;
-	int outputGeneticInterval, outStartGenetics;
+	bool outputGenes;
+	bool outputGlobalFst, outPairwiseFst;
+	bool outputPerLocusFst;
+	int outputGenesStart, outputGenesInterval;
+	int outputGlobalFstStart, outputGlobalFstInterval;
+	int outputPairwiseFstStart, outputPairwiseFstInterval;
 };
 
 struct simView {
@@ -351,7 +354,8 @@ public:
 	paramSim(const string& pathToProjDir = "");
 	~paramSim(void);
 	void setSim(simParams);
-	void setGeneticSim(string patchSamplingOption, bool outputGeneticValues, bool outputWeirCockerham, bool outPairwiseFst, int outputStartGenetics, int outputGeneticInterval);
+	void setGeneticSim(string patchSamplingOption, bool outputGenes, int outputGenesStart, int outputGenesInterval, bool outPairwiseFst,
+		int outputGlobalFst, int outputStartGlobalFst, int outputGlobalFstInterval, int outputStartPairwiseFst, int outputPairwiseFstIntervals, bool outputPerLocusFst);
 	simParams getSim(void);
 	int getSimNum(void);
 	string getDir(int);
@@ -403,10 +407,15 @@ private:
 	bool fixReplicateSeed;
 	string patchSamplingOption;
 	bool outputGenes;
-	bool outputWeirCockerham;
+	int outputGenesStart;
+	int outputGenesInterval;
+	bool outputGlobalFst;
 	bool outPairwiseFst;
-	int outputStartGenetics;
-	int outputGeneticInterval;
+	bool outputPerLocusFst;
+	int outputPairwiseFstStart;
+	int outputGlobalFstStart;
+	int outputPairwiseFstInterval;
+	int outputGlobalFstInterval;
 };
 
 extern RSrandom* pRandom;

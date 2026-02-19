@@ -218,13 +218,14 @@ paramSim::paramSim(const string& pathToProjDir) :
 	outIntRange = 1;
 	outStartPop = outStartInd = 0;
 	outStartTraitCell = outStartTraitRow = outStartConn = 0;
-	outIntOcc = outIntPop = outIntInd = outputGeneticInterval = 10;
+	outputGlobalFstStart = outputPairwiseFstStart = 0;
+	outIntOcc = outIntPop = outIntInd = outputGlobalFstInterval  = outputPairwiseFstInterval= 10;
 	outIntTraitCell = outIntTraitRow = outIntConn = 10;
 	traitInt = 10;
 	batchMode = absorbing = false;
 	outRange = outOccup = outPop = outInds = false;
 	outTraitsCells = outTraitsRows = outConnect = false;
-	outputGenes = outputWeirCockerham = outPairwiseFst = false;
+	outputGenes = outputGlobalFst = outPairwiseFst = false;
 	saveVisits = false;
 #if RS_RCPP
 	outStartPaths = 0; outIntPaths = 0;
@@ -268,13 +269,19 @@ void paramSim::setSim(simParams s) {
 	fixReplicateSeed = s.fixReplicateSeed;
 }
 
-void paramSim::setGeneticSim(string patchSamplingOption, bool outputGeneticValues, bool outputWeirCockerham, bool outputWeirHill, int outputStartGenetics, int outputGeneticInterval) {
+void paramSim::setGeneticSim(string patchSamplingOption, bool outputGenes, int outputGenesStart, int outputGenesInterval,  bool outPairwiseFst,
+	int outputGlobalFst, int outputStartGlobalFst, int outputGlobalFstInterval, int outputStartPairwiseFst, int outputPairwiseFstIntervals, bool outputPerLocusFst) {
 	this->patchSamplingOption = patchSamplingOption;
-	this->outputGenes = outputGeneticValues;
-	this->outputWeirCockerham = outputWeirCockerham;
-	this->outPairwiseFst = outputWeirHill;
-	this->outputStartGenetics = outputStartGenetics;
-	this->outputGeneticInterval = outputGeneticInterval;
+	this->outputGenes = outputGenes;
+	this->outputGenesStart = outputGenesStart;
+	this->outputGenesInterval = outputGenesInterval;
+	this->outputGlobalFst = outputGlobalFst;
+	this->outputGlobalFstStart = outputStartGlobalFst;
+	this->outputGlobalFstInterval = outputGlobalFstInterval;
+	this->outPairwiseFst = outPairwiseFst;
+	this->outputPairwiseFstStart = outputStartPairwiseFst;
+	this->outputPairwiseFstInterval = outputPairwiseFstIntervals;
+	this->outputPerLocusFst = outputPerLocusFst;
 }
 
 simParams paramSim::getSim() {
@@ -304,11 +311,20 @@ simParams paramSim::getSim() {
 	s.CreatePopFile = CreatePopFile;
 #endif
 	s.patchSamplingOption = patchSamplingOption;
-	s.outputGeneValues = outputGenes;
-	s.outputWeirCockerham = outputWeirCockerham;
+
+	s.outputGenes = outputGenes;
+	s.outputGenesStart = outputGenesStart;
+	s.outputGenesInterval = outputGenesInterval;
+	
+	s.outputGlobalFst = outputGlobalFst;
+	s.outputGlobalFstStart = outputGlobalFstStart;
+	s.outputGlobalFstInterval = outputGlobalFstInterval;
+	
 	s.outPairwiseFst = outPairwiseFst;
-	s.outStartGenetics = outputStartGenetics;
-	s.outputGeneticInterval = outputGeneticInterval;
+	s.outputPairwiseFstStart = outputPairwiseFstStart;
+	s.outputPairwiseFstInterval = outputPairwiseFstInterval;
+
+	s.outputPerLocusFst = outputPerLocusFst;
 
 	return s;
 }
