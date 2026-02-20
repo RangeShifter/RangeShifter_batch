@@ -78,6 +78,7 @@ typedef unsigned long long intptr;
         #define M_2PI 6.283185307179586
         const double PI = 3.141592653589793238462643383279502884197169399375;
     #endif
+#include <Rcpp.h>
 #else
     #define M_2PI 6.283185307179586
     const double PI = 3.141592654;
@@ -330,7 +331,8 @@ struct simParams {
 	bool outConnect;
 #if RS_RCPP
 	int outStartPaths; int outIntPaths;
-	bool outPaths;	bool ReturnPopRaster; bool CreatePopFile;
+	bool outPaths;	bool ReturnPopRaster; bool ReturnPopMatrix; bool CreatePopFile;
+	Rcpp::LogicalVector ReturnStages;
 #endif
 	bool fixReplicateSeed;
 	string patchSamplingOption;
@@ -401,7 +403,9 @@ private:
 	int outIntPaths;
 	bool outPaths;
 	bool ReturnPopRaster;
+	bool ReturnPopMatrix;
 	bool CreatePopFile;
+	Rcpp::LogicalVector ReturnStages;
 #endif
 	string dir;					// full name of working directory
 	bool fixReplicateSeed;

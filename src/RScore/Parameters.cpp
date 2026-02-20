@@ -264,6 +264,8 @@ void paramSim::setSim(simParams s) {
 	outIntPaths = s.outIntPaths;
 	outPaths = s.outPaths;
 	ReturnPopRaster = s.ReturnPopRaster;
+	ReturnPopMatrix = s.ReturnPopMatrix;
+	ReturnStages = s.ReturnStages;
 	CreatePopFile = s.CreatePopFile;
 #endif
 	fixReplicateSeed = s.fixReplicateSeed;
@@ -308,6 +310,8 @@ simParams paramSim::getSim() {
 	s.outIntPaths = outIntPaths;
 	s.outPaths = outPaths;
 	s.ReturnPopRaster = ReturnPopRaster;
+	s.ReturnPopMatrix = ReturnPopMatrix;
+	s.ReturnStages = ReturnStages;
 	s.CreatePopFile = CreatePopFile;
 #endif
 	s.patchSamplingOption = patchSamplingOption;

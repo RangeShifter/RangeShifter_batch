@@ -68,6 +68,14 @@ int ninds,nnonjuvs,suitable,occupied;
 int minX,maxX,minY,maxY;
 };
 
+#if RS_RCPP// For raster output only: which type of population output should be stored?
+enum class PopOutType {
+    NInd,    // total abundance
+    Stage,   // specific stages
+    Juvs     // juvenile stage
+};
+#endif
+
 class Community {
 
 public:
@@ -187,7 +195,9 @@ public:
 		traitsums	// structure holding sums of trait genes for dispersal (see Population.h)
 	);
 #if RS_RCPP && !R_CMD
-    Rcpp::IntegerMatrix addYearToPopList(int,int);
+    Rcpp::IntegerMatrix addYearToPopList(int,int,PopOutType,int);
+
+    Rcpp::IntegerMatrix addYearToPopListPatchBased(int,int,Rcpp::LogicalVector);
 #endif
 
 	//sample individuals for genetics (or could be used for anything)

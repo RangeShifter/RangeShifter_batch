@@ -1576,8 +1576,13 @@ bool Community::outTraitsRowsStartLandscape(Species* pSpecies, int landNr) {
 }
 
 #if RS_RCPP && !R_CMD
-Rcpp::IntegerMatrix Community::addYearToPopList(int rep, int yr) {  // TODO: define new simparams to control start and interval of output
-
+Rcpp::IntegerMatrix Community::addYearToPopList(int rep, int yr, PopOutType type, int stage) {  // TODO: define new simparams to control start and interval of output
+   /* Rcpp::Rcout << "Calling addYearToPopList: "
+                << "rep=" << rep
+                << " yr=" << yr
+                << " type=" << (int)type
+                << " stage=" << stage << endl;
+*/
 	landParams ppLand = pLandscape->getLandParams();
 	Rcpp::IntegerMatrix pop_map_year(ppLand.dimY, ppLand.dimX);
 	Patch* pPatch = 0;
@@ -1603,7 +1608,21 @@ Rcpp::IntegerMatrix Community::addYearToPopList(int rep, int yr) {  // TODO: def
 					}
 					else {
 						pop = pSubComm->getPopStats();
-						pop_map_year(ppLand.dimY - 1 - y, x) = pop.nInds; // use indices like this because matrix gets transposed upon casting it into a raster on R-level
+
+					    switch (type) {
+					    case PopOutType::NInd:
+					        pop_map_year(ppLand.dimY - 1 - y, x) = pop.nInds;
+					        break;
+
+					    case PopOutType::Stage:
+					        pop_map_year(ppLand.dimY - 1 - y, x) = pSubComm->getNbInds(stage); // check if function is correct?
+					        break;
+
+					    case PopOutType::Juvs:
+					        pop_map_year(ppLand.dimY - 1 - y, x) = pSubComm->getNbInds(0);
+					        break;
+					    }
+						// pop_map_year(ppLand.dimY - 1 - y, x) = pop.nInds; // use indices like this because matrix gets transposed upon casting it into a raster on R-level
 						//pop_map_year(ppLand.dimY-1-y,x) = pop.nAdults;
 					}
 				}
@@ -1613,6 +1632,70 @@ Rcpp::IntegerMatrix Community::addYearToPopList(int rep, int yr) {  // TODO: def
 	//list_outPop.push_back(pop_map_year, "rep" + std::to_string(rep) + "_year" + std::to_string(yr));
 	return pop_map_year;
 }
+
+// write a similar function for patch-based models;
+// Instead of a spatial x,y raster, the output should also be a Rcpp::IntegerMatrix with PatchID and population size (or stage-specific population size) for each patch.
+// The number of columns is determined by what the user specified in ReturnStages:
+// As default its 2 columns: 1st column is the patch ID, 2nd column is the total abundance.
+// Depending on the user specification the columns 3 to maximal (number of stages + 2)
+// can contain the abundance of each stage (e.g. column 3 is abundance of juveniles (stage 0), column 4 is abundance of stage 1 etc).
+// But only selected stages are included, so if the user only wants to output juveniles and adults,
+// then column 3 is abundance of juveniles (stage 0) and column 4 is abundance of adults (stage 1), and no other stages are included in the output.
+// After the runtime, the user can create a spatial raster in R by joining it with the patch coordinates.
+// be aware: the output is then not a spatial raster, but a table
+Rcpp::IntegerMatrix Community::addYearToPopListPatchBased(int rep, int yr, Rcpp::LogicalVector stages) {
+    /* Rcpp::Rcout << "Calling addYearToPopListPatchBased: "
+                << "rep=" << rep
+                << " yr=" << yr << endl;*/
+    int nrows=pLandscape->getPatchNbs().size();
+    int ncols = 2; // for patchID + total abundance
+    for (int i = 0; i < stages.length(); i++) {
+        if (stages[i] == TRUE) {
+            ncols++;
+        }
+    }
+
+	Rcpp::IntegerMatrix pop_map_year(nrows, ncols); // 2 columns: 1st column is the patch ID, 2nd column is the total abundance (or stage-specific abundance depending on user specification)
+	Patch* pPatch = nullptr;
+	SubCommunity* pSubComm = nullptr;
+	popStats pop;
+	pop.nInds = pop.nAdults = pop.nNonJuvs = 0;
+	for (auto patchId : pLandscape->getPatchNbs()) {
+		pPatch = pLandscape->findPatch(patchId);
+		if (pPatch == nullptr) { // check if patch exists
+			continue; // skip to next patch
+		} else{
+		    pSubComm = pPatch->getSubComm();
+			if (pSubComm == nullptr) { // check if sub-community exists
+			    pop = pSubComm->getPopStats();
+			    pop_map_year(patchId, 0) = patchId; // 1st column is patch ID
+			    pop_map_year(patchId, 1) = 0; // 2nd column is total abundance
+			    // additional columns for stage-specific abundances depending on user specification
+			    for(int i = 0; i < stages.length(); i++) {
+			        int ncol = 0;
+			        if(stages[i]) {
+			            pop_map_year(patchId, 2 + ncol) = 0; // all following columns are stage specific columns depending on the users specifications
+			            ncol++;
+			        }
+			    }
+			} else {
+				pop = pSubComm->getPopStats();
+				pop_map_year(patchId, 0) = patchId; // 1st column is patch ID
+				pop_map_year(patchId, 1) = pop.nInds; // 2nd column is total abundance
+				// additional columns for stage-specific abundances depending on user specification
+				for (int i = 0; i < stages.length(); i++) {
+				    int ncol = 0;
+				    if(stages[i]) {
+				        pop_map_year(patchId, 2 + ncol) = pSubComm->getNbInds(stages[i]); // all following columns are stage specific columns depending on the users specifications
+				        ncol++;
+				    }
+				}
+			}
+		}
+	}
+	return pop_map_year;
+}
+
 #endif
 
 bool Community::openOutGenesFile(const bool& isDiploid, const int landNr, const int rep)
