@@ -445,8 +445,53 @@ int RunModel(Landscape* pLandscape, int seqsim)
 				if (!dem.stageStruct && (sim.outRange || sim.outPop))
 					RangePopOutput(pComm, rep, yr, gen);
 #if RS_RCPP && !R_CMD
-				if (sim.ReturnPopRaster && sim.outPop && yr >= sim.outStartPop && yr % sim.outIntPop == 0) {
-					list_outPop.push_back(pComm->addYearToPopList(rep, yr), "rep" + std::to_string(rep) + "_year" + std::to_string(yr));
+				if ((sim.ReturnPopRaster || sim.ReturnPopMatrix)  && sim.outPop && yr >= sim.outStartPop && yr % sim.outIntPop == 0) {
+
+				    // if ReturnPopRaster
+				    if(sim.ReturnPopRaster) {
+				        // total abundance
+    				    list_outPop.push_back(
+    				        pComm->addYearToPopList(rep, yr, PopOutType::NInd, -1),
+    				        "rep" + std::to_string(rep) + "_year" + std::to_string(yr) + "_NInd"
+    				    );
+
+    				    // also output single stages
+                        if(sim.ReturnStages.length() > 1){
+        				    bool ReturnStage;
+        				    for(int i = 1; i < sim.ReturnStages.length(); i++) {
+        				        ReturnStage = sim.ReturnStages[i] == 1;
+        				        if(ReturnStage) {
+        				            list_outPop.push_back(
+        				                pComm->addYearToPopList(rep, yr, PopOutType::Stage, i),
+        				                "rep" + std::to_string(rep) +
+        				                    "_year" + std::to_string(yr) +
+        				                    "_NInd_stage" + std::to_string(i)
+        				            );
+        				        }
+        				    }
+    //
+    //
+    				        ReturnStage = sim.ReturnStages[0] == 1;
+        				    if (ReturnStage) {
+        				        //Rcpp::Rcout << "Return Juveniles" << endl;
+        				        list_outPop.push_back(
+        				            pComm->addYearToPopList(rep, yr, PopOutType::Juvs, -1),
+        				            "rep" + std::to_string(rep) + "_year" + std::to_string(yr) + "_NJuv"
+        				        );
+        				    }
+    				    }
+				    }
+
+				    if(sim.ReturnPopMatrix){
+				        // in contrast to ReturnRaster, this function produces a list of matrices/data frames, one per rep and year, holding all (stage-specific) abundances for all patches,
+				        // instead of a single raster for each population size metric (total abundance, stage-specific abundance, juvenile abundance) and each year and replicate
+				        list_outPop.push_back(
+				            pComm->addYearToPopListPatchBased(rep, yr, sim.ReturnStages),
+				            "rep" + std::to_string(rep) + "_year" + std::to_string(yr)
+				        );
+				    }
+
+					// list_outPop.push_back(pComm->addYearToPopList(rep, yr), "rep" + std::to_string(rep) + "_year" + std::to_string(yr));
 				}
 #endif
 			// apply local extinction for generation 0 only
