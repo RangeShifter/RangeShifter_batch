@@ -26,9 +26,9 @@
 Entry level function for BATCH MODE version
 
 For full details of RangeShifter, please see:
- Bocedi G., Palmer S.C.F., Peï¿½er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+ Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
 and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
- eco-evolutionary dynamics and speciesï¿½ responses to environmental changes.
+ eco-evolutionary dynamics and species’ responses to environmental changes.
 Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
 Author: Steve Palmer, University of Aberdeen
@@ -42,6 +42,10 @@ Author: Steve Palmer, University of Aberdeen
 #include <iomanip>
 #include <stdlib.h>
 #include <cassert>
+
+//#ifdef _OPENMP
+//#include <omp.h>
+//#endif // _OPENMP
 
 using namespace std;
 
@@ -104,6 +108,10 @@ int _tmain(int argc, _TCHAR* argv[])
 #else
 	cout << "RangeShifter Debug Mode" << endl;
 #endif
+
+#ifdef _OPENMP
+	cout << "OpenMP parallelisation enabled with up to " << omp_get_max_threads() << " threads." << endl;
+#endif //_OPENMP
 
 	int t0, t1;
 t0 = (int)time(0);
@@ -177,7 +185,7 @@ if (b.ok) {
 }
 }
 
-	delete pRandom;
+	delete pRandom; // not deleted in new_genetics?
 delete paramsGrad;
 delete paramsStoch;
 delete paramsInit;
@@ -188,7 +196,7 @@ delete pSpecies;
 t1 = (int)time(0);
 cout << endl << "***** Elapsed time " << t1-t0 << " seconds" << endl << endl;
 cout << "*****" << endl;
-	cout << "***** Simulation completed." << endl;
+	cout << "***** Simulation completed - enter any number to terminate program" << endl;
 cout << "*****" << endl;
 
 return 0;
@@ -197,4 +205,5 @@ return 0;
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+
 

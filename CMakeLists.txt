@@ -24,7 +24,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	add_compile_definitions(LINUX_CLUSTER)
 endif()
 
-
 # Enable parallelisation with OpenMP
 # define macro during config: `cmake -DOMP=`
 if(DEFINED OMP)

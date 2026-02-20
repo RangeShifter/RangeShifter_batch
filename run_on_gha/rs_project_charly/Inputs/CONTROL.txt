@@ -18,6 +18,7 @@ TransferFile	TransferFile.txt
 SettlementFile	SettlementFile.txt
 GeneticsFile	GeneticsFile.txt
 TraitsFile		TraitsFile1.txt
+ManagementFile	NULL
 InitialisationFile	InitialisationFile.txt
 
 ANY ADDITIONAL LINES ARE NOT READ, AND CAN THEREFORE BE USED FOR COMMENTS

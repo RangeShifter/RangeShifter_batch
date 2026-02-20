@@ -93,5 +93,4 @@ ManagementFile		filename/NULL		NULL if no management options are selected. Other
 										
 InitialisationFile	filename			Must have matching simulation nos. to those in ParametersFile.
 										1 line per simulation
-										
 

@@ -41,7 +41,7 @@ ofstream batchLog;
 // NOTE: THE STREAMS USED TO READ THE DATA AT RUN TIME COULD TAKE THE SAME NAMES AS
 // USED DURING PARSING (ABOVE)
 ifstream parameters;
-ifstream ssfile, tmfile, fdfile, flfile, ddfile, dlfile, sdfile, slfile;
+ifstream ssfile, tmfile, fdfile, ddfile, sdfile, flfile, dlfile, slfile;
 ifstream emigFile, transFile, settFile, initFile, initIndsFile;
 ifstream landfile, dynLandIfs;
 ifstream ifsGenetics, ifsTraits;
@@ -2224,6 +2224,7 @@ int CheckStageFile(string indir)
 			errors++;
 		}
 
+
 		// read next simulation
 		line++;
 		inint = -98765;
@@ -4317,8 +4318,8 @@ int CheckGeneticsFile(string inputDirectory) {
 	string header;
 	int simNb, prevSimNb, errCode;
 	string inChromosomeEnds, inRecombinationRate, inTraitsFile, inPatchList, inStages,
-		inOutGeneValues, inOutWeirCockerham, inOutPairwiseFst,
-		inOutStartGenetics, inOutputInterval, inNbrPatchesToSample, inNIndsToSample;
+		inOutGeneValues, inOutGenesStart, inOutGenesInterval, inOutGlobalFst, inOutPairwiseFst, inOutPerLocusFst,
+		inOutGlobalFstStart, inOutGlobalFstInterval, inOutPairwiseFstStart, inOutPairwiseFstInterval, inNbrPatchesToSample, inNIndsToSample;
 	int inGenomeSize;
 	int nbErrors = 0;
 	int nbSims = 0;
@@ -4333,10 +4334,15 @@ int CheckGeneticsFile(string inputDirectory) {
 	bGeneticsFile >> header; if (header != "ChromosomeEnds") nbErrors++;
 	bGeneticsFile >> header; if (header != "RecombinationRate") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputGeneValues") nbErrors++;
-	bGeneticsFile >> header; if (header != "OutputFstatsWeirCockerham") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputGenesStart") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputGenesInterval") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputGlobalFst") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputGlobalFstStart") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputGlobalFstInterval") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputPairwiseFst") nbErrors++;
-	bGeneticsFile >> header; if (header != "OutputStartGenetics") nbErrors++;
-	bGeneticsFile >> header; if (header != "OutputInterval") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputPairwiseFstStart") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputPairwiseFstInterval") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputPerLocusFst") nbErrors++;
 	bGeneticsFile >> header; if (header != "PatchList") nbErrors++;
 	bGeneticsFile >> header; if (header != "NbrPatchesToSample") nbErrors++;
 	bGeneticsFile >> header; if (header != "nIndividualsToSample") nbErrors++;
@@ -4365,8 +4371,8 @@ int CheckGeneticsFile(string inputDirectory) {
 			break;
 		}
 
-		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutWeirCockerham >>
-			inOutPairwiseFst >> inOutStartGenetics >> inOutputInterval >> inPatchList >> inNbrPatchesToSample
+		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutGenesStart >> inOutGenesInterval >> inOutGlobalFst >>
+			inOutGlobalFstStart >> inOutGlobalFstInterval >> inOutPairwiseFst >> inOutPairwiseFstStart >> inOutPairwiseFstInterval >> inOutPerLocusFst >> inPatchList >> inNbrPatchesToSample
 			>> inNIndsToSample >> inStages;
 
 		//// Validate parameters
@@ -4413,60 +4419,164 @@ int CheckGeneticsFile(string inputDirectory) {
 			batchLog << "OutGeneValues must be either TRUE or FALSE" << endl;
 			nbErrors++;
 		}
-		if (inOutWeirCockerham != "TRUE" && inOutWeirCockerham != "FALSE") {
+		if (inOutGlobalFst != "TRUE" && inOutGlobalFst != "FALSE") {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "OutputFstatsWeirCockerham must be either TRUE or FALSE" << endl;
+			batchLog << "OutputGlobalFst must be either TRUE or FALSE" << endl;
 			nbErrors++;
 		}
 		if (inOutPairwiseFst != "TRUE" && inOutPairwiseFst != "FALSE") {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "OutputFstatsWeirHill must be either TRUE or FALSE" << endl;
+			batchLog << "OutputPairwiseFst must be either TRUE or FALSE" << endl;
 			nbErrors++;
 		}
-		gTraitOptions.at(simNb).anyNeutral = inOutWeirCockerham == "TRUE"
-			|| inOutPairwiseFst == "TRUE";
-		bool anyGeneticsOutput = inOutGeneValues == "TRUE" 
-			|| gTraitOptions.at(simNb).anyNeutral;
 
-		if (anyGeneticsOutput) {
-			if (inOutStartGenetics == "#") {
+		if (inOutPerLocusFst != "TRUE" && inOutPerLocusFst != "FALSE") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "OutputPerLocusFst must be either TRUE or FALSE" << endl;
+			nbErrors++;
+		}
+
+		// Track whether any neutral genetic output is requested
+		gTraitOptions.at(simNb).anyNeutral =
+			inOutGlobalFst == "TRUE" || inOutPairwiseFst == "TRUE";
+
+		bool anyGeneticsOutput =
+			inOutGeneValues == "TRUE" || gTraitOptions.at(simNb).anyNeutral;
+
+		// =======================
+// GENE VALUES OUTPUT CHECKS
+// =======================
+		if (inOutGeneValues == "TRUE") {
+
+			if (inOutGenesStart == "#") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutStartGenetics cannot be left blank (#) if any genetic output option is TRUE." << endl;
+				batchLog << "OutGenesStart cannot be blank (#) if OutGeneValues is TRUE." << endl;
 				nbErrors++;
 			}
 			else {
-				int outStartGenetics = stoi(inOutStartGenetics);
-				if (outStartGenetics < 0) {
-					BatchError(whichFile, whichLine, 10, "OutStartGenetics");
+				int start = stoi(inOutGenesStart);
+				if (start < 0) {
+					BatchError(whichFile, whichLine, 10, "OutGenesStart");
 					nbErrors++;
 				}
-				}
-			if (inOutputInterval == "#" || inOutputInterval == "0") {
-				// Minimum interval is 1, not 0
+			}
+
+			if (inOutGenesInterval == "#" || inOutGenesInterval == "0") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutputInterval cannot be left blank (#) or 0 if any genetic output option is TRUE." << endl;
+				batchLog << "OutGenesInterval must be >= 1 if OutGeneValues is TRUE." << endl;
 				nbErrors++;
 			}
 			else {
-				int outputInterval = stoi(inOutputInterval);
-				if (outputInterval < 0) {
-					BatchError(whichFile, whichLine, 10, "OutputInterval");
+				int interval = stoi(inOutGenesInterval);
+				if (interval < 1) {
+					BatchError(whichFile, whichLine, 10, "OutGenesInterval");
 					nbErrors++;
-					}
 				}
-		} // no genetics output
-		else {
-			if (inOutStartGenetics != "#") {
+			}
+		}
+		else { // OutGeneValues == FALSE
+
+			if (inOutGenesStart != "#") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutStartGenetics should be blank (#) if all genetic output options are FALSE." << endl;
+				batchLog << "OutGenesStart should be blank (#) if OutGeneValues is FALSE." << endl;
 				nbErrors++;
 			}
-			if (inOutputInterval != "#" && inOutputInterval != "0") {
+
+			if (inOutGenesInterval != "#" && inOutGenesInterval != "0") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutputInterval should be blank (#) or 0 if all genetic output options are FALSE." << endl;
+				batchLog << "OutGenesInterval should be blank (#) or 0 if OutGeneValues is FALSE." << endl;
 				nbErrors++;
 			}
 		}
+		// =======================
+		// GLOBAL FST CHECKS
+		// =======================
+		if (inOutGlobalFst == "TRUE") {
+
+			if (inOutGlobalFstStart == "#") {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "OutputGlobalFstStart cannot be blank (#) if OutputGlobalFst is TRUE." << endl;
+				nbErrors++;
+			}
+			else {
+				int start = stoi(inOutGlobalFstStart);
+				if (start < 0) {
+					BatchError(whichFile, whichLine, 10, "OutputGlobalFstStart");
+					nbErrors++;
+				}
+			}
+
+			if (inOutGlobalFstInterval == "#" || inOutGlobalFstInterval == "0") {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "OutputGlobalFstInterval must be >= 1 if OutputGlobalFst is TRUE." << endl;
+				nbErrors++;
+			}
+			else {
+				int interval = stoi(inOutGlobalFstInterval);
+				if (interval < 1) {
+					BatchError(whichFile, whichLine, 10, "OutputGlobalFstInterval");
+					nbErrors++;
+				}
+			}
+		}
+		else {
+			// Should be blank if not used
+			if (inOutGlobalFstStart != "#") {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "OutputGlobalFstStart should be blank (#) if OutputGlobalFst is FALSE." << endl;
+				nbErrors++;
+			}
+			if (inOutGlobalFstInterval != "#" && inOutGlobalFstInterval != "0") {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "OutputGlobalFstInterval should be blank (#) or 0 if OutputGlobalFst is FALSE." << endl;
+				nbErrors++;
+			}
+		}
+
+		// ====================== =
+			// PAIRWISE FST CHECKS
+			// =======================
+			if (inOutPairwiseFst == "TRUE") {
+
+				if (inOutPairwiseFstStart == "#") {
+					BatchError(whichFile, whichLine, 0, " ");
+					batchLog << "OutputPairwiseFstStart cannot be blank (#) if OutputPairwiseFst is TRUE." << endl;
+					nbErrors++;
+				}
+				else {
+					int start = stoi(inOutPairwiseFstStart);
+					if (start < 0) {
+						BatchError(whichFile, whichLine, 10, "OutputPairwiseFstStart");
+						nbErrors++;
+					}
+				}
+
+				if (inOutPairwiseFstInterval == "#" || inOutPairwiseFstInterval == "0") {
+					BatchError(whichFile, whichLine, 0, " ");
+					batchLog << "OutputPairwiseFstInterval must be >= 1 if OutputPairwiseFst is TRUE." << endl;
+					nbErrors++;
+				}
+				else {
+					int interval = stoi(inOutPairwiseFstInterval);
+					if (interval < 1) {
+						BatchError(whichFile, whichLine, 10, "OutputPairwiseFstInterval");
+						nbErrors++;
+					}
+				}
+			}
+			else {
+				// Should be blank if not used
+				if (inOutPairwiseFstStart != "#") {
+					BatchError(whichFile, whichLine, 0, " ");
+					batchLog << "OutputPairwiseFstStart should be blank (#) if OutputPairwiseFst is FALSE." << endl;
+					nbErrors++;
+				}
+				if (inOutPairwiseFstInterval != "#" && inOutPairwiseFstInterval != "0") {
+					BatchError(whichFile, whichLine, 0, " ");
+					batchLog << "OutputPairwiseFstInterval should be blank (#) or 0 if OutputPairwiseFst is FALSE." << endl;
+					nbErrors++;
+				}
+			}
 
 		// Check PatchList
 		if (anyGeneticsOutput) {
@@ -5779,8 +5889,8 @@ void flushHeaders(ifstream& ifs) {
 int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 
 	string indir = paramsSim->getDir(1);
-	bool outputGeneValues, outputWeirCockerham, outputWeirHill;
-	int outputStartGenetics, outputGeneticInterval;
+	bool outputGeneValues, outputGlobalFst, outputPairwiseFst, outputPerLocusFst;
+	int outputGenesStart, outputGenesInterval,outputGlobalFstStart, outputGlobalFstInterval, outputPairwiseFstStart, outputPairwiseFstInterval;
 	set<int> patchList;
 
 	//not ideal to reset these in here 
@@ -5803,12 +5913,17 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		set<int> chrEnds = stringToChromosomeEnds(parameters[2], genomeSize);
 		float recombinationRate = parameters[3] == "#" ? 0.0 : stof(parameters[3]);
 		outputGeneValues = (parameters[4] == "TRUE");
-		outputWeirCockerham = (parameters[5] == "TRUE");
-		outputWeirHill = (parameters[6] == "TRUE");
-		outputStartGenetics = parameters[7] == "#" ? 0 : stoi(parameters[7]);
-		outputGeneticInterval = parameters[8] == "#" ? 0 : stoi(parameters[8]);
+		outputGenesStart = parameters[5] == "#" ? 0 : stoi(parameters[5]);
+		outputGenesInterval = parameters[6] == "#" ? 0 : stoi(parameters[6]);
+		outputGlobalFst = (parameters[7] == "TRUE");
+		outputGlobalFstStart = parameters[8] == "#" ? 0 : stoi(parameters[8]);
+		outputGlobalFstInterval = parameters[9] == "#" ? 0 : stoi(parameters[9]);
+		outputPairwiseFst = (parameters[10] == "TRUE");
+		outputPairwiseFstStart = parameters[11] == "#" ? 0 : stoi(parameters[11]);
+		outputPairwiseFstInterval = parameters[12] == "#" ? 0 : stoi(parameters[12]);
+		outputPerLocusFst = (parameters[13] == "TRUE");
 
-		string inPatches = parameters[9];
+		string inPatches = parameters[14];
 		string patchSamplingOption;
 		int nPatchesToSample = 0;
 		if (inPatches != "all" && inPatches != "random" && inPatches != "random_occupied") {
@@ -5821,23 +5936,24 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		else {
 			patchSamplingOption = inPatches;
 			if (inPatches == "random" || inPatches == "random_occupied")
-				nPatchesToSample = stoi(parameters[10]);
+				nPatchesToSample = stoi(parameters[15]);
 			// patchList remains empty, filled when patches are sampled every gen
 		}
-		const string strNbInds = parameters[11];
+		const string strNbInds = parameters[16];
 		const int nbStages = pSpecies->getStageParams().nStages;
-		parameters[12].erase(
-			remove(parameters[12].begin(), parameters[12].end(), '\r'),
-			parameters[12].end() // bye windows line breaks
+		parameters[17].erase(
+			remove(parameters[17].begin(), parameters[17].end(), '\r'),
+			parameters[17].end() // bye windows line breaks
 		);
 
 		set<int> stagesToSampleFrom;
-		if (parameters[12] != "#")
-			stagesToSampleFrom = stringToStages(parameters[12], nbStages);
+		if (parameters[17] != "#")
+			stagesToSampleFrom = stringToStages(parameters[17], nbStages);
 
 		pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate,
 			patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
-		paramsSim->setGeneticSim(patchSamplingOption, outputGeneValues, outputWeirCockerham, outputWeirHill, outputStartGenetics, outputGeneticInterval);
+		paramsSim->setGeneticSim(patchSamplingOption, outputGeneValues, outputGenesStart, outputGenesInterval, outputPairwiseFst, outputGlobalFst, outputGlobalFstStart, outputGlobalFstInterval,
+			outputPairwiseFstStart, outputPairwiseFstInterval, outputPerLocusFst);
 	}
 	else {
 		throw runtime_error("GeneticsFile is not open.");
@@ -6830,7 +6946,7 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 		// set no.of lines assuming maximum stage- and sex-dependency
 	int Nlines = stageStruct.nStages == 0 ? gNbSexesDisp : gNbSexesDisp * stageStruct.nStages;
 
-	for (int line = 0; line < Nlines; line++) {
+		for (int line = 0; line < Nlines; line++) {
 
 		transFile >> simNb >> inStageDep >> inSexDep >> inKernelType >> inDistMort >> inIndVar;
 		if (isFirstLine) {

@@ -53,6 +53,28 @@ shopt -s extglob # enable the !(file) pattern below
 g++ --std=c++20 -o RangeShifter.exe ./src/*.cpp ./src/RScore/!(Main).cpp -DLINUX_CLUSTER -O3 -s -DNDEBUG
 ```
 
+### Parallelisation
+
+As of 3.0, parallelisation (using [OpenMP](https://www.openmp.org/)) is available for the reproduction and dispersal modules. 
+This behaviour is turned off by default, and can be turned on by building RangeShifter with the `OMP` macro enabled:
+
+```bash
+# Unix
+mkdir build && cd build
+cmake -DOMP= -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+```
+
+```bash
+# Windows (Visual Studio)
+mkdir build && cd build
+cmake -DOMP= ..
+cmake --build . --config Release
+```
+
+⚠️ Please note that enabling parallelisation will alter random number generation, 
+such that two identical simulations won't produce the same exact numbers, even given the same seed.
+
 ### Building with Visual Studio (Windows)
 
 Building RangeShifter-batch with CMake can be done easily within Visual Studio. 
