@@ -5945,9 +5945,7 @@ int ReadEmigration()
 			emig.stgDep = (inStgDep == 1);
 			emig.indVar = (inIndVar == 1);
 			emig.sexDep = (inSexDep == 1);
-			if (inEmigstage >= 0 && inEmigstage < sstruct.nStages)
-				emig.emigStage = inEmigstage;
-			else emig.emigStage = 0;
+			emig.emigStage = inEmigstage;
 			// update no.of lines according to known stage- and sex-dependency
 			if (emig.stgDep) {
 				if (emig.sexDep) Nlines = sstruct.nStages * gNbSexesDisp;
