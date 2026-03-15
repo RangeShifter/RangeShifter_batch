@@ -1465,6 +1465,8 @@ void Population::resolveInitiatedInteractions() {
 			const auto& patchesInContact = pPatch->getOverlappingPatches(tgtSp);
 			for (auto& [pContactPatch, overlap] : patchesInContact) {
 
+				// TODO: overlap for target should be the overlap from the prey's patch perspective!
+
 				auto pTargetPop = pContactPatch->getPop();
 				if (pTargetPop == nullptr || overlap == 0.0) continue; // no interaction
 

@@ -330,7 +330,7 @@ void Landscape::resetLand() {
 void Landscape::initialise(speciesMap_t& allSpecies, landParams land) {
 
 	// Create patches if not done in ReadLandscape
-	if (land.isArtificial) generatePatches(allSpecies);
+	if (land.isArtificial) generateArtificialLandscape(allSpecies);
 	else if (!land.usesPatches) allocatePatches(allSpecies);
 	// otherwise (patch-based + imported) patches have been read already
 	
@@ -359,6 +359,8 @@ void Landscape::calcPatchOverlap() {
 			pPatch->resetPatchOverlap();
 	}
 
+	// 1. Find which cells are associated with multiple (overlapping) patches
+	// and increment the overlap tally of corresponding patches
 	for (int x = 0; x < dimX; x++) {
 		for (int y = 0; y < dimY; y++) {
 			auto pCell = cells[y][x];
@@ -368,7 +370,7 @@ void Landscape::calcPatchOverlap() {
 		}
 	}
 
-	// Finalise overlap calculation by dividing tally by cell area
+	// 2. Finalise overlap prop calculation by dividing tally by cell area
 	for (auto& [sp, patches] : patchesList) {
 		for (auto pPatch : patches)
 			pPatch->calcPatchOverlap();
@@ -551,7 +553,7 @@ void Landscape::setCellArray() {
 /* Create an artificial landscape (random or fractal), which can be
 either binary (habitat index 0 is the matrix, 1 is suitable habitat)
 or continuous (0 is the matrix, >0 is suitable habitat) */
-void Landscape::generatePatches(const speciesMap_t& allSpecies)
+void Landscape::generateArtificialLandscape(const speciesMap_t& allSpecies)
 {
 	int x, y, ncells;
 	double p;
