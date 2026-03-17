@@ -2332,7 +2332,7 @@ bool CheckInteractionFile(string indir)
 
 		if (inDirctdIntrct != "TRUE" && inDirctdIntrct != "FALSE") {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLogOfs << "InitiatedInteraction must be either TRUE or FALSE" << endl;
+			batchLogOfs << "DirectedInteraction must be either TRUE or FALSE" << endl;
 			nbErrors++;
 		}
 
@@ -2343,52 +2343,85 @@ bool CheckInteractionFile(string indir)
 		if (inResMedIntrct == "TRUE") {
 			if (inAlphaLR == "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If ResMedInteraction is TRUE, Alpha must not be #" << endl;
+				batchLogOfs << "If ResMedInteraction is TRUE, AlphaLR must be specified" << endl;
 				nbErrors++;
 			}
 
-			int nbAlphas = 0;
+			int nbAlphasLR = 0;
 			bool isMatchPos = regex_search(inAlphaLR, floatNbSeq);
 			if (isMatchPos) {
 				auto inAlphaBegin = std::sregex_iterator(inAlphaLR.begin(), inAlphaLR.end(), floatNumber);
 				auto inAlphaEnd = std::sregex_iterator();
 				for (std::sregex_iterator i = inAlphaBegin; i != inAlphaEnd; ++i)
-					nbAlphas++;
-				if (nbAlphas != nbProcessesLeft) {
+					nbAlphasLR++;
+				if (nbAlphasLR != nbProcessesLeft) {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLogOfs << "There must be one alpha value for each value in Process." << endl;
+					batchLogOfs << "There must be one AlphaLR value for each value in ProcessLeft." << endl;
 					nbErrors++;
 				}
 			}
 			else {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "Alpha must be a sequence of one or more numbers separated by semicolons." << endl;
+				batchLogOfs << "AlphaLR must be a sequence of one or more numbers separated by semicolons." << endl;
 				nbErrors++;
 			}
+
+			if (inAlphaLR == "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If ResMedInteraction is TRUE, AlphaLR must be specified" << endl;
+				nbErrors++;
+			}
+
+			int nbAlphasRL = 0;
+			isMatchPos = regex_search(inAlphaRL, floatNbSeq);
+			if (isMatchPos) {
+				auto inAlphaBegin = std::sregex_iterator(inAlphaRL.begin(), inAlphaRL.end(), floatNumber);
+				auto inAlphaEnd = std::sregex_iterator();
+				for (std::sregex_iterator i = inAlphaBegin; i != inAlphaEnd; ++i)
+					nbAlphasRL++;
+				if (nbAlphasRL != nbProcessesRight) {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "There must be one AlphaRL value for each value in ProcessRight." << endl;
+					nbErrors++;
+				}
+			}
+			else {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "AlphaRL must be a sequence of one or more numbers separated by semicolons." << endl;
+				nbErrors++;
+			}
+
 		} 
 		else {
+
 			if (inAlphaLR != "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If ResMedInteraction is FALSE, Alpha must be #" << endl;
+				batchLogOfs << "If ResMedInteraction is FALSE, AlphaLR must be #" << endl;
+				nbErrors++;
+			}
+
+			if (inAlphaRL != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If ResMedInteraction is FALSE, AlphaRL must be #" << endl;
 				nbErrors++;
 			}
 		}
 		
-		// Initiated interaction
+		// Directed interaction
 		if (inDirctdIntrct == "TRUE") {
 
 			// Record this entry to check if there is at least one matching recipient entry
 			auto initdIntrctEntry = make_tuple(inSpLeft, inStgLeft, inSpRight, inStgRight);
 			if (initdIntrctRecord.contains(initdIntrctEntry)) {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "There can only be one line for each combination of SpeciesLeft, StageLeft, SpeciesRight and StageRight" << endl;
+				batchLogOfs << "There can only be one line of input for each combination of SpeciesLeft, StageLeft, SpeciesRight and StageRight" << endl;
 				nbErrors++;
 			}
 			else initdIntrctRecord.insert(initdIntrctEntry);
 
 			if (inBeta == "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If InitiatedInteraction is TRUE, Beta must not be #" << endl;
+				batchLogOfs << "If DirectedInteraction is TRUE, Beta must not be #" << endl;
 				nbErrors++;
 			}
 			else {
@@ -2412,9 +2445,36 @@ bool CheckInteractionFile(string indir)
 				}
 			}
 
+			inDelta.erase(remove(inDelta.begin(), inDelta.end(), '\r'), inDelta.end());
+			if (inDelta == "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If DirectedInteraction is TRUE, Delta must not be #" << endl;
+				nbErrors++;
+			}
+			else {
+				int nbDeltas = 0;
+				bool isMatchPos = regex_search(inDelta, floatNbSeq);
+				if (isMatchPos) {
+					auto inDeltaBegin = std::sregex_iterator(inDelta.begin(), inDelta.end(), floatNumber);
+					auto inDeltaEnd = std::sregex_iterator();
+					for (std::sregex_iterator i = inDeltaBegin; i != inDeltaEnd; ++i)
+						nbDeltas++;
+					if (nbDeltas != nbProcessesRight) {
+						BatchError(whichInputFile, lineNb, 0, " ");
+						batchLogOfs << "There must be one delta value for each value in ProcessRight." << endl;
+						nbErrors++;
+					}
+				}
+				else {
+					BatchError(whichInputFile, lineNb, 0, " ");
+					batchLogOfs << "Delta must be a sequence of one or more numbers separated by semicolons." << endl;
+					nbErrors++;
+				}
+			}
+
 			if (inHandlingTime == "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If InitiatedInteraction is TRUE, HandlingTime must not be #" << endl;
+				batchLogOfs << "If DirectedInteraction is TRUE, HandlingTime must not be #" << endl;
 				nbErrors++;
 			}
 			else if (stof(inHandlingTime) < 0.0) {
@@ -2510,74 +2570,34 @@ bool CheckInteractionFile(string indir)
 		else { // Initiated interaction is off
 			if (inBeta != "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If InitiatedInteraction is FALSE, Beta must be #" << endl;
+				batchLogOfs << "If DirectedInteraction is FALSE, Beta must be #" << endl;
 				nbErrors++;
 			}
+
+			if (inDelta != "#") {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "If DirectedInteraction is FALSE, Delta must be #" << endl;
+				nbErrors++;
+			}
+
 			if (inHandlingTime != "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If InitiatedInteraction is FALSE, HandlingTime must be #" << endl;
+				batchLogOfs << "If DirectedInteraction is FALSE, HandlingTime must be #" << endl;
 				nbErrors++;
 			}
 			if (inTargetDensity != "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If InitiatedInteraction is FALSE, TargetDensity must be #" << endl;
+				batchLogOfs << "If DirectedInteraction is FALSE, TargetDensity must be #" << endl;
 				nbErrors++;
 			}
 			if (inInterference != "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If InitiatedInteraction is FALSE, Interference must be #" << endl;
+				batchLogOfs << "If DirectedInteraction is FALSE, Interference must be #" << endl;
 				nbErrors++;
 			}
 			if (inTargetPref != "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If InitiatedInteraction is FALSE, TargetPreference must be #" << endl;
-				nbErrors++;
-			}
-		}
-
-		// Received interaction
-		if (inRecIntrct == "TRUE") {
-
-			// Record this entry to check if there is at least one matching initiator entry
-			auto recdIntrctEntry = make_tuple(inSpLeft, inStgLeft, inSpRight, inStgRight);
-			if (recdIntrctRecord.contains(recdIntrctEntry)) {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "There can only be one line for each combination of SpeciesLeft, StageLeft, SpeciesRight and StageRight" << endl;
-				nbErrors++;
-			}
-			else recdIntrctRecord.insert(recdIntrctEntry);
-
-			inDelta.erase(remove(inDelta.begin(), inDelta.end(), '\r'), inDelta.end());
-			if (inDelta == "#") {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If ReceivedInteraction is TRUE, Delta must not be #" << endl;
-				nbErrors++;
-			}
-			else {
-				int nbDeltas = 0;
-				bool isMatchPos = regex_search(inDelta, floatNbSeq);
-				if (isMatchPos) {
-					auto inDeltaBegin = std::sregex_iterator(inDelta.begin(), inDelta.end(), floatNumber);
-					auto inDeltaEnd = std::sregex_iterator();
-					for (std::sregex_iterator i = inDeltaBegin; i != inDeltaEnd; ++i)
-						nbDeltas++;
-					if (nbDeltas != nbProcessesLeft) {
-						BatchError(whichInputFile, lineNb, 0, " ");
-						batchLogOfs << "There must be one delta value for each value in Process." << endl;
-						nbErrors++;
-					}
-				}
-				else {
-					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLogOfs << "Delta must be a sequence of one or more numbers separated by semicolons." << endl;
-					nbErrors++;
-				}
-			}
-		}
-		else {
-			if (inDelta != "#") {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If ReceivedInteraction is FALSE, Delta must be #" << endl;
+				batchLogOfs << "If DirectedInteraction is FALSE, TargetPreference must be #" << endl;
 				nbErrors++;
 			}
 		}
