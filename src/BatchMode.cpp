@@ -2237,7 +2237,7 @@ bool CheckInteractionFile(string indir)
 		}
 
 		ifsInteraction >> inSpLeft >> inStgLeft 
-			 >> inSpRight >> inStgRight >> inProcessLeft
+			>> inSpRight >> inStgRight >> inProcessLeft
 			>> inResMedIntrct >> inAlphaLR >> inAlphaRL
 			>> inDirctdIntrct >> inBeta >> inDelta >> inHandlingTime
 			>> inTargetDensity >> inAttackRate >> inHullCoeff
@@ -2341,56 +2341,53 @@ bool CheckInteractionFile(string indir)
 
 		// Resource-mediated interaction
 		if (inResMedIntrct == "TRUE") {
-			if (inAlphaLR == "#") {
+			if (inAlphaLR == "#" && inAlphaRL == "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If ResMedInteraction is TRUE, AlphaLR must be specified" << endl;
+				batchLogOfs << "If ResMedInteraction is TRUE, at least one of AlphaLR or AlphaRL must be specified" << endl;
 				nbErrors++;
 			}
 
-			int nbAlphasLR = 0;
-			bool isMatchPos = regex_search(inAlphaLR, floatNbSeq);
-			if (isMatchPos) {
-				auto inAlphaBegin = std::sregex_iterator(inAlphaLR.begin(), inAlphaLR.end(), floatNumber);
-				auto inAlphaEnd = std::sregex_iterator();
-				for (std::sregex_iterator i = inAlphaBegin; i != inAlphaEnd; ++i)
-					nbAlphasLR++;
-				if (nbAlphasLR != nbProcessesLeft) {
+			if (inAlphaLR != "#") {
+				int nbAlphasLR = 0;
+				bool isMatchPos = regex_search(inAlphaLR, floatNbSeq);
+				if (isMatchPos) {
+					auto inAlphaBegin = std::sregex_iterator(inAlphaLR.begin(), inAlphaLR.end(), floatNumber);
+					auto inAlphaEnd = std::sregex_iterator();
+					for (std::sregex_iterator i = inAlphaBegin; i != inAlphaEnd; ++i)
+						nbAlphasLR++;
+					if (nbAlphasLR != nbProcessesLeft) {
+						BatchError(whichInputFile, lineNb, 0, " ");
+						batchLogOfs << "There must be one AlphaLR value for each value in ProcessLeft." << endl;
+						nbErrors++;
+					}
+				}
+				else {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLogOfs << "There must be one AlphaLR value for each value in ProcessLeft." << endl;
+					batchLogOfs << "AlphaLR must be a sequence of one or more numbers separated by semicolons." << endl;
 					nbErrors++;
 				}
 			}
-			else {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "AlphaLR must be a sequence of one or more numbers separated by semicolons." << endl;
-				nbErrors++;
-			}
-
-			if (inAlphaLR == "#") {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "If ResMedInteraction is TRUE, AlphaLR must be specified" << endl;
-				nbErrors++;
-			}
-
-			int nbAlphasRL = 0;
-			isMatchPos = regex_search(inAlphaRL, floatNbSeq);
-			if (isMatchPos) {
-				auto inAlphaBegin = std::sregex_iterator(inAlphaRL.begin(), inAlphaRL.end(), floatNumber);
-				auto inAlphaEnd = std::sregex_iterator();
-				for (std::sregex_iterator i = inAlphaBegin; i != inAlphaEnd; ++i)
-					nbAlphasRL++;
-				if (nbAlphasRL != nbProcessesRight) {
+			
+			if (inAlphaRL != "#") {
+				int nbAlphasRL = 0;
+				isMatchPos = regex_search(inAlphaRL, floatNbSeq);
+				if (isMatchPos) {
+					auto inAlphaBegin = std::sregex_iterator(inAlphaRL.begin(), inAlphaRL.end(), floatNumber);
+					auto inAlphaEnd = std::sregex_iterator();
+					for (std::sregex_iterator i = inAlphaBegin; i != inAlphaEnd; ++i)
+						nbAlphasRL++;
+					if (nbAlphasRL != nbProcessesRight) {
+						BatchError(whichInputFile, lineNb, 0, " ");
+						batchLogOfs << "There must be one AlphaRL value for each value in ProcessRight." << endl;
+						nbErrors++;
+					}
+				}
+				else {
 					BatchError(whichInputFile, lineNb, 0, " ");
-					batchLogOfs << "There must be one AlphaRL value for each value in ProcessRight." << endl;
+					batchLogOfs << "AlphaRL must be a sequence of one or more numbers separated by semicolons." << endl;
 					nbErrors++;
 				}
 			}
-			else {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "AlphaRL must be a sequence of one or more numbers separated by semicolons." << endl;
-				nbErrors++;
-			}
-
 		} 
 		else {
 
@@ -6329,27 +6326,30 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 
 		if (isResMedIntrct == "TRUE") {
 			resIntrctParams resDepIntrct;
-			auto alphaIt = std::sregex_iterator(strAlphaLR.begin(), strAlphaLR.end(), floatNumber);
 
-			for (auto& whichProcess : whichProcessesLeft) {
-				std::smatch match = *alphaIt;
-				double alpha = stof(match.str());
-				resDepIntrct.alphas.emplace(whichProcess, alpha);
-				alphaIt++;
+			if (strAlphaLR != "#") {
+				auto alphaIt = std::sregex_iterator(strAlphaLR.begin(), strAlphaLR.end(), floatNumber);
+
+				for (auto& whichProcess : whichProcessesLeft) {
+					std::smatch match = *alphaIt;
+					double alpha = stof(match.str());
+					resDepIntrct.alphas.emplace(whichProcess, alpha);
+					alphaIt++;
+				}
+				allSpecies.at(spLeft)->addResMedtdInteraction(stgLeft, spRight, stgRight, resDepIntrct);
 			}
-			allSpecies.at(spLeft)->addResMedtdInteraction(stgLeft, spRight, stgRight, resDepIntrct);
-
-			// what if either is empty?
-
-			resDepIntrct = resIntrctParams(); // reset
-			alphaIt = std::sregex_iterator(strAlphaRL.begin(), strAlphaRL.end(), floatNumber);
-			for (auto& whichProcess : whichProcessesLeft) {
-				std::smatch match = *alphaIt;
-				double alpha = stof(match.str());
-				resDepIntrct.alphas.emplace(whichProcess, alpha);
-				alphaIt++;
+			
+			if (strAlphaRL != "#") {
+				resDepIntrct = resIntrctParams(); // reset
+				auto alphaIt = std::sregex_iterator(strAlphaRL.begin(), strAlphaRL.end(), floatNumber);
+				for (auto& whichProcess : whichProcessesLeft) {
+					std::smatch match = *alphaIt;
+					double alpha = stof(match.str());
+					resDepIntrct.alphas.emplace(whichProcess, alpha);
+					alphaIt++;
+				}
+				allSpecies.at(spRight)->addResMedtdInteraction(stgRight, spLeft, stgLeft, resDepIntrct);
 			}
-			allSpecies.at(spRight)->addResMedtdInteraction(stgRight, spLeft, stgLeft, resDepIntrct);
 		}
 
 		if (isDirctdIntrct == "TRUE") {
@@ -6357,7 +6357,7 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 			
 			auto betaIt = std::sregex_iterator(strBeta.begin(), strBeta.end(), floatNumber);
 
-			for (auto& whichProcess : whichProcesses) {
+			for (auto& whichProcess : whichProcessesLeft) {
 				std::smatch match = *betaIt;
 				double beta = stof(match.str());
 				initiatdIntrct.betas.emplace(whichProcess, beta);
@@ -6394,20 +6394,18 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 			}
 
 			allSpecies.at(spLeft)->addInitdInteraction(stgLeft, spRight, stgRight, initiatdIntrct);
-		}
 
-		if (isRecIntrt == "TRUE") {
 			recdIntrctParams receivdIntrct;
 			auto deltaIt = std::sregex_iterator(strDelta.begin(), strDelta.end(), floatNumber);
 
-			for (auto& whichProcess : whichProcesses) {
+			for (auto& whichProcess : whichProcessesRight) {
 				std::smatch match = *deltaIt;
 				double delta = stof(match.str());
 				receivdIntrct.deltas.emplace(whichProcess, delta);
 				deltaIt++;
 			}
 
-			allSpecies.at(spLeft)->addReceivdInteraction(stgLeft, spRight, stgRight, receivdIntrct);
+			allSpecies.at(spRight)->addReceivdInteraction(stgRight, spLeft, stgLeft, receivdIntrct);
 		}
 
 		ifsInteraction >> inputSimNb;
