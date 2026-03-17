@@ -6295,47 +6295,64 @@ demogrProcess_t stringToProcess(const string& strProcess) {
 void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 
 	int inputSimNb, spLeft, spRight, stgLeft, stgRight;
-	string strProcess;
-	string isResMedIntrct, isInitiatedIntrct, isRecIntrt;
+	string strProcessLeft, strProcessRight;
+	string isResMedIntrct, isDirctdIntrct;
 	string usesTgtDensity, usesInterference, usesTgtPref;
-	string strAlpha, strBeta, strOmega, strDelta, strAttackRate, strHullCoeff,
+	string strAlphaLR, strAlphaRL, strBeta, strOmega, strDelta, strAttackRate, strHullCoeff,
 		strInterfExpnt, strHandlingTime, strRelPref;
 	
 	do {
-		ifsInteraction >> spLeft >> stgLeft >> spRight >> stgRight >> strProcess;
+		ifsInteraction >> spLeft >> stgLeft >> spRight >> stgRight >> strProcessLeft >> strProcessRight;
 
-		ifsInteraction >> isResMedIntrct >> strAlpha;
-		ifsInteraction >> isInitiatedIntrct >> strBeta >> strHandlingTime
+		ifsInteraction >> isResMedIntrct >> strAlphaLR >> strAlphaRL;
+		ifsInteraction >> isDirctdIntrct >> strBeta >> strDelta >> strHandlingTime
 			>> usesTgtDensity >> strAttackRate >> strHullCoeff
 			>> usesInterference >> strOmega >> strInterfExpnt
 			>> usesTgtPref >> strRelPref;
-		ifsInteraction >> isRecIntrt >> strDelta;
 
-		vector<demogrProcess_t> whichProcesses;
+		vector<demogrProcess_t> whichProcessesLeft, whichProcessesRight;
 		std::regex process("(\\w+)"); // match any word, since we know from check they are correct
-		auto inProcessBegin = std::sregex_iterator(strProcess.begin(), strProcess.end(), process);
+		auto inProcessBegin = std::sregex_iterator(strProcessLeft.begin(), strProcessLeft.end(), process);
 		auto inProcessEnd = std::sregex_iterator();
 		for (std::sregex_iterator i = inProcessBegin; i != inProcessEnd; ++i) {
 			std::smatch match = *i;
-			whichProcesses.push_back(stringToProcess(match.str()));
+			whichProcessesLeft.push_back(stringToProcess(match.str()));
+		}
+		inProcessBegin = std::sregex_iterator(strProcessRight.begin(), strProcessRight.end(), process);
+		inProcessEnd = std::sregex_iterator();
+		for (std::sregex_iterator i = inProcessBegin; i != inProcessEnd; ++i) {
+			std::smatch match = *i;
+			whichProcessesRight.push_back(stringToProcess(match.str()));
 		}
 
 		const std::regex floatNumber("(-?\\d+(\.\\d+)?)"); // any positive or negative floating point number
 
 		if (isResMedIntrct == "TRUE") {
 			resIntrctParams resDepIntrct;
-			auto alphaIt = std::sregex_iterator(strAlpha.begin(), strAlpha.end(), floatNumber);
+			auto alphaIt = std::sregex_iterator(strAlphaLR.begin(), strAlphaLR.end(), floatNumber);
 
-			for (auto& whichProcess : whichProcesses) {
+			for (auto& whichProcess : whichProcessesLeft) {
 				std::smatch match = *alphaIt;
 				double alpha = stof(match.str());
 				resDepIntrct.alphas.emplace(whichProcess, alpha);
 				alphaIt++;
 			}
 			allSpecies.at(spLeft)->addResMedtdInteraction(stgLeft, spRight, stgRight, resDepIntrct);
+
+			// what if either is empty?
+
+			resDepIntrct = resIntrctParams(); // reset
+			alphaIt = std::sregex_iterator(strAlphaRL.begin(), strAlphaRL.end(), floatNumber);
+			for (auto& whichProcess : whichProcessesLeft) {
+				std::smatch match = *alphaIt;
+				double alpha = stof(match.str());
+				resDepIntrct.alphas.emplace(whichProcess, alpha);
+				alphaIt++;
+			}
+			allSpecies.at(spRight)->addResMedtdInteraction(stgRight, spLeft, stgLeft, resDepIntrct);
 		}
 
-		if (isInitiatedIntrct == "TRUE") {
+		if (isDirctdIntrct == "TRUE") {
 			initdIntrctParams initiatdIntrct;
 			
 			auto betaIt = std::sregex_iterator(strBeta.begin(), strBeta.end(), floatNumber);
