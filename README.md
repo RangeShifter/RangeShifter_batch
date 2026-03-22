@@ -125,10 +125,6 @@ See [CONTRIBUTING](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/m
 - Steve Palmer
 - Roslyn Henry ([@RoslynHenry](https://github.com/RoslynHenry))
 
-**Maintainer:**
-
-- Theo Pannetier ([@TheoPannetier](https://github.com/TheoPannetier))
-
 Concepts:
 
 - Damaris Zurell ([@damariszurell](https://github.com/damariszurell))
