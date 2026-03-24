@@ -1,0 +1,81 @@
+ParseDynamicFile(): costfile=NULL
+Landscape::readLandChange(): filenum=0 costs=0
+Landscape::readLandChange(): filenum=1 costs=0
+Landscape::readLandChange(): filenum=2 costs=0
+Landscape::readLandChange(): filenum=3 costs=0
+Landscape::readLandChange(): filenum=4 costs=0
+Landscape::readLandChange(): filenum=5 costs=0
+Landscape::readLandChange(): filenum=6 costs=0
+Landscape::readLandChange(): filenum=7 costs=0
+Landscape::readLandChange(): filenum=8 costs=0
+Landscape::readLandChange(): filenum=9 costs=0
+Landscape::readLandChange(): filenum=10 costs=0
+Landscape::readLandChange(): filenum=11 costs=0
+Landscape::readLandChange(): filenum=12 costs=0
+Landscape::readLandChange(): filenum=13 costs=0
+Landscape::readLandChange(): filenum=14 costs=0
+Landscape::readLandChange(): filenum=15 costs=0
+Landscape::readLandChange(): filenum=16 costs=0
+Landscape::readLandChange(): filenum=17 costs=0
+Landscape::readLandChange(): filenum=18 costs=0
+Landscape::readLandChange(): filenum=19 costs=0
+Landscape::readLandChange(): filenum=20 costs=0
+Landscape::readLandChange(): filenum=21 costs=0
+Landscape::readLandChange(): filenum=22 costs=0
+Landscape::readLandChange(): filenum=23 costs=0
+Landscape::readLandChange(): filenum=24 costs=0
+RunBatch(): TIME for ReadDynLandFile() 0
+ReadParameters(): outRange=0 outInt=0
+RunModel(): reps=1 ppLand.nHab=1 p.pix=1
+
+
+RunModel(): start of gen 0 in year 0 for rep 0 ( 1228 1007 1618 1276 1865 )
+Community::reproduction(): this=0x20483eaa260 nsubcomms=401
+Community::reproduction(): finished
+Community::emigration(): this=0x20483eaa260 nsubcomms=401
+Community::emigration(): finished
+Community::dispersal(): this=0x20483eaa260 nsubcomms=401 initiation time=0
+Community::dispersal(): matrix=0x20483e99940
+Community::dispersal(): transfer time=0
+
+RunModel(): start of gen 0 in year 1 for rep 0 ( 1000 1714 1341 1347 1994 )
+Community::reproduction(): this=0x20483eaa260 nsubcomms=401
+Community::reproduction(): finished
+Community::emigration(): this=0x20483eaa260 nsubcomms=401
+Community::emigration(): finished
+Community::dispersal(): this=0x20483eaa260 nsubcomms=401 initiation time=0
+Community::dispersal(): matrix=0x20483e99940
+Community::dispersal(): transfer time=0
+
+RunModel(): start of gen 0 in year 2 for rep 0 ( 1282 1508 1498 1053 1668 )
+Community::reproduction(): this=0x20483eaa260 nsubcomms=401
+Community::reproduction(): finished
+Community::emigration(): this=0x20483eaa260 nsubcomms=401
+Community::emigration(): finished
+Community::dispersal(): this=0x20483eaa260 nsubcomms=401 initiation time=0
+Community::dispersal(): matrix=0x20483e99940
+Community::dispersal(): transfer time=0
+Community::dispersal(): this=0x20483eaa260 nsubcomms=401 initiation time=0
+Community::dispersal(): matrix=0x20483e99940
+Community::dispersal(): transfer time=0
+
+RunModel(): start of gen 0 in year 3 for rep 0 ( 1166 1985 1023 1116 1566 )
+Community::reproduction(): this=0x20483eaa260 nsubcomms=401
+Community::reproduction(): finished
+Community::emigration(): this=0x20483eaa260 nsubcomms=401
+Community::emigration(): finished
+Community::dispersal(): this=0x20483eaa260 nsubcomms=401 initiation time=0
+Community::dispersal(): matrix=0x20483e99940
+Community::dispersal(): transfer time=0
+Community::dispersal(): this=0x20483eaa260 nsubcomms=401 initiation time=0
+Community::dispersal(): matrix=0x20483e99940
+Community::dispersal(): transfer time=0
+
+RunModel(): start of gen 0 in year 4 for rep 0 ( 1332 1879 1598 1671 1031 )
+Community::reproduction(): this=0x20483eaa260 nsubcomms=401
+Community::reproduction(): finished
+Community::emigration(): this=0x20483eaa260 nsubcomms=401
+Community::emigration(): finished
+Community::dispersal(): this=0x20483eaa260 nsubcomms=401 initiation time=0
+Community::dispersal(): matrix=0x20483e99940
+Community::dispersal(): transfer time=0
