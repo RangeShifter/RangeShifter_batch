@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  *
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Theo Pannetier, Jette Wolff, Damaris Zurell
+ *	Copyright (C) 2026 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Theo Pannetier, Jette Wolff, Damaris Zurell
  *
  *	This file is part of RangeShifter.
  *
@@ -7941,7 +7941,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 			}
 		} // end of imported landscape
 
-		if (landOK) {
+			if (landOK) {
 
 			// Open all other batch files and read header records
 			parameters.open(parameterFile);

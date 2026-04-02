@@ -1,8 +1,8 @@
-# RangeShifter Batch Mode
+# RangeShifter Batch Mode 
 
 C++ code for the RangeShifter 3.0 batch mode application 
 
-<img title="" src="https://github.com/RangeShifter/RangeShifter_batch_dev/blob/main/doc/rs_batch_logo.png" alt="" align="right" height="150">
+<img title="" src="https://github.com/RangeShifter/RangeShifter_batch_dev/blob/main/rs_batch_logo.png" alt="" align="right" height="150">
 
 [RangeShifter](https://rangeshifter.github.io/) is an eco-evolutionary modelling platform that is becoming 
 increasingly used worldwide for both theoretical and applied purposes [(Bocedi et al. 2014)](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.12162).
@@ -21,12 +21,12 @@ The Batch Mode also enables running RangeShifter on machines with a non-interact
 
 ## Building RangeShifter-batch
 
-The compiled software can be found in the [Software and Documentation](https://github.com/RangeShifter/RangeShifter-software-and-documentation) repo. 
+The compiled software can be found in the release of the [batchmode interface](https://github.com/RangeShifter/RangeShifter_batch/releases) and the [repository of the GUI](https://github.com/RangeShifter/RangeShifter_GUI). Please note that the GUI is only available with RangeShifter v2.0 and currently not maintained. 
 
 Building RangeShifter from the source code requires CMake. If you haven't done so yet, you will need to [download and install it](https://cmake.org/download/).
 
 RangeShifter can then be configured and built from `CMakeLists.txt`.
-If you are not seeking to develop the code yourself, it is best (=faster) to build RangeShifter in Release mode, whihc requires slightly different command on Unix vs Windows systems:
+If you are not seeking to develop the code yourself, it is best (=faster) to build RangeShifter in Release mode, which requires slightly different command on Unix vs Windows systems:
 
 ```bash
 # Unix
@@ -42,7 +42,7 @@ cmake ..
 cmake --build . --config Release
 ```
 
-If you use Visual Studio as your IDE, CMake should be recognised automatically when `RangeShifter_batch_dev` is opened as a new folder. 
+If you use Visual Studio as your IDE, CMake should be recognised automatically when `RangeShifter_batch` is opened as a new folder. 
 Visual Studio will take care of the configuration, and you only need to select target RangeShifter.exe before pressing the build button.
 
 Alternatively, RangeShifter can also be built directly with the GNU C++ compiler. 
@@ -82,12 +82,12 @@ This requires the CMake and C++ modules to be installed (please refer to the Vis
 
 Simply clone this repo, then open it in Visual Studio using the Open Folder option. 
 Visual Studio will then recognise the CMakeLists file and automatically configure the build.
-Once this is done, you should be able to select Rangeshifter.exe in the Startup Item panel ([Screenshot](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/develop/doc/rs_in_vs.png)).
+Once this is done, you should be able to select Rangeshifter.exe in the Startup Item panel ([Screenshot](https://github.com/RangeShifter/RangeShifter_batch/blob/main/rs_in_vs.png)).
 Hit the button to build and run RangeShifter. The executable should be built in a folder inside `out/build/`. 
 
 ## Running RangeShifter-batch
 
-For instructions on how to setup the project directory and input files, please refer to section 3.3 of the [User Manual](https://raw.githubusercontent.com/RangeShifter/RangeShifter-software-and-documentation/master/RangeShifter_v2.0_UserManual.pdf), and to the [documentation repository](https://github.com/RangeShifter/RangeShifter-software-and-documentation) for examples.
+For instructions on how to setup the project directory and input files, please refer to section 3.3 of the [User Manual](https://github.com/RangeShifter/RangeShifter-documentation-and-tutorial/blob/master/RangeShifter_v3.0_UserManual.pdf), and to the [documentation repository](https://github.com/RangeShifter/RangeShifter-documentation-and-tutorial) for examples.
 
 ## Parallelisation
 
@@ -112,7 +112,7 @@ See [CONTRIBUTING](https://github.com/RangeShifter/RangeShifter_batch_dev/blob/m
 
 ## See also
 
-- [Compiled software and documentation](https://github.com/RangeShifter/RangeShifter-software-and-documentation)
+- [Documentation and tutorial](https://github.com/RangeShifter/RangeShifter-documentation-and-tutorial)
 - [RScore](https://github.com/RangeShifter/RScore), source for RangeShifter's core code
 - [RangeShiftR-pkg](https://github.com/RangeShifter/RangeShiftR-pkg), source for the R interface
 

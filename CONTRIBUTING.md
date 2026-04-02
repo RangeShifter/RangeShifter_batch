@@ -11,20 +11,19 @@ In this document we will give you guidance on how to contribute to the RangeShif
 
 RangeShifter is distributed with three user interfaces, each living in their own repo:
 
-- the RangeShifter GUI (clickable Windows interface)*
-- RangeShifter Batch Mode (command line interface)
-- the RangeShiftR package (R interface)
+- the [RangeShifter GUI](https://github.com/RangeShifter/RangeShifter_GUI) (clickable Windows interface)*
+- RangeShifter [Batch Mode](https://github.com/RangeShifter/RangeShifter_batch) (command line interface)
+- the [RangeShiftR](https://github.com/RangeShifter/RangeShiftR-pkg) package (R interface)
 
 All three share the same source code for the core simulation (i.e., the actual model), which lives in this repo (RScore). Each of the interfaces keeps a copy of this core code in a subfolder called RScore, kept in sync with the RScore repo via a git subtree (see Git subtree usage section).
 
-*The RangeShifter GUI is currently being rewritten, and is not open source yet.
+*The RangeShifter GUI is currently not maintained and only available with RangeShifter v2.0.
 
 ## Roles
 
 #### Maintainers
 
 - [@JetteReeg](https://github.com/JetteReeg): RScore repo and lead in R package
-- [@TheoPannetier](https://github.com/TheoPannetier): RScore repo and lead in batch mode
 
 Maintainers are responsible for coordinating development efforts and ensuring that RangeShifter keeps building continuously.
 
@@ -58,7 +57,7 @@ Any changes regarding the RangeShifter core code should be done in this reposito
 
 #### Bugs
 
-To report a bug, please [open an issue](https://github.com/RangeShifter/RangeShiftR-package-dev/issues/new), using the Bug Report template. 
+To report a bug, please [open an issue](https://github.com/RangeShifter/RangeShiftR-pkg/issues/new), using the Bug Report template. 
 Please do check if a related issue has already open on one of the other interfaces ([here](https://github.com/RangeShifter/RangeShifter_batch/issues) for the batch interface).
 To propose a bug fix (thank you!!), please create and work on your own branch or fork, from either `main` or `develop` (preferred), and open a pull request when your fix is ready to be merged into the original branch.
 
@@ -70,10 +69,8 @@ Maintainers will review the pull request, possibly request changes, and eventual
 #### New features
 
 Do you have an idea of a new feature in the RangeShifter platform that should be integrated and is of use for other RangeShifter users? 
-Please get in touch with the RangeShifter development team ([rangeshiftr@uni-potsdam.de](mailto:rangeshiftr@uni-potsdam.de) (*or other mail?*) to discuss a collaboration.
+Please get in touch with the RangeShifter development team ([rangeshiftr@uni-potsdam.de](mailto:rangeshiftr@uni-potsdam.de) to discuss a collaboration.
 
 Alternatively*, proceed as with the bug fix above: create your own branch or fork *from `develop`* and work from there, and submit a pull request when your new features are ready to join the core code. 
 We recommend that you update your branch regularly to new changes on `develop` (using `git merge develop`) to reduce the risk of merge conflicts or your version getting out-of-touch in the late stages of development.
 We also recommend that you work in small commits, as this makes the code easier to debug, and makes it easier for maintainers to understand your contributions when reviewing a pull request.
-
-*Do we welcome independent contributions?
