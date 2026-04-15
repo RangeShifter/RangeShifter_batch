@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # set the project name and version
-project(RangeShifter VERSION 2.1.0)
+project(RangeShifter VERSION 3.0.0)
 
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)

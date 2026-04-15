@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  *
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *	Copyright (C) 2026 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Theo Pannetier, Jette Wolff, Damaris Zurell
  *
  *	This file is part of RangeShifter.
  *
@@ -18,25 +18,25 @@
  *	along with RangeShifter. If not, see <https://www.gnu.org/licenses/>.
  *
  --------------------------------------------------------------------------*/
+ 
+ 
+/*------------------------------------------------------------------------------
 
+ RangeShifter v3.0 BatchMode
 
- /*------------------------------------------------------------------------------
+Functions for running in BATCH MODE
 
- RangeShifter v2.0 BatchMode
+For full details of RangeShifter, please see:
+Bocedi G., Palmer S.C.F., Peâ€™er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
+eco-evolutionary dynamics and speciesâ€™ responses to environmental changes.
+Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
- Functions for running in BATCH MODE
-
- For full details of RangeShifter, please see:
- Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
- and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
- eco-evolutionary dynamics and species’ responses to environmental changes.
- Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
-
- Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
+Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
 
  Last updated: 28 July 2021 by Greta Bocedi
 
- ------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------*/
 
 #ifndef BatchModeH
 #define BatchModeH
@@ -98,6 +98,10 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 bool CheckSimFile();
 bool CheckParameterFile();
 bool CheckLandFile(int landType, string inputDir);
+int CheckSpatialDemogFile(string, string, rasterdata);
+int CheckLayerFile(string);
+int CheckManageFile(string);
+int CheckTranslocFile();
 bool CheckSpLandFile(string inputDir, bool isInitial);
 bool CheckGeneticsFile(string inputDir);
 int CheckDynamicFile(string inputDir);
@@ -170,7 +174,7 @@ void printControlFormatError();
 void FormatError(string, int);
 void OpenError(string, string);
 void EOFerror(string);
-void FileOK(string, int, int);
+void FileOK(string,int,int);
 void FileHeadersOK(string);
 void SimulnCountError(string);
 
@@ -209,8 +213,12 @@ int ReadInitIndsFile(
 	const landParams& paramsLand,
 	string indsfile
 );
+int ReadDemogLayers(int);
+
 int ReadGeneticsFile(speciesMap_t& simSpecies, ifstream& ifs);
 int ReadTraitsFile(speciesMap_t& simSpecies, ifstream& ifs, const int& whichSim);
+int ReadTranslocationFile(Landscape* pLandscape, int sim);
+int ReadManagementFile();
 
 // Helper functions to ReadGenetics and ReadTraits
 void setUpSpeciesTrait(Species* pSpecies, vector<string>);

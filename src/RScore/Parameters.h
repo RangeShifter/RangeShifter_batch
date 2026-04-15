@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  *
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *	Copyright (C) 2026 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Roslyn Henry, ThÃ©o Pannetier, Jette Wolff, Damaris Zurell
  *
  *	This file is part of RangeShifter.
  *
@@ -20,28 +20,28 @@
  --------------------------------------------------------------------------*/
 
 
- /*------------------------------------------------------------------------------
+/*------------------------------------------------------------------------------
 
- RangeShifter v2.0 Parameters
+RangeShifter v2.0 Parameters
 
- Implements the following classes:
+Implements the following classes:
 
  paramSim   - Simulation parameters
  paramStoch - Environmental stochasticity parameters
 
- Also declares some structures and functions used throughout the program.
+Also declares some structures and functions used throughout the program.
 
- For full details of RangeShifter, please see:
- Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
- and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
- eco-evolutionary dynamics and species’ responses to environmental changes.
- Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
+For full details of RangeShifter, please see:
+ Bocedi G., Palmer S.C.F., Peâ€™er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
+ eco-evolutionary dynamics and speciesâ€™ responses to environmental changes.
+Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
- Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
+Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
 
- Last updated: 25 June 2021 by Steve Palmer
+Last updated: 25 June 2021 by Steve Palmer
 
- ------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------*/
 
 #ifndef ParametersH
 #define ParametersH
@@ -63,15 +63,17 @@ constexpr int gAbsorbingNoDataCost = 100; // cost to use in place of nodata valu
 // when boundaries are absorbing
 constexpr int gMaxNbStages = 10;		// maximum number of stages permitted
 constexpr int gMaxNbSexes = 2;			// maximum number of sexes permitted
+constexpr int gMaxNbLayers = 3*gMaxNbSexes*gMaxNbStages; // maximum number of demographic scaling layers permitted
 
 #if RS_RCPP
+#include <RcppArmadillo.h>
 #ifndef R_EXT_CONSTANTS_H_  // the R headers define PI as a macro, so that the 'else' line results in an error
 #define M_2PI 6.283185307179586
 const double PI = 3.141592653589793238462643383279502884197169399375;
 #endif
 #else
-#define M_2PI 6.283185307179586
-const double PI = 3.141592654;
+    #define M_2PI 6.283185307179586
+    const double PI = 3.141592654;
 #endif
 
 const double SQRT2 = std::sqrt(double(2.0)); // more efficient than calculating every time
@@ -86,7 +88,7 @@ struct locn { int x; int y; };
 /** Trait types **/
 
 enum TraitType {
-	NEUTRAL, 
+	NEUTRAL,
 	GENETIC_LOAD, GENETIC_LOAD1, GENETIC_LOAD2, GENETIC_LOAD3, GENETIC_LOAD4, GENETIC_LOAD5,
 
 	E_D0, E_ALPHA, E_BETA,
@@ -241,8 +243,23 @@ struct simParams {
 	int years;
 	bool usesStageStruct;
 	bool absorbing;
+#if RS_RCPP
+	int outStartPaths; 
+	int outIntPaths;
+	bool outPaths;	
+	bool ReturnPopMatrix; 
+	bool ReturnPopDataFrame; 
+	bool CreatePopFile;
+	Rcpp::LogicalVector ReturnStages;
+#endif
 	bool fixReplicateSeed;
 	bool batchMode;
+};
+
+struct simView {
+	bool viewLand; bool viewPatch; bool viewGrad; bool viewCosts;
+	bool viewPop; bool viewTraits; bool viewPaths; bool viewGraph;
+	int slowFactor;
 };
 
 class paramSim {
@@ -259,7 +276,8 @@ public:
 		batchMode = true;
 	}
 #if RS_RCPP
-	bool getReturnPopRaster();
+	bool getReturnPopDataFrame();
+	bool getReturnPopMatrix();
 	bool getCreatePopFile();
 #endif
 
@@ -306,8 +324,10 @@ struct outputParams {
 	int outStartPaths;
 	int outIntPaths;
 	bool outPaths;
-	bool ReturnPopRaster;
+	bool ReturnPopMatrix;
+	bool ReturnPopDataFrame;
 	bool CreatePopFile;
+	Rcpp::LogicalVector ReturnStages;
 #endif
 };
 

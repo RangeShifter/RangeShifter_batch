@@ -1,49 +1,47 @@
 /*----------------------------------------------------------------------------
- *
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
- *
+ *	
+ *	Copyright (C) 2026 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Roslyn Henry, ThÃ©o Pannetier, Jette Wolff, Damaris Zurell
+ *	
  *	This file is part of RangeShifter.
- *
+ *	
  *	RangeShifter is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 3 of the License, or
  *	(at your option) any later version.
- *
+ *	
  *	RangeShifter is distributed in the hope that it will be useful,
  *	but WITHOUT ANY WARRANTY; without even the implied warranty of
  *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  *	GNU General Public License for more details.
- *
+ *	
  *	You should have received a copy of the GNU General Public License
  *	along with RangeShifter. If not, see <https://www.gnu.org/licenses/>.
- *
+ *	
  --------------------------------------------------------------------------*/
+ 
+ 
+/*------------------------------------------------------------------------------
 
+RangeShifter v4.0 Population
 
- /*------------------------------------------------------------------------------
-
- RangeShifter v2.0 Population
-
- Implements the Population class
+Implements the Population class
 
  There is ONE instance of a Population for each Species within each Patch
  (including the matrix). The Population holds a list of all the Individuals in
  the Population.
 
- The matrix Population(s) hold(s) Individuals which are currently in the process
- of transfer through the matrix.
+The matrix Population(s) hold(s) Individuals which are currently in the process
+of transfer through the matrix.
 
- For full details of RangeShifter, please see:
- Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
- and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
- eco-evolutionary dynamics and species’ responses to environmental changes.
- Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
+For full details of RangeShifter, please see:
+Bocedi G., Palmer S.C.F., Peâ€™er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
+eco-evolutionary dynamics and speciesâ€™ responses to environmental changes.
+Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
- Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
+Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
 
- Last updated: 25 June 2021 by Steve Palmer
-
- ------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------*/
 
 #ifndef PopulationH
 #define PopulationH
@@ -138,6 +136,7 @@ public:
 	void reproduction(
 		const float localK,	// local carrying capacity
 		const int landResol	// landscape resolution
+		std::vector <float> demogScalings
 	);
 
 	// Following reproduction of ALL species, add newborns to the population
@@ -222,6 +221,40 @@ public:
 	int countHeterozygoteLoci();
 	vector<int> countNbHeterozygotesEachLocus();
 	double computeHs();
+	std::vector<Individual*> getIndsWithCharacteristics( // Return a set of individuals with specified characteristics
+		int,	// min age
+		int,    // max age
+		int,    // stage
+		int     //sex
+	);
+	void cleanSampledInds(
+	    Individual* // individual to remove from sampled individuals vector
+	); // clean sampled individuals vector
+
+	int sampleIndividuals( // Select a set of individuals with specified characteristics; return the number of individuals with those characteristics
+	// void sampleIndividuals( // Select a set of individuals with specified characteristics; return the number of individuals with those characteristics
+	        int, //number of individuals to sample
+        	int,	// min age (0 if not set)
+        	int,    // max age (max age if not set)
+        	int,    // stage
+        	int     //sex
+	);
+
+	Individual* catchIndividual(
+	    double, // catching rate
+	    int
+	);
+
+	// void completeTranslocation(
+	//         std::vector <Individual*> // catched individuals
+	// );
+
+	// void recruitTranslocated(
+	//         Individual*
+	// );
+
+	bool getSizeSampledInds(
+	);
 
 	// Interactions
 	void resolveResMedtdInteractions();
@@ -230,7 +263,7 @@ public:
 		const map<pair<species_id, int>, double>& ratios, const double& funcResp);
 	void resetIntrctEffects();
 
-#ifndef UNIT_TESTS
+#ifdef UNIT_TESTS
 	// Testing only
 	void clearInds() { inds.clear(); } // empty inds vector to avoid deallocating individual is used separately in test
 	void shuffleInds() { shuffle(inds.begin(), inds.end(), pRandom->getRNG()); }
@@ -252,6 +285,7 @@ private:
 	// has been completed
 
 	vector<Individual*> sampledInds;
+	//std::vector <Individual*> sampledInds; // individuals with specified characteristics from translocation!!! 
 	vector<NeutralCountsTable> popNeutralCountTables;
 	void resetPopNeutralTables();
 

@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  *
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *	Copyright (C) 2026 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Roslyn Henry, Théo Pannetier, Jette Wolff, Damaris Zurell
  *
  *	This file is part of RangeShifter.
  *
@@ -66,6 +66,14 @@ paramSim::paramSim(const string& pathToProjDir) :
 	simulation = 0;
 	reps = years = 1;
 	batchMode = absorbing = false;
+#if RS_RCPP
+	outStartPaths = 0; 
+	outIntPaths = 0;
+	outPaths = false; 
+	ReturnPopMatrix = false; 
+	ReturnPopDataFrame = false; 
+	CreatePopFile = true;
+#endif
 }
 
 paramSim::~paramSim() { }
@@ -78,6 +86,15 @@ void paramSim::setSim(simParams s) {
 	batchMode = s.batchMode;
 	absorbing = s.absorbing;
 	fixReplicateSeed = s.fixReplicateSeed;
+#if RS_RCPP
+	outStartPaths = s.outStartPaths;
+	outIntPaths = s.outIntPaths;
+	outPaths = s.outPaths;
+	ReturnPopMatrix = s.ReturnPopMatrix;
+	ReturnPopDataFrame = s.ReturnPopDataFrame;
+	ReturnStages = s.ReturnStages;
+	CreatePopFile = s.CreatePopFile;
+#endif
 	usesStageStruct = s.usesStageStruct;
 }
 
@@ -90,6 +107,16 @@ simParams paramSim::getSim() {
 	s.batchMode = batchMode;
 	s.absorbing = absorbing;
 	s.usesStageStruct = usesStageStruct;
+#if RS_RCPP
+	s.saveVisits = saveVisits;
+	s.outStartPaths = outStartPaths;
+	s.outIntPaths = outIntPaths;
+	s.outPaths = outPaths;
+	s.ReturnPopMatrix = ReturnPopMatrix;
+	s.ReturnPopDataFrame = ReturnPopDataFrame;
+	s.ReturnStages = ReturnStages;
+	s.CreatePopFile = CreatePopFile;
+#endif
 	return s;
 }
 
@@ -222,11 +249,10 @@ string to_string(const ExpressionType& expr) {
 }
 
 #if RS_RCPP
-bool paramSim::getReturnPopRaster(void) { return ReturnPopRaster; }
+bool paramSim::getReturnPopMatrix(void) { return ReturnPopMatrix; }
+bool paramSim::getReturnPopDataFrame(void) { return ReturnPopDataFrame; }
 bool paramSim::getCreatePopFile(void) { return CreatePopFile; }
 #endif
 
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 

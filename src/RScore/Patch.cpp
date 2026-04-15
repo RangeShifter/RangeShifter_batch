@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  *
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *	Copyright (C) 2026 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Roslyn Henry, Théo Pannetier, Jette Wolff, Damaris Zurell
  *
  *	This file is part of RangeShifter.
  *
@@ -44,11 +44,13 @@ Patch::Patch(int seqnum, int num, species_id whichSpecies)
 		nTemp[sex] = 0;
 	}
 	changed = false;
+	localDemoScaling.assign(nDSlayer, 1.0);
 	gradVal = 1.0; // i.e. no effect
 }
 
 Patch::~Patch() {
 	cells.clear();
+	localDemoScaling.clear();
 }
 
 int Patch::getSeqNum() { return patchSeqNum; }
@@ -256,6 +258,49 @@ double Patch::getGradVal() const {
 	return gradVal;
 }
 
+// SPATIALDEMOG
+void Patch::setDemoScaling(std::vector <float> ds) {
+
+	std::for_each(ds.begin(), ds.end(), [](float& perc) { if (perc < 0.0 || perc > 1.0) perc = 1; });
+	localDemoScaling.assign(ds.begin(), ds.end());
+	return;
+}
+
+std::vector <float> Patch::getDemoScaling() { return localDemoScaling; }
+
+void Patch::setPatchDemoScaling(short landIx, patchLimits landlimits) {
+
+	// if patch wholly outside current landscape boundaries
+	if (xMin > landlimits.xMax || xMax < landlimits.xMin
+	||  yMin > landlimits.yMax || yMax < landlimits.yMin) {
+		localDemoScaling.assign(nDSlayer,0.0); // set all local scales to zero
+		return;
+	}
+
+	// loop through constituent cells of the patch
+	int ncells = (int)cells.size();
+	std::vector<float> patchDS(nDSlayer, 0.0);
+	std::vector<float> cellDS(nDSlayer, 0.0);
+
+	for (int i = 0; i < ncells; i++) {
+		cellDS = cells[i]->getDemoScaling(landIx); // is that ok?
+
+		//add cell value to patch value
+		for (int ly = 0; ly < nDSlayer; ly++) {
+			patchDS[ly] += cellDS[ly];
+		}
+	}
+
+	// take mean over cells and divide by 100 to scale to range [0,1]
+	for (int ly = 0; ly < nDSlayer; ly++) {
+		patchDS[ly] = patchDS[ly] / ncells / 100.0f;
+	}
+
+	// set values
+	setDemoScaling(patchDS);
+	return;
+}
+//SPATIALDEMOG
 
 // Return co-ordinates of a specified cell
 locn Patch::getCellLocn(int ix) {

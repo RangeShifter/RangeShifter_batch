@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  *
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *	Copyright (C) 2026 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Roslyn Henry, Théo Pannetier, Jette Wolff, Damaris Zurell
  *
  *	This file is part of RangeShifter.
  *
@@ -20,7 +20,7 @@
  --------------------------------------------------------------------------*/
 
 
- //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 
 #include "Cell.h"
 #include "Patch.h"
@@ -65,6 +65,7 @@ Cell::Cell(int xx, int yy, float hab, set<species_id> spLabels)
 Cell::~Cell() {
 	habIxx.clear();
 	habitats.clear();
+	demoScalings.clear();
 	for (auto& [sp, sms] : smsData) {
 		if (sms != nullptr) {
 			if (sms->effcosts != nullptr)
@@ -125,7 +126,7 @@ void Cell::setEnvDev(float d) { envDev = d; }
 
 float Cell::getEnvDev() { return envDev; }
 
-void Cell::updateEps(float ac, float randpart) {
+void Cell::updateEps(float ac,float randpart) {
 	eps = eps * ac + randpart;
 }
 
@@ -211,13 +212,30 @@ void Cell::declareOverlappingPatches() const {
 	}
 }
 
+
+void Cell::addchgDemoScaling(std::vector<float> ds) {
+	std::for_each(ds.begin(), ds.end(), [](float& perc){ if(perc < 0.0 || perc > 100.0) perc=100; });
+	demoScalings.push_back(ds);
+	return;
+}
+
+std::vector<float> Cell::getDemoScaling(short chgyear) {
+	if (chgyear < 0 || chgyear >= (int)demoScalings.size()) {
+		std::vector<float> ret(1, -1);
+		return ret;
+	}
+	else return demoScalings[chgyear];
+}
+
+
+
 //---------------------------------------------------------------------------
 
 // Initial species distribution cell functions
 
-DistCell::DistCell(int xx, int yy) {
-	x = xx; 
-	y = yy; 
+DistCell::DistCell(int xx,int yy) {
+	x = xx;
+	y = yy;
 	initialise = false;
 }
 

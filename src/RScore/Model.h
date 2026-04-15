@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  *
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *	Copyright (C) 2026 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Roslyn Henry, ThÃ©o Pannetier, Jette Wolff, Damaris Zurell
  *
  *	This file is part of RangeShifter.
  *
@@ -20,40 +20,45 @@
  --------------------------------------------------------------------------*/
 
 
- /*------------------------------------------------------------------------------
+/*------------------------------------------------------------------------------
 
- RangeShifter v2.0 Model
+RangeShifter v2.0 Model
 
- Implements three functions which run the model and produce output common to both
- GUI and batch version.
+Implements three functions which run the model and produce output common to both
+GUI and batch version.
 
- RunModel() handles looping through replicates, years and generations
+RunModel() handles looping through replicates, years and generations
 
- Further functions are declared here, but defined differently in main function of
- GUI and batch versions.
+Further functions are declared here, but defined differently in main function of
+GUI and batch versions.
 
- For full details of RangeShifter, please see:
- Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
- and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
- eco-evolutionary dynamics and species’ responses to environmental changes.
- Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
+For full details of RangeShifter, please see:
+ Bocedi G., Palmer S.C.F., Peâ€™er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
+ eco-evolutionary dynamics and speciesâ€™ responses to environmental changes.
+Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
- Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
+Authors: Greta Bocedi & Steve Palmer, University of Aberdeen
 
  Last updated: 28 July 2021 by Greta Bocedi
- ------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------*/
 
 #ifndef ModelH
 #define ModelH
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#if RS_RCPP
+#include <RcppArmadillo.h>
+#include "../Rinterface.h"
+#endif // RS_RCPP
 #include <chrono>
 
 #include "Parameters.h"
 #include "Landscape.h"
 #include "Community.h"
 #include "Species.h"
+#include "Management.h"
 
 #if !LINUX_CLUSTER && !RS_RCPP
 #include <filesystem>
@@ -61,7 +66,7 @@ using namespace std::filesystem;
 #endif
 
 #if RS_RCPP && !R_CMD
-Rcpp::List int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies);
+Rcpp::List int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies, Rcpp::S4);
 #else
 int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies);
 #endif // RS_RCPP && !R_CMD
@@ -72,6 +77,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t);
 extern paramStoch* paramsStoch;
 extern paramSim* paramsSim;
 extern Community* pComm;
+extern Management* pManagement;
 
 extern string landFile;
 extern RSrandom *pRandom;

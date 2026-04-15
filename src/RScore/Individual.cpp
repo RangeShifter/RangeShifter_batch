@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  *
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *	Copyright (C) 2026 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Roslyn Henry, Théo Pannetier, Jette Wolff, Damaris Zurell
  *
  *	This file is part of RangeShifter.
  *
@@ -16,8 +16,8 @@
  *
  *	You should have received a copy of the GNU General Public License
  *	along with RangeShifter. If not, see <https://www.gnu.org/licenses/>.
- *
  --------------------------------------------------------------------------*/
+
 
 
  //---------------------------------------------------------------------------
@@ -160,7 +160,9 @@ Individual::Individual(Species* pSp, Cell* pCell, Patch* pPatch, short stg, shor
 		path->out = 0;
 		path->pSettPatch = nullptr; 
 		path->settleStatus = 0;
-
+#if RS_RCPP
+		path->pathoutput = 1;
+#endif
 		if (moveType == 1) { // SMS
 			// set up location data for SMS
 			pTrfrData = make_unique<smsData>(loc, loc);
@@ -188,13 +190,13 @@ QuantitativeTrait* Individual::getTrait(TraitType trait) const {
 	if (p == spTraitTable.end())
 		throw runtime_error("Trait does not exist in trait table.");
 	else return p->second.get();
-}
+		}
 
 set<TraitType> Individual::getTraitTypes() {
 	auto kv = std::views::keys(this->spTraitTable);
 	set< TraitType > keys{ kv.begin(), kv.end() };
 	return keys;
-}
+			}
 
 //---------------------------------------------------------------------------
 // Inheritance for diploid, sexual species
@@ -217,7 +219,7 @@ void Individual::inheritGenes(const Individual* mother, const Individual* father
 			maternalRecomPositions.insert(pos);
 		if (pRandom->Bernoulli(0.5))
 			paternalRecomPositions.insert(pos);
-	}
+			}
 
 	// Draw recombination events for maternal genome
 	if (pSpecies->getRecombinationRate() > 0.0)
@@ -226,11 +228,11 @@ void Individual::inheritGenes(const Individual* mother, const Individual* father
 	int nbrCrossOvers = events + maternalRecomPositions.size();
 	if (nbrCrossOvers > genomeSize) {
 		nbrCrossOvers = genomeSize;
-	}
+		}
 	while (maternalRecomPositions.size() < nbrCrossOvers) {
 		// Sample recombination sites
 		maternalRecomPositions.insert(pRandom->IRandom(0, genomeSize));
-	}
+			}
 
 	// Draw recombination events for paternal genome
 	if (pSpecies->getRecombinationRate() > 0.0)
@@ -238,15 +240,14 @@ void Individual::inheritGenes(const Individual* mother, const Individual* father
 	nbrCrossOvers = events + paternalRecomPositions.size();
 	if (nbrCrossOvers > genomeSize) {
 		nbrCrossOvers = genomeSize;
-	}
+				}
 	while (paternalRecomPositions.size() < nbrCrossOvers) {
 		paternalRecomPositions.insert(pRandom->IRandom(0, genomeSize));
-	}
+			}
 
 	// Inherit genes for each trait
 	const auto& spTraits = pSpecies->getTraitTypes();
-	for (auto const& trait : spTraits)
-	{
+	for (auto const& trait : spTraits) {
 		const auto motherTrait = mother->getTrait(trait);
 		const auto fatherTrait = father->getTrait(trait);
 		auto newTrait = motherTrait->clone(); // shallow copy pointer to species-level attributes
@@ -276,8 +277,7 @@ void Individual::inheritGenes(const Individual* mother) {
 
 	const auto& spTraits = pSpecies->getTraitTypes();
 
-	for (auto const& trait : spTraits)
-	{
+	for (auto const& trait : spTraits) {
 		const auto motherTrait = mother->getTrait(trait);
 		auto newTrait = motherTrait->clone(); // shallow copy, pointer to species trait initialised and empty sequence
 
@@ -302,7 +302,7 @@ void Individual::setUpGenes(int resol) {
 	// could pass it back by value (copy) instead but could be heavy if large map
 	const auto& traitTypes = pSpecies->getTraitTypes();
 	for (auto const& traitType : traitTypes)
-	{
+			{
 		const auto spTrait = pSpecies->getSpTrait(traitType);
 		this->spTraitTable.emplace(traitType, traitFactory.Create(traitType, spTrait));
 	}
@@ -348,17 +348,17 @@ void Individual::expressSettlementTraits(bool sexDep, bool densDep) {
 	settleTraits s; s.s0 = s.alpha = s.beta = 0.0;
 	if (sexDep) {
 		if (this->getSex() == MAL) {
-			s.s0 = getTrait(S_S0_M)->express();
+		s.s0 = getTrait(S_S0_M)->express();
 			if (densDep) {
-				s.alpha = getTrait(S_ALPHA_M)->express();
-				s.beta = getTrait(S_BETA_M)->express();
+		s.alpha = getTrait(S_ALPHA_M)->express();
+		s.beta = getTrait(S_BETA_M)->express();
 			}
 		}
 		else if (this->getSex() == FEM) {
-			s.s0 = getTrait(S_S0_F)->express();
+		s.s0 = getTrait(S_S0_F)->express();
 			if (densDep) {
-				s.alpha = getTrait(S_ALPHA_F)->express();
-				s.beta = getTrait(S_BETA_F)->express();
+		s.alpha = getTrait(S_ALPHA_F)->express();
+		s.beta = getTrait(S_BETA_F)->express();
 			}
 		}
 		else {
@@ -380,7 +380,7 @@ void Individual::expressSettlementTraits(bool sexDep, bool densDep) {
 	if (pSettleTraits->s0 < 0.0) pSettleTraits->s0 = 0.0;
 	if (pSettleTraits->s0 > 1.0) pSettleTraits->s0 = 1.0;
 	return;
-}
+		}
 
 
 // Inherit genome from parent(s), diploid
@@ -405,7 +405,9 @@ bool Individual::isBreedingFem() {
 		&& sex == FEM 
 		&& (status == initial
 			|| status == settled
-			|| status == settledNeighbour);
+			|| status == settledNeighbour
+			|| status == translocated
+			);
 }
 
 // Skip reproduction if ind is still in reproduction cooldown
@@ -515,26 +517,26 @@ void Individual::expressEmigTraits(bool sexDep, bool densityDep) {
 			if (densityDep) {
 				e.alpha = getTrait(E_ALPHA_M)->express();
 				e.beta = getTrait(E_BETA_M)->express();
-			}
-		}
+				}
+				}
 		else if (this->getSex() == FEM) {
 			e.d0 = this->getTrait(E_D0_F)->express();
 			if (densityDep) {
 				e.alpha = getTrait(E_ALPHA_F)->express();
 				e.beta = getTrait(E_BETA_F)->express();
 			}
-		}
+				}
 		else {
 			throw runtime_error("Attempt to express invalid emigration trait sex.");
-		}
-	}	
-	else {
+				}
+				}
+			else {
 		e.d0 = this->getTrait(E_D0)->express();
 		if (densityDep) {
 			e.alpha = getTrait(E_ALPHA)->express();
 			e.beta = getTrait(E_BETA)->express();
-		}
-	}
+				}
+			}
 
 	pEmigTraits = make_unique<emigTraits>();
 	pEmigTraits->d0 = e.d0;
@@ -583,17 +585,17 @@ void Individual::expressKernelTraits(bool sexDep, bool twinKernel, int resol) {
 		}
 		else {
 			throw runtime_error("Attempt to express invalid kernel transfer trait sex.");
-		}
-	}
+			}
+		} 
 	else {
 		k.meanDist1 = getTrait(KERNEL_MEANDIST_1)->express();
 
 		if (twinKernel) { // twin kernel
 			k.meanDist2 = getTrait(KERNEL_MEANDIST_2)->express();
 			k.probKern1 = getTrait(KERNEL_PROBABILITY)->express();
+			}
 		}
-	}
-	
+
 	float meanDist1 = (float)(k.meanDist1);
 	float meanDist2 = (float)(k.meanDist2);
 	float probKern1 = (float)(k.probKern1);
@@ -711,7 +713,6 @@ trfrCRWTraits Individual::getIndCRWTraits() {
 		c.rho = pCRW.rho;
 	}
 	return c;
-
 }
 
 // Get phenotypic settlement traits
@@ -723,7 +724,6 @@ settleTraits Individual::getIndSettTraits() {
 		s.alpha = pSettleTraits->alpha;
 		s.beta = pSettleTraits->beta;
 	}
-
 	return s;
 }
 
@@ -807,8 +807,8 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 		if (trfr.twinKern) {
 			kern.meanDist2 = pKernel.meanDist2;
 			kern.probKern1 = pKernel.probKern1;
+			}
 		}
-	}
 	else { // get kernel parameters for the species
 		kern = pSpecies->getSpKernTraits(
 			trfr.stgDep ? stage : 0,

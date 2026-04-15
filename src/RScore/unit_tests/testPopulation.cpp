@@ -14,6 +14,7 @@ void testPopulation()
 		vector<int> survivingInds;
 		const int initialNbInds = 1000;
 		const float localK = 10000; // not limiting
+		vector <float> localScaling = {1.0};
 
 		// Simple genetic layout
 		const bool isDiploid{ false }; // haploid suffices
@@ -63,7 +64,7 @@ void testPopulation()
 			pSpecies->addTrait(TraitType::GENETIC_LOAD, *spTr);
 
 			Population pop = Population(pSpecies, pPatch, initialNbInds, 1);
-			pop.reproduction(localK, 1); // juveniles are checked for viability at birth
+			pop.reproduction(localK, 1, 1, localScaling); // juveniles are checked for viability at birth
 			pop.fledge(); // non-overlapping: adults are replaced with juveniles
 			survivingInds.push_back(pop.getNbInds());
 		}
@@ -77,6 +78,7 @@ void testPopulation()
 		vector<int> emigratingInds;
 		const int initialNbInds = 1000;
 		const float localK = 10000; // not limiting
+		vector <float> localScaling = {1.0};
 
 		// Simple genetic layout
 		const bool isDiploid{ false }; // haploid suffices
@@ -135,7 +137,7 @@ void testPopulation()
 			pSpecies->addTrait(TraitType::E_D0, *spTr);
 
 			Population pop = Population(pSpecies, pPatch, initialNbInds, 1);
-			pop.reproduction(localK, 1);
+			pop.reproduction(localK, 1, 1, localScaling);
 			pop.fledge(); // replace initial pop with juveniles
 			pop.emigration(localK); // select and flag emigrants
 			int popSize = pop.getNbInds();
@@ -159,6 +161,7 @@ void testPopulation()
 
 		float mutationRate = 0.0;
 		const float localK = 10000.0;
+		vector <float> localScaling = {1.0};
 		const int initialNbInds = localK;
 		const float initFreqA = 0.30;
 		const float exptdFreqHeteroZ = 2 * initFreqA * (1 - initFreqA); // according to HW
@@ -212,9 +215,9 @@ void testPopulation()
 		// Check allele frequencies conform to expectation through generations
 		float prevGenFreqA;
 		for (int yr = 0; yr < nbGens; yr++) {
-			pop.reproduction(localK, 1);
+			pop.reproduction(localK, 1, 1, localScaling);
 			pop.fledge(); // replace initial pop with juveniles
-			pop.drawSurvivalDevlpt(0, 0); // flag juveniles for development
+			pop.drawSurvivalDevlpt(0, 0, localScaling); // flag juveniles for development
 			pop.applySurvivalDevlpt(); // develop to stage 1 (breeders)
 			pop.shuffleInds();
 
@@ -255,6 +258,8 @@ void testPopulation()
 		const float hB = 1.0; // fully dominant
 		float mutationRate = 0.0;
 		const float localK = 10000.0;
+		vector <float> localScaling = {1.0};
+
 		const int initialNbInds = localK;
 		const float expectedFreqAA = initFreqA * initFreqA;
 
@@ -299,7 +304,7 @@ void testPopulation()
 
 		// Check allele frequencies conform to HW
 		pop.shuffleInds();
-		pop.reproduction(localK, 1);
+		pop.reproduction(localK, 1, 1, localScaling);
 		pop.fledge(); // replace initial pop with juveniles
 		double obsFreqUnviable = 1 - pop.getNbInds() / localK;
 		assert(abs(obsFreqUnviable - expectedFreqAA) < tolerance);

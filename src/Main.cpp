@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  *
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *	Copyright (C) 2026 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Theo Pannetier, Jette Wolff, Damaris Zurell
  *
  *	This file is part of RangeShifter.
  *
@@ -18,22 +18,22 @@
  *	along with RangeShifter. If not, see <https://www.gnu.org/licenses/>.
  *
  --------------------------------------------------------------------------*/
+ 
+/*------------------------------------------------------------------------------
 
- /*------------------------------------------------------------------------------
+ RangeShifter v3.0 Main
 
- RangeShifter v2.0 Main
+Entry level function for BATCH MODE version
 
- Entry level function for BATCH MODE version
+For full details of RangeShifter, please see:
+ Bocedi G., Palmer S.C.F., Pe er G., Heikkinen R.K., Matsinos Y.G., Watts K.
+and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
+ eco-evolutionary dynamics and species  responses to environmental changes.
+Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
 
- For full details of RangeShifter, please see:
- Bocedi G., Palmer S.C.F., Pe’er G., Heikkinen R.K., Matsinos Y.G., Watts K.
- and Travis J.M.J. (2014). RangeShifter: a platform for modelling spatial
- eco-evolutionary dynamics and species’ responses to environmental changes.
- Methods in Ecology and Evolution, 5, 388-396. doi: 10.1111/2041-210X.12162
+Author: Steve Palmer, University of Aberdeen
 
- Author: Steve Palmer, University of Aberdeen
-
- ------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------*/
 
 #include <string>
 #include <stdio.h>
@@ -42,14 +42,17 @@
 #include <iomanip>
 #include <stdlib.h>
 #include <cassert>
-#ifdef _OPENMP
-#include <omp.h>
-#endif // _OPENMP
+
+//#ifdef _OPENMP
+//#include <omp.h>
+//#endif // _OPENMP
+
 using namespace std;
 
 #include "./RScore/Parameters.h"
 #include "./RScore/Landscape.h"
 #include "./RScore/Species.h"
+#include "./RScore/Management.h"
 #include "./BatchMode.h"
 
 #if LINUX_CLUSTER || R_CMD
@@ -85,6 +88,7 @@ paramSim* paramsSim;		// pointer to simulation parameters
 paramStoch* paramsStoch;
 Community* pComm;		// pointer to community
 RSrandom* pRandom;		// pointer to random number routines
+Management* pManagement;	// pointer to management parameters
 
 //---------------------------------------------------------------------------
 #if LINUX_CLUSTER || RS_RCPP
@@ -120,8 +124,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		"Inputs/" + (argc > 2 ? argv[2] : "CONTROL.txt");
 
 #ifndef NDEBUG
-	cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
-	cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
+cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
+cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
 	cout << endl << "Control file:      " << pathToControlFile << endl << endl;
 #endif
 
@@ -137,13 +141,17 @@ int _tmain(int argc, _TCHAR* argv[])
 		cout << endl << "Error in parsing batch input files - see BatchLog file for details" << endl;
 	}
 
-	// set up random number class
+	// create new Management
+	pManagement = new Management;
+	//	    managementParams m = pManagement->getManagementParams();
+
+// set up random number class
 #if RS_RCPP
 #ifndef NDEBUG
-	pRandom = new RSrandom(666);
-#else
-	pRandom = new RSrandom(-1);  // need to be replaced with parameter from control file
-#endif
+		pRandom = new RSrandom(666);
+	#else
+		pRandom = new RSrandom(-1);  // need to be replaced with parameter from control file
+	#endif
 #else
 	pRandom = new RSrandom();
 #endif
@@ -154,20 +162,26 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 		catch (const std::exception& e) {
 			cerr << endl << "Error: " << e.what() << endl;
-		}
-	}
+}
+}
 
 	delete pRandom;
 	delete paramsStoch;
 	delete paramsSim;
+	delete pManagement;
 
 	t1 = static_cast<int>(time(0));
 	cout << endl << "***** Elapsed time " << t1 - t0 << " seconds" << endl << endl;
 
 	cout << "*****" << endl;
 	cout << "***** Simulation completed - enter any number to terminate program" << endl;
-	cout << "*****" << endl;
+cout << "*****" << endl;
 
-	return 0;
+return 0;
 }
+
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+
 

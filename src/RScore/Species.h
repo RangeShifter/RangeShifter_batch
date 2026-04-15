@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  *
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *	Copyright (C) 2026 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Roslyn Henry, Théo Pannetier, Jette Wolff, Damaris Zurell
  *
  *	This file is part of RangeShifter.
  *
@@ -275,6 +275,37 @@ public:
 	float getDev(short stg, short sex);
 	void setSurv(short stg, short sex, float survProb);
 	float getSurv(short stg, short sex);
+
+	void setFecSpatial(bool);
+	bool getFecSpatial(void) { return fecSpatial; };
+	void setDevSpatial(bool);
+	bool getDevSpatial(void) { return devSpatial; };
+	void setSurvSpatial(bool);
+	bool getSurvSpatial(void) { return survSpatial; };
+	void setFecLayer(short stg, short sex, short layer);
+	short getFecLayer(short stg, short sex);
+	void setDevLayer( // set the layer of the spatial demographic scaling used for development
+		short, // stage
+		short, // sex
+		short // layer
+	);
+
+	short getDevLayer( // get the layer of the spatial demographic scaling used for development
+		short, // stage
+		short // sex
+	);
+
+	void setSurvLayer( // set the layer of the spatial demographic scaling used for survival
+		short, // stage
+		short, // sex
+		short // layer
+	);
+	short getSurvLayer( // get the layer of the spatial demographic scaling used for survival
+		short, // stage
+		short // sex
+	);
+
+
 	float getMaxFec(); // Get highest fecundity of any stage
 	void setMinAge(short stg, short sex, int minAge); // must be 0 for stages 0,1
 	short getMinAge(short stg, short sex);
@@ -514,11 +545,12 @@ private:
 	bool survDens;
 	bool survStageDens;
 	bool disperseOnLoss;	// individuals disperse on complete loss of patch
-							// (otherwise they die)
-	short habDimK;		// dimension of carrying capacities matrix
-	float* habK;		// habitat-specific carrying capacities (inds/cell)
-	float devCoeff; 	// density-dependent development coefficient
-	float survCoeff; 	// density-dependent survival coefficient
+	// (otherwise they die)
+	bool fecSpatial, devSpatial, survSpatial;
+	short habDimK;			// dimension of carrying capacities matrix
+	float* habK;				// habitat-specific carrying capacities (inds/cell)
+	float devCoeff; 		// density-dependent development coefficient
+	float survCoeff; 		// density-dependent survival coefficient
 	float** ddwtFec;    // density-dependent weights matrix for fecundity
 	float** ddwtDev;    // density-dependent weights matrix for development
 	float** ddwtSurv;   // density-dependent weights matrix for survival
@@ -527,8 +559,11 @@ private:
 	float dev[gMaxNbStages][gMaxNbSexes];		// development probabilities
 	float surv[gMaxNbStages][gMaxNbSexes];		// survival probabilities
 	short minAge[gMaxNbStages][gMaxNbSexes];	// minimum age to enter stage
-	short ddwtFecDim;	// dimension of density-dependent weights matrix for fecundity
-	short ddwtDevDim;	// dimension of density-dependent weights matrix for fecundity
+	int fecLayer[gMaxNbStages][gMaxNbSexes]; // layer for spatial varying fecundity
+	int devLayer[gMaxNbStages][gMaxNbSexes]; // layer for spatial varying development
+	int survLayer[gMaxNbStages][gMaxNbSexes]; // layer for spatial varying survival
+	short ddwtFecDim;		// dimension of density-dependent weights matrix for fecundity
+	short ddwtDevDim;		// dimension of density-dependent weights matrix for fecundity
 	short ddwtSurvDim;	// dimension of density-dependent weights matrix for fecundity
 	float minRK; 		// minimum growth rate OR carrying capacity
 	float maxRK; 		// maximum (under environmental stochasticity)

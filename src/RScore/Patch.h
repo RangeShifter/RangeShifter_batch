@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------
  *
- *	Copyright (C) 2020 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Damaris Zurell
+ *	Copyright (C) 2026 Greta Bocedi, Stephen C.F. Palmer, Justin M.J. Travis, Anne-Kathleen Malchow, Roslyn Henry, Théo Pannetier, Jette Wolff, Damaris Zurell
  *
  *	This file is part of RangeShifter.
  *
@@ -143,6 +143,10 @@ public:
 	void calcGradVal(Species* pSpecies);
 	double getGradVal() const;
 
+	void setDemoScaling(std::vector <float>);
+	std::vector <float> getDemoScaling(void);
+	void setPatchDemoScaling(short, patchLimits); // calculate demog. scalings of patch from its cells //TODO arguments
+
 	bool speciesIsPresent();
 
 	void createOccupancy(int nbOutputRows);
@@ -173,6 +177,7 @@ private:
 	species_id sp;		// which species the patch belongs to
 	float localK;		// patch carrying capacity (individuals)
 	double gradVal;		// gradient value for cell-based landscapes
+	std::vector <float> localDemoScaling;
 	bool changed;
 	vector<int> occupancy;		// pointer to occupancy array
 	std::vector <Cell*> cells;
@@ -189,5 +194,7 @@ private:
 
 extern paramStoch* paramsStoch;
 extern RSrandom* pRandom;
+
+extern short nDSlayer;
 
 #endif
