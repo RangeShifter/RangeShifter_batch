@@ -66,7 +66,7 @@ using namespace std::filesystem;
 #endif
 
 #if RS_RCPP && !R_CMD
-Rcpp::List int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies, Rcpp::S4);
+Rcpp::List int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies, Rcpp::S4 ParMaster);
 #else
 int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies);
 #endif // RS_RCPP && !R_CMD
