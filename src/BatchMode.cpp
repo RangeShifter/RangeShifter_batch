@@ -548,37 +548,32 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 	}
 
 	// Check management file if not NULL
-	controlFile >> paramname >> filename;
-	if (paramname == "ManagementFile" && !anyFormatError) {
+	controlIfs >> paramName >> filename;
+	if (paramName == "ManagementFile" && !anyFormatError) {
 		if (filename == "NULL") {
 			gHasTranslocation = false;
 		}
 		else {
 			gHasTranslocation = true;
-		fname = indir + filename;
-		batchLog << endl << "Checking " << paramname << " " << fname << endl;
-		bManageFile.open(fname.c_str());
-		if (bManageFile.is_open()) {
-			nSimuls = CheckManageFile(indir);
-			if (nSimuls < 0) {
-				b.ok = false;
+			pathToFile = inputDir + filename;
+			batchLogOfs << endl << "Checking " << paramName << " " << pathToFile << endl;
+			bManageFile.open(pathToFile.c_str());
+			if (bManageFile.is_open()) {
+				if (CheckManageFile(inputDir)) {
+					FileOK(paramName, nSimuls, 0);
+					managementFile = pathToFile;
+				}
+				else {
+					OpenError(paramName, filename);
+					areInputFilesOk = false;
+				}
+				bManageFile.close();
 			}
 			else {
-				FileOK(paramname, nSimuls, 0);
-				// Not sure whether I need to check whether the number of simulations in the management file matches the number of simulations in the control file
-				if (nSimuls != b.nSimuls) {
-					SimulnCountError(filename);
-					b.ok = false;
-				}
-					else managementFile = fname;
+				OpenError(paramName, pathToFile);
+				areInputFilesOk = false;
 			}
-			bManageFile.close();
-		}
-		else {
-			OpenError(paramname, fname);
-			b.ok = false;
-		}
-		bManageFile.clear();
+			bManageFile.clear();
 		}
 	}
 	else anyFormatError = true; // wrong control file format
@@ -5032,7 +5027,7 @@ bool CheckGeneticsFile(string inputDirectory) {
 		// Check genetic output fields
 		if (inOutGeneValues != "TRUE" && inOutGeneValues != "FALSE") {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLogOfs << "OutGeneValues must be either TRUE or FALSE" << endl;
+			batchLogOfs << "OutputGeneValues must be either TRUE or FALSE" << endl;
 			nbErrors++;
 		}
 		if (inOutGlobalFst != "TRUE" && inOutGlobalFst != "FALSE") {
@@ -5048,16 +5043,13 @@ bool CheckGeneticsFile(string inputDirectory) {
 
 		if (inOutPerLocusFst != "TRUE" && inOutPerLocusFst != "FALSE") {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "OutputPerLocusFst must be either TRUE or FALSE" << endl;
+			batchLogOfs << "OutputPerLocusFst must be either TRUE or FALSE" << endl;
 			nbErrors++;
 		}
 
 		// Track whether any neutral genetic output is requested
-		gTraitOptions.at(simNb).anyNeutral =
-			inOutGlobalFst == "TRUE" || inOutPairwiseFst == "TRUE";
-
-		bool anyGeneticsOutput =
-			inOutGeneValues == "TRUE" || gTraitOptions.at(simNb).anyNeutral;
+		inputOpt.anyNeutral = inOutGlobalFst == "TRUE" || inOutPairwiseFst == "TRUE";
+		bool anyGeneticsOutput = inOutGeneValues == "TRUE" || inputOpt.anyNeutral;
 
 		// =======================
 		// GENE VALUES OUTPUT CHECKS
@@ -5066,7 +5058,7 @@ bool CheckGeneticsFile(string inputDirectory) {
 
 			if (inOutGenesStart == "#") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutGenesStart cannot be blank (#) if OutGeneValues is TRUE." << endl;
+				batchLogOfs << "OutGenesStart cannot be blank (#) if OutGeneValues is TRUE." << endl;
 				nbErrors++;
 			}
 			else {
@@ -5079,7 +5071,7 @@ bool CheckGeneticsFile(string inputDirectory) {
 
 			if (inOutGenesInterval == "#" || inOutGenesInterval == "0") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutGenesInterval must be >= 1 if OutGeneValues is TRUE." << endl;
+				batchLogOfs << "OutGenesInterval must be >= 1 if OutGeneValues is TRUE." << endl;
 				nbErrors++;
 			}
 			else {
@@ -5094,13 +5086,13 @@ bool CheckGeneticsFile(string inputDirectory) {
 
 			if (inOutGenesStart != "#") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutGenesStart should be blank (#) if OutGeneValues is FALSE." << endl;
+				batchLogOfs << "OutGenesStart should be blank (#) if OutGeneValues is FALSE." << endl;
 				nbErrors++;
 			}
 
 			if (inOutGenesInterval != "#" && inOutGenesInterval != "0") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutGenesInterval should be blank (#) or 0 if OutGeneValues is FALSE." << endl;
+				batchLogOfs << "OutGenesInterval should be blank (#) or 0 if OutGeneValues is FALSE." << endl;
 				nbErrors++;
 			}
 		}
@@ -5111,7 +5103,7 @@ bool CheckGeneticsFile(string inputDirectory) {
 
 			if (inOutGlobalFstStart == "#") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutputGlobalFstStart cannot be blank (#) if OutputGlobalFst is TRUE." << endl;
+				batchLogOfs << "OutputGlobalFstStart cannot be blank (#) if OutputGlobalFst is TRUE." << endl;
 				nbErrors++;
 			}
 			else {
@@ -5124,7 +5116,7 @@ bool CheckGeneticsFile(string inputDirectory) {
 
 			if (inOutGlobalFstInterval == "#" || inOutGlobalFstInterval == "0") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutputGlobalFstInterval must be >= 1 if OutputGlobalFst is TRUE." << endl;
+				batchLogOfs << "OutputGlobalFstInterval must be >= 1 if OutputGlobalFst is TRUE." << endl;
 				nbErrors++;
 			}
 			else {
@@ -5139,24 +5131,24 @@ bool CheckGeneticsFile(string inputDirectory) {
 			// Should be blank if not used
 			if (inOutGlobalFstStart != "#") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutputGlobalFstStart should be blank (#) if OutputGlobalFst is FALSE." << endl;
+				batchLogOfs << "OutputGlobalFstStart should be blank (#) if OutputGlobalFst is FALSE." << endl;
 				nbErrors++;
 			}
 			if (inOutGlobalFstInterval != "#" && inOutGlobalFstInterval != "0") {
 				BatchError(whichFile, whichLine, 0, " ");
-				batchLog << "OutputGlobalFstInterval should be blank (#) or 0 if OutputGlobalFst is FALSE." << endl;
+				batchLogOfs << "OutputGlobalFstInterval should be blank (#) or 0 if OutputGlobalFst is FALSE." << endl;
 				nbErrors++;
 			}
 		}
 
-			// ====================== =
+			// =======================
 			// PAIRWISE FST CHECKS
 			// =======================
 			if (inOutPairwiseFst == "TRUE") {
 
 				if (inOutPairwiseFstStart == "#") {
 					BatchError(whichFile, whichLine, 0, " ");
-					batchLog << "OutputPairwiseFstStart cannot be blank (#) if OutputPairwiseFst is TRUE." << endl;
+					batchLogOfs << "OutputPairwiseFstStart cannot be blank (#) if OutputPairwiseFst is TRUE." << endl;
 					nbErrors++;
 				}
 				else {
@@ -5169,7 +5161,7 @@ bool CheckGeneticsFile(string inputDirectory) {
 
 				if (inOutPairwiseFstInterval == "#" || inOutPairwiseFstInterval == "0") {
 					BatchError(whichFile, whichLine, 0, " ");
-					batchLog << "OutputPairwiseFstInterval must be >= 1 if OutputPairwiseFst is TRUE." << endl;
+					batchLogOfs << "OutputPairwiseFstInterval must be >= 1 if OutputPairwiseFst is TRUE." << endl;
 					nbErrors++;
 				}
 				else {
@@ -5184,12 +5176,12 @@ bool CheckGeneticsFile(string inputDirectory) {
 				// Should be blank if not used
 				if (inOutPairwiseFstStart != "#") {
 					BatchError(whichFile, whichLine, 0, " ");
-					batchLog << "OutputPairwiseFstStart should be blank (#) if OutputPairwiseFst is FALSE." << endl;
+					batchLogOfs << "OutputPairwiseFstStart should be blank (#) if OutputPairwiseFst is FALSE." << endl;
 					nbErrors++;
 				}
 				if (inOutPairwiseFstInterval != "#" && inOutPairwiseFstInterval != "0") {
 					BatchError(whichFile, whichLine, 0, " ");
-					batchLog << "OutputPairwiseFstInterval should be blank (#) or 0 if OutputPairwiseFst is FALSE." << endl;
+					batchLogOfs << "OutputPairwiseFstInterval should be blank (#) or 0 if OutputPairwiseFst is FALSE." << endl;
 					nbErrors++;
 				}
 			}
@@ -5297,9 +5289,9 @@ bool CheckGeneticsFile(string inputDirectory) {
 }
 
 //---------------------------------------------------------------------------
-int CheckManageFile(string indir){
+bool CheckManageFile(string indir) {
 	// needed temporary variables
-	string header; 
+	string header;
 	string ftype2 = "TranslocationFile";
 	string filename;
 	string fname;
@@ -5323,21 +5315,21 @@ int CheckManageFile(string indir){
 	bManageFile >> header; if (header != "TranslocationFile") nbErrors++;
 	bManageFile >> header; if (header != "TranslocationYears") nbErrors++;
 	bManageFile >> header; if (header != "CatchingRate") nbErrors++;
-	
-	
+
+
 	// Parse data lines
 
 	bManageFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
-		BatchError(whichFile, whichLine, 111, "Simulation"); 
+		BatchError(whichFile, whichLine, 111, "Simulation");
 		nbErrors++;
-		}
+	}
 	while (simNb != -98765) {
 		// check if simNb is in gSimNbs
 		if (!gSimNbs.contains(simNb)) {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
 			nbErrors++;
 		}
 
@@ -5347,52 +5339,52 @@ int CheckManageFile(string indir){
 		}
 
 		// Parse parameters
-		
+
 		bManageFile >> filename;
 		bManageFile >> yearstr;
 		bManageFile >> catchingRate;
-		
+
 		// check translocation filename + file existence + correct format by calling CheckTranslocFile
 
 		if (filename == "NULL") {
-			batchLog << "*** " << ftype2 << " is compulsory is you want to simulate translocation." << endl;
+			batchLogOfs << "*** " << ftype2 << " is compulsory is you want to simulate translocation." << endl;
 			nbErrors++;
 		}
 		else {
 			fname = indir + filename;
-			batchLog << "Checking " << ftype2 << " " << fname << endl;
+			batchLogOfs << "Checking " << ftype2 << " " << fname << endl;
 			bTranslocFile.open(fname.c_str());
 			if (bTranslocFile.is_open()) {
 				nSimsTransloc = CheckTranslocFile();
 
 				if (nSimsTransloc < 0) {
-				        nbErrors++;
-				    }
-				    else {
-				        if (nSimsTransloc != gSimNbs.size()) {
-				            SimulnCountError(filename);
-				        }
-				        else translocationFile = fname;
-				    }
+					nbErrors++;
+				}
+				else {
+					if (nSimsTransloc != gSimNbs.size()) {
+						SimulnCountError(filename);
+					}
+					else translocationFile = fname;
+				}
 
 				bTranslocFile.close();
 			}
 			else {
 				OpenError(ftype2, fname); nbErrors++;
-				}
+			}
 			if (bTranslocFile.is_open()) bTranslocFile.close();
 			bTranslocFile.clear();
-			}
-		
+		}
+
 		// check  yearstr
 		// Check if it is a semicolon-separated list of integers
 		isMatch = regex_search(yearstr, patternIntList);
 		if (!isMatch) {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "Translocation years must be a semicolon-separated list of integers." << endl;
+			batchLogOfs << "Translocation years must be a semicolon-separated list of integers." << endl;
 			nbErrors++;
 		}
-		
+
 		// check catchingRate : double value > 0 but < 1
 		if (catchingRate <= 0 || catchingRate > 1) {
 			BatchError(whichFile, whichLine, 20, "CatchingRate");
@@ -5413,10 +5405,8 @@ int CheckManageFile(string indir){
 		EOFerror(whichFile);
 		nbErrors++;
 	}
-
-	if (nbErrors > 0) return -111;
-	else return nSimuls;
-	}
+	return nbErrors == 0;
+}
 
 //---------------------------------------------------------------------------
 int CheckTranslocFile(){
@@ -6618,8 +6608,6 @@ int ReadGeneticsFile(speciesMap_t& simSpecies, ifstream& ifs) {
 
 		pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate, patchSamplingOption,
 			patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
-		paramsSim->setGeneticSim(patchSamplingOption, outputGeneValues, outputGenesStart, outputGenesInterval, outputPairwiseFst, outputGlobalFst, outputGlobalFstStart, outputGlobalFstInterval,
-			outputPairwiseFstStart, outputPairwiseFstInterval, outputPerLocusFst);
 	}
 	else {
 		throw runtime_error("GeneticsFile is not open.");

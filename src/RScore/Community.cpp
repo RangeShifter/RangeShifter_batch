@@ -851,20 +851,29 @@ void Community::indsAndGeneticsOutput(int rep, int yr, int gen) {
 			outInds(sp, rep, yr, gen);
 
 		// Output Genetics
-		if (pSpecies->isGeneticOutputYear(yr)) {
+		bool doGenes = pSpecies->isGeneValuesOutputYear(yr);
+		bool doGlobalFst = pSpecies->isGlobalFstOutputYear(yr);
+		bool doPairwiseFst = pSpecies->isPairwiseFstOutputYear(yr);
+
+		if (doGenes || doGlobalFst || doPairwiseFst) {
+
+			// Sampling if applicable
 			if (pSpecies->getSamplingOption() == "random_occupied"
 				|| pSpecies->getSamplingOption() == "all")
-				// then must re-sample every year
+				// then must re-sample patches every year
 				pLandscape->samplePatches(pSpecies);
 
-			sampleIndividuals(sp);
+			sampleIndividuals(pSpecies);
 
-			if (pSpecies->doesOutputGeneValues())
-				outputGeneValues(sp, yr, gen);
-			if (pSpecies->doesOutputWeirCockerham() 
-				|| pSpecies->doesOutputWeirHill())
-				outNeutralGenetics(sp, rep, yr, gen);
-		}
+			if (doGenes) {
+				pComm->outputGeneValues(yr, gen, pSpecies);
+			}
+
+			if (doGlobalFst || doPairwiseFst) {
+				pComm->calculateNeutralGenetics(pSpecies, rep, yr, gen);
+			}
+		} // if doGenes
+
 	}
 }
 
@@ -2269,7 +2278,7 @@ bool Community::openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, co
 			+"_pairwisePatchNeutralGenetics.txt";
 	}
 	outPairwiseFstOfs.at(sp).open(name.c_str());
-	outPairwiseFstOfs.at(sp) << "Year\tRepSeason\tpatchA\tpatchB\tFst";
+	outPairwiseFstOfs.at(sp) << "Year\tRepSeason\tpatchA\tpatchA_x\tpatchA_y\tpatchB\tpatchB_x\tpatchB_y\tF";
 	outPairwiseFstOfs.at(sp) << endl;
 
 	return outPairwiseFstOfs.at(sp).is_open();
@@ -2289,7 +2298,6 @@ void Community::writeNeutralOutputFile(const species_id& sp, int rep, int yr, in
 			<< neutralStatsMaps.at(sp)->getFisWC() << "\t"
 			<< neutralStatsMaps.at(sp)->getFitWC() << "\t";
 
-	
 	outWCFstatOfs.at(sp) << neutralStatsMaps.at(sp)->getMeanNbAllPerLocus() << "\t"
 		<< neutralStatsMaps.at(sp)->getMeanNbAllPerLocusPerPatch() << "\t"
 		<< neutralStatsMaps.at(sp)->getTotalFixdAlleles() << "\t"
@@ -2303,7 +2311,7 @@ void Community::writeNeutralOutputFile(const species_id& sp, int rep, int yr, in
 // Write per locus FST results file
 // ----------------------------------------------------------------------------------------
 
-void Community::writePerLocusFstatFile(Species* pSpecies, const int yr, const int gen, const int nLoci, set<int> const& patchList)
+void Community::writePerLocusFstatFile(Species* pSpecies, const int yr, const int gen, set<int> const& patchList)
 {
 	string samplingOpt = pSpecies->getSamplingOption();
 	bool samplingFixed = samplingOpt == "list"
@@ -2392,12 +2400,12 @@ void Community::writePairwiseFstFile(Species* pSpecies, const int yr, const int 
 			outPairwiseFstOfs.at(sp) << yr << "\t"
 				<< gen << "\t"
 				<< patchVect[i] << "\t"
-				<< patchA->getLocn().x << "\t"
-				<< patchA->getLocn().y << "\t"
+				<< patchA->getCellLocn(0).x << "\t"
+				<< patchA->getCellLocn(0).y << "\t"
 				<< patchVect[j] << "\t"
-				<< patchB->getLocn().x << "\t"
-				<< patchB->getLocn().y << "\t"
-				<< outPairwiseFstOfs.at(sp)->getPairwiseFst(i, j)
+				<< patchB->getCellLocn(0).x << "\t"
+				<< patchB->getCellLocn(0).y << "\t"
+				<< neutralStatsMaps.at(sp)->getPairwiseFst(i, j)
 				<< "\n";
 		}
 	}
@@ -2410,9 +2418,7 @@ void Community::writePairwiseFstFile(Species* pSpecies, const int yr, const int 
 // Output and calculate neutral statistics
 // ----------------------------------------------------------------------------------------
 
-
-void Community::calculateNeutralGenetics(species_id sp, int rep, int yr, int gen, bool outPairwiseFst, int outputPairwiseFstStart, int outputPairwiseFstInterval,
-	bool outputGlobalFst, int outputGlobalFstStart, int outputGlobalFstInterval, bool outputPerLocusFst) {
+void Community::calculateNeutralGenetics(species_id sp, int rep, int yr, int gen) {
 
 	Species* pSpecies = speciesMap.at(sp);
 	const int maxNbNeutralAlleles = pSpecies->getSpTrait(NEUTRAL)->getNbNeutralAlleles();
@@ -2440,19 +2446,18 @@ void Community::calculateNeutralGenetics(species_id sp, int rep, int yr, int gen
 	neutralStatsMaps.at(sp)->calculatePerLocusHo(patchList, nInds, nLoci, pSpecies, pLandscape);
 	neutralStatsMaps.at(sp)->calcAllelicDiversityMetrics(patchList, nInds, pSpecies, pLandscape);
 
-	if (outPairwiseFst) {
+	if (pSpecies->isPairwiseFstOutputYear(yr)) {
 		neutralStatsMaps.at(sp)->calculatePairwiseFst(patchList, nLoci, maxNbNeutralAlleles, pSpecies, pLandscape);
 
-		if (yr >= outputPairwiseFstStart && yr % outputPairwiseFstInterval == 0) {
+		if (pSpecies->isPairwiseFstOutputYear(yr)) {
 			writePairwiseFstFile(pSpecies, yr, gen, patchList);
 		}
 	}
-	if (outputGlobalFst) {
+	if (pSpecies->isGlobalFstOutputYear(yr)) {
 		neutralStatsMaps.at(sp)->calculateFstatWC(patchList, nInds, nLoci, maxNbNeutralAlleles, pSpecies, pLandscape, false);
-
-		if (yr >= outputGlobalFstStart && yr % outputGlobalFstInterval == 0) {
+		if (pSpecies->isGlobalFstOutputYear(yr)) {
 			writeNeutralOutputFile(rep, yr, gen);
-			if (outputPerLocusFst)
+			if (pSpecies->doesOutputPerLocusFst())
 				writePerLocusFstatFile(pSpecies, yr, gen, nLoci, patchList);
 		}
 	}
@@ -2506,8 +2511,7 @@ bool Community::openOutputFiles(bool hasMultipleReplicates, const int landNum) {
 			if (!outTraitsRowsHeaders(sp, landNum)) {
 				filesOK = false;
 			}
-		if (pSpecies->doesOutputWeirCockerham()
-			|| pSpecies->doesOutputWeirHill()) { // open neutral genetics file
+		if (pSpecies->doesOutputGlobalFst()) {
 			if (!openNeutralOutputFile(sp, landNum)) {
 				filesOK = false;
 			}
@@ -2532,8 +2536,7 @@ void Community::closeGlobalOutputFiles(bool hasMultipleReplicates) {
 		if (pSpecies->doesOutputRange()) closeRangeOfs(sp);
 		if (pSpecies->doesOutputPop()) closePopOfs(sp);
 
-		if (pSpecies->doesOutputWeirCockerham()
-			|| pSpecies->doesOutputWeirCockerham())
+		if (pSpecies->doesOutputGlobalFst())
 			closeNeutralOutputOfs(sp);
 
 		if (hasMultipleReplicates && pSpecies->doesOutputOccup()) {
@@ -2548,8 +2551,8 @@ void Community::closeYearlyOutputFiles() {
 	for (auto& [sp, pSpecies] : speciesMap) {
 		if (pSpecies->doesOutputInds()) closeOutIndsOfs(sp);
 		if (pSpecies->doesOutputGeneValues()) closeOutGenesOfs(sp);
-		if (pSpecies->doesOutputWeirCockerham()) closePerLocusFstFile(sp);
-		if (pSpecies->doesOutputWeirHill()) closePairwiseFstFile(sp);
+		if (pSpecies->doesOutputPerLocusFst()) closePerLocusFstFile(sp);
+		if (pSpecies->doesOutputPairwiseFst()) closePairwiseFstFile(sp);
 	}
 }
 

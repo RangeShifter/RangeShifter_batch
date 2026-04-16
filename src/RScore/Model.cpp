@@ -29,11 +29,10 @@ using namespace std::chrono;
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #if RS_RCPP && !R_CMD
-Rcpp::List RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies, Rcpp::S4 ParMaster)
+Rcpp::List RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies, Rcpp::S4 ParMaster) {
 #else
-int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
+int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 #endif
-{
 	int yr, totalInds;
 	bool filesOK;
 
@@ -434,49 +433,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 
 				pComm->applySurvivalDevlpt();
 
-				bool doGenes =
-					sim.outputGenes &&
-					yr >= sim.outputGenesStart &&
-					sim.outputGenesInterval > 0 &&
-					yr % sim.outputGenesInterval == 0;
-
-				bool doGlobalFst =
-					sim.outputGlobalFst &&
-					yr >= sim.outputGlobalFstStart &&
-					sim.outputGlobalFstInterval > 0 &&
-					yr % sim.outputGlobalFstInterval == 0;
-
-				bool doPairwiseFst =
-					sim.outPairwiseFst &&
-					yr >= sim.outputPairwiseFstStart &&
-					sim.outputPairwiseFstInterval > 0 &&
-					yr % sim.outputPairwiseFstInterval == 0;
-
-				if (doGenes || doGlobalFst || doPairwiseFst) {
-
-					if (sim.patchSamplingOption != "list" &&
-						sim.patchSamplingOption != "random") {
-
-						int nbToSample = pSpecies->getNbPatchesToSample();
-						auto patchesToSample =
-							pLandscape->samplePatches(sim.patchSamplingOption, nbToSample, pSpecies);
-						pSpecies->setSamplePatchList(patchesToSample);
-					}
-
-					pComm->sampleIndividuals(pSpecies);
-
-					if (doGenes) {
-						pComm->outputGeneValues(yr, gen, pSpecies);
-					}
-
-					if (doGlobalFst || doPairwiseFst) {
-						pComm->calculateNeutralGenetics(
-							pSpecies, rep, yr, gen,
-							doPairwiseFst, sim.outputPairwiseFstStart, sim.outputPairwiseFstInterval,
-							doGlobalFst, sim.outputGlobalFstStart, sim.outputGlobalFstInterval,
-							sim.outputPerLocusFst);
-					}
-				} // if doGenes
 			} // end of the generation loop
 
 			pComm->resetActiveSpecies();
@@ -548,13 +504,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 		}
 		
 		pComm->closeYearlyOutputFiles();
-		if (sim.outputGenes) pComm->openOutGenesFile(false, -999, rep);
-		//if (sim.outputGlobalFst) //close per locus file 
-		//	pComm->openNeutralOutputFile(pSpecies, -999);
-		if (sim.outputPerLocusFst) //close per locus file 
-			pComm->openPerLocusFstFile(pSpecies, pLandscape, -999, rep);
-		if (sim.outPairwiseFst) //close per locus file 
-			pComm->openPairwiseFstFile(pSpecies, pLandscape, -999, rep);
 		
 		for (auto& [sp, pSpecies] : simSpecies) {
 			if (pSpecies->savesVisits())
@@ -589,14 +538,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies)
 		}
 	}
 
-	if (sim.outputGenes) pComm->openOutGenesFile(0, -999, 0);
-	if (sim.outputGlobalFst) {
-		pComm->openNeutralOutputFile(pSpecies, -999);
-	}
-	if (sim.outputPerLocusFst) {
-		pComm->openPerLocusFstFile(pSpecies, pLandscape, -999, 0);
-	}
-	if (sim.outPairwiseFst) pComm->openPairwiseFstFile(pSpecies, pLandscape, -999, 0);
 	pComm->closeGlobalOutputFiles(hasMultipleReplicates);
 	pComm->closeYearlyOutputFiles(); // might still be open if the simulation was stopped by the user
 

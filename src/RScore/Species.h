@@ -330,13 +330,30 @@ public:
 
 	// Patch sampling for genetics output
 	string getSamplingOption() const { return patchSamplingOption; }
-	bool doesOutputGeneValues() const { return output.outputGenes; }
-	bool doesOutputWeirCockerham() const { return output.outputWeirCockerham; }
-	bool doesOutputWeirHill() const { return output.outputWeirHill; }
-	bool isGeneticOutputYear(int yr) const {
-		if (output.outputGenes || output.outputWeirCockerham || output.outputWeirHill)
-			return yr >= output.outputStartGenetics
-			&& yr % output.outputGeneticInterval == 0;
+	bool doesOutputGeneValues() const { return output.outputGeneValues; }
+	bool doesOutputGlobalFst() const { return output.outputGlobalFst; }
+	bool doesOutputPairwiseFst() const { return output.outputPairwiseFst; }
+	bool doesOutputPerLocusFst() const { return output.outputPerLocusFst; }
+	bool isGeneValuesOutputYear(int yr) const {
+		if (output.outputGeneValues)
+			return yr >= output.outputGenesStart
+			&& yr % output.outputGenesInterval == 0
+			&& output.outputGenesInterval > 0;
+		else return false;
+	
+	}
+	bool isGlobalFstOutputYear(int yr) const {
+		if (output.outputGlobalFst)
+			return yr >= output.outputGlobalFstStart
+			&& yr % output.outputGlobalFstInterval == 0
+			&& output.outputGlobalFstInterval > 0;
+		else return false;
+	}
+	bool isPairwiseFstOutputYear(int yr) const {
+		if (output.outputPairwiseFst)
+			return yr >= output.outputPairwiseFstStart
+			&& yr % output.outputPairwiseFstInterval == 0
+			&& output.outputPairwiseFstInterval > 0;
 		else return false;
 	}
 	std::set<int>& getSamplePatches() { return samplePatchList; }

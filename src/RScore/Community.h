@@ -181,30 +181,25 @@ public:
 	void outputGeneValues(species_id sp, const int& year, const int& gen);
 	bool closeOutGenesOfs(species_id sp);
 
-	//control neutral stat output
+	void calculateNeutralGenetics(species_id sp, int rep, int yr, int gen);
 
-	void calculateNeutralGenetics(Species* pSpecies, int rep, int yr, int gen, bool outPairwiseFst, int outputPairwiseFstStart, int outputPairwiseFstInterval,
-		bool outputGlobalFst, int outputGlobalFstStart, int outputGlobalFstInterval, bool outputPerLocusFst);
-
-	// control neutral stat output
-	void outNeutralGenetics(species_id sp, int rep, int yr, int gen);
+	// control neutral stat output	
 	bool openNeutralOutputFile(species_id sp, const int landNr);
-	void writeNeutralOutputFile(const species_id& sp, int rep, int yr, int gen, bool outWeirCockerham, bool outWeirHill);
+	void writeNeutralOutputFile(const species_id& sp, int rep, int yr, int gen);
 	bool closeNeutralOutputOfs(species_id sp);
 
 	bool openPerLocusFstFile(Species* pSpecies, Landscape* pLandscape, const int landNr, const int rep);
 	bool closePerLocusFstFile(species_id sp);
-	void writePerLocusFstatFile(Species* pSpecies, const int yr, const int gen, const  int nAlleles, const int nLoci, set<int> const& patchList);
+	void writePerLocusFstatFile(Species* pSpecies, const int yr, const int gen, set<int> const& patchList);
 
 	bool openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, const int landNr, const int rep);
+	void writePairwiseFstFile(Species* pSpecies, const int yr, const int gen, set<int> const& patchList);
 	bool closePairwiseFstFile(species_id sp);
 
 	//file writers
-	void writeNeutralOutputFile(int rep, int yr, int gen);
-	void writePerLocusFstatFile(Species* pSpecies, const int yr, const int gen, const int nLoci, set<int> const& patchList);
-	void writePairwiseFstFile(Species* pSpecies, const int yr, const int gen, set<int> const& patchList);
 	speciesMap_t speciesMap;
 	Landscape* pLandscape;
+
 private:
 	map<species_id, vector<vector<int>>> occupancyMaps;	// track which suitable cells / patches are occupied
 

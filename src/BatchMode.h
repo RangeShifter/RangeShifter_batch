@@ -100,7 +100,7 @@ bool CheckParameterFile();
 bool CheckLandFile(int landType, string inputDir);
 int CheckSpatialDemogFile(string, string, rasterdata);
 int CheckLayerFile(string);
-int CheckManageFile(string);
+bool CheckManageFile(string);
 int CheckTranslocFile();
 bool CheckSpLandFile(string inputDir, bool isInitial);
 bool CheckGeneticsFile(string inputDir);

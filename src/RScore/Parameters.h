@@ -315,11 +315,16 @@ struct outputParams {
 	bool outTraitsRows;			// produce output summary traits by row (y) file?
 	bool outConnect;			// produce output connectivity file?
 	bool saveVisits;			// save dispersal visits heat maps?
-	bool outputGenes;
-	bool outputWeirCockerham;
-	bool outputWeirHill;
-	int outputStartGenetics;
-	int outputGeneticInterval;
+	bool outputGeneValues;
+	int outputGenesStart;
+	int outputGenesInterval;
+	bool outputGlobalFst;
+	int outputGlobalFstStart;
+	int outputGlobalFstInterval;
+	bool outputPairwiseFst;
+	int outputPairwiseFstStart;
+	int outputPairwiseFstInterval;
+	bool outputPerLocusFst;
 #if RS_RCPP
 	int outStartPaths;
 	int outIntPaths;
