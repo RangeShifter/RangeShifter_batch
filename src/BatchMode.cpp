@@ -109,7 +109,7 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 	bool anyFormatError = false;
 	
 	// Open batch log
-	batchLogPath = outputDir + "batchLogOfs.txt";
+	batchLogPath = outputDir + "BatchLog.txt";
 	batchLogOfs.open(batchLogPath.c_str());
 	if (!batchLogOfs.is_open()) {
 		cout << "Error opening batch output log file " << batchLogPath << endl;
@@ -5293,6 +5293,7 @@ bool CheckManageFile(string indir) {
 	string filename;
 	string fname;
 	int nbErrors = 0, err = 0;
+	set<int> simNbs;
 
 	const regex patternIntList{ "^\"?([0-9]+;)*[0-9]+\"?$" }; // semicolon-separated integer list
 	bool isMatch = false;
@@ -5302,7 +5303,7 @@ bool CheckManageFile(string indir) {
 	string whichFile = "ManagementFile";
 
 	int whichLine = 1;
-	int simNb = -98765, prevsimNb = -98765;
+	int simNb = -98765;
 	int nSimuls = 0, nSimsTransloc = 0;
 	string yearstr;
 	double catchingRate;
@@ -5314,22 +5315,20 @@ bool CheckManageFile(string indir) {
 	bManageFile >> header; if (header != "CatchingRate") nbErrors++;
 
 	// Parse data lines
+	prev.simNb = prev.spNb = -999;
+	prev.simLines = prev.reqdSimLines = 0;
 	bManageFile >> simNb;
-	// first simulation number must match first one in parameterFile
-	if (simNb != gFirstSimNb) {
-		BatchError(whichFile, whichLine, 111, "Simulation");
-		nbErrors++;
-	}
+	current.simNb = 0;
 	while (simNb != -98765) {
-		// check if simNb is in gSimNbs
-		if (!gSimNbs.contains(simNb)) {
+
+		if (!gSpInputOpt.contains(simNb)) {
 			BatchError(whichFile, whichLine, 0, " ");
-			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
+			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
 			nbErrors++;
+			break;
 		}
-		// if simNb != previous simNb increase number of simulations
-		if (simNb != prevsimNb) {
-			nSimuls++;
+		else {
+			simNbs.emplace(simNb);
 		}
 
 		// Parse parameters
@@ -5385,10 +5384,10 @@ bool CheckManageFile(string indir) {
 
 		// read next simulation
 		whichLine++;
-		prevsimNb = simNb;
 		simNb = -98765;
 		bManageFile >> simNb; // new line
 		if (bManageFile.eof()) simNb = -98765;
+
 	} // end of while loop
 
 	// check for correct number of lines for previous simulation
@@ -5404,22 +5403,18 @@ bool CheckManageFile(string indir) {
 int CheckTranslocFile(){
 	string header;
 	int errors = 0;
-
 	simCheck current, prev;
-
 	string file = "TranslocationFile";
-
 	int line = 1;
 	int simNumber = -98765, prevsimNumber = -98765;
 	int nSims = 0;
 	int Year, prevYear = -98765;
 	string sourceStr, targetStr;
 	int nbCatch, minAge, maxAge, stage, sex;
-
+	set<int> simNbs;
 	const regex pattern2Int{ "^\"?([0-9]+);([0-9]+)\"?$" }; // semicolon-separated integers
 	const regex patternInt{ "^\"?([0-9]+)\"?$" }; // single integer
 	smatch match;
-
 
 	// Check header line
 	bTranslocFile >> header; if (header != "Simulation") errors++;
@@ -5433,30 +5428,25 @@ int CheckTranslocFile(){
 	bTranslocFile >> header; if (header != "Sex") errors++;
 
 	// Parse data lines
+	simNumber = -98765;
+	prev.simNb = prev.spNb = -999;
+	prev.simLines = prev.reqdSimLines = 0;
 
-	bTranslocFile >> simNumber; // several lines can contain the same simulation number
-
-	// first simulation number must match first one in parameterFile
-	if (simNumber != gFirstSimNb) {
-		BatchError(file, line, 111, "Simulation");
-		errors++;
-	}
-
+	bTranslocFile >> simNumber;
+	current.simNb = 0;
 	while (simNumber != -98765) {
-			// check if simNb is in gSimNbs
-			if (!gSimNbs.contains(simNumber)) {
-				BatchError(file, line, 0, " ");
-				batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
-				errors++;
-			}
 
-			// if simNb != previous simNb increase number of simulations
-			if (simNumber != prevsimNumber) {
-				nSims++;
-			}
-
+		if (!gSpInputOpt.contains(simNb)) {
+			BatchError(file, line, 0, " ");
+			batchLogOfs << "Simulation number doesn't match those in SimFile" << endl;
+			errors++;
+			break;
+		}
+		else {
+			simNbs.emplace(simNb);
+		}
+	
 			// Parse parameters
-
 			bTranslocFile >> Year;
 			bTranslocFile >> sourceStr;
 			bTranslocFile >> targetStr;
@@ -5498,7 +5488,7 @@ int CheckTranslocFile(){
 						BatchError(file, line, 0, " ");
 							batchLogOfs << "Source location must be a positive integer." << endl;
 							errors++;
-}
+					}
 				} else {
 					BatchError(file, line, 0, " ");
 					batchLogOfs << "Source must be a integer." << endl;
@@ -5506,21 +5496,20 @@ int CheckTranslocFile(){
 				}
 			} else {
 				if (std::regex_match(sourceStr, match, pattern2Int)) {
-				        // match[1] and match[2] are the two captured integers
-				        int x = std::stoi(match[1]);
-				        int y = std::stoi(match[2]);
-				        if(x < 0 || y < 0) {
-				        	BatchError(file, line, 0, " ");
-				        	batchLogOfs << "Source location must be positive integers." << endl;
-				        	errors++;
-				        }
-				    } else {
+					// match[1] and match[2] are the two captured integers
+				    int x = std::stoi(match[1]);
+				    int y = std::stoi(match[2]);
+				    if (x < 0 || y < 0) {
 						BatchError(file, line, 0, " ");
-						batchLogOfs << "Source must be a semicolon-separated list of integers, representing the X,Y location of the source cell." << endl;
+						batchLogOfs << "Source location must be positive integers." << endl;
 						errors++;
-				    }
+					}
+				} else {
+					BatchError(file, line, 0, " ");
+					batchLogOfs << "Source must be a semicolon-separated list of integers, representing the X,Y location of the source cell." << endl;
+					errors++;
+				}
 			}
-
 
 			// check targetStr
 			// if it is a cell-based model, check if it is a semicolon-separated list of 2 integers
@@ -5528,7 +5517,7 @@ int CheckTranslocFile(){
 
 			// if it is a patch-based model, expect a single integer, which is the patch ID
 			// check if it is a valid patch ID
-			if ( patchmodel ) {
+			if (patchmodel) {
 				if (std::regex_match(targetStr, match, patternInt)) {
 					// match[1] is a integer
 					int patchID = std::stoi(match[1]);
@@ -5542,21 +5531,22 @@ int CheckTranslocFile(){
 					batchLogOfs << "Source must be a integer." << endl;
 					errors++;
 				}
-			} else {
+			} 
+			else {
 				if (std::regex_match(targetStr, match, pattern2Int)) {
-						// match[1] and match[2] are the two captured integers
-						int x = std::stoi(match[1]);
-						int y = std::stoi(match[2]);
-						if(x < 0 || y < 0) {
+					// match[1] and match[2] are the two captured integers
+					int x = std::stoi(match[1]);
+					int y = std::stoi(match[2]);
+					if (x < 0 || y < 0) {
 							BatchError(file, line, 0, " ");
 							batchLogOfs << "Source location must be positive integers." << endl;
 							errors++;
-						}
-					} else {
-						BatchError(file, line, 0, " ");
-						batchLogOfs << "Source must be a semicolon-separated list of integers, representing the X,Y location of the source cell." << endl;
-						errors++;
 					}
+				} else {
+					BatchError(file, line, 0, " ");
+					batchLogOfs << "Source must be a semicolon-separated list of integers, representing the X,Y location of the source cell." << endl;
+					errors++;
+				}
 			}
 
 			// check nbCatch
@@ -5568,17 +5558,12 @@ int CheckTranslocFile(){
 
 			// check minAge
 			// check if it is a positive integer, if not -9 and not exceeding the maximum age of the species
-			if(stagestruct) {
+			if (stagestruct) {
 				if (minAge < 0 && minAge != -9) {
 					BatchError(file, line, 0, "MinAge");
 					batchLogOfs << "MinAge must be greater 0 or -9." << endl;
 					errors++;
 				}
-//				if (minAge > maxAge) { // I need the maxAge of the species to check this
-//					BatchError(file, line, 0, " ");
-//					batchLogOfs << "MinAge must be less than MaxAge." << endl;
-//					errors++;
-//				}
 			} else {
 				if (minAge != -9) {
 					BatchError(file, line, 0, "MinAge");
@@ -5587,10 +5572,9 @@ int CheckTranslocFile(){
 				}
 			}
 
-
 			// check maxAge
 			// check if it is a positive integer, if not -9, larger than minAge and not exceeding the maximum age of the species
-			if(stagestruct) {
+			if (stagestruct) {
 				if (maxAge < 0 && maxAge != -9) {
 					BatchError(file, line, 0, "MaxAge");
 					batchLogOfs << "MaxAge must be greater 0 or -9." << endl;
@@ -5651,15 +5635,16 @@ int CheckTranslocFile(){
 			simNumber = -98765;
 			bTranslocFile >> simNumber; // new line
 			if (bTranslocFile.eof()) simNumber = -98765;
-		} // end of while loop
 
-	if (!bTranslocFile.eof()) {
-		EOFerror(file);
-		errors++;
-	}
+	} // end of while loop
 
-	if (errors > 0) return -111;
-	else return nSims;
+if (!bTranslocFile.eof()) {
+	EOFerror(file);
+	errors++;
+}
+if (errors > 0) return -111;
+else return nSims;
+
 }
 
 //---------------------------------------------------------------------------
