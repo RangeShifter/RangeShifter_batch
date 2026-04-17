@@ -109,7 +109,7 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 	bool anyFormatError = false;
 	
 	// Open batch log
-	batchLogPath = outputDir + "BatchLog.txt";
+	batchLogPath = outputDir + "batchLogOfs.txt";
 	batchLogOfs.open(batchLogPath.c_str());
 	if (!batchLogOfs.is_open()) {
 		cout << "Error opening batch output log file " << batchLogPath << endl;
@@ -1141,7 +1141,7 @@ bool CheckParameterFile()
 
 bool CheckLandFile(int landtype, string inputDir)
 {
-	string header, inSpLand, inDynLand, inLandscape, whichInputFile;
+	string header, inSpLand, inDynLand, inLandscape, inSpatialDemog, whichInputFile;
 	int landNb, inNbHab, whichLine;
 	float infloat;
 	rasterdata patchRaster, spdistraster, costraster;
@@ -1256,7 +1256,7 @@ bool CheckLandFile(int landtype, string inputDir)
 			}
 			else {
 				gHasSpatialDemography = true;
-				nbErrors += CheckSpatialDemogFile(inputDir, inSpatialDemog, landraster);
+				nbErrors += CheckSpatialDemogFile(inputDir, inSpatialDemog, landRaster);
 			}
 
 			// check dynamic landscape filename
@@ -1400,7 +1400,7 @@ bool CheckLandFile(int landtype, string inputDir)
 
 }
 
-int CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landraster) {
+bool CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landraster) {
 	string fname, header, intext, ftype;
 	int line = 0;
 	int inint, expectedLineNum = 0;
@@ -1424,7 +1424,7 @@ int CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landras
 
 	if (errors > 0) {
 		FormatError("SpatialDemogFile", 0);
-		batchLog << "*** Ensure format is correct for spatial demography file" << endl;
+		batchLogOfs << "*** Ensure format is correct for spatial demography file" << endl;
 		bSpatialDemogFile.close();
 		return -111;
 	}
@@ -1449,10 +1449,6 @@ int CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landras
 
 		// Check filename
 		bSpatialDemogFile >> intext;
-//	        if (intext.substr(intext.size() - 4) != ".txt") {
-//	            BatchError("SpatialDemogFile", line, 0, "Filename");
-//	            errors++;
-//	        } else {
 		fname = indir + intext;
 		demograster = CheckRasterFile(fname);
 		if (demograster.ok) {
@@ -1462,13 +1458,13 @@ int CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landras
 						&& demograster.nrows == landraster.nrows
 						&& (int)demograster.xllcorner == (int)landraster.xllcorner
 						&& (int)demograster.yllcorner == (int)landraster.yllcorner) {
-					batchLog << "SpatialDemogFile headers OK: " << fname << endl;
+					batchLogOfs << "SpatialDemogFile headers OK: " << fname << endl;
 				} else {
-					batchLog << "*** Extent or origin of " << ftype << " does not match those of LandscapeFile" << endl;
+					batchLogOfs << "*** Extent or origin of " << ftype << " does not match those of LandscapeFile" << endl;
 					errors++;
 				}
 			} else {
-				batchLog << "*** Resolution of " << ftype << " " << fname << " does not match DistResolution in Control file" << endl;
+				batchLogOfs << "*** Resolution of " << ftype << " " << fname << " does not match DistResolution in Control file" << endl;
 				errors++;
 			}
 			// if the first tests are ok, we can append it to the list of spatial demography rasters
@@ -1480,13 +1476,13 @@ int CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landras
 			} else {
 				FormatError(fname, demograster.errors);
 			}
-	}
-//	        }
-
+		}
 	line++;
+
 	// Read first field on next line
 	inint = -98765;
 	bSpatialDemogFile >> inint;
+
 	} // end of while loop
 
 	// Check for EOF errors
@@ -1499,7 +1495,7 @@ int CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landras
 
 	if (maxNbOfLayer > gMaxNbLayers) {
 		BatchError("SpatialDemogFile", line, 0, "NbOfLayer");
-		batchLog << "*** MaxNbOfLayer exceeded the maximal number of layers allowed (3 * number of sexes * number of stages, counting from 0)" << endl;
+		batchLogOfs << "*** MaxNbOfLayer exceeded the maximal number of layers allowed (3 * number of sexes * number of stages, counting from 0)" << endl;
 		errors++;
 	}
 
@@ -1509,7 +1505,7 @@ int CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landras
 	} else {
 		if (nDSlayer != maxNbOfLayer) {
 			BatchError("SpatialDemogFile", line, 0, "MaxNbOfLayer inconsistency");
-			batchLog << "*** Subsequent maximal number of layers not consistant" << endl;
+			batchLogOfs << "*** Subsequent maximal number of layers not consistant" << endl;
 			errors++;
 		}
 	}
@@ -1517,9 +1513,7 @@ int CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landras
 	// pushback the filenames into the global variable
 	allSpatialDemogFileNames.push_back(filenameList);
 
-
-	if (errors > 0) return -111;
-		else return errors; // number of lines successfully read
+	return errors == 0;
 }
 
 bool CheckSpLandFile(string inputDir, bool isInitial) {
@@ -1705,7 +1699,7 @@ bool CheckSpLandFile(string inputDir, bool isInitial) {
 
 int CheckDynamicFile(string inputDir) {
 
-	string header, inLandChgFile, inDynSpLand;
+	string header, inLandChgFile, inDynSpLand, inSpatDem;
 	int change, prevChg, year, prevYr = 0;
 	rasterdata landChgRaster;
 	int nbErrors = 0;
@@ -1811,19 +1805,19 @@ int CheckDynamicFile(string inputDir) {
 		}
 
 		// Check spatial demographics filename
-		ftype = "SpatialDemogFile";
-		bDynLandFile >> intext;
-		if (intext != "NULL") {
+		string strSptDemog = "SpatialDemogFile";
+		ifsDynLandFile >> inSpatDem;
+		if (inSpatDem != "NULL") {
 			if (!gHasSpatialDemography) {
-				BatchError(filetype, line, 0, " "); errors++;
-				batchLog << ftype << " must be NULL to match LandFile " << endl;
+				BatchError(whichFile, whichLine, 0, " "); nbErrors++;
+				batchLogOfs << strSptDemog << " must be NULL to match LandFile " << endl;
 			} else{
-				errors += CheckSpatialDemogFile(indir, intext, landraster);
+				nbErrors += CheckSpatialDemogFile(inputDir, inSpatDem, landRaster);
 			}
 		} else{
 			if (gHasSpatialDemography) {
-				BatchError(filetype, line, 0, " "); errors++;
-				batchLog << ftype << " must be supplied to match LandFile " << endl;
+				BatchError(whichFile, whichLine, 0, " "); nbErrors++;
+				batchLogOfs << strSptDemog << " must be supplied to match LandFile " << endl;
 			}
 		}
 
@@ -1866,6 +1860,7 @@ bool CheckStageFile(string indir)
 	const string strStageFile = "StageStructFile";
 	const string strTrMatrix = "TransMatrixFile";
 	bool layerset = false; //to check that at least one layer file is set if spatially varying demography is used
+	bool mustCheckFile, hasNoErrors;
 
 	// Parse header line;
 	ifsStageStructFile >> header; if (header != "Simulation") nbErrors++;
@@ -2037,42 +2032,43 @@ bool CheckStageFile(string indir)
 			wtsfiles.push_back(fecStgWtFile);
 		}
 
-		ftype2 = "FecLayerFile";
-		bStageStructFile >> filename;
-		if (filename != "NULL"){
+		const string strFecLay = "FecLayerFile";
+		string inFecLayerFile;
+		ifsStageStructFile >> inFecLayerFile;
+		if (inFecLayerFile != "NULL"){
 			if(!gHasSpatialDemography){
-				BatchError(filetype, line, 0, " ");
-				batchLog << ftype2 << " is not allowed when SpatialDemogFile is not used" << endl;
-				errors++;
+				BatchError(strStageFile, line, 0, " ");
+				batchLogOfs << strFecLay << " is not allowed when SpatialDemogFile is not used" << endl;
+				nbErrors++;
 			}
 			else {
-				checkfile = true;
+				mustCheckFile = true;
 				for (i = 0; i < (int)layerfiles.size(); i++) {
-					if (filename == layerfiles[i]) checkfile = false; // file has already been checked
+					if (inFecLayerFile == layerfiles[i]) mustCheckFile = false; // file has already been checked
 				}
-				if (checkfile){
-					fname = indir + filename;
-					batchLog << "Checking " << ftype2 << " " << fname << endl;
+				if (mustCheckFile){
+					fname = indir + inFecLayerFile;
+					batchLogOfs << "Checking " << strFecLay << " " << fname << endl;
 					bLayerFile.open(fname.c_str());
 					if (bLayerFile.is_open()) {
-						err = CheckLayerFile(ftype2);
-						if (err == 0) FileHeadersOK(ftype2); else errors++;
+						hasNoErrors = CheckLayerFile(strFecLay);
+						if (hasNoErrors) FileHeadersOK(strFecLay); else nbErrors++;
 						bLayerFile.close();
 					}
 					else {
-						OpenError(ftype2, fname); errors++;
+						OpenError(strFecLay, fname); nbErrors++;
 					}
 					if (bLayerFile.is_open()) bLayerFile.close();
 					bLayerFile.clear();
 				}
-				layerfiles.push_back(filename);
-				if (err == 0) layerset = true;
+				layerfiles.push_back(inFecLayerFile);
+				if (hasNoErrors) layerset = true;
 			}
 		} else{
 			if(gHasSpatialDemography){
-				BatchError(filetype, line, 0, " ");
-				batchLog << ftype2 << " is compulsory when SpatialDemogFile is used" << endl;
-				errors++;
+				BatchError(strStageFile, line, 0, " ");
+				batchLogOfs << strFecLay << " is compulsory when SpatialDemogFile is used" << endl;
+				nbErrors++;
 			}
 		}
 
@@ -2138,42 +2134,43 @@ bool CheckStageFile(string indir)
 			wtsfiles.push_back(inDevStgWtsFile);
 		}
 
-		ftype2 = "DevLayerFile";
-		bStageStructFile >> filename;
-		if (filename != "NULL"){
+		const string strDevLay = "DevLayerFile";
+		string inDevLayerFile;
+		ifsStageStructFile >> inDevLayerFile;
+		if (inDevLayerFile != "NULL"){
 			if(!gHasSpatialDemography){
-				BatchError(filetype, line, 0, " ");
-				batchLog << ftype2 << " is not allowed when SpatialDemogFile is not used" << endl;
-				errors++;
+				BatchError(strStageFile, line, 0, " ");
+				batchLogOfs << strDevLay << " is not allowed when SpatialDemogFile is not used" << endl;
+				nbErrors++;
 			}
 			else {
-				checkfile = true;
+				mustCheckFile = true;
 				for (i = 0; i < (int)layerfiles.size(); i++) {
-					if (filename == layerfiles[i]) checkfile = false; // file has already been checked
+					if (inDevLayerFile == layerfiles[i]) mustCheckFile = false; // file has already been checked
 				}
-				if (checkfile){
-					fname = indir + filename;
-					batchLog << "Checking " << ftype2 << " " << fname << endl;
+				if (mustCheckFile){
+					fname = indir + inDevLayerFile;
+					batchLogOfs << "Checking " << strDevLay << " " << fname << endl;
 					bLayerFile.open(fname.c_str());
 					if (bLayerFile.is_open()) {
-						err = CheckLayerFile(ftype2);
-						if (err == 0) FileHeadersOK(ftype2); else errors++;
+						hasNoErrors = CheckLayerFile(strDevLay);
+						if (hasNoErrors) FileHeadersOK(strDevLay); else nbErrors++;
 						bLayerFile.close();
 					}
 					else {
-						OpenError(ftype2, fname); errors++;
+						OpenError(strDevLay, fname); nbErrors++;
 					}
 					if (bLayerFile.is_open()) bLayerFile.close();
 					bLayerFile.clear();
 				}
-				layerfiles.push_back(filename);
-				if (err == 0) layerset = true;
+				layerfiles.push_back(inDevLayerFile);
+				if (hasNoErrors) layerset = true;
 			}
 		} else{
 			if(gHasSpatialDemography){
-				BatchError(filetype, line, 0, " ");
-				batchLog << ftype2 << " is compulsory when SpatialDemogFile is used" << endl;
-				errors++;
+				BatchError(strStageFile, line, 0, " ");
+				batchLogOfs << strDevLay << " is compulsory when SpatialDemogFile is used" << endl;
+				nbErrors++;
 			}
 		}
 
@@ -2239,51 +2236,51 @@ bool CheckStageFile(string indir)
 			wtsfiles.push_back(inSurvWtsFile);
 		}
 
-		ftype2 = "SurvLayerFile";
-		bStageStructFile >> filename;
-		if (filename != "NULL"){
+		const string strSurvLay = "SurvLayerFile";
+		string inSurvLayerFile;
+		ifsStageStructFile >> inSurvLayerFile;
+		if (inSurvLayerFile != "NULL"){
 			if(!gHasSpatialDemography){
-				BatchError(filetype, line, 0, " ");
-				batchLog << ftype2 << " is not allowed when SpatialDemogFile is not used" << endl;
-				errors++;
+				BatchError(strStageFile, line, 0, " ");
+				batchLogOfs << strSurvLay << " is not allowed when SpatialDemogFile is not used" << endl;
+				nbErrors++;
 			}
 			else {
-				checkfile = true;
+				mustCheckFile = true;
 				for (i = 0; i < (int)layerfiles.size(); i++) {
-					if (filename == layerfiles[i]) checkfile = false; // file has already been checked
+					if (inSurvLayerFile == layerfiles[i]) mustCheckFile = false; // file has already been checked
 				}
-				if (checkfile){
-					fname = indir + filename;
-					batchLog << "Checking " << ftype2 << " " << fname << endl;
+				if (mustCheckFile){
+					fname = indir + inSurvLayerFile;
+					batchLogOfs << "Checking " << strSurvLay << " " << fname << endl;
 					bLayerFile.open(fname.c_str());
 					if (bLayerFile.is_open()) {
-						err = CheckLayerFile(ftype2);
-						if (err == 0) FileHeadersOK(ftype2); else errors++;
+						hasNoErrors = CheckLayerFile(strSurvLay);
+						if (hasNoErrors) FileHeadersOK(strSurvLay); else nbErrors++;
 						bLayerFile.close();
 					}
 					else {
-						OpenError(ftype2, fname); errors++;
+						OpenError(strSurvLay, fname); nbErrors++;
 					}
 					if (bLayerFile.is_open()) bLayerFile.close();
 					bLayerFile.clear();
 				}
-				layerfiles.push_back(filename);
-				if (err == 0) layerset = true;
+				layerfiles.push_back(inSurvLayerFile);
+				if (hasNoErrors) layerset = true;
 			}
-		} else{
+		} else {
 			if(gHasSpatialDemography){
-				BatchError(filetype, line, 0, " ");
-				batchLog << ftype2 << " is compulsory when SpatialDemogFile is used" << endl;
-				errors++;
+				BatchError(strStageFile, line, 0, " ");
+				batchLogOfs << strSurvLay << " is compulsory when SpatialDemogFile is used" << endl;
+				nbErrors++;
 			}
 		}
 
 		if (layerset == false && gHasSpatialDemography){
-			BatchError(filetype, line, 0, " "); // need to check output message
-			batchLog << "At least one layer file must be specified when SpatialDemogFile is used" << endl;
-			errors++;
+			BatchError(strStageFile, line, 0, " "); // need to check output message
+			batchLogOfs << "At least one layer file must be specified when SpatialDemogFile is used" << endl;
+			nbErrors++;
 		}
-
 
 		// read next simulation
 		line++;
@@ -2496,8 +2493,7 @@ bool CheckWeightsFile(string filetype, int nbStages, int nbSexes)
 
 // Check layer file
 
-int CheckLayerFile(string filetype)
-{
+bool CheckLayerFile(string filetype) {
 	string header;
 	int layer, line=0;
 	int inint;
@@ -2518,14 +2514,14 @@ int CheckLayerFile(string filetype)
 	// 2.: sex: 0 or 1, but 1 only if the model is sexual
 	// 3.: layer: between 0 and nDSlayer
 
-	//expected number of rows: stage * sex
+	// expected number of rows: stage * sex
 	int expectedRowNb = stages * sexesDem;
 
 	while (line++ < expectedRowNb){
 		bLayerFile >> inint; // stage
 		if (inint < 0 || inint >= stages) {
 			BatchError(filetype, line, 0, "Stage"); errors++;
-			batchLog << "Stages must be between 0 and the maximal number of stages -1" << endl;
+			batchLogOfs << "Stages must be between 0 and the maximal number of stages -1" << endl;
 		}
 		bLayerFile >> inint; // sex
 		if (sexesDem == 2) {
@@ -2535,14 +2531,14 @@ int CheckLayerFile(string filetype)
 		} else {
 			if (inint != 0) {
 				BatchError(filetype, line, 0, "Sex"); errors++;
-				batchLog << "Sex must be 0" << endl;
+				batchLogOfs << "Sex must be 0" << endl;
 			}
 			}
 		bLayerFile >> inint; // layer
 		if(inint != -9){
 			if (inint < 0 || inint >= nDSlayer)  {
 				BatchError(filetype, line, 0, "Layer"); errors++;
-				batchLog << "LayerNb must be between 0 and the maximal number of layer-1" << endl;
+				batchLogOfs << "LayerNb must be between 0 and the maximal number of layer-1" << endl;
 			}
 		}
 
@@ -2555,7 +2551,7 @@ int CheckLayerFile(string filetype)
 		errors++;
 		}
 
-	return errors;
+	return errors == 0;
 }
 
 //---------------------------------------------------------------------------
@@ -5290,6 +5286,7 @@ bool CheckGeneticsFile(string inputDirectory) {
 
 //---------------------------------------------------------------------------
 bool CheckManageFile(string indir) {
+
 	// needed temporary variables
 	string header;
 	string ftype2 = "TranslocationFile";
@@ -5316,9 +5313,7 @@ bool CheckManageFile(string indir) {
 	bManageFile >> header; if (header != "TranslocationYears") nbErrors++;
 	bManageFile >> header; if (header != "CatchingRate") nbErrors++;
 
-
 	// Parse data lines
-
 	bManageFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
@@ -5332,20 +5327,17 @@ bool CheckManageFile(string indir) {
 			batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
 			nbErrors++;
 		}
-
 		// if simNb != previous simNb increase number of simulations
 		if (simNb != prevsimNb) {
 			nSimuls++;
 		}
 
 		// Parse parameters
-
 		bManageFile >> filename;
 		bManageFile >> yearstr;
 		bManageFile >> catchingRate;
 
 		// check translocation filename + file existence + correct format by calling CheckTranslocFile
-
 		if (filename == "NULL") {
 			batchLogOfs << "*** " << ftype2 << " is compulsory is you want to simulate translocation." << endl;
 			nbErrors++;
@@ -5440,7 +5432,6 @@ int CheckTranslocFile(){
 	bTranslocFile >> header; if (header != "Stage") errors++;
 	bTranslocFile >> header; if (header != "Sex") errors++;
 
-
 	// Parse data lines
 
 	bTranslocFile >> simNumber; // several lines can contain the same simulation number
@@ -5455,7 +5446,7 @@ int CheckTranslocFile(){
 			// check if simNb is in gSimNbs
 			if (!gSimNbs.contains(simNumber)) {
 				BatchError(file, line, 0, " ");
-				batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+				batchLogOfs << "Simulation number doesn't match those in ParametersFile" << endl;
 				errors++;
 			}
 
@@ -5486,7 +5477,7 @@ int CheckTranslocFile(){
 			}
 			if (Year < prevYear) {
 				BatchError(file, line, 0, " ");
-				batchLog << "Translocation years must be in ascending order." << endl;
+				batchLogOfs << "Translocation years must be in ascending order." << endl;
 				errors++;
 			}
 			// set prevYear to current year to assure that years appear in ascending order
@@ -5505,12 +5496,12 @@ int CheckTranslocFile(){
 					int patchID = std::stoi(match[1]);
 					if(patchID < 0) {
 						BatchError(file, line, 0, " ");
-							batchLog << "Source location must be a positive integer." << endl;
+							batchLogOfs << "Source location must be a positive integer." << endl;
 							errors++;
 }
 				} else {
 					BatchError(file, line, 0, " ");
-					batchLog << "Source must be a integer." << endl;
+					batchLogOfs << "Source must be a integer." << endl;
 					errors++;
 				}
 			} else {
@@ -5520,12 +5511,12 @@ int CheckTranslocFile(){
 				        int y = std::stoi(match[2]);
 				        if(x < 0 || y < 0) {
 				        	BatchError(file, line, 0, " ");
-				        	batchLog << "Source location must be positive integers." << endl;
+				        	batchLogOfs << "Source location must be positive integers." << endl;
 				        	errors++;
 				        }
 				    } else {
 						BatchError(file, line, 0, " ");
-						batchLog << "Source must be a semicolon-separated list of integers, representing the X,Y location of the source cell." << endl;
+						batchLogOfs << "Source must be a semicolon-separated list of integers, representing the X,Y location of the source cell." << endl;
 						errors++;
 				    }
 			}
@@ -5543,12 +5534,12 @@ int CheckTranslocFile(){
 					int patchID = std::stoi(match[1]);
 					if(patchID < 0) {
 						BatchError(file, line, 0, " ");
-							batchLog << "Source location must be a positive integer." << endl;
+							batchLogOfs << "Source location must be a positive integer." << endl;
 							errors++;
 					}
 				} else {
 					BatchError(file, line, 0, " ");
-					batchLog << "Source must be a integer." << endl;
+					batchLogOfs << "Source must be a integer." << endl;
 					errors++;
 				}
 			} else {
@@ -5558,12 +5549,12 @@ int CheckTranslocFile(){
 						int y = std::stoi(match[2]);
 						if(x < 0 || y < 0) {
 							BatchError(file, line, 0, " ");
-							batchLog << "Source location must be positive integers." << endl;
+							batchLogOfs << "Source location must be positive integers." << endl;
 							errors++;
 						}
 					} else {
 						BatchError(file, line, 0, " ");
-						batchLog << "Source must be a semicolon-separated list of integers, representing the X,Y location of the source cell." << endl;
+						batchLogOfs << "Source must be a semicolon-separated list of integers, representing the X,Y location of the source cell." << endl;
 						errors++;
 					}
 			}
@@ -5580,18 +5571,18 @@ int CheckTranslocFile(){
 			if(stagestruct) {
 				if (minAge < 0 && minAge != -9) {
 					BatchError(file, line, 0, "MinAge");
-					batchLog << "MinAge must be greater 0 or -9." << endl;
+					batchLogOfs << "MinAge must be greater 0 or -9." << endl;
 					errors++;
 				}
 //				if (minAge > maxAge) { // I need the maxAge of the species to check this
 //					BatchError(file, line, 0, " ");
-//					batchLog << "MinAge must be less than MaxAge." << endl;
+//					batchLogOfs << "MinAge must be less than MaxAge." << endl;
 //					errors++;
 //				}
 			} else {
 				if (minAge != -9) {
 					BatchError(file, line, 0, "MinAge");
-					batchLog << "MinAge must be -9 for non stage structured models." << endl;
+					batchLogOfs << "MinAge must be -9 for non stage structured models." << endl;
 					errors++;
 				}
 			}
@@ -5602,18 +5593,18 @@ int CheckTranslocFile(){
 			if(stagestruct) {
 				if (maxAge < 0 && maxAge != -9) {
 					BatchError(file, line, 0, "MaxAge");
-					batchLog << "MaxAge must be greater 0 or -9." << endl;
+					batchLogOfs << "MaxAge must be greater 0 or -9." << endl;
 					errors++;
 				}
 				if (maxAge > 0 && maxAge < minAge) {
 					BatchError(file, line, 0, " ");
-					batchLog << "MaxAge must be greater than MinAge." << endl;
+					batchLogOfs << "MaxAge must be greater than MinAge." << endl;
 					errors++;
 				}
 			} else {
 				if (maxAge != -9) {
 					BatchError(file, line, 0, "MaxAge");
-					batchLog << "MaxAge must be -9 for non stage structured models." << endl;
+					batchLogOfs << "MaxAge must be -9 for non stage structured models." << endl;
 					errors++;
 				}
 			}
@@ -5622,18 +5613,18 @@ int CheckTranslocFile(){
 			if(stagestruct) {
 				if (stage < 0 && stage != -9) {
 					BatchError(file, line, 0, "Stage");
-					batchLog << "Stage must be greater 0 or -9." << endl;
+					batchLogOfs << "Stage must be greater 0 or -9." << endl;
 					errors++;
 				} else if (stage > stages) {
 					BatchError(file, line, 0, " ");
-					batchLog << "Stage must be less than or equal to the number of stages simulated." << endl;
+					batchLogOfs << "Stage must be less than or equal to the number of stages simulated." << endl;
 					errors++;
 				}
 
 			} else {
 				if (stage != -9) {
 					BatchError(file, line, 0, "Stage");
-					batchLog << "Stage must be -9 for non stage structured models." << endl;
+					batchLogOfs << "Stage must be -9 for non stage structured models." << endl;
 					errors++;
 				}
 			}
@@ -5643,13 +5634,13 @@ int CheckTranslocFile(){
 			if (sexesDem == 2) {
 				if ( sex != -9 && sex != 0 && sex != 1 ) {
 					BatchError(file, line, 0, "Sex");
-					batchLog << "Stage must be -9, 0 or 1." << endl;
+					batchLogOfs << "Stage must be -9, 0 or 1." << endl;
 					errors++;
 				}
 			} else{
 				if ( sex != -9 ){
 					BatchError(file, line, 0, "Sex");
-					batchLog << "Sex must be -9 for asexual models." << endl;
+					batchLogOfs << "Sex must be -9 for asexual models." << endl;
 					errors++;
 				}
 			}
@@ -5737,7 +5728,7 @@ bool CheckInitFile(string indir)
 	prev.simLines = prev.reqdSimLines = 0;
 	ifsInitFile >> simNb;
 	
-	current.simNb = 0; //dummy line to prevent warning message in VisualStudio 2019
+	current.simNb = 0;
 	while (simNb != -98765) {
 
 		if (!gSpInputOpt.contains(simNb)) {

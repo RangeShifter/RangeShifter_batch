@@ -98,8 +98,8 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 bool CheckSimFile();
 bool CheckParameterFile();
 bool CheckLandFile(int landType, string inputDir);
-int CheckSpatialDemogFile(string, string, rasterdata);
-int CheckLayerFile(string);
+bool CheckSpatialDemogFile(string, string, rasterdata);
+bool CheckLayerFile(string);
 bool CheckManageFile(string);
 int CheckTranslocFile();
 bool CheckSpLandFile(string inputDir, bool isInitial);
