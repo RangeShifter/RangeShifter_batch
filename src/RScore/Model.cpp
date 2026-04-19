@@ -26,6 +26,7 @@
 
 ofstream outPar;
 using namespace std::chrono;
+
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #if RS_RCPP && !R_CMD
@@ -33,6 +34,7 @@ Rcpp::List RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies, 
 #else
 int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 #endif
+
 	int yr, totalInds;
 	bool filesOK;
 
@@ -102,14 +104,14 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 
 		filesOK = true;
 #if RS_RCPP
-		if(init.seedType==2 && init.indsFile=="NULL"){ // initialisation from InitInds list of dataframes
-			if(rep > 0){
+		if (init.seedType==2 && init.indsFile=="NULL"){ // initialisation from InitInds list of dataframes
+			if (rep > 0) {
 				int error_init = 0;
 				Rcpp::S4 InitParamsR("InitialisationParams");
 				InitParamsR = Rcpp::as<Rcpp::S4>(ParMaster.slot("init"));
 				Rcpp::List InitIndsList = Rcpp::as<Rcpp::List>(InitParamsR.slot("InitIndsList"));
 				error_init = ReadInitIndsFileR(0, pLandscape, Rcpp::as<Rcpp::DataFrame>(InitIndsList[rep]));
-				if(error_init>0) {
+				if (error_init>0) {
 					filesOK = false;
 				}
 			}
@@ -190,12 +192,13 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 				if (!geneOutFileHasOpened) throw logic_error("Output gene value file could not be initialised.");
 			}
 
-		// open a new genetics file for each replicate for per locus and pairwise stats
-		if (pSpecies->doesOutputPerLocusFst()) {
-			pComm->openPerLocusFstFile(pSpecies, pLandscape, ppLand.landNum, rep);
-		}
-		if (pSpecies->doesOutputPairwiseFst()) {
-			pComm->openPairwiseFstFile(pSpecies, pLandscape, ppLand.landNum, rep);
+			// open a new genetics file for each replicate for per locus and pairwise stats
+			if (pSpecies->doesOutputPerLocusFst()) {
+				pComm->openPerLocusFstFile(pSpecies, pLandscape, ppLand.landNum, rep);
+			}
+			if (pSpecies->doesOutputPairwiseFst()) {
+				pComm->openPairwiseFstFile(pSpecies, pLandscape, ppLand.landNum, rep);
+			}
 		}
 		
 #if RS_RCPP
@@ -338,11 +341,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 				// Pause species which last season has been exceeded
 				pComm->disableInactiveSpecies(gen);
 
-			for (int gen = 0; gen < dem.repSeasons; gen++) // generation loop
-			{
-				// TODO move translocation before dispersal?
-				if (manage.translocation && std::find(transloc.translocation_years.begin(), transloc.translocation_years.end(), yr) != transloc.translocation_years.end()) {
-				    pManagement->translocate(yr, pLandscape, pSpecies);
+				if (manage.isTranslocationYear(yr)) {
+				    pManagement->translocate(yr, pLandscape, simSpecies, pComm);
 				}
 
 				// Output and pop. visualisation before reproduction
@@ -352,10 +352,11 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 				if (!sim.usesStageStruct) pComm->popAndRangeOutput(rep, yr, gen);
 
 #if RS_RCPP && !R_CMD
-				if ((sim.ReturnPopMatrix || sim.ReturnPopDataFrame)  && sim.outPop && yr >= sim.outStartPop && yr % sim.outIntPop == 0) {
+				if ((sim.ReturnPopMatrix || sim.ReturnPopDataFrame) && 
+					sim.outPop && yr >= sim.outStartPop && 
+					yr % sim.outIntPop == 0) {
 
-				    // if ReturnPopMatrix
-				    if(sim.ReturnPopMatrix) {
+				    if (sim.ReturnPopMatrix) {
 				        // total abundance
     				    list_outPop.push_back(
     				        pComm->addYearToPopList(rep, yr, PopOutType::NInd, -1),
@@ -376,11 +377,8 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
         				            );
         				        }
         				    }
-    //
-    //
     				        ReturnStage = sim.ReturnStages[0] == 1;
         				    if (ReturnStage) {
-        				        //Rcpp::Rcout << "Return Juveniles" << endl;
         				        list_outPop.push_back(
         				            pComm->addYearToPopList(rep, yr, PopOutType::Juvs, -1),
         				            "rep" + std::to_string(rep) + "_year" + std::to_string(yr) + "_NJuv"
@@ -389,7 +387,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
     				    }
 				    }
 
-				    if(sim.ReturnPopDataFrame){
+				    if (sim.ReturnPopDataFrame){
 				        // in contrast to ReturnMatrix, this function produces a list of data frames, one per rep and year, holding all (stage-specific) abundances for all patches,
 				        // instead of a single matrix for each population size metric (total abundance, stage-specific abundance, juvenile abundance) and each year and replicate
 				        list_outPop.push_back(
@@ -397,8 +395,6 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 				            "rep" + std::to_string(rep) + "_year" + std::to_string(yr)
 				        );
 				    }
-
-					// list_outPop.push_back(pComm->addYearToPopList(rep, yr), "rep" + std::to_string(rep) + "_year" + std::to_string(yr));
 				}
 #endif
 				if (gen == 0 && !ppLand.usesPatches) {
@@ -465,6 +461,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 						pLandscape->outConnect(sp, rep, yr);
 				}
 			}
+
 		} // end of the years loop
 
 		// Final summary output
@@ -563,8 +560,7 @@ bool is_directory(const char* pathname) {
 #endif
 
 //---------------------------------------------------------------------------
-bool CheckDirectory(const string& pathToProjDir)
-{
+bool CheckDirectory(const string& pathToProjDir) {
 	bool errorfolder = false;
 
 	string subfolder;
@@ -1567,7 +1563,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 	// Management
 	managementParams manage = pManagement->getManagementParams();
 	translocationParams transloc = pManagement->getTranslocationParams();
-	if(manage.translocation){
+	if (manage.usesTranslocation){
 	    outPar << endl << "MANAGEMENT - TRANSLOCATION: \t";
         // loop over translocation_years and print them
         outPar << endl;

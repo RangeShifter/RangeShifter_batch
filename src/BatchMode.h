@@ -54,6 +54,7 @@ using namespace std;
 #include "./RScore/Model.h"
 #include "./RScore/SpeciesTrait.h"
 #include "./RScore/NeutralTrait.h"
+#include "./RScore/Management.h"
 
 // Global variables to check parameter
 // consistency across input files
@@ -217,8 +218,8 @@ int ReadDemogLayers(int);
 
 int ReadGeneticsFile(speciesMap_t& simSpecies, ifstream& ifs);
 int ReadTraitsFile(speciesMap_t& simSpecies, ifstream& ifs, const int& whichSim);
-int ReadTranslocationFile(Landscape* pLandscape, int sim);
-int ReadManagementFile();
+int ReadTranslocationFile(Landscape* pLandscape, int sim, const speciesMap_t& allSpecies);
+int ReadManageFile(Landscape* pLandscape, const speciesMap_t& allSpecies);
 
 // Helper functions to ReadGenetics and ReadTraits
 void setUpSpeciesTrait(Species* pSpecies, vector<string>);

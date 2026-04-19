@@ -314,6 +314,10 @@ void Community::disableInactiveSpecies(int gen) {
 	}
 }
 
+void Community::addNewPopTransloc(Population* pPop) {
+	allPopns.at(sp).push_back(pPop); // add new population to community list
+}
+
 void Community::applyRandLocExt() {
 	for (auto& sp : activeSpecies) {
 		const float probExt = speciesMap.at(sp)->getLocalExtProb();

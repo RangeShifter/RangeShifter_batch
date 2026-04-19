@@ -88,6 +88,8 @@ public:
 	void resetActiveSpecies();
 	void disableInactiveSpecies(int gen);
 
+	void addNewPopTransloc(Population* pPop); // add a new population following translocation in empty location
+
 	Species* findSpecies(species_id id);
 	void initialInd(
 		Landscape* pLandscape, 

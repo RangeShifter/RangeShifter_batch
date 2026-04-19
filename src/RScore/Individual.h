@@ -77,7 +77,8 @@ enum indStatus {
 	diedInTrfrMort,		// 7 = died during transfer by constant, step-dependent,
 						//		habitat-dependent or distance-dependent mortality
 	diedDemogrMort,		// 8 = failed to survive annual (demographic) mortality
-	diedOldAge			// 9 = exceeded maximum age
+	diedOldAge,			// 9 = exceeded maximum age
+	translocated		// 10 = has been translocated
 };
 
 bool isAlive(indStatus s);

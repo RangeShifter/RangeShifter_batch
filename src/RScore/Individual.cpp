@@ -124,6 +124,7 @@ string to_string(indStatus s) {
 	case diedInTrfrMort: return "diedInTrfrMort";
 	case diedDemogrMort: return "diedDemogrMort";
 	case diedOldAge: return "diedOldAge";
+	case translocated: return "translocated";
 	default: return "";
 	}
 }

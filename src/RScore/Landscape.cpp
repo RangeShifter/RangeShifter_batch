@@ -1038,13 +1038,11 @@ void Landscape::updateDemoScalings(short landIx) {
 
 Cell* Landscape::findCell(int x, int y) {
 	if (x >= 0 && x < dimX && y >= 0 && y < dimY) return cells[y][x];
-	else return 0;
+	else return nullptr;
 }
 
-bool Landscape::checkDataCell(int x, int y) {
-    Cell* pCell;
-    pCell = findCell(x, y);
-    return true;
+bool Landscape::cellExists(int x, int y) {
+    return findCell(x, y) != nullptr;
 }
 
 int Landscape::getPatchCount(species_id id) const {

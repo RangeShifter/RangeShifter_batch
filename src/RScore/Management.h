@@ -18,7 +18,8 @@
  *	along with RangeShifter. If not, see <https://www.gnu.org/licenses/>.
  *
  * File Created by Jette Wolff
- --------------------------------------------------------------------------*/
+ --------------------------------------------------------------------------
+ */
 
 
 /*------------------------------------------------------------------------------
@@ -33,8 +34,8 @@
 
  Last updated: 12 March 2024 by Jette Reeg
 
- ------------------------------------------------------------------------------*/
-
+ ------------------------------------------------------------------------------
+ */
 
 #ifndef ManagementH
 #define ManagementH
@@ -54,10 +55,8 @@ using namespace std;
 #include "Species.h"
 #include "Cell.h"
 #include "Landscape.h"
-
-#include "SubCommunity.h"
 #include "Population.h"
-
+#include "Community.h"
 
 #if RS_RCPP
 typedef intptr_t intptr;
@@ -65,23 +64,22 @@ typedef intptr_t intptr;
 typedef unsigned long long intptr;
 #endif // RS_RCPP
 
-
-
 //---------------------------------------------------------------------------
 
 /*
  * Management settings
- */
+*/
 
 // Structure for management parameters
 struct managementParams {
-    bool translocation; // Translocation
+    bool usesTranslocation; // Translocation
 };
 
 // Structure for translocation parameters
 struct translocationParams {
     double catching_rate; // Catching rate
     std::vector<int> translocation_years; // Number of years of translocation -> will be increased at the beginning of a simulation
+    std::map< int, species_id> species; // Which one species is being translocated
     std::map< int, std::vector <locn> > source; // Source patch or cell: should be a vector of arrays
     std::map< int, std::vector <locn> > target; // Target patch or cell
     std::map< int, std::vector <int> > nb; // number of ttanslocated individuals
@@ -91,33 +89,36 @@ struct translocationParams {
     std::map< int, std::vector <int> > sex; // Sex of translocated individuals
 };
 
-
 //---------------------------------------------------------------------------
 
-class Management{
+class Management {
 public:
-    Management(void);
-    ~Management(void);
+    Management();
+    ~Management();
     void setManagementParams( // function to set management parameters
-            const managementParams	// structure holding general management parameters
+       const managementParams	// structure holding general management parameters
     );
-    managementParams getManagementParams(void); // get management parameters
+    managementParams getManagementParams(); // get management parameters
     void setTranslocationParams( // function to set translocation parameters
             const translocationParams	// structure holding translocation parameters
     );
-    translocationParams getTranslocationParams(void);
+    translocationParams getTranslocationParams();
     void translocate(   // Translocation
-            int  ,       // year of translocation
-            Landscape* , // pointer to the landscape
-            // Community*, // pointer to the community
-            Species*   // pointer to the species
+            int year,       // year of translocation
+            Landscape* pLandscape, // pointer to the landscape
+            const speciesMap_t& allSpecies,
+            Community* pComm
             );
+    bool isTranslocationYear(const int yr) {
+        return (this->usesTranslocation &&
+            std::find(translocation_years.begin(), translocation_years.end(), yr) != translocation_years.end());
+    }
 
-    //
-    bool translocation; // Translocation
+    bool usesTranslocation; // Translocation
     double catching_rate; // Catching rate
     bool non_dispersed; // whether non-dispersed individuals should be translocated
     std::vector<int> translocation_years; // Number of years of translocation -> should be a dynamic vector
+    std::map< int, species_id > species; // Which one species is being translocated
     std::map< int, std::vector <locn> > source; // Source patch or cell: should be a vector of arrays
     std::map< int, std::vector <locn> > target; // Target patch or cell
     std::map< int, std::vector <int> > nb; // number of ttanslocated individuals
@@ -125,7 +126,6 @@ public:
     std::map< int, std::vector <int> > max_age; // Maximum age of translocated individuals
     std::map< int, std::vector <int> > stage; // Stage of translocated individuals
     std::map< int, std::vector <int> > sex; // Sex of translocated individuals
-
 };
 
 //---------------------------------------------------------------------------
@@ -133,4 +133,4 @@ public:
 extern paramSim *paramsSim;
 
 //---------------------------------------------------------------------------
-#endif
+#endif // MANAGEMENTH

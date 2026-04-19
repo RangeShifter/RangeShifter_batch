@@ -246,6 +246,7 @@ public:
 	void resetPatchPopns();
 	void updateCarryingCapacity(Species* pSpecies, int year, short landIx);
 	Cell* findCell(int x, int y);
+	bool cellExists(int x, int y);
 	int getPatchCount(species_id id) const;
 	int allPatchCount() const;
 	void updateHabitatIndices();
