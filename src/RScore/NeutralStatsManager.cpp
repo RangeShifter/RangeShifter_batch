@@ -267,7 +267,7 @@ void NeutralStatsManager::calculatePerLocusHo(set<int> const& patchList, const i
 // ----------------------------------------------------------------------------------------
 // Fstat Weir & Cockerham
 // ----------------------------------------------------------------------------------------
-void NeutralStatsManager::calculateFstatWC(set<int> const& patchList, const int nbSampledIndsInComm, const int nLoci, const int nAlleles, 
+void NeutralStatsManager::calculateGlobalFst(set<int> const& patchList, const int nbSampledIndsInComm, const int nLoci, const int nAlleles, 
 	Species* pSpecies, Landscape* pLandscape, bool isPairwise) {
 
 	double inverseNtotal;
@@ -276,7 +276,6 @@ void NeutralStatsManager::calculateFstatWC(set<int> const& patchList, const int 
 	unsigned int nbPops = 0;
 	const int totalSampleSize = nbSampledIndsInComm; // r * n_bar
 	const double ploidy = pSpecies->isDiploid() ? 2.0 : 1.0;
-
 
 	// Reset per-locus vectors between generations
 	perLocusFst = perLocusFis = perLocusFit = vector<double>(nLoci, 0.0);
@@ -332,11 +331,11 @@ void NeutralStatsManager::calculateFstatWC(set<int> const& patchList, const int 
 				//else calculate total frequencies just in pair of patches for pairwise 
 				else {
 					for (int patchId : patchList) {
-						const auto patch = pLandscape->findPatch(patchId);
-						const auto pPop = patch->getPopn(pSpecies);
+						const auto pPatch = pLandscape->findPatch(pSpecies->getID(), patchId);
+						const auto pPop = pPatch->getPop();
 						double patchLocusAlleleTally = pPop->getAlleleTally(l, u);
 						pairwiseAlleleCount += patchLocusAlleleTally;
-						}
+					}
 					const double denomAlleleCount = totalSampleSize * ploidy;
 					pBar = pairwiseAlleleCount / denomAlleleCount;
 
@@ -438,7 +437,7 @@ void NeutralStatsManager::calculatePairwiseFst(set<int> const& patchList, const 
 			int nbSampledIndsInPair = pPopA->sampleSize() + pPopB->sampleSize();
 
 			//NB this overwrites global fst variable so be careful!!
-			calculateFstatWC(pairofPatchesList, nbSampledIndsInPair,
+			calculateGlobalFst(pairofPatchesList, nbSampledIndsInPair,
 				 nLoci, nAlleles,pSpecies, pLandscape, true);
 
 			pairwiseFstMatrix.set(i, j, fst);
@@ -447,145 +446,3 @@ void NeutralStatsManager::calculatePairwiseFst(set<int> const& patchList, const 
 	}
 	
 }
-
-
-
-// ----------------------------------------------------------------------------------------
-// Patch pairwise Fst 
-// Computes the weighted within and between patch Fst's as well as the overall Fst (Theta).
-// The method used here is that of Weir & Hill 2002, Ann.Rev.Genet. 36:721 - 750.
-// The weighting is done for samples(patches) of unequal sizes.
-// ----------------------------------------------------------------------------------------
-//void NeutralStatsManager::calcPairwiseWeightedFst(set<int> const& patchList, const int nInds, const int nLoci, Species* pSpecies, Landscape* pLandscape) {
-//
-//	const int nAlleles = (int)pSpecies->getSpTrait(NEUTRAL)->getNbNeutralAlleles();
-//
-//	// Needs to be in vector to iterate over, copy preserves order
-//	vector<int> patchVect;
-//	copy(patchList.begin(), patchList.end(), std::back_inserter(patchVect));
-//
-//	int nPatches = static_cast<int>(patchList.size());
-//	int nbPops = 0;
-//
-//	// Initialise 
-//	pairwiseFstMatrix = PatchMatrix(nPatches, nPatches);
-//
-//	// Reset table
-//	pairwiseFstMatrix.setAll(0.0); // or nanf("NULL")?
-//
-//	//init
-//	vector<double> popWeights(nPatches);
-//	vector<double> popSizes(nPatches);
-//	vector<vector<double>> numeratorPairwiseFst(nPatches);
-//	for (int i = 0; i < nPatches; i++) numeratorPairwiseFst[i].resize(nPatches);
-//	double totSize;
-//	double numeratorWeightedFst = 0;
-//	double denominator = 0;
-//	double sumWeights = 0;
-//
-//	totalNbSampledInds = nInds;
-//	totSize = nInds;
-//
-//	// Calculate weight (n_ic) terms
-//	for (int i = 0; i < nPatches; ++i) {
-//		const auto patch = pLandscape->findPatch(patchVect[i]);
-//		const auto pPop = patch->getPopn(pSpecies);
-//		if (pPop != 0) {
-//			popSizes[i] = pPop->sampleSize();
-//		} // else popSizes[i] remain default init value 0, safe
-//		popWeights[i] = popSizes[i] - (popSizes[i] * popSizes[i] / totSize); // n_ic in Weir & Hill 2002
-//		sumWeights += popWeights[i];
-//		if (popSizes[i] > 0) nbPops++;
-//
-//		// Fill the pairwise Fst matrix with default value 0
-//		for (int j = 0; j < nPatches; j++)
-//			numeratorPairwiseFst[i][j] = 0;
-//	}
-//
-//	nbExtantPops = nbPops;
-//
-//	if (nbPops > 1) {
-//		// Calculate Fst numerators and denominators
-//		double p, pq, pBar, sqDist, num;
-//		for (int i = 0; i < nPatches; ++i) {
-//			if (popSizes[i] == 0) continue;
-//			const auto patch = pLandscape->findPatch(patchVect[i]);
-//			const auto pPop = patch->getPopn(pSpecies);
-//
-//			for (int l = 0; l < nLoci; ++l) {
-//				for (int u = 0; u < nAlleles; ++u) {
-//					p = pPop->getAlleleFrequency(l, u); //p_liu
-//					pq = p * (1 - p);
-//					pBar = commNeutralCountTables[l].getFrequency(u);
-//					sqDist = p - pBar; //(p_liu - pbar_u)^2 
-//					sqDist *= sqDist;
-//					
-//					num = pq * popSizes[i] ; // eq. 8 Weir & Hill 2002
-//					num /= popSizes[i] == 1 ? 1 : popSizes[i] - 1; // avoid division by zero
-//					numeratorPairwiseFst[i][i] += num;
-//					numeratorWeightedFst += num * popSizes[i]; // see equ. 9, Weir & Hill 2002
-//					denominator += popSizes[i] * sqDist + popWeights[i] * pq; //common denominator
-//
-//				} // end for allele
-//			} // end for locus
-//		} // end for pop
-//
-//		// Diagonals
-//		double pairwiseFst;
-//		for (int i = 0; i < nPatches; ++i) {
-//			if (popSizes[i] == 0) continue;
-//			else if (denominator != 0)
-//			{
-//				pairwiseFst = 1 - (numeratorPairwiseFst[i][i] * sumWeights / denominator);
-//				pairwiseFstMatrix.set(i, i, pairwiseFst);
-//			}
-//			// else remain 0
-//		}
-//
-//		// Add allele frequencies to numerators
-//		double pi, pj;
-//		for (int l = 0; l < nLoci; ++l)
-//			for (int u = 0; u < nAlleles; ++u)
-//				for (int i = 0; i < nPatches - 1; ++i) { // nPatches-1 bc bottom row not filled
-//					if (popSizes[i] == 0) continue;
-//					const auto patch = pLandscape->findPatch(patchVect[i]);
-//					const auto pPopI = patch->getPopn(pSpecies);
-//
-//					for (int j = i + 1; j < nPatches; ++j) { // fill only upper half of matrix
-//						if (popSizes[j] == 0) continue;
-//						const auto patch = pLandscape->findPatch(patchVect[j]);
-//						const auto pPopJ = patch->getPopn(pSpecies);
-//
-//						pi = pPopI->getAlleleFrequency(l, u);
-//						pj = pPopJ->getAlleleFrequency(l, u);
-//						numeratorPairwiseFst[i][j] += pi * (1 - pj) + pj * (1 - pi); // equ. 7 of Weir & Hill 2002
-//					}
-//				}
-//
-//		// Final estimates of pairwise Fst (beta_ii' in eq. 7 in WC 2002)
-//		for (int i = 0; i < nPatches - 1; ++i) {
-//			if (popSizes[i] == 0) continue; // Fst for this pair remains NULL
-//			for (int j = i + 1; j < nPatches; ++j) {
-//				if (popSizes[j] == 0) continue;
-//				else if (denominator != 0) {
-//					pairwiseFst = 1 - (numeratorPairwiseFst[i][j] * sumWeights) / (2 * denominator);
-//					pairwiseFstMatrix.set(i, j, pairwiseFst);
-//				}
-//				// else remain 0
-//			}
-//		}
-//
-//		// Estimator of global Fst weighted by sample sizes (beta_W in eq. 9 in WH 2002)
-//		if (denominator != 0) {
-//   			weightedFst = 1 - (numeratorWeightedFst * sumWeights) / (denominator * totSize); // beta_w in Eq. 9 in WH 2002
-//		}
-//		else {
-//			weightedFst = 0.0;
-//		}
-//	}
-//	else { // zero or one pop, cannot calculate Fst
-//		// pairwiseFstMatrix keeps default values (0)
-//		weightedFst = 0.0;
-//	}
-//}
-

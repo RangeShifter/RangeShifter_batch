@@ -127,7 +127,7 @@ public:
 	
 	
 	// F-stats calculations
-	void calculateFstatWC(set<int> const& patchList, const int nbSampledIndsInComm, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape, bool isPairwise);
+	void calculateGlobalFst(set<int> const& patchList, const int nbSampledIndsInComm, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape, bool isPairwise);
 
 	void calculatePairwiseFst(set<int> const& patchList, const int nLoci, const int nAlleles, Species* pSpecies, Landscape* pLandscape);
 
