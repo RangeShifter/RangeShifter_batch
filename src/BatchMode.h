@@ -214,10 +214,10 @@ int ReadInitIndsFile(
 	const landParams& paramsLand,
 	string indsfile
 );
-int ReadDemogLayers(int);
+int ReadDemogLayers(int option, species_id sp, speciesMap_t& simSpecies);
 
 int ReadGeneticsFile(speciesMap_t& simSpecies, ifstream& ifs);
-int ReadTraitsFile(speciesMap_t& simSpecies, ifstream& ifs, const int& whichSim);
+int ReadTraitsFile(speciesMap_t& simSpecies, ifstream& ifs, const map<species_id, spInputOptions>& simOptionsMap);
 int ReadTranslocationFile(Landscape* pLandscape, int sim, const speciesMap_t& allSpecies);
 int ReadManageFile(Landscape* pLandscape, const speciesMap_t& allSpecies);
 

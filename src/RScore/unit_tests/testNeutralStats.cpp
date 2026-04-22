@@ -243,7 +243,7 @@ void testNeutralStats() {
 				patchList
 			);
 			const int maxNbNeutralAlleles = 0;
-			pNeutralStatistics->calculateFstatWC(
+			pNeutralStatistics->calculateGlobalFst(
 				patchList,
 				0,
 				nbLoci,
@@ -319,7 +319,7 @@ void testNeutralStats() {
 				patchList
 			);
 			const int maxNbNeutralAlleles = static_cast<int>(maxAlleleVal) + 1;
-			pNeutralStatistics->calculateFstatWC(
+			pNeutralStatistics->calculateGlobalFst(
 				patchList,
 				nbIndsPerPop * patchList.size(),
 				nbLoci,
@@ -390,7 +390,7 @@ void testNeutralStats() {
 				patchList
 			);
 			const int maxNbNeutralAlleles = static_cast<int>(maxAlleleVal) + 1;
-			pNeutralStatistics->calculateFstatWC(
+			pNeutralStatistics->calculateGlobalFst(
 				patchList,
 				nbIndsPerPop * patchList.size(),
 				nbLoci,
@@ -473,7 +473,7 @@ void testNeutralStats() {
 			patchList
 		);
 		const int maxNbNeutralAlleles = static_cast<int>(maxAlleleVal) + 1;
-		pNeutralStatistics->calculateFstatWC(
+		pNeutralStatistics->calculateGlobalFst(
 			patchList,
 			nbIndsPerPop * patchList.size(),
 			nbLoci,
@@ -576,7 +576,7 @@ void testNeutralStats() {
 				patchList
 			);
 			const int maxNbNeutralAlleles = static_cast<int>(maxAlleleVal) + 1;
-			pNeutralStatistics->calculateFstatWC(
+			pNeutralStatistics->calculateGlobalFst(
 				patchList,
 				nbIndsPerPop * patchList.size(),
 				nbLoci,
@@ -681,7 +681,7 @@ void testNeutralStats() {
 				patchList
 			);
 			const int maxNbNeutralAlleles = static_cast<int>(maxAlleleVal) + 1;
-			pNeutralStatistics->calculateFstatWC(
+			pNeutralStatistics->calculateGlobalFst(
 				patchList,
 				nbIndsPerPop* patchList.size(),
 				nbLoci,
@@ -779,7 +779,7 @@ void testNeutralStats() {
 			patchList
 		);
 		const int maxNbNeutralAlleles = static_cast<int>(maxAlleleVal) + 1;
-		pNeutralStatistics->calculateFstatWC(
+		pNeutralStatistics->calculateGlobalFst(
 			patchList,
 			nbIndsPerPop* patchList.size(),
 			nbLoci,
@@ -892,7 +892,7 @@ void testNeutralStats() {
 			patchList
 		);
 		const int maxNbNeutralAlleles = static_cast<int>(maxAlleleVal) + 1;
-		pNeutralStatistics->calculateFstatWC(
+		pNeutralStatistics->calculateGlobalFst(
 			patchList,
 			nbIndsPerPop * patchList.size(),
 			nbLoci,
@@ -982,7 +982,7 @@ void testNeutralStats() {
 			patchList
 		);
 		const int maxNbNeutralAlleles = static_cast<int>(maxAlleleVal) + 1;
-		pNeutralStatistics->calculateFstatWC(
+		pNeutralStatistics->calculateGlobalFst(
 			patchList,
 			nbIndsPerPop * patchList.size(),
 			nbLoci,
@@ -1070,7 +1070,7 @@ void testNeutralStats() {
 			patchList
 		);
 		const int maxNbNeutralAlleles = static_cast<int>(maxAlleleVal) + 1;
-		pNeutralStatistics->calculateFstatWC(
+		pNeutralStatistics->calculateGlobalFst(
 			patchList,
 			nbIndsPerPop * patchList.size(),
 			nbLoci,

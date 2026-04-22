@@ -263,7 +263,7 @@ void Management::translocate(int yr, Landscape* pLandscape, const speciesMap_t& 
 #endif
                         // create a new population in the corresponding sub-community
                         t_pPop = new Population(allSpecies.at(sp), t_patch, 0, ppLand.resol);
-                        pComm->addNewPopTransloc(t_pPop);
+                        pComm->addNewPopTransloc(sp, t_pPop);
                     }
                     catched_individual->setStatus(indStatus::translocated); // make sure individual is not dispersing after the translocation
                     t_pPop->recruit(catched_individual); // recruit individual to target population TODO:  maybe use a specified function which also updates pCurrCell + pPrevCell to a random cell in target patch?

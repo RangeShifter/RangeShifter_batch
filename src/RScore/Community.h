@@ -88,14 +88,14 @@ public:
 	void resetActiveSpecies();
 	void disableInactiveSpecies(int gen);
 
-	void addNewPopTransloc(Population* pPop); // add a new population following translocation in empty location
+	void addNewPopTransloc(species_id sp, Population* pPop); // add a new population following translocation in empty location
 
 	Species* findSpecies(species_id id);
 	void initialInd(
-		Landscape* pLandscape, 
-		Species* pSpecies, 
-		Patch* pPatch, 
-		Cell* pCell, 
+		Landscape* pLandscape,
+		Species* pSpecies,
+		Patch* pPatch,
+		Cell* pCell,
 		int ix
 	);
 	void applyLocalExtGrad();
@@ -151,8 +151,8 @@ public:
 	void closeOutIndsOfs(species_id sp);
 
 	// Write records to individuals file
-	void outInds(species_id sp, int rep, int year,	int gen);
-	
+	void outInds(species_id sp, int rep, int year, int gen);
+
 	// Write records to traits file
 	void outTraits(species_id sp, int rep, int year, int gen);
 	bool outTraitsHeaders(species_id sp, Landscape* pLandscape, int landnb);
@@ -163,17 +163,17 @@ public:
 	// Write records to trait rows file
 	void writeTraitsRows(
 		species_id sp,
-		int rep, 
+		int rep,
 		int year,
-		int gen, 
-		int row, 
+		int gen,
+		int row,
 		traitsums ts
 	);
 	bool closeTraitRows(species_id sp);
 
 #if RS_RCPP && !R_CMD
-    Rcpp::IntegerMatrix addYearToPopList(int rep, int yr, PopOutType, int);
-    Rcpp::IntegerMatrix addYearToPopListPatchBased(int rep, int yr, Rcpp::LogicalVector);
+	Rcpp::IntegerMatrix addYearToPopList(int rep, int yr, PopOutType, int);
+	Rcpp::IntegerMatrix addYearToPopListPatchBased(int rep, int yr, Rcpp::LogicalVector);
 #endif
 
 	// sample individuals for genetics (or could be used for anything)
@@ -197,12 +197,13 @@ public:
 	bool openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, const int landNr, const int rep);
 	void writePairwiseFstFile(Species* pSpecies, const int yr, const int gen, set<int> const& patchList);
 	bool closePairwiseFstFile(species_id sp);
-
-	//file writers
-	speciesMap_t speciesMap;
-	Landscape* pLandscape;
+	float getPatchHet(Species* pSpecies, int patchId, int whichLocus) const;
 
 private:
+	speciesMap_t speciesMap;
+	Landscape* pLandscape;
+	int indIx;
+
 	map<species_id, vector<vector<int>>> occupancyMaps;	// track which suitable cells / patches are occupied
 
 	map<int, Population*> matrixPops;
@@ -211,8 +212,6 @@ private:
 	map<species_id, unique_ptr<NeutralStatsManager>> neutralStatsMaps;
 
 	set<species_id> activeSpecies;
-	float** occSuit;	// occupancy of suitable cells / patches
-	std::vector <SubCommunity*> subComms;
 
 	map<species_id, ofstream> outPopOfs;
 	map<species_id, ofstream> outIndsOfs;
@@ -222,11 +221,11 @@ private:
 	map<species_id, ofstream> outTraitsRows;
 	map<species_id, ofstream> ofsGenes;
 	map<species_id, ofstream> outPairwiseFstOfs;
-	map<species_id, ofstream> outWCFstatOfs;
+	map<species_id, ofstream> outGlobalFstOfs;
 	map<species_id, ofstream> outPerLocusFstat;
-extern paramSim* paramsSim;
-extern paramInit* paramsInit;
+};
 
+extern paramSim* paramsSim;
 
 //---------------------------------------------------------------------------
 #endif

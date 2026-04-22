@@ -60,9 +60,9 @@ Community::Community(Landscape* pLand, speciesMap_t allSpecies) {
 		if (pSpecies->doesOutputPop()) outPopOfs.emplace(sp, ofstream());
 		if (pSpecies->doesOutputRange()) outRangeOfs.emplace(sp, ofstream());
 		if (pSpecies->doesOutputGeneValues()) ofsGenes.emplace(sp, ofstream());
-		if (pSpecies->doesOutputWeirHill()) outPairwiseFstOfs.emplace(sp, ofstream());
-		if (pSpecies->doesOutputWeirCockerham()) {
-			outWCFstatOfs.emplace(sp, ofstream());
+		if (pSpecies->doesOutputPairwiseFst()) outPairwiseFstOfs.emplace(sp, ofstream());
+		if (pSpecies->doesOutputGlobalFst()) {
+			outGlobalFstOfs.emplace(sp, ofstream());
 			outPerLocusFstat.emplace(sp, ofstream());
 		}
 		if (pSpecies->doesOutputOccup()) {
@@ -314,7 +314,7 @@ void Community::disableInactiveSpecies(int gen) {
 	}
 }
 
-void Community::addNewPopTransloc(Population* pPop) {
+void Community::addNewPopTransloc(species_id sp, Population* pPop) {
 	allPopns.at(sp).push_back(pPop); // add new population to community list
 }
 
@@ -867,14 +867,14 @@ void Community::indsAndGeneticsOutput(int rep, int yr, int gen) {
 				// then must re-sample patches every year
 				pLandscape->samplePatches(pSpecies);
 
-			sampleIndividuals(pSpecies);
+			sampleIndividuals(sp);
 
 			if (doGenes) {
-				pComm->outputGeneValues(yr, gen, pSpecies);
+				this->outputGeneValues(sp, yr, gen);
 			}
 
 			if (doGlobalFst || doPairwiseFst) {
-				pComm->calculateNeutralGenetics(pSpecies, rep, yr, gen);
+				this->calculateNeutralGenetics(sp, rep, yr, gen);
 			}
 		} // if doGenes
 
@@ -2163,9 +2163,9 @@ void Community::sampleIndividuals(species_id sp) {
 // ----------------------------------------------------------------------------------------
 
 bool Community::closeNeutralOutputOfs(species_id sp) {
-	if (outWCFstatOfs.at(sp).is_open())
-		outWCFstatOfs.at(sp).close();
-	outWCFstatOfs.at(sp).clear();
+	if (outGlobalFstOfs.at(sp).is_open())
+		outGlobalFstOfs.at(sp).close();
+	outGlobalFstOfs.at(sp).clear();
 	return true;
 }
 
@@ -2189,11 +2189,11 @@ bool Community::openNeutralOutputFile(species_id sp, int landNr)
 			+ "_Species" + to_string(sp)
 			+ "_neutralGenetics.txt";
 	}
-	outWCFstatOfs.at(sp).open(name.c_str());
-	outWCFstatOfs.at(sp) << "Rep\tYear\tRepSeason\tnExtantPatches\tnIndividuals\tFstWC\tFisWC\tFitWC\tFstWH\tmeanAllelePerLocus\tmeanAllelePerLocusPatches\tmeanFixedLoci\tmeanFixedLociPatches\tmeanObHeterozygosity";
-	outWCFstatOfs.at(sp) << endl;
+	outGlobalFstOfs.at(sp).open(name.c_str());
+	outGlobalFstOfs.at(sp) << "Rep\tYear\tRepSeason\tnExtantPatches\tnIndividuals\tFstWC\tFisWC\tFitWC\tFstWH\tmeanAllelePerLocus\tmeanAllelePerLocusPatches\tmeanFixedLoci\tmeanFixedLociPatches\tmeanObHeterozygosity";
+	outGlobalFstOfs.at(sp) << endl;
 
-	return outWCFstatOfs.at(sp).is_open();
+	return outGlobalFstOfs.at(sp).is_open();
 }
 
 // ----------------------------------------------------------------------------------------
@@ -2294,21 +2294,21 @@ bool Community::openPairwiseFstFile(Species* pSpecies, Landscape* pLandscape, co
 
 void Community::writeNeutralOutputFile(const species_id& sp, int rep, int yr, int gen) {
 
-	outWCFstatOfs.at(sp) << rep << "\t" << yr << "\t" << gen << "\t";
-	outWCFstatOfs.at(sp) << neutralStatsMaps.at(sp)->getNbPopulatedSampledPatches()
+	outGlobalFstOfs.at(sp) << rep << "\t" << yr << "\t" << gen << "\t";
+	outGlobalFstOfs.at(sp) << neutralStatsMaps.at(sp)->getNbPopulatedSampledPatches()
 		<< "\t" << neutralStatsMaps.at(sp)->getTotalNbSampledInds() << "\t";
 
-		outWCFstatOfs.at(sp) << neutralStatsMaps.at(sp)->getFstWC() << "\t"
+		outGlobalFstOfs.at(sp) << neutralStatsMaps.at(sp)->getFstWC() << "\t"
 			<< neutralStatsMaps.at(sp)->getFisWC() << "\t"
 			<< neutralStatsMaps.at(sp)->getFitWC() << "\t";
 
-	outWCFstatOfs.at(sp) << neutralStatsMaps.at(sp)->getMeanNbAllPerLocus() << "\t"
+	outGlobalFstOfs.at(sp) << neutralStatsMaps.at(sp)->getMeanNbAllPerLocus() << "\t"
 		<< neutralStatsMaps.at(sp)->getMeanNbAllPerLocusPerPatch() << "\t"
 		<< neutralStatsMaps.at(sp)->getTotalFixdAlleles() << "\t"
 		<< neutralStatsMaps.at(sp)->getMeanFixdAllelesPerPatch() << "\t"
 		<< neutralStatsMaps.at(sp)->getHo();
 
-	outWCFstatOfs.at(sp) << endl;
+	outGlobalFstOfs.at(sp) << endl;
 }
 
 // ----------------------------------------------------------------------------------------
@@ -2458,11 +2458,11 @@ void Community::calculateNeutralGenetics(species_id sp, int rep, int yr, int gen
 		}
 	}
 	if (pSpecies->isGlobalFstOutputYear(yr)) {
-		neutralStatsMaps.at(sp)->calculateFstatWC(patchList, nInds, nLoci, maxNbNeutralAlleles, pSpecies, pLandscape, false);
+		neutralStatsMaps.at(sp)->calculateGlobalFst(patchList, nInds, nLoci, maxNbNeutralAlleles, pSpecies, pLandscape, false);
 		if (pSpecies->isGlobalFstOutputYear(yr)) {
-			writeNeutralOutputFile(rep, yr, gen);
+			writeNeutralOutputFile(sp, rep, yr, gen);
 			if (pSpecies->doesOutputPerLocusFst())
-				writePerLocusFstatFile(pSpecies, yr, gen, nLoci, patchList);
+				writePerLocusFstatFile(pSpecies, yr, gen, patchList);
 		}
 	}
 

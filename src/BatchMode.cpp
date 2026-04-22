@@ -52,7 +52,7 @@ int gHasTranslocation; // translocation feature
 // global parameters for spatial demography feature
 bool gHasSpatialDemography; // spatial demography feature
 bool firstCall = true; // to track first call to CheckSpatialDemogFile
-short nDSlayer=gMaxNbLayers;
+short nDSlayer = gMaxNbLayers;
 vector<vector<string>> allSpatialDemogFileNames;
 
 set<int> gSimNbs; // record of simulation numbers to check input file use the same numbers
@@ -6429,7 +6429,7 @@ void ReadSpLandFile(ifstream& ifsSpLand,
 //---------------------------------------------------------------------------
 int ReadDynLandFile(Landscape* pLandscape) {
 
-	string landChgMap, spLandFile;
+	string landChgMap, spLandFile, spatialDemogFile;
 	int change, imported;
 	int nbChanges = 0;
 	bool usesCosts = gUseSMSCosts.size() > 0;
@@ -6483,9 +6483,9 @@ int ReadDynLandFile(Landscape* pLandscape) {
 		
 		// retrieve the previously stored vector for the filenames of the spatial demographic layers of that change (i+1)
 		vector<string> spatDemogLayerFiles;
-		if (gHasSpatialDemography) spatDemogLayerFiles = allSpatialDemogFileNames[i + 1];
+		if (gHasSpatialDemography) spatDemogLayerFiles = allSpatialDemogFileNames[chgIndex + 1];
 
-		imported = pLandscape->readLandChange(chgIndex, usesCosts);
+		imported = pLandscape->readLandChange(chgIndex, usesCosts, spatDemogLayerFiles);
 		if (imported != 0) return imported;
 
 		if (ppLand.usesPatches) {
@@ -6589,7 +6589,7 @@ int ReadGeneticsFile(speciesMap_t& simSpecies, ifstream& ifs) {
 	return 0;
 }
 
-int ReadTraitsFile(speciesMap_t& simSpecies, ifstream& ifs, map<species_id, spInputOptions> simOptionsMap) {
+int ReadTraitsFile(speciesMap_t& simSpecies, ifstream& ifs, const map<species_id, spInputOptions>& simOptionsMap) {
 
 	Species* pSpecies;
 	int prevsimNb = -998;
@@ -6625,8 +6625,8 @@ int ReadTraitsFile(speciesMap_t& simSpecies, ifstream& ifs, map<species_id, spIn
 	else {
 		throw runtime_error("TraitsFile is not open.");
 	}
-		return 0;
-	}
+	return 0;
+}
 
 // Set up a trait from input parameters and add it Species
 void setUpSpeciesTrait(Species* pSpecies, vector<string> parameters) {
@@ -7119,7 +7119,7 @@ int ReadStageStructure(speciesMap_t& simSpecies)
 		if (gLandType == 2){
 			if (FecLayerFile != "NULL") {
 				bFecLayerFile.open((inputDir + FecLayerFile).c_str());
-					ReadDemogLayers(1);
+					ReadDemogLayers(1, sp, simSpecies);
 					bFecLayerFile.close(); 
 					bFecLayerFile.clear();
 				}
@@ -7144,7 +7144,7 @@ int ReadStageStructure(speciesMap_t& simSpecies)
 			if (gLandType == 2) {
 				if (DevLayerFile != "NULL") {
 					bDevLayerFile.open((inputDir + DevLayerFile).c_str());
-						ReadDemogLayers(2);
+						ReadDemogLayers(2, sp, simSpecies);
 						bDevLayerFile.close(); 
 						bDevLayerFile.clear();
 					}
@@ -7168,7 +7168,7 @@ int ReadStageStructure(speciesMap_t& simSpecies)
 			if (gLandType == 2){
 				if (SurvLayerFile != "NULL") {
 					bSurvLayerFile.open((inputDir + SurvLayerFile).c_str());
-						ReadDemogLayers(3);
+						ReadDemogLayers(3, sp, simSpecies);
 						bSurvLayerFile.close(); bSurvLayerFile.clear();
 					}
 				else {
@@ -7187,10 +7187,13 @@ int ReadStageStructure(speciesMap_t& simSpecies)
 }
 
 //---------------------------------------------------------------------------
-int ReadDemogLayers(int option){
+int ReadDemogLayers(int option, species_id sp, speciesMap_t& simSpecies) {
 	string header;
 	int stg, sex, layerNb;
-	int maxNb = stages * sexesDem; // the number of the expected lines
+	Species* pSpecies = simSpecies.at(sp);
+	int nbStg = pSpecies->getStageParams().nStages;
+	int sexesDem = pSpecies->getDemogrParams().repType == 2 ? 2 : 1;
+	int maxNb = nbStg * sexesDem; // the number of the expected lines
 	// distinguish between fecundity (1), development (2) and survival (3) layers
 	switch (option) {
 	case 1:
@@ -7198,7 +7201,7 @@ int ReadDemogLayers(int option){
 			flushHeaders(bFecLayerFile);
 			for (int line = 0; line < maxNb; line ++){
 				bFecLayerFile >> stg >> sex >> layerNb;
-				if (layerNb >= 0)	pSpecies->setFecLayer(stg, sex, layerNb);
+				if (layerNb >= 0)  pSpecies->setFecLayer(stg, sex, layerNb);
 				pSpecies->setFecSpatial(true);
 			}
 			break;
@@ -7218,7 +7221,7 @@ int ReadDemogLayers(int option){
 			flushHeaders(bSurvLayerFile);
 			for (int line = 0; line < maxNb; line ++){
 				bSurvLayerFile >> stg >> sex >> layerNb;
-				if(layerNb>=0)	pSpecies->setSurvLayer(stg, sex, layerNb);
+				if (layerNb >= 0) pSpecies->setSurvLayer(stg, sex, layerNb);
 				pSpecies->setSurvSpatial(true);
 			}
 			break;
@@ -8262,8 +8265,7 @@ int ReadInitIndsFile(Species* pSpecies, int option, const landParams& paramsLand
 }
 
 //---------------------------------------------------------------------------
-int ReadManageFile(Landscape* pLandscape, const speciesMap_t& allSpecies)
-{
+int ReadManageFile(Landscape* pLandscape, const speciesMap_t& allSpecies) {
 	// Just to make sure - but for the management file, I don't think it is needed
 	int error = 0;
 	// create new Management - is that needed??
@@ -8323,8 +8325,7 @@ int ReadManageFile(Landscape* pLandscape, const speciesMap_t& allSpecies)
 }
 
 //---------------------------------------------------------------------------
-int ReadTranslocationFile(Landscape* pLandscape, int currsim, const speciesMap_t& allSpecies)
-{
+int ReadTranslocationFile(Landscape* pLandscape, int currsim, const speciesMap_t& allSpecies) {
 	int errorTransloc = 0;
 	int simulationNb = currsim;
 	int Year;
@@ -8366,9 +8367,9 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim, const speciesMap_t
 			t.max_age.insert(std::pair<int, std::vector<int>>(Year, std::vector<int>()));
 			t.stage.insert(std::pair<int, std::vector<int>>(Year, std::vector<int>()));
 			t.sex.insert(std::pair<int, std::vector<int>>(Year, std::vector<int>()));
-		}
+		 }
 
-		t.species[Year].push_back(sp);
+		t.species[Year] = sp;
 
 		locn s;
 		if (gUsesPatches) { // if patch model, the x is the patch ID

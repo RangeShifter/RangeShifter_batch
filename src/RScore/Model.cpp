@@ -305,7 +305,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 				if (updateK) {
 					pLandscape->updateCarryingCapacity(simSpecies.at(sp), yr, chgNb);
 					if (ppLand.rasterType == 2 && ppLand.spatialdemog) //ppLand.spatialdemog false by default
-						pLandscape->updateDemoScalings((short)landIx);
+						pLandscape->updateDemoScalings(chgNb);
 				}
 			}
 			
@@ -341,7 +341,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 				// Pause species which last season has been exceeded
 				pComm->disableInactiveSpecies(gen);
 
-				if (manage.isTranslocationYear(yr)) {
+				if (pManagement->isTranslocationYear(yr)) {
 				    pManagement->translocate(yr, pLandscape, simSpecies, pComm);
 				}
 
@@ -611,13 +611,8 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 		name = paramsSim->getDir(2) + "Sim" + to_string(sim.simulation) + "_Parameters.txt";
 	outPar.open(name.c_str());
 
-	outPar << "RangeShifter 3.0 ";
-
-	outPar << endl;
-
-	outPar << "================ ";
-
-	outPar << "   =====================";
+	outPar << "RangeShifter 3.0 " << endl;
+	outPar << "================ " << "   =====================";
 	outPar << endl << endl;
 
 	outPar << "BATCH MODE \t";
@@ -694,6 +689,47 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 			outPar << "Change no. " << chg.chgnum << " in year " << chg.chgyear << endl;
 			outPar << "Landscape: " << chg.habfile << endl;
 			outPar << "Species land file: " << chg.spLandFile << endl;
+		}
+	}
+
+	// Management
+	managementParams manage = pManagement->getManagementParams();
+	translocationParams transloc = pManagement->getTranslocationParams();
+	if (manage.usesTranslocation) {
+		outPar << endl << "MANAGEMENT - TRANSLOCATION: \t";
+		// loop over translocation_years and print them
+		outPar << endl;
+		outPar << "Catching rate: " << transloc.catching_rate << endl;
+		for (int i = 0; i < transloc.translocation_years.size(); i++) {
+			auto yr = transloc.translocation_years[i];
+			auto it = transloc.nb.find(yr);
+			auto nb_it = transloc.nb.find(yr);
+			auto source_it = transloc.source.find(yr);
+			auto target_it = transloc.target.find(yr);
+			auto min_age_it = transloc.min_age.find(yr);
+			auto max_age_it = transloc.max_age.find(yr);
+			auto stage_it = transloc.stage.find(yr);
+			auto sex_it = transloc.sex.find(yr);
+			outPar << "  Translocation events in year: " << yr << endl;
+			outPar << "  Translocating species " << transloc.species.at(yr) << endl;
+			for (int j = 0; j < it->second.size(); j++) {
+				outPar << "    Event Nr. " << j + 1 << " :" << endl;
+				// if it is a cell based model
+				if (ppLand.usesPatches) {
+					outPar << "      Source patch ID: " << source_it->second[j].x << endl;
+					outPar << "      Target patch ID: " << target_it->second[j].x << endl;
+				}
+				else {
+					outPar << "      Source cell: X " << source_it->second[j].x << " Y " << source_it->second[j].y << endl;
+					outPar << "      Target cell: X " << target_it->second[j].x << " Y " << target_it->second[j].y << endl;
+				}
+				outPar << "      Min age: " << min_age_it->second[j] << endl;
+				outPar << "      Max age: " << max_age_it->second[j] << endl;
+				outPar << "      Stage: " << stage_it->second[j] << endl;
+				outPar << "      Sex: " << sex_it->second[j] << endl;
+				outPar << "      Number of individuals: " << nb_it->second[j] << endl;
+
+			}
 		}
 	}
 
@@ -1537,167 +1573,28 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 				}
 			}
 		}
+		// Genetics
+		outPar << endl << "GENETICS:" << endl;
+		// only if genetics are simulated
+	
+		if (pSpecies->doesOutputGeneValues()) {
+		
+			set<TraitType> traitList = pSpecies->getTraitTypes();
+			if (pSpecies->isDiploid()) outPar << "DIPLOID" << endl; 
+			else outPar << "HAPLOID" << endl;
+			outPar << "Genome size: " << pSpecies->getGenomeSize() << endl;
+			outPar << "Chromosome breaks : ";
 
-	// Genetics
-	outPar << endl << "GENETICS:" << endl;
-	// only if genetics are simulated
-	if (sim.outputGenes) {
-		set<TraitType> traitList = pSpecies->getTraitTypes();
-
-		if (pSpecies->isDiploid()) outPar << "DIPLOID" << endl; 
-		else outPar << "HAPLOID" << endl;
-		outPar << "Genome size: " << pSpecies->getGenomeSize() << endl;
-		outPar << "Chromosome breaks : ";
-
-		for (auto end : pSpecies->getChromosomeEnds())
-			outPar << end << " ";
-		outPar << endl;
-		outPar << "Recombination rate: " << pSpecies->getRecombinationRate() << endl;
-		outPar << "Traits modelled:  " << endl;
-		for (auto trait : traitList)
-			outPar << trait << endl;
-	} else {
-	    outPar << "No genetics simulated" << endl;
-	}
-
-	// Management
-	managementParams manage = pManagement->getManagementParams();
-	translocationParams transloc = pManagement->getTranslocationParams();
-	if (manage.usesTranslocation){
-	    outPar << endl << "MANAGEMENT - TRANSLOCATION: \t";
-        // loop over translocation_years and print them
-        outPar << endl;
-	    outPar << "Catching rate: " << transloc.catching_rate << endl;
-	    for( int i = 0; i < transloc.translocation_years.size(); i++ ) {
-	        auto yr = transloc.translocation_years[i];
-	        auto it = transloc.nb.find(yr);
-	        auto nb_it = transloc.nb.find(yr);
-	        auto source_it = transloc.source.find(yr);
-	        auto target_it = transloc.target.find(yr);
-	        auto min_age_it = transloc.min_age.find(yr);
-	        auto max_age_it = transloc.max_age.find(yr);
-	        auto stage_it = transloc.stage.find(yr);
-	        auto sex_it = transloc.sex.find(yr);
-	        outPar << "  Translocation events in year: " << yr << endl;
-	        for( int j = 0; j < it->second.size(); j++ ){
-	            outPar << "    Event Nr. " << j+1 << " :" << endl;
-	            // if it is a cell based model
-	            if(ppLand.patchModel){
-	                outPar << "      Source patch ID: " << source_it->second[j].x << endl;
-	                outPar << "      Target patch ID: " << target_it->second[j].x << endl;
-	            } else{
-	                outPar << "      Source cell: X " << source_it->second[j].x << " Y " << source_it->second[j].y << endl;
-	                outPar << "      Target cell: X " << target_it->second[j].x << " Y " << target_it->second[j].y << endl;
-	            }
-	            outPar << "      Min age: " << min_age_it->second[j] << endl;
-	            outPar << "      Max age: " << max_age_it->second[j] << endl;
-	            outPar << "      Stage: " << stage_it->second[j] << endl;
-	            outPar << "      Sex: " << sex_it->second[j] << endl;
-	            outPar << "      Number of individuals: " << nb_it->second[j] << endl;
-
-	        }
-	    }
-	}
-
-	// Initialisation
-	unsure?
-	initParams init = paramsInit->getInit();
-	outPar << endl << "INITIALISATION CONDITIONS:" << endl;
-	switch (init.seedType) {
-	case 0:
-		outPar << "Free initialisation: \t";
-		switch (init.freeType) {
-		case 0:
-			outPar << "Random \t";
-			outPar << "No. of cells/patches: " << init.nSeedPatches << endl;
-			break;
-		case 1:
-			outPar << "all suitable cells/patches" << endl;
-			break;
-		case 2:
-			outPar << "manually selected cells/patches" << endl;
-			break;
-		}
-		break;
-	case 1:
-		outPar << "From species distribution: \t" << endl;
-		switch (init.spDistType) {
-		case 0:
-			outPar << "all presence cells/patches" << endl;
-			break;
-		case 1:
-			outPar << "some random presence cells/patches" << endl;
-			break;
-		case 2:
-			outPar << "all cells/patches within selected distribution cells" << endl;
-			break;
-		}
-		break;
-	case 2:
-		outPar << "From initial individuals file: " << paramsSim->getDir(1) + init.indsFile << endl;
-		break;
-	case 3:
-		outPar << "From file" << endl;
-		break;
-	}
-	if (init.seedType != 2) {
-		outPar << "INITIAL NO. OF INDIVIDUALS: \t";
-		switch (init.initDens) {
-		case 0:
-			outPar << "at carrying capacity" << endl;
-			break;
-		case 1:
-			outPar << "at half carrying capacity" << endl;
-			break;
-		case 2:
-			if (ppLand.patchModel) {
-				outPar << init.indsHa << " individuals per ha" << endl;
-			}
-			else {
-				outPar << init.indsCell << " individuals per cell" << endl;
-			}
-			break;
-		}
-		if (dem.stageStruct) {
-			outPar << "INITIAL STAGE PROPORTIONS:" << endl;
-			for (int i = 1; i < sstruct.nStages; i++) {
-				outPar << "stage " << i << ": " << paramsInit->getProp(i) << " \t";
-			}
+			for (auto end : pSpecies->getChromosomeEnds())
+				outPar << end << " ";
 			outPar << endl;
-			outPar << "Initial age distribution: ";
-			switch (init.initAge) {
-			case 0:
-				outPar << "lowest possible age";
-				break;
-			case 1:
-				outPar << "randomised";
-				break;
-			case 2:
-				outPar << "quasi-equilibrium";
-				break;
-			}
-			outPar << endl;
+			outPar << "Recombination rate: " << pSpecies->getRecombinationRate() << endl;
+			outPar << "Traits modelled:  " << endl;
+			for (auto trait : traitList)
+				outPar << trait << endl;
+		} else {
+		    outPar << "No genetics simulated" << endl;
 		}
-		outPar << "GEOGRAPHICAL CONSTRAINTS (cell numbers): " << endl;
-		outPar << "min X: " << init.minSeedX << " max X: " << init.maxSeedX << endl;
-		outPar << "min Y: " << init.minSeedY << " max Y: " << init.maxSeedY << endl;
-		//	if (init.seedType != 1 && init.freeType < 2 && init.initFrzYr > 0) {
-		//		outPar << "Freeze initial range until year " << init.initFrzYr << endl;
-		//	}
-		if (init.seedType == 0 && init.freeType < 2) {
-			if (init.initFrzYr > 0) {
-				outPar << "Freeze initial range until year " << init.initFrzYr << endl;
-			}
-			if (init.restrictRange) {
-				outPar << "Restrict range to northern " << init.restrictRows
-					<< " rows every " << init.restrictFreq << " years" << endl;
-				if (init.finalFrzYr < sim.years) {
-					outPar << "Freeze range at year " << init.finalFrzYr << endl;
-				}
-			}
-		}
-	}
-	/ unsure...
 
 		outPar << endl << "OUTPUTS:" << endl;
 		outputParams out = pSpecies->getOutputParams();
@@ -1724,14 +1621,14 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 			outPar << endl;
 		}
 		if (pSpecies->doesOutputGlobalFst()) {
-			outPar << "Global Fst and neutral genetics - every " << sim.outputGlobalFstInterval << " year";
-			if (sim.outputGlobalFstInterval > 1) outPar << "s";
-			if (sim.outputPerLocusFst) outPar << "outputting per locus Fst too";
+			outPar << "Global Fst and neutral genetics - every " << out.outputGlobalFstInterval << " year";
+			if (out.outputGlobalFstInterval > 1) outPar << "s";
+			if (out.outputPerLocusFst) outPar << "outputting per locus Fst too";
 			outPar << endl;
 		}
-		if (pSpecies->doesOutputoutPairwiseFst()) {
-			outPar << "Pairwise Fst - every " << sim.outputPairwiseFstInterval << " year";
-			if (sim.outputPairwiseFstInterval > 1) outPar << "s";
+		if (pSpecies->doesOutputPairwiseFst()) {
+			outPar << "Pairwise Fst - every " << out.outputPairwiseFstInterval << " year";
+			if (out.outputPairwiseFstInterval > 1) outPar << "s";
 			outPar << endl;
 		}
 

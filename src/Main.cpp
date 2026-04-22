@@ -43,10 +43,6 @@ Author: Steve Palmer, University of Aberdeen
 #include <stdlib.h>
 #include <cassert>
 
-//#ifdef _OPENMP
-//#include <omp.h>
-//#endif // _OPENMP
-
 using namespace std;
 
 #include "./RScore/Parameters.h"
@@ -124,8 +120,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		"Inputs/" + (argc > 2 ? argv[2] : "CONTROL.txt");
 
 #ifndef NDEBUG
-cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
-cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
+	cout << endl << "Working directory: " << paramsSim->getDir(0) << endl;
+	cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
 	cout << endl << "Control file:      " << pathToControlFile << endl << endl;
 #endif
 
@@ -143,9 +139,8 @@ cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
 
 	// create new Management
 	pManagement = new Management;
-	//	    managementParams m = pManagement->getManagementParams();
 
-// set up random number class
+	// set up random number class
 #if RS_RCPP
 #ifndef NDEBUG
 		pRandom = new RSrandom(666);
@@ -162,8 +157,8 @@ cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
 		}
 		catch (const std::exception& e) {
 			cerr << endl << "Error: " << e.what() << endl;
-}
-}
+		}
+	}
 
 	delete pRandom;
 	delete paramsStoch;
@@ -175,9 +170,9 @@ cout << endl << "Inputs folder:     " << paramsSim->getDir(1) << endl;
 
 	cout << "*****" << endl;
 	cout << "***** Simulation completed - enter any number to terminate program" << endl;
-cout << "*****" << endl;
-
-return 0;
+	cout << "*****" << endl;
+	
+	return 0;
 }
 
 //---------------------------------------------------------------------------

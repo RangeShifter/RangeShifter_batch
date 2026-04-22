@@ -121,7 +121,8 @@ private:
 							// once landscape is fully loaded
 	vector <float> habitats;	// habitat proportions (rasterType=1) or quality (rasterType=2)
 
-	std::vector<std::vector<float>> demoScalings;	// demographic scaling layers (only if rasterType==2)
+	std::vector<std::vector<float>> demoScalings; // demographic scaling layers (only if rasterType==2)
+		// one per year of change, and one for each of fec, dev, surv.
 
 #ifdef _OPENMP
 	std::mutex cost_mutex;

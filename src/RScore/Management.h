@@ -47,7 +47,6 @@
 #include <stdlib.h>
 #include <vector>
 #include <map>
-using namespace std;
 #if RS_RCPP
 #include <RcppArmadillo.h>
 #endif
@@ -57,12 +56,7 @@ using namespace std;
 #include "Landscape.h"
 #include "Population.h"
 #include "Community.h"
-
-#if RS_RCPP
-typedef intptr_t intptr;
-#else
-typedef unsigned long long intptr;
-#endif // RS_RCPP
+using namespace std;
 
 //---------------------------------------------------------------------------
 
@@ -103,12 +97,7 @@ public:
             const translocationParams	// structure holding translocation parameters
     );
     translocationParams getTranslocationParams();
-    void translocate(   // Translocation
-            int year,       // year of translocation
-            Landscape* pLandscape, // pointer to the landscape
-            const speciesMap_t& allSpecies,
-            Community* pComm
-            );
+    void translocate(int yr, Landscape* pLandscape, const speciesMap_t& allSpecies, Community* pComm);
     bool isTranslocationYear(const int yr) {
         return (this->usesTranslocation &&
             std::find(translocation_years.begin(), translocation_years.end(), yr) != translocation_years.end());

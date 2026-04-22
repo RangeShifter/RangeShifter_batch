@@ -1025,12 +1025,13 @@ void Landscape::updateDemoScalings(short landIx) {
 	landlimits.xMin = minX; landlimits.xMax = maxX;
 	landlimits.yMin = minY; landlimits.yMax = maxY;
 
-	if(spatialdemog && rasterType == 2) {// demographic scaling only implemented for habitat quality maps
-		int npatches = (int)patches.size(); // new: for (auto& p : patches)
-		for (int i = 0; i < npatches; i++) {
-			if (patches[i]->getPatchNum() != 0) { // not matrix patch
-				// calculate local scaling for each patch from its constituent cells
-				patches[i]->setPatchDemoScaling(landIx, landlimits);
+	if (spatialdemog && rasterType == 2) {// demographic scaling only implemented for habitat quality maps
+		for (auto [sp, patchList] : patchesList) {
+			for (auto& pPatch : patchList) {
+				if (!pPatch->isMatrix()) { // not matrix patch
+					// calculate local scaling for each patch from its constituent cells
+					pPatch->setPatchDemoScaling(landIx, landlimits);
+				}
 			}
 		}
 	}
@@ -2411,8 +2412,8 @@ int Landscape::readLandscape(int fileNum, string habfile, const map<species_id, 
 		ifsPatchMap.emplace(sp, ifstream());
 		patchCodes.emplace(sp, 1); // default patch code is 1 for cell-based models
 	}
-
 #endif
+
 	int habCode, seq, noDataHabCode;
 	int noDataPatch = 0;
 	int ncols, nrows;
@@ -2431,8 +2432,7 @@ int Landscape::readLandscape(int fileNum, string habfile, const map<species_id, 
 	}
 #else
 	ifsHabMap.open(habfile.c_str());
-// #endif
-// #endif
+#endif
 
 	if (!ifsHabMap.is_open()) return 11;
 
@@ -2467,7 +2467,8 @@ int Landscape::readLandscape(int fileNum, string habfile, const map<species_id, 
 		>> header >> minNorth
 		>> header >> tmpresol 
 		>> header >> noDataHabCode;
-resol = (int) tmpresol;
+	resol = (int) tmpresol;
+
 #if RS_RCPP
 	if (!ifsHabMap.good()) {
 		// corrupt file stream
