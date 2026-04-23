@@ -98,22 +98,25 @@ public:
 	void resetVisits();
 	void incrVisits(species_id sp);
 	unsigned long int getVisits(species_id sp);
-#ifdef _OPENMP
-	std::unique_lock<std::mutex> lockCost(void);
-#endif
+	void addchgDemoScaling(std::vector<float>);
+	std::vector<float> getDemoScaling(short);
 	void declareOverlappingPatches() const;
+#ifdef _OPENMP
+	std::unique_lock<std::mutex> lockCost();
+#endif
+
 private:
 	int x, y;		// cell co-ordinates
-
 	map<species_id, Patch*> patches; // which patch the cell belongs to for each species
-
 	float envDev;	// local environmental deviation (static, in range -1.0 to +1.0)
 	float eps;		// local environmental stochasticity (epsilon) (dynamic, from N(0,std))
+
 #ifdef _OPENMP
 	map<species_id, std::atomic<unsigned long int>> visits; // no. of times the cell is visited by each species
 #else
 	map<species_id, unsigned long int> visits; // no. of times the cell is visited by each species
 #endif
+
 	map<species_id, smscosts*> smsData;
 
 	vector <short> habIxx; 	// habitat indices (rasterType=0)

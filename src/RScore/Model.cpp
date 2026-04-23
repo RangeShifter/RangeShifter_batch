@@ -65,7 +65,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 		pLandscape->initialise(simSpecies, ppLand);
 
 		//if SPATIALDEMOG
-		if (ppLand.rasterType == 2 && ppLand.spatialdemog)
+		if (ppLand.rasterType == 2 && ppLand.usesSpatialDemog)
 			pLandscape->updateDemoScalings(0); // TODO -> is this needed independent of whether it is on or off?
 		// endif SPATIALDEMOG
 	}
@@ -162,7 +162,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 
 			pLandscape->updateCarryingCapacity(pSpecies, 0, 0);
 
-			if (ppLand.rasterType == 2 && ppLand.spatialdemog)
+			if (ppLand.rasterType == 2 && ppLand.usesSpatialDemog)
 				pLandscape->updateDemoScalings(0);
 
 			pComm->initialise(pSpecies, 0);
@@ -304,7 +304,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 			for (auto& [sp, updateK] : mustUpdateK) {
 				if (updateK) {
 					pLandscape->updateCarryingCapacity(simSpecies.at(sp), yr, chgNb);
-					if (ppLand.rasterType == 2 && ppLand.spatialdemog) //ppLand.spatialdemog false by default
+					if (ppLand.rasterType == 2 && ppLand.usesSpatialDemog) //ppLand.spatialdemog false by default
 						pLandscape->updateDemoScalings(chgNb);
 				}
 			}
@@ -1092,7 +1092,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 			}
 			else outPar << "no" << endl;
 
-			if (ppLand.spatialdemog) {
+			if (ppLand.usesSpatialDemog) {
 				outPar << "SPATIALLY VARYING DEMOGRAPHY:\t in" << endl;
 				// file names for the spatial layers
 

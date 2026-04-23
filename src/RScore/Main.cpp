@@ -64,7 +64,7 @@ paramSim* paramsSim;
 RSrandom* pRandom;
 Management* pManagement; // pointer to management routines
 Community* pComm;
-short nDSlayer=gMaxNbLayers;
+short gNbSpatDemLayers=gMaxNbLayers;
 
 #if LINUX_CLUSTER || RS_RCPP
 int main(int argc, char* argv[])

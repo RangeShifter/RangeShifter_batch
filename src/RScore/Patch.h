@@ -195,6 +195,6 @@ private:
 extern paramStoch* paramsStoch;
 extern RSrandom* pRandom;
 
-extern short nDSlayer;
+extern short gNbSpatDemLayers;
 
 #endif

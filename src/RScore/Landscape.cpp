@@ -279,7 +279,7 @@ Landscape::Landscape(const set<species_id>& speciesNames) {
 	isContinuous = false;
 	isDynamic = false; 
 	habsAreIndexed = false;
-	spatialdemog = false;
+	usesSpatialDemog = false;
 	resol = 1;
 	landNum = 0;
 	rasterType = 0;
@@ -423,7 +423,7 @@ void Landscape::setLandParams(landParams ppp, bool batchMode) {
 	usesPatches = ppp.usesPatches; 
 	isDynamic = ppp.isDynamic;
 	landNum = ppp.landNum;
-	spatialdemog = ppp.spatialdemog;
+	usesSpatialDemog = ppp.usesSpatialDemog;
 	if (ppp.resol > 0) resol = ppp.resol;
 	if ((ppp.rasterType >= 0 
 		&& ppp.rasterType <= 2) || ppp.rasterType == 9)
@@ -469,7 +469,7 @@ landParams Landscape::getLandParams() const {
 	ppp.isArtificial = isArtificial; 
 	ppp.usesPatches = usesPatches; 
 	ppp.isDynamic = isDynamic;
-	ppp.spatialdemog = spatialdemog;
+	ppp.usesSpatialDemog = usesSpatialDemog;
 	ppp.landNum = landNum;
 	ppp.resol = resol;
 	ppp.rasterType = rasterType;
@@ -1025,7 +1025,7 @@ void Landscape::updateDemoScalings(short landIx) {
 	landlimits.xMin = minX; landlimits.xMax = maxX;
 	landlimits.yMin = minY; landlimits.yMax = maxY;
 
-	if (spatialdemog && rasterType == 2) {// demographic scaling only implemented for habitat quality maps
+	if (usesSpatialDemog && rasterType == 2) {// demographic scaling only implemented for habitat quality maps
 		for (auto [sp, patchList] : patchesList) {
 			for (auto& pPatch : patchList) {
 				if (!pPatch->isMatrix()) { // not matrix patch
@@ -2394,7 +2394,7 @@ int Landscape::readLandscape(int fileNum, Rcpp::NumericMatrix habfile, Rcpp::Num
 }
 #endif
 
-int Landscape::readLandscape(int fileNum, string habfile, const map<species_id, string>& patchFileNames, vector <string> scalinglayers)
+int Landscape::readLandscape(int fileNum, string habfile, const map<species_id, string>& patchFileNames, vector<string> scalinglayers)
 {
 	// fileNum == 0 for (first) habitat file and optional patch file
 	// fileNum > 0  for subsequent habitat files under the %cover option
@@ -2923,7 +2923,7 @@ default:
 		}
 	}
 	if (scalinglayers.size() > 0) {
-		if (scalinglayers.size() == nDSlayer) {
+		if (scalinglayers.size() == gNbSpatDemLayers) {
 			int retcode = readDemographicScaling(scalinglayers);
 			if (retcode < 0) return 54; //change number
 		}
@@ -3078,21 +3078,20 @@ int Landscape::readCosts(const map<species_id, string>& pathsToCostFiles) {
 	return maxcost;
 }
 
-    //---------------------------------------------------------------------------
-    int Landscape::readDemographicScaling(vector <string> scalinglayers){
-        // Create a temporary landscape to store the vectors for each cell
-        // I bet there is a better way to implement it, but I couldn't think of it for now
-        // each cell will contain a vector of three floats
-        std::vector<std::vector<std::vector<float>>> landscape(dimY,
-                                                               std::vector<std::vector<float>>(dimX,
-                                                                                               std::vector<float>(scalinglayers.size(), 0.0f))); //length of string is determined by DSlayer
+  
+//---------------------------------------------------------------------------
+int Landscape::readDemographicScaling(vector<string> scalinglayers){
+        
+	// Create a temporary landscape to store the vectors for each cell
+	// I bet there is a better way to implement it, but I couldn't think of it for now
+	// each cell will contain a vector of three floats
+	std::vector<std::vector<std::vector<float>>> landscape(dimY, std::vector<std::vector<float>>(dimX, std::vector<float>(scalinglayers.size(), 0.0f))); //length of string is determined by DSlayer
 
 #if RS_RCPP
         wstring header;
 #else
         string header;
 #endif
-
         int DSnb = 0; // first position is 0
         int DS;
         int DSnodata;
@@ -3104,10 +3103,8 @@ int Landscape::readCosts(const map<species_id, string>& pathsToCostFiles) {
         ifstream DSfile; // DS file input stream
 #endif
 
-
-
         // for each element of scalinglayers
-        for (const auto& DSlayer : scalinglayers) { //DSlayer is a reference to file string
+		for (const auto& DSlayer : scalinglayers) { //DSlayer is a reference to file string
             // open file
             DSfile.open(DSlayer.c_str());
             // if file couldn't be opened, return a failure message (and the readLandscape function: close all file connections and exit)
@@ -3131,7 +3128,8 @@ int Landscape::readCosts(const map<species_id, string>& pathsToCostFiles) {
 #endif
 
             // set badfloat
-            float badDSfloat = -9.0; if (DSnodata == -9) DSfloat = -99.0;
+			float badDSfloat = -9.0; 
+			if (DSnodata == -9) DSfloat = -99.0;
 
             // loop over landscape x+y
             for (int y = dimY - 1; y >= 0; y--) {
@@ -3203,8 +3201,8 @@ int Landscape::readCosts(const map<species_id, string>& pathsToCostFiles) {
                 cells[y][x]->addchgDemoScaling(localDS); // add the vector to the cell
             }
         }
-        return 0; // return success code
-    };
+	return 0; // return success code
+};
 
 //---------------------------------------------------------------------------
 

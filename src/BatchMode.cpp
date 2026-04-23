@@ -52,7 +52,7 @@ int gHasTranslocation; // translocation feature
 // global parameters for spatial demography feature
 bool gHasSpatialDemography; // spatial demography feature
 bool firstCall = true; // to track first call to CheckSpatialDemogFile
-short nDSlayer = gMaxNbLayers;
+short gNbSpatDemLayers = gMaxNbLayers;
 vector<vector<string>> allSpatialDemogFileNames;
 
 set<int> gSimNbs; // record of simulation numbers to check input file use the same numbers
@@ -70,7 +70,7 @@ rasterdata landRaster;
 // ...including names of the input files
 string gSimFile, gParametersFile;
 string landFile;
-string gHabMapName, gDynLandFileName, name_spatialdemog;
+string gHabMapName, gDynLandFileName, gSpatialDemogName;
 string gSpLandName;
 string stageStructFile, transMatrix, interactionFile;
 string emigrationFile, transferFile, settleFile, geneticsFile, traitsFile, initialFile, managementFile, translocationFile;
@@ -1155,7 +1155,7 @@ bool CheckLandFile(int landtype, string inputDir)
 		ifsLandFile >> header; if (header != "Nhabitats") nbErrors++;
 		ifsLandFile >> header; if (header != "LandscapeFile") nbErrors++;
 		ifsLandFile >> header; if (header != "SpeciesLandFile") nbErrors++;
-		ifsLandFile >> header; if (header != "SpatialDemogFile") errors++;
+		ifsLandFile >> header; if (header != "SpatialDemogFile") nbErrors++;
 		ifsLandFile >> header; if (header != "DynLandFile") nbErrors++;
 		if (nbErrors > 0) {
 			FormatError(whichFile, 0);
@@ -1418,9 +1418,15 @@ bool CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landra
 
 	// Check header
 	bSpatialDemogFile >> header;
-	if (header != "NbOfLayer") {errors++; cout << header << endl;}
+	if (header != "NbOfLayer") {
+		errors++; 
+		cout << header << endl;
+	}
 	bSpatialDemogFile >> header;
-	if (header != "Filename") {errors++; cout << header << endl;}
+	if (header != "Filename") {
+		errors++; 
+		cout << header << endl;
+	}
 
 	if (errors > 0) {
 		FormatError("SpatialDemogFile", 0);
@@ -1477,11 +1483,11 @@ bool CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landra
 				FormatError(fname, demograster.errors);
 			}
 		}
-	line++;
-
-	// Read first field on next line
-	inint = -98765;
-	bSpatialDemogFile >> inint;
+		line++;
+		
+		// Read first field on next line
+		inint = -98765;
+		bSpatialDemogFile >> inint;
 
 	} // end of while loop
 
@@ -1490,7 +1496,6 @@ bool CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landra
 		EOFerror("SpatialDemogFile");
 		errors++;
 	}
-
 	bSpatialDemogFile.close();
 
 	if (maxNbOfLayer > gMaxNbLayers) {
@@ -1500,12 +1505,12 @@ bool CheckSpatialDemogFile(string indir, string demogFilename, rasterdata landra
 	}
 
 	if (firstCall) {
-		nDSlayer = maxNbOfLayer;
+		gNbSpatDemLayers = maxNbOfLayer;
 		firstCall = false;
 	} else {
-		if (nDSlayer != maxNbOfLayer) {
+		if (gNbSpatDemLayers != maxNbOfLayer) {
 			BatchError("SpatialDemogFile", line, 0, "MaxNbOfLayer inconsistency");
-			batchLogOfs << "*** Subsequent maximal number of layers not consistant" << endl;
+			batchLogOfs << "*** Subsequent maximal number of layers not consistent" << endl;
 			errors++;
 		}
 	}
@@ -2536,7 +2541,7 @@ bool CheckLayerFile(string filetype) {
 			}
 		bLayerFile >> inint; // layer
 		if(inint != -9){
-			if (inint < 0 || inint >= nDSlayer)  {
+			if (inint < 0 || inint >= gNbSpatDemLayers)  {
 				BatchError(filetype, line, 0, "Layer"); errors++;
 				batchLogOfs << "LayerNb must be between 0 and the maximal number of layer-1" << endl;
 			}
@@ -6383,11 +6388,11 @@ int ReadLandFile(Landscape* pLandscape)
 	else { // imported raster map
 		string inNbHab;
 		ifsLandFile >> ppLand.landNum >> inNbHab >> gHabMapName >> gSpLandName;
-		ifsLandFile >> gDynLandFileName;
+		ifsLandFile >> gSpatialDemogName >> gDynLandFileName;
 		if (gLandType == 2) 
 			ppLand.nHab = 1; // habitat quality landscape has one habitat class
-		if(gHasSpatialDemography)
-			ppLand.spatialdemog=true;
+		if (gHasSpatialDemography)
+			ppLand.usesSpatialDemog = true;
 	}
 
 	pLandscape->setLandParams(ppLand, true);
@@ -8138,7 +8143,7 @@ int ReadInitialisation(const landParams& paramsLand, speciesMap_t& simSpecies)
 				pSpecies->setProp(stg, propStage);
 			}
 		}
-		if (init.seedType!=2 && totalProps != 1.0) { 
+		if (init.seedType != 2 && totalProps != 1.0) { 
 			throw logic_error("The proportion of initial individuals in each stage doesn not sum to 1.");
 		}
 	}
@@ -8399,8 +8404,8 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim, const speciesMap_t
 			} else { // cell is within landscape
 				s.x = x;
 				s.y = y;
-			};
-		};
+			}
+		}
 		t.source[Year].push_back(s);
 
 		// push_back the target to the target map
@@ -8431,8 +8436,8 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim, const speciesMap_t
 			else { // cell is within landscape
 				s.x = x;
 				s.y = y;
-			};
-		};
+			}
+		}
 
 		t.target[Year].push_back(s);
 		t.nb[Year].push_back(nbCatch);
@@ -8456,9 +8461,9 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim, const speciesMap_t
 		}
 
 		// if not end of file, read next simulation number
-		if(!translocFile.eof()){
+		if (!translocFile.eof()) {
 			translocFile >> simulationNb;
-		} else{
+		} else {
 			simulationNb = -1;
 		}
 	};
@@ -8496,8 +8501,8 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim, const speciesMap_t
 		cout << std::endl;
 	}
 
-	        // check input
-	        // loop over t.target map and print out the content
+	// check input
+	// loop over t.target map and print out the content
 	for (std::map<int, std::vector<locn>>::iterator it = t.target.begin(); it != t.target.end(); ++it) {
 		cout << "ReadTranslocationR(): t.target[" << it->first << "]: ";
 		for (int i = 0; i < it->second.size(); i++) {

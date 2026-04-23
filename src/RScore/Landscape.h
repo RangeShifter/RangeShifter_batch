@@ -111,9 +111,6 @@ public:
 	int readDistribution(string filename);
 	void setDistribution(int nbInitialCells); // (0 for all cells)
 	int cellCount();
-	locn getDimensions();
-
-
 	// Return the co-ordinates of a specified initial distribution
 	// cell if it has been selected
 	// otherwise return negative co-ordinates
@@ -137,7 +134,7 @@ struct landParams {
 	bool usesPatches; 
 	bool isArtificial;
 	bool isDynamic;
-	bool spatialdemog;
+	bool usesSpatialDemog;
 	int landNum; 
 	int resol;
 	int nHab; 
@@ -149,9 +146,6 @@ struct landData {
 	int resol; 
 	int dimX, dimY, minX, minY, maxX, maxY;
 };
-
-bool isInLandBounds(const int& x, const int& y, const landData& land);
-
 struct genLandParams {
 	bool isFractal; bool isContinuous;
 	float minPct, maxPct; float propSuit; float hurst; int maxCells;
@@ -275,13 +269,10 @@ public:
 		int,		// change number
 		Rcpp::NumericMatrix,// habitat raster
 		Rcpp::NumericMatrix,// patch raster
-		Rcpp::NumericMatrix	// cost raster
-//#if SPATIALDEMOG
-		,Rcpp::NumericVector// array of demographic scaling layers
-//#endif
+		Rcpp::NumericMatrix, // cost raster
+		Rcpp::NumericVector// array of demographic scaling layers
 	);
-//#else
-// #if RS_RCPP && !R_CMD
+
 	int readLandChange(
 	    int,		// change file number
 		bool,		// change SMS costs?
@@ -292,10 +283,9 @@ public:
 		int,		// pchnodata
 		int,			// costnodata
 		vector <string>  // vector of demographic scaling layers
-// TODO: add spatial demography with normal file input
 	);
 #else
-	int readLandChange(int fileNb, bool changeCosts, vector <string>); // vector of demographic scaling layers
+	int readLandChange(int fileNb, bool changeCosts, vector<string>); // vector of demographic scaling layers
 #endif
 	void createPatchChgMatrix();
 	void resetPatchChanges();
@@ -310,7 +300,6 @@ public:
 	costChange getCostChange(species_id sp, int i);
 	void applyCostChanges(species_id sp, const int& landChgNb, int& iCostChg);
 	void updateDemoScalings(short);
-
 
 	// Species distributions
 	int newDistribution(species_id sp, string distFileName);
@@ -346,7 +335,7 @@ public:
 							// fileNum > 0  for subsequent habitat files under the %cover option
 		string habitatFileName,
 		const map<species_id, string>& patchFileNames,
-		vector <string> // demographic scaling layers (may be empty)
+		vector<string> scalinglayers// demographic scaling layers (may be empty)
 	);
 #if RS_RCPP
 	int readLandscape(
@@ -374,7 +363,7 @@ private:
 	bool isContinuous;
 	bool isDynamic;			// landscape changes during simulation
 	bool habsAreIndexed;	// habitat codes have been converted to index numbers
-	bool spatialdemog;			// are there spatially varying demographic rates?
+	bool usesSpatialDemog;			// are there spatially varying demographic rates?
 	short rasterType;		// 0 = habitat codes 1 = % cover 2 = quality 9 = artificial landscape
 	int landNum;			// landscape number
 	int resol;				// cell size (m)

@@ -44,7 +44,7 @@ Patch::Patch(int seqnum, int num, species_id whichSpecies)
 		nTemp[sex] = 0;
 	}
 	changed = false;
-	localDemoScaling.assign(nDSlayer, 1.0);
+	localDemoScaling.assign(gNbSpatDemLayers, 1.0);
 	gradVal = 1.0; // i.e. no effect
 }
 
@@ -273,26 +273,26 @@ void Patch::setPatchDemoScaling(short landIx, patchLimits landlimits) {
 	// if patch wholly outside current landscape boundaries
 	if (xMin > landlimits.xMax || xMax < landlimits.xMin
 	||  yMin > landlimits.yMax || yMax < landlimits.yMin) {
-		localDemoScaling.assign(nDSlayer,0.0); // set all local scales to zero
+		localDemoScaling.assign(gNbSpatDemLayers,0.0); // set all local scales to zero
 		return;
 	}
 
 	// loop through constituent cells of the patch
 	int ncells = (int)cells.size();
-	std::vector<float> patchDS(nDSlayer, 0.0);
-	std::vector<float> cellDS(nDSlayer, 0.0);
+	std::vector<float> patchDS(gNbSpatDemLayers, 0.0);
+	std::vector<float> cellDS(gNbSpatDemLayers, 0.0);
 
 	for (int i = 0; i < ncells; i++) {
 		cellDS = cells[i]->getDemoScaling(landIx); // is that ok?
 
 		//add cell value to patch value
-		for (int ly = 0; ly < nDSlayer; ly++) {
+		for (int ly = 0; ly < gNbSpatDemLayers; ly++) {
 			patchDS[ly] += cellDS[ly];
 		}
 	}
 
 	// take mean over cells and divide by 100 to scale to range [0,1]
-	for (int ly = 0; ly < nDSlayer; ly++) {
+	for (int ly = 0; ly < gNbSpatDemLayers; ly++) {
 		patchDS[ly] = patchDS[ly] / ncells / 100.0f;
 	}
 
@@ -359,6 +359,7 @@ void Patch::setPop(Population* p) {
 #ifdef _OPENMP
 std::unique_lock<std::mutex> Patch::lockPopns() {
 	return std::unique_lock<std::mutex>(popns_mutex);
+}
 #endif
 
 Population* Patch::getPop() { return pPop; }
