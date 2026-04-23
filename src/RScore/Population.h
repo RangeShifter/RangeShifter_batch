@@ -135,7 +135,7 @@ public:
 	void extirpate(); // Remove all individuals
 	void reproduction(
 		const float localK,	// local carrying capacity
-		const int landResol	// landscape resolution
+		const int landResol,	// landscape resolution
 		std::vector <float> demogScalings
 	);
 

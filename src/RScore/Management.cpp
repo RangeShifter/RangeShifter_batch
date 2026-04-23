@@ -245,7 +245,7 @@ void Management::translocate(int yr, Landscape* pLandscape, const speciesMap_t& 
         int nbSampledInds = 0;
         // We made already sure by now that in s_pPop at least some individuals exist
         nbSampledInds = s_pPop->sampleIndividuals(nb, min_age, max_age, stage, sex); // checking values was done when reading in the parameters
-        popStats s_stats = s_pPop->getStats(s_patch->getDemoScaling());
+        popStats s_stats = s_pPop->getStats();
         Individual* catched_individual;
         int translocated = 0;
         // loop over all indsividuals, extract sampled individuals, try to catch individual + translocate them to new patch

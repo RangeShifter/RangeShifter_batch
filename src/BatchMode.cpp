@@ -2056,8 +2056,9 @@ bool CheckStageFile(string indir)
 					batchLogOfs << "Checking " << strFecLay << " " << fname << endl;
 					bLayerFile.open(fname.c_str());
 					if (bLayerFile.is_open()) {
-						hasNoErrors = CheckLayerFile(strFecLay);
-						if (hasNoErrors) FileHeadersOK(strFecLay); else nbErrors++;
+						hasNoErrors = CheckLayerFile(strFecLay, nbStg, nbSexDem);
+						if (hasNoErrors) FileHeadersOK(strFecLay); 
+						else nbErrors++;
 						bLayerFile.close();
 					}
 					else {
@@ -2158,8 +2159,9 @@ bool CheckStageFile(string indir)
 					batchLogOfs << "Checking " << strDevLay << " " << fname << endl;
 					bLayerFile.open(fname.c_str());
 					if (bLayerFile.is_open()) {
-						hasNoErrors = CheckLayerFile(strDevLay);
-						if (hasNoErrors) FileHeadersOK(strDevLay); else nbErrors++;
+						hasNoErrors = CheckLayerFile(strDevLay, nbStg, nbSexDem);
+						if (hasNoErrors) FileHeadersOK(strDevLay);
+						else nbErrors++;
 						bLayerFile.close();
 					}
 					else {
@@ -2260,8 +2262,9 @@ bool CheckStageFile(string indir)
 					batchLogOfs << "Checking " << strSurvLay << " " << fname << endl;
 					bLayerFile.open(fname.c_str());
 					if (bLayerFile.is_open()) {
-						hasNoErrors = CheckLayerFile(strSurvLay);
-						if (hasNoErrors) FileHeadersOK(strSurvLay); else nbErrors++;
+						hasNoErrors = CheckLayerFile(strSurvLay, nbStg, nbSexDem);
+						if (hasNoErrors) FileHeadersOK(strSurvLay); 
+						else nbErrors++;
 						bLayerFile.close();
 					}
 					else {
@@ -2498,7 +2501,7 @@ bool CheckWeightsFile(string filetype, int nbStages, int nbSexes)
 
 // Check layer file
 
-bool CheckLayerFile(string filetype) {
+bool CheckLayerFile(string filetype, const int stages, const int sexesDem) {
 	string header;
 	int layer, line=0;
 	int inint;
@@ -8325,7 +8328,7 @@ int ReadManageFile(Landscape* pLandscape, const speciesMap_t& allSpecies) {
 	pManagement->setTranslocationParams(t);
 
 	// now read translocation setting for this simNb
-	error += ReadTranslocationFile(pLandscape, simNb);
+	error += ReadTranslocationFile(pLandscape, simNb, allSpecies);
 	return error;
 }
 
@@ -8641,8 +8644,17 @@ void RunBatch()
 				gUseSpeciesDist
 			);
 
+			vector<string> scalinglayers_fnames_vec; // vector of demographic scaling layers for a given year (initialise empty vector)
+			if (gHasSpatialDemography) {
+				if (gLandType == 2 && gUsesStageStruct) {
+					if (gNbSpatDemLayers > 0) {
+						scalinglayers_fnames_vec = allSpatialDemogFileNames[0]; // get vector  of scaling layers file names of year 0; includes the directory path
+					}
+				}
+			}
+
 			string pathToHabMap = paramsSim->getDir(1) + gHabMapName;
-			if (pLandscape->readLandscape(0, pathToHabMap, pathsToPatchMaps) != 0) {
+			if (pLandscape->readLandscape(0, pathToHabMap, pathsToPatchMaps, scalinglayers_fnames_vec) != 0) {
 				cout << "Error reading landscape" << endl;
 				landOK = false;
 			}

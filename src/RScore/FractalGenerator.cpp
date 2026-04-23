@@ -33,10 +33,10 @@ bool compare(const fractalPatch& z, const fractalPatch& zz) //compares only the 
 	return z.value < zz.value;
 }
 
+vector<fractalPatch> patches;
+
 vector<fractalPatch>& createFractalLandscape(int X, int Y, double Hurst, double prop,
 	double maxValue, double minValue) {
-
-	vector<fractalPatch> patches;
 
 	int ii, jj, x, y;
 	int ix, iy;

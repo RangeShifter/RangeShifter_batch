@@ -2103,6 +2103,8 @@ bool Landscape::usesSpDist(species_id sp) const {
 	return distns.contains(sp);
 }
 
+int Landscape::getSpDistResol(species_id sp) const { return distns.at(sp).getResol(); }
+
 // Get the co-ordinates of a specified cell in a specified initial distribution
 // Returns negative co-ordinates if the cell is not selected
 locn Landscape::getSelectedDistnCell(species_id sp, int ix) {

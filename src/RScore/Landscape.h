@@ -93,14 +93,6 @@ using namespace std;
 
 constexpr species_id gSingleSpeciesID = 0;
 
-//---------------------------------------------------------------------------
-// not sure whether it needs to be added here for the readDistribution() function to work
-
-struct landOrigin {
-	double minEast; double minNorth;
-};
-
-
 // Initial species distribution
 
 class InitDist{
@@ -312,7 +304,7 @@ public:
 	// Returns negative co-ordinates if the cell is not selected
 	locn getSelectedDistnCell(species_id sp, int ix);
 	bool usesSpDist(species_id sp) const;
-	int getSpDistResol(species_id sp) const { return distns.at(sp).getResol(); }
+	int getSpDistResol(species_id sp) const;
 
 	// Functions to handle connectivity matrix
 	void createConnectMatrix(species_id sp);

@@ -363,7 +363,7 @@ void Community::reproduction(int yr)
 			Patch* pPatch = pop->getPatch();
 			float localK = pPatch->getK();
 			if (localK > 0.0) {
-				pop->reproduction(localK, land.resol);
+				pop->reproduction(localK, land.resol, pPatch->getDemoScaling());
 				pop->fledge();
 			}
 		}

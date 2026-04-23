@@ -137,7 +137,6 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 			}
 		}
 		// create individuals
-		int sex;
 		nindivs = (int)inds.size();
 		for (int i = 0; i < n; i++) {
 			pCell = pPatch->getRandomCell();
@@ -187,16 +186,16 @@ Population::~Population() {
 		if (newborns[i] != nullptr) delete newborns[i];
 	}
 	newborns.clear();
-}
-int nsampledInds = (int)sampledInds.size();
-for (int i = 0; i < njuvs; i++) {
-	if (sampledInds[i] != nullptr) delete sampledInds[i];
-}
+
+	int nsampledInds = (int)sampledInds.size();
+	for (int i = 0; i < njuvs; i++) {
+		if (sampledInds[i] != nullptr) delete sampledInds[i];
+	}
 	sampledInds.clear();
 }
 
 traitsums Population::getIndTraitsSums() {
-	int g;
+
 	traitsums ts = traitsums();
 
 	emigRules emig = pSpecies->getEmigRules();
@@ -407,13 +406,14 @@ double Population::computeHs() {
 	return hs;
 }
 
-popStats Population::getStats(std::vector<float> localDemoScaling)
+popStats Population::getStats()
 {
 	popStats p = popStats();
 	int ninds;
 	float fec;
 	bool breeders[2] = { false, false };
 	demogrParams dem = pSpecies->getDemogrParams();
+	std::vector<float> localDemoScaling = pPatch->getDemoScaling();
 	p.pSpecies = pSpecies;
 	p.pPatch = pPatch;
 	p.speciesID = pSpecies->getID();
@@ -1218,12 +1218,12 @@ void Population::recruitMany(std::vector<Individual*>& recruits) {
 //---------------------------------------------------------------------------
 // Determine survival and development and record in individual's status code
 // Changes are NOT applied to the Population at this stage
-void Population::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv, std::vector <float> localDemoScaling)
+void Population::drawSurvivalDevlpt(bool resolveJuvs, bool resolveAdults, bool resolveDev, bool resolveSurv)
 {
 	densDepParams ddparams = pSpecies->getDensDep();
 	demogrParams dem = pSpecies->getDemogrParams();
 	stageParams sstruct = pSpecies->getStageParams();
-	
+	std::vector <float> localDemoScaling = pPatch->getDemoScaling();
 	double localK = pPatch->getK();
 
 	// get current population size
@@ -1648,7 +1648,7 @@ void Population::outPopulation(ofstream& outPopOfs, int rep, int yr, int gen, bo
 		}
 	}
 	if (dem.stageStruct) {
-		p = getStats(pPatch->getDemoScaling());
+		p = getStats();
 		outPopOfs << "\t" << p.nNonJuvs;
 		// non-juvenile stage totals from permanent array
 		for (int stg = 1; stg < nStages; stg++) {
