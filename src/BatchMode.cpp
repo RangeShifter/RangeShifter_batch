@@ -1527,7 +1527,6 @@ bool CheckSpLandFile(string inputDir, bool isInitial) {
 	ifsSpLandFile >> header; if (header != "Species") nbErrors++;
 	ifsSpLandFile >> header; if (header != "PatchFile") nbErrors++;
 	ifsSpLandFile >> header; if (header != "CostMapFile") nbErrors++;
-	ifsSpLandFile >> header; if (header != "SpatialDemogFile") nbErrors++;
 	if (isInitial) { // column absent for dynamic input
 		ifsSpLandFile >> header; if (header != "SpDistFile") nbErrors++;
 	}
@@ -2573,9 +2572,6 @@ bool CheckInteractionFile(string indir)
 	set<int> simNbs;
 	const string whichInputFile = "InteractionFile";
 
-	// Track initiated and received interactions to check they are matched
-	set<tuple<int, int, int, int>> initdIntrctRecord, recdIntrctRecord;
-
 	// Track relative preference counts to make sure more than one target is supplied
 	map<tuple<int, int, string>, int> relPrefMap; 
 
@@ -2628,7 +2624,7 @@ bool CheckInteractionFile(string indir)
 		}
 
 		ifsInteraction >> inSpLeft >> inStgLeft 
-			>> inSpRight >> inStgRight >> inProcessLeft
+			>> inSpRight >> inStgRight >> inProcessLeft >> inProcessRight
 			>> inResMedIntrct >> inAlphaLR >> inAlphaRL
 			>> inDirctdIntrct >> inBeta >> inDelta >> inHandlingTime
 			>> inTargetDensity >> inAttackRate >> inHullCoeff
@@ -2798,15 +2794,6 @@ bool CheckInteractionFile(string indir)
 		// Directed interaction
 		if (inDirctdIntrct == "TRUE") {
 
-			// Record this entry to check if there is at least one matching recipient entry
-			auto initdIntrctEntry = make_tuple(inSpLeft, inStgLeft, inSpRight, inStgRight);
-			if (initdIntrctRecord.contains(initdIntrctEntry)) {
-				BatchError(whichInputFile, lineNb, 0, " ");
-				batchLogOfs << "There can only be one line of input for each combination of SpeciesLeft, StageLeft, SpeciesRight and StageRight" << endl;
-				nbErrors++;
-			}
-			else initdIntrctRecord.insert(initdIntrctEntry);
-
 			if (inBeta == "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
 				batchLogOfs << "If DirectedInteraction is TRUE, Beta must not be #" << endl;
@@ -2955,7 +2942,7 @@ bool CheckInteractionFile(string indir)
 				}
 			}
 		}
-		else { // Initiated interaction is off
+		else { // Directed interaction is off
 			if (inBeta != "#") {
 				BatchError(whichInputFile, lineNb, 0, " ");
 				batchLogOfs << "If DirectedInteraction is FALSE, Beta must be #" << endl;
@@ -2999,20 +2986,16 @@ bool CheckInteractionFile(string indir)
 			// Exit loop
 			stopReading = true;
 			simNbs.insert(simNb);
-			if (!checkIntrctPairsMatch(initdIntrctRecord, recdIntrctRecord)) nbErrors++;
 			if (!checkRelPrefMap(relPrefMap)) nbErrors++;
 		}
 		else if (nextLineSimNb != simNb) {
 			simNbs.insert(simNb);
 			simNb = nextLineSimNb;
 
-			if (!checkIntrctPairsMatch(initdIntrctRecord, recdIntrctRecord)) nbErrors++;
 			if (!checkRelPrefMap(relPrefMap)) nbErrors++;
 
 			// Clear records for the next sim
 			relPrefMap.clear();
-			initdIntrctRecord.clear();
-			recdIntrctRecord.clear();
 		} // else continue reading traits for same sim
 
 		lineNb++;
@@ -3029,48 +3012,6 @@ bool CheckInteractionFile(string indir)
 		nbErrors++;
 	}
 	return nbErrors == 0;
-}
-
-bool checkIntrctPairsMatch(const set<tuple<int, int, int, int>>& initdRecord, const set<tuple<int, int, int, int>>& recdRecord) {
-	bool isFine = true;
-
-	// Each initiated interaction must have at least one matching received interaction
-	for (auto& initdEntry : initdRecord) {
-		auto exptdRecdEntry = make_tuple(
-			get<2>(initdEntry), // SpeciesLeft -> SpeciesRight
-			get<3>(initdEntry), // StageLeft -> StageRight
-			get<0>(initdEntry), // SpeciesRight -> SpeciesLeft
-			get<1>(initdEntry) // StageRight -> StageLeft
-		);
-		if (!recdRecord.contains(exptdRecdEntry)) {
-			isFine = false;
-			batchLogOfs << "Initiated interaction involving stage " 
-				<< to_string(get<1>(initdEntry)) << " of species " << to_string(get<0>(initdEntry)) 
-				<< " must be matched by a received interaction for stage " 
-				<< to_string(get<3>(initdEntry)) << " of species " << to_string(get<2>(initdEntry))
-				<< endl;
-		}
-	}
-
-	// Each received interaction must have at least one matching initiated interaction
-	for (auto& recEntry : recdRecord) {
-		auto exptdInitdEntry = make_tuple(
-			get<2>(recEntry), // SpeciesLeft -> SpeciesRight
-			get<3>(recEntry), // StageLeft -> StageRight
-			get<0>(recEntry), // SpeciesRight -> SpeciesLeft
-			get<1>(recEntry) // StageRight -> StageLeft
-		);
-		if (!initdRecord.contains(exptdInitdEntry)) {
-			isFine = false;
-			batchLogOfs << "Received interaction involving stage "
-				<< to_string(get<1>(recEntry)) << " of species " << to_string(get<0>(recEntry))
-				<< " must be matched by an initiated interaction for stage "
-				<< to_string(get<3>(recEntry)) << " of species " << to_string(get<2>(recEntry))
-				<< endl;
-		}
-	}
-
-	return isFine;
 }
 
 bool checkRelPrefMap(const map<tuple<int, int, string>, int>& relPrefMap) {
