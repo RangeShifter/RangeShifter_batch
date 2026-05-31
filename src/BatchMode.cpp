@@ -777,7 +777,7 @@ bool CheckParameterFile()
 	ifsParamFile >> header; if (header != "maxK") nbErrors++;
 	ifsParamFile >> header; if (header != "LocalExtProb") nbErrors++;
 	ifsParamFile >> header; if (header != "NbStages") nbErrors++;
-	ifsParamFile >> header; if (header != "Reproduction") nbErrors++;
+	ifsParamFile >> header; if (header != "ReproductionType") nbErrors++;
 	ifsParamFile >> header; if (header != "RepSeasons") nbErrors++;
 	ifsParamFile >> header; if (header != "PropMales") nbErrors++;
 	ifsParamFile >> header; if (header != "Harem") nbErrors++;
@@ -943,11 +943,7 @@ bool CheckParameterFile()
 		
 		ifsParamFile >> inNbStages;
 		if (gUsesStageStruct) {
-			if (inNbStages < 1) {
-				BatchError(whichFile, whichLine, 21, "NbStages");
-				nbErrors++;
-			}
-			else if (inNbStages < 2 || inNbStages > 10) {
+			if (inNbStages < 2 || inNbStages > 10) {
 				BatchError(whichFile, whichLine, 0, " ");
 				nbErrors++;
 				batchLogOfs << "NbStages must be between 2 and 10." << endl;
@@ -1714,6 +1710,7 @@ int CheckDynamicFile(string inputDir) {
 	ifsDynLandFile >> header; if (header != "Year") nbErrors++;
 	ifsDynLandFile >> header; if (header != "LandChangeFile") nbErrors++;
 	ifsDynLandFile >> header; if (header != "SpLandChangeFile") nbErrors++;
+	ifsDynLandFile >> header; if (header != "SpatialDemogFile") nbErrors++;
 
 	if (nbErrors > 0) {
 		FormatError(whichFile, nbErrors);
