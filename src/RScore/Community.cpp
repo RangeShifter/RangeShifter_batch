@@ -236,7 +236,7 @@ void Community::initialise(Species* pSpecies, int year) {
 		int ninds = pSpecies->getNbInitInds();
 		while (indIx < ninds && iind.year <= year) {
 			iind = pSpecies->getInitInd(indIx);
-			while (iind.year == year && iind.speciesID == sp) {
+			while (iind.year == year) {
 				if (ppLand.usesPatches) {
 					pPatch = pLandscape->findPatch(sp, iind.patchID);
 					if (pPatch != nullptr) { // exists

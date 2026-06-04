@@ -6386,7 +6386,7 @@ int ReadDynLandFile(Landscape* pLandscape) {
 	ifsDynLandFile.open(pathToDynLandFile.c_str());
 	if (ifsDynLandFile.is_open()) {
 		string header;
-		int nheaders = 6;
+		int nheaders = 5;
 		for (int i = 0; i < nheaders; i++) 
 			ifsDynLandFile >> header;
 	}
@@ -7237,7 +7237,7 @@ void ReadInteractions(const int& simNb, speciesMap_t& allSpecies) {
 			if (strAlphaRL != "#") {
 				resDepIntrct = resIntrctParams(); // reset
 				auto alphaIt = std::sregex_iterator(strAlphaRL.begin(), strAlphaRL.end(), floatNumber);
-				for (auto& whichProcess : whichProcessesLeft) {
+				for (auto& whichProcess : whichProcessesRight) {
 					std::smatch match = *alphaIt;
 					double alpha = stof(match.str());
 					resDepIntrct.alphas.emplace(whichProcess, alpha);
@@ -8121,7 +8121,7 @@ int ReadInitialisation(const landParams& paramsLand, speciesMap_t& simSpecies)
 	case 2: // from initial individuals file
 		if (init.indsFile != prevInitialIndsFile) {
 			// read and store the list of individuals to be initialised
-			ReadInitIndsFile(pSpecies, 0, paramsLand, (inputDir + init.indsFile));
+			ReadInitIndsFile(pSpecies, paramsLand, (inputDir + init.indsFile));
 			prevInitialIndsFile = init.indsFile;
 		}
 		break;
@@ -8133,31 +8133,18 @@ int ReadInitialisation(const landParams& paramsLand, speciesMap_t& simSpecies)
 }
 
 //---------------------------------------------------------------------------
-int ReadInitIndsFile(Species* pSpecies, int option, const landParams& paramsLand, string indsfile) {
+int ReadInitIndsFile(Species* pSpecies, const landParams& paramsLand, string indsfile) {
 	string header;
 	demogrParams dem = pSpecies->getDemogrParams();
 	initParams init = pSpecies->getInitParams();
 
-	if (option == 0) { // open file and read header line
-		ifsInitIndsFile.open(indsfile.c_str());
-		string header;
-		int nheaders = 3;
-		if (paramsLand.usesPatches) nheaders++;
-		else nheaders += 2;
-		if (dem.repType > 0) nheaders++;
-		if (dem.stageStruct) nheaders += 2;
-		for (int i = 0; i < nheaders; i++) ifsInitIndsFile >> header;
-		pSpecies->resetInitInds();
-		//	return 0;
-	}
-
-	if (option == 9) { // close file
-		if (ifsInitIndsFile.is_open()) {
-			ifsInitIndsFile.close(); 
-			ifsInitIndsFile.clear();
-		}
-		return 0;
-	}
+	ifsInitIndsFile.open(indsfile.c_str());
+	string header;
+	int nheaders = paramsLand.usesPatches ? 2 : 3;
+	if (dem.repType > 0) nheaders++;
+	if (dem.stageStruct) nheaders += 2;
+	for (int i = 0; i < nheaders; i++) ifsInitIndsFile >> header;
+	pSpecies->resetInitInds();
 
 	// Read data lines;
 	initInd iind;
@@ -8169,7 +8156,6 @@ int ReadInitIndsFile(Species* pSpecies, int option, const landParams& paramsLand
 	bool must_stop = (iind.year == gEmptyVal);
 
 	while (!must_stop) {
-		ifsInitIndsFile >> iind.speciesID;
 
 		if (paramsLand.usesPatches) {
 			ifsInitIndsFile >> iind.patchID;

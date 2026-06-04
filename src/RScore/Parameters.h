@@ -229,7 +229,6 @@ struct initParams {
 struct initInd {
 	int year, patchID, x, y; 
 	short sex, age, stage;
-	short speciesID;
 };
 
 //---------------------------------------------------------------------------

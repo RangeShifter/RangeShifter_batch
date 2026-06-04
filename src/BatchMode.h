@@ -207,12 +207,7 @@ void ReadTransferSMS(speciesMap_t& simSpecies, const landParams&);
 int ReadTransferCRW(speciesMap_t& simSpecies, const landParams&);
 int ReadSettlement(speciesMap_t& simSpecies);
 int ReadInitialisation(const landParams& paramsLand, speciesMap_t& simSpecies);
-int ReadInitIndsFile(
-	Species* pSpecies, 
-	int option, 
-	const landParams& paramsLand,
-	string indsfile
-);
+int ReadInitIndsFile(Species* pSpecies, const landParams& paramsLand, string indsfile);
 int ReadDemogLayers(int option, species_id sp, speciesMap_t& simSpecies);
 
 int ReadGeneticsFile(speciesMap_t& simSpecies, ifstream& ifs);
