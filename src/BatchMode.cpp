@@ -6524,7 +6524,7 @@ int ReadGeneticsFile(speciesMap_t& simSpecies, ifstream& ifs) {
 
 		set<int> stagesToSampleFrom;
 		if (parameters[18] != "#")
-			stagesToSampleFrom = stringToStages(parameters[17], nbStages);
+			stagesToSampleFrom = stringToStages(parameters[18], nbStages);
 
 		pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate, patchSamplingOption,
 			patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
@@ -8139,7 +8139,6 @@ int ReadInitIndsFile(Species* pSpecies, const landParams& paramsLand, string ind
 	initParams init = pSpecies->getInitParams();
 
 	ifsInitIndsFile.open(indsfile.c_str());
-	string header;
 	int nheaders = paramsLand.usesPatches ? 2 : 3;
 	if (dem.repType > 0) nheaders++;
 	if (dem.stageStruct) nheaders += 2;
