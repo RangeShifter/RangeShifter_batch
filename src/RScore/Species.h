@@ -79,7 +79,6 @@ struct stageParams {
 	bool devStageDens;
 	bool survDens;
 	bool survStageDens;
-	bool disperseOnLoss;
 };
 struct densDepParams {
 	float devCoeff; 
@@ -95,6 +94,7 @@ struct emigRules {
 	bool indVar;
 	short emigStage;
 	short emigTrait[2];
+	bool disperseOnLoss;
 };
 struct emigTraits {
 	float d0; 

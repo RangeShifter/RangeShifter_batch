@@ -232,7 +232,6 @@ void Species::setStage(const stageParams s) {
 	devStageDens = s.devStageDens;
 	survDens = s.survDens;
 	survStageDens = s.survStageDens;
-	disperseOnLoss = s.disperseOnLoss;
 }
 
 stageParams Species::getStageParams(void) {
@@ -242,7 +241,6 @@ stageParams Species::getStageParams(void) {
 	s.fecDens = fecDens; s.fecStageDens = fecStageDens;
 	s.devDens = devDens; s.devStageDens = devStageDens;
 	s.survDens = survDens; s.survStageDens = survStageDens;
-	s.disperseOnLoss = disperseOnLoss;
 	return s;
 }
 
@@ -583,6 +581,7 @@ void Species::setEmigRules(const emigRules e) {
 	sexDepEmig = e.sexDep;
 	indVarEmig = e.indVar;
 	emigStage = e.emigStage;
+	disperseOnLoss = e.disperseOnLoss;
 }
 
 emigRules Species::getEmigRules(void) {
@@ -592,6 +591,7 @@ emigRules Species::getEmigRules(void) {
 	e.sexDep = sexDepEmig;
 	e.indVar = indVarEmig;
 	e.emigStage = emigStage;
+	e.disperseOnLoss = disperseOnLoss;
 	return e;
 }
 

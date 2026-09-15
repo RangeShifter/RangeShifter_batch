@@ -1852,7 +1852,6 @@ int CheckStageFile(string indir)
 
 	// Parse header line;
 	bStageStructFile >> header; if (header != "Simulation") errors++;
-	bStageStructFile >> header; if (header != "PostDestructn") errors++;
 	bStageStructFile >> header; if (header != "PRep") errors++;
 	bStageStructFile >> header; if (header != "RepInterval") errors++;
 	bStageStructFile >> header; if (header != "MaxAge") errors++;
@@ -1895,8 +1894,6 @@ int CheckStageFile(string indir)
 		}
 
 		simuls++;
-		bStageStructFile >> inint;
-		if (inint < 0 || inint > 1) { BatchError(filetype, line, 1, "PostDestructn"); errors++; }
 		bStageStructFile >> infloat;
 		if (infloat <= 0 || infloat > 1.0) { BatchError(filetype, line, 20, "PRep"); errors++; }
 		bStageStructFile >> inint;
@@ -2499,7 +2496,7 @@ int CheckEmigFile()
 {
 	string header;
 	int simNb;
-	int inDensDep, inUseFullKern, inStgDep, inSexDep, inIndVar, inEmigStg, inStage, inSex;
+	int inDensDep, inPostDestr, inUseFullKern, inStgDep, inSexDep, inIndVar, inEmigStg, inStage, inSex;
 	bool isDensDep, isIndVar;
 	float inEP, inD0, inAlpha, inBeta;
 	int nbErrors = 0;
@@ -2512,6 +2509,7 @@ int CheckEmigFile()
 
 	// Parse header line;
 	bEmigrationFile >> header; if (header != "Simulation") nbErrors++;
+	bEmigrationFile >> header; if (header != "PostDestructn") nbErrors++;
 	bEmigrationFile >> header; if (header != "DensDep") nbErrors++;
 	bEmigrationFile >> header; if (header != "UseFullKern") nbErrors++;
 	bEmigrationFile >> header; if (header != "StageDep") nbErrors++;
@@ -2555,13 +2553,18 @@ int CheckEmigFile()
 		}
 
 		// read and validate columns relating to stage and sex-dependency and to IIV
-		bEmigrationFile >> inDensDep >> inUseFullKern >> inStgDep >> inSexDep;
+		bEmigrationFile >> inPostDestr >> inDensDep >> inUseFullKern >> inStgDep >> inSexDep;
 		bEmigrationFile >> inIndVar >> inEmigStg >> inStage >> inSex;
 		currentLine = CheckStageSex(whichInputFile, lineNb, simNb, prevLine, inStgDep, inSexDep, inStage, inSex, inIndVar, true, false);
 		if (currentLine.isNewSim) nbSims++;
 		nbErrors += currentLine.errors;
 		prevLine = currentLine;
 
+		if (inPostDestr != 0 && inPostDestr != 1) {
+			BatchError(whichInputFile, lineNb, 1, "PostDestructn");
+			nbErrors++;
+		}
+		
 		// validate density dependency
 		if (inDensDep != 0 && inDensDep != 1) {
 			BatchError(whichInputFile, lineNb, 1, "DensDep"); 
@@ -6437,10 +6440,7 @@ int ReadStageStructure()
 	string Inputs = paramsSim->getDir(1);
 
 	ssfile >> simulation;
-	ssfile >> postDestructn >> sstruct.probRep >> sstruct.repInterval >> sstruct.maxAge;
-	if (postDestructn == 1) sstruct.disperseOnLoss = true;
-	else sstruct.disperseOnLoss = false;
-
+	ssfile >> sstruct.probRep >> sstruct.repInterval >> sstruct.maxAge;
 	ssfile >> name;
 	// 'name' is TransMatrixFile
 	tmfile.open((Inputs + name).c_str());
@@ -6778,7 +6778,7 @@ int ReadStageWeights(int option)
 int ReadEmigration()
 {
 	int errorCode = 0;
-	int inFullKernel, inDensDep, inStgDep, inSexDep, inIndVar;
+	int inFullKernel, inDensDep, inStgDep, inSexDep, inIndVar, inPostDestr;
 	int Nlines, simulationNb, simNbFirstLine = 0, inStage, inSex, inEmigstage;
 	float inEp, inD0, inAlpha, inBeta;
 	bool isFirstLine = true;
@@ -6793,11 +6793,12 @@ int ReadEmigration()
 
 	for (int line = 0; line < Nlines; line++) {
 
-		emigFile >> simulationNb >> inDensDep >> inFullKernel 
+		emigFile >> simulationNb >> inPostDestr >> inDensDep >> inFullKernel 
 				 >> inStgDep >> inSexDep >> inIndVar >> inEmigstage;
 
 		if (isFirstLine) {
 			simNbFirstLine = simulationNb;
+			emig.disperseOnLoss = (inPostDestr == 1);
 			emig.densDep = (inDensDep == 1);
 			emig.stgDep = (inStgDep == 1);
 			emig.indVar = (inIndVar == 1);
