@@ -2661,7 +2661,10 @@ bool CheckInteractionFile(string indir)
 			nbErrors++;
 		}
 
-		std::regex processSeq("^\"?((fecundity|development|survival)?;)*(fecundity|development|survival)\"?$");
+		std::regex processSeq(gUsesStageStruct ?
+			"^\"?((fecundity|development|survival)?;)*(fecundity|development|survival)\"?$" :
+			"fecundity" // only fecundity is valid for single-stage model
+		);
 
 		int nbProcessesLeft = 0;
 		bool isMatchPos = regex_search(inProcessLeft, processSeq);
@@ -2673,7 +2676,7 @@ bool CheckInteractionFile(string indir)
 			{
 				std::smatch match = *i;
 				std::string matchStr = match.str();
-				if (matchStr == "fecundity" && inStgLeft == 0) {
+				if (gUsesStageStruct && matchStr == "fecundity" && inStgLeft == 0) {
 					BatchError(whichInputFile, lineNb, 0, " ");
 					batchLogOfs << "Species interactions cannot affect the fecundity of juveniles (stage 0) since they don't reproduce." << endl;
 					nbErrors++;
@@ -2683,7 +2686,12 @@ bool CheckInteractionFile(string indir)
 		}
 		else {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLogOfs << "ProcessLeft must be either one or multiple instances of fecundity, survival, and/or development, separated by semicolons." << endl;
+			if (gUsesStageStruct) {
+				batchLogOfs << "ProcessLeft must be either one or multiple instances of fecundity, survival, and/or development, separated by semicolons." << endl;
+			}
+			else {
+				batchLogOfs << "ProcessLeft must be set to fecundity." << endl;
+			}
 			nbErrors++;
 		}
 
@@ -2697,7 +2705,7 @@ bool CheckInteractionFile(string indir)
 			{
 				std::smatch match = *i;
 				std::string matchStr = match.str();
-				if (matchStr == "fecundity" && inStgRight == 0) {
+				if (gUsesStageStruct && matchStr == "fecundity" && inStgRight == 0) {
 					BatchError(whichInputFile, lineNb, 0, " ");
 					batchLogOfs << "Species interactions cannot affect the fecundity of juveniles (stage 0) since they don't reproduce." << endl;
 					nbErrors++;
@@ -2707,7 +2715,12 @@ bool CheckInteractionFile(string indir)
 		}
 		else {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLogOfs << "ProcessRight must be either one or multiple instances of fecundity, survival, and/or development, separated by semicolons." << endl;
+			if (gUsesStageStruct) {
+				batchLogOfs << "ProcessLeft must be either one or multiple instances of fecundity, survival, and/or development, separated by semicolons." << endl;
+			}
+			else {
+				batchLogOfs << "ProcessLeft must be set to fecundity." << endl;
+			}
 			nbErrors++;
 		}
 		

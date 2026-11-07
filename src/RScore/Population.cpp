@@ -565,12 +565,12 @@ void Population::reproduction(const float localK, const int resol, std::vector <
 		}
 	}
 
-	if (dem.stageStruct) {
+	// Received contributions from interspecific interactions
+	for (int stg = 1; stg < nStages; stg++) {
+		fec[stg][0] += fecRecdEffects[stg];
+	}
 
-		// Received contributions from interspecific interactions
-		for (int stg = 1; stg < nStages; stg++) {
-			fec[stg][0] += fecRecdEffects[stg];
-		}
+	if (dem.stageStruct) {
 
 		// Intraspecific density-dependence
 		for (int stg = 1; stg < nStages; stg++) {
@@ -610,9 +610,15 @@ void Population::reproduction(const float localK, const int resol, std::vector <
 	}
 	else { // non-structured - set fecundity for adult females only
 		if (localK > 0.0) {
-			if (dem.repType != 0) // sexual model
-				fec[1][0] *= 2.0; // cf manual
-			fec[1][0] /= (1.0f + fabs(dem.lambda - 1.0f) * pow((static_cast<float>(inds.size()) / localK), dem.bc));
+			double density_dependence = (static_cast<float>(inds.size()) / localK) +
+				fecResDepEffects[0]; // resource-dependent interactions
+
+			if (dem.repType != 0) fec[1][0] *= 2.0; // cf manual
+
+			fec[1][0] /= (1.0f + fabs(dem.lambda - 1.0f) * 
+				pow(density_dependence, dem.bc));
+
+			fec[1][0] += fecInitdEffects[0]; // initiated interspecific interactions
 		}
 	}
 
