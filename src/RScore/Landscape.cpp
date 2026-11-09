@@ -617,98 +617,103 @@ void Landscape::generateArtificialLandscape(const speciesMap_t& allSpecies)
 
 	int patchnum = 1;
 
+	// Initialise patch list for all species, with matrix patch
 	for (auto& sp : views::keys(allSpecies)) {
-
 		vector<Patch*> patches;
 		// Each species has a matrix patch with index 0
-		Patch* matrixPatch = new Patch(0, 0, sp);
-		patches.push_back(matrixPatch);
+		patches.push_back(new Patch(0, 0, sp));
+		patchesList.at(sp) = patches;
+	} 
+	if (isFractal) {
+		p = 1.0 - propSuit;
+		// createFractalLandscape() requires Max_prop > 1 (but does not check it!)
+		// as in turn it calls runif(1.0,Max_prop)
+		double maxpct = maxPct < 1.0 ? 100.0 : maxPct;
 
-		if (isFractal) {
-			p = 1.0 - propSuit;
-			// createFractalLandscape() requires Max_prop > 1 (but does not check it!)
-			// as in turn it calls runif(1.0,Max_prop)
-			double maxpct = maxPct < 1.0 ? 100.0 : maxPct;
+		vector<fractalPatch> FracLandscape = createFractalLandscape(dimY, dimX, hurst, p, maxpct, minPct);
 
-			vector<fractalPatch> FracLandscape = createFractalLandscape(dimY, dimX, hurst, p, maxpct, minPct);
-
-			vector<fractalPatch>::iterator iter = FracLandscape.begin();
-			while (iter != FracLandscape.end()) {
-				x = iter->y_coord;
-				y = iter->x_coord;
-				pCell = findCell(x, y);
-				if (isContinuous) {
-					if (iter->value > 0.0) { // habitat
-						pPatch = new Patch(patchnum, patchnum, sp);
-						patchnum++;
-						patches.push_back(pPatch);
+		vector<fractalPatch>::iterator iter = FracLandscape.begin();
+		while (iter != FracLandscape.end()) {
+			x = iter->y_coord;
+			y = iter->x_coord;
+			pCell = findCell(x, y);
+			bool is_habitat = isContinuous ? iter->value > 0.0 : iter->avail;
+			if (is_habitat) {
+				for (auto& sp : views::keys(allSpecies)) {
+					pPatch = new Patch(patchnum, patchnum, sp);
+					patchnum++;
+					if (isContinuous) {
 						addCellToPatch(sp, pCell, pPatch, iter->value);
 					}
-					else { // matrix
-						addCellToPatch(sp, pCell, matrixPatch, iter->value);
-					}
-				}
-				else { // discrete
-					if (iter->avail == 0) { // matrix
-						addCellToPatch(sp, pCell, matrixPatch);
-					}
-					else { // habitat
-						pPatch = new Patch(patchnum, patchnum, sp);
-						patchnum++;
-						patches.push_back(pPatch);
+					else {
 						addCellToPatch(sp, pCell, pPatch);
-						pCell->changeHabIndex(0, 1);
 					}
+					patchesList.at(sp).push_back(pPatch);
 				}
-				iter++;
+				pCell->changeHabIndex(0, 1);
 			}
+			else { // add to matrix patches
+				for (auto& sp : views::keys(allSpecies)) {
+					if (isContinuous) {
+						addCellToPatch(sp, pCell, patchesList.at(sp)[0], iter->value);
+					}
+					else {
+						addCellToPatch(sp, pCell, patchesList.at(sp)[0]);
+					}
+					patchesList.at(sp).push_back(pPatch);
+				}
+			}
+			iter++;
 		}
-		else { // random landscape
-			int hab = 0;
-			ncells = static_cast<int>(dimX * dimY * propSuit + 0.00001); // no. of cells to initialise
-			int i = 0;
+	}
+	else { // random landscape
+		int hab = 0;
+		ncells = static_cast<int>(dimX * dimY * propSuit + 0.00001); // no. of cells to initialise
+		int i = 0;
+		do {
 			do {
-				do {
-					x = pRandom->IRandom(0, dimX - 1);
-					y = pRandom->IRandom(0, dimY - 1);
-					pCell = findCell(x, y);
-					hab = pCell->getHabIndex(0);
-				} while (hab > 0);
+				x = pRandom->IRandom(0, dimX - 1);
+				y = pRandom->IRandom(0, dimY - 1);
+				pCell = findCell(x, y);
+				hab = pCell->getHabIndex(0);
+			} while (hab > 0);
 
+			for (auto& sp : views::keys(allSpecies)) {
 				pPatch = new Patch(patchnum, patchnum, sp);
 				patchnum++;
-				patches.push_back(pPatch);
+				patchesList.at(sp).push_back(pPatch);
 				addCellToPatch(sp, findCell(x, y), pPatch);
-				pCell->changeHabIndex(0, 1);
-
-				if (isContinuous) {
-					pCell->addHabitat((float)(minPct + pRandom->Random() * (maxPct - minPct)));
-				}
-				i++;
-			} while (i < ncells);
-
-			// remaining cells need to be added to the matrix patch
-			p = 0.0;
-			x = 0;
-			for (int yy = dimY - 1; yy >= 0; yy--) {
-				for (int xx = 0; xx < dimX; xx++) {
-
-					pCell = findCell(xx, yy);
-					if (isContinuous && pCell->getHabitat(0) <= 0.0) {
-						addCellToPatch(sp, pCell, matrixPatch, (float)p);
-					}
-					else if (pCell->getHabIndex(0) == 0) {
-						addCellToPatch(sp, pCell, matrixPatch, x);
-					}
-
-				}
 			}
+			pCell->changeHabIndex(0, 1);
 
-		} // fractal or not
+			if (isContinuous) {
+				pCell->addHabitat((float)(minPct + pRandom->Random() * (maxPct - minPct)));
+			}
+			i++;
+		} while (i < ncells);
 
-		patchesList.at(sp) = patches;
+		// remaining cells need to be added to the matrix patch
+		p = 0.0;
+		x = 0;
+		for (int yy = dimY - 1; yy >= 0; yy--) {
+			for (int xx = 0; xx < dimX; xx++) {
 
-	} // loop through species
+				pCell = findCell(xx, yy);
+				if (isContinuous && pCell->getHabitat(0) <= 0.0) {
+					for (auto& sp : views::keys(allSpecies)) {
+						addCellToPatch(sp, pCell, patchesList.at(sp)[0], (float)p);
+					}
+				}
+				else if (pCell->getHabIndex(0) == 0) {
+					for (auto& sp : views::keys(allSpecies)) {
+						addCellToPatch(sp, pCell, patchesList.at(sp)[0], x);
+					}
+				}
+
+			}
+		}
+
+	} // fractal or not
 }
 
 //---------------------------------------------------------------------------
