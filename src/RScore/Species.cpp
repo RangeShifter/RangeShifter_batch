@@ -26,6 +26,7 @@ Species::Species(const species_id& sp) {
 	ID = sp;
 
 	// initialise demographic parameters
+	nStages = 2; // non stage-structured have 2 stages, but stage 0 (juveniles) is never used.
 	propMales = 0.0;
 	harem = 1.0;
 	bc = 1.0;

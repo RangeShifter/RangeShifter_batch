@@ -610,15 +610,16 @@ void Population::reproduction(const float localK, const int resol, std::vector <
 	}
 	else { // non-structured - set fecundity for adult females only
 		if (localK > 0.0) {
+			const int stg = 1; // always stage 1 (adults) for non stage-structured
 			double density_dependence = (static_cast<float>(inds.size()) / localK) +
-				fecResDepEffects[0]; // resource-dependent interactions
+				fecResDepEffects[stg]; // resource-dependent interactions
 
 			if (dem.repType != 0) fec[1][0] *= 2.0; // cf manual
 
 			fec[1][0] /= (1.0f + fabs(dem.lambda - 1.0f) * 
 				pow(density_dependence, dem.bc));
 
-			fec[1][0] += fecInitdEffects[0]; // initiated interspecific interactions
+			fec[1][0] += fecInitdEffects[stg]; // initiated interspecific interactions
 		}
 	}
 
@@ -1422,6 +1423,7 @@ void Population::resolveResMedtdInteractions() {
 	for (int stg = 0; stg < nbStg; stg++) {
 
 		const auto& allResDepInteractions = pSpecies->getAllResDepInteractions(stg);
+		if (allResDepInteractions.size() == 0) continue;
 
 		for (auto& [partnerSpStg, interaction] : allResDepInteractions) {
 

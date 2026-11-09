@@ -368,28 +368,23 @@ bool checkInputFiles(string pathToControlFile, string inputDir, string outputDir
 	if (paramName == "InteractionFile" && !anyFormatError) {
 		if (filename != "NULL")  {
 			gUsesInteractions = true;
-			if (!gUsesStageStruct) {
-				batchLogOfs << "*** Stage-structure must be enabled to enable species interactions" << endl;
-				areInputFilesOk = false;
+			
+			pathToFile = inputDir + filename;
+			batchLogOfs << "Checking " << paramName << " " << pathToFile << endl;
+			ifsInteraction.open(pathToFile.c_str());
+			if (ifsInteraction.is_open()) {
+				if (CheckInteractionFile(inputDir)) {
+					FileOK(paramName, nSimuls, 0);
+					interactionFile = pathToFile;
+				}
+				else areInputFilesOk = false;
+				ifsInteraction.close();
 			}
 			else {
-				pathToFile = inputDir + filename;
-				batchLogOfs << "Checking " << paramName << " " << pathToFile << endl;
-				ifsInteraction.open(pathToFile.c_str());
-				if (ifsInteraction.is_open()) {
-					if (CheckInteractionFile(inputDir)) {
-						FileOK(paramName, nSimuls, 0);
-						interactionFile = pathToFile;
-					}
-					else areInputFilesOk = false;
-					ifsInteraction.close();
-				}
-				else {
-					OpenError(paramName, pathToFile);
-					areInputFilesOk = false;
-				}
-				ifsInteraction.clear();
+				OpenError(paramName, pathToFile);
+				areInputFilesOk = false;
 			}
+			ifsInteraction.clear();
 		}
 	}
 	else anyFormatError = true; // wrong control file format
@@ -2647,18 +2642,32 @@ bool CheckInteractionFile(string indir)
 			nbErrors++;
 		}
 
-		int nbStgLeft = gSpInputOpt.at(simNb).at(inSpLeft).nbStages;
-		int nbStgRight = gSpInputOpt.at(simNb).at(inSpRight).nbStages;
+		if (gUsesStageStruct) {
+			int nbStgLeft = gSpInputOpt.at(simNb).at(inSpLeft).nbStages;
+			int nbStgRight = gSpInputOpt.at(simNb).at(inSpRight).nbStages;
 
-		if (inStgLeft < 0 || inStgLeft >= nbStgLeft) {
-			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLogOfs << "StageLeft (" << to_string(inStgLeft) << ") must be between 0 and " << to_string(nbStgLeft - 1) << endl;
-			nbErrors++;
+			if (inStgLeft < 0 || inStgLeft >= nbStgLeft) {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "StageLeft (" << to_string(inStgLeft) << ") must be between 0 and " << to_string(nbStgLeft - 1) << endl;
+				nbErrors++;
+			}
+			if (inStgRight < 0 || inStgRight >= nbStgRight) {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "StageRight (" << to_string(inStgRight) << ") must be between 0 and " << to_string(inStgRight - 1) << endl;
+				nbErrors++;
+			}
 		}
-		if (inStgLeft < 0 || inStgRight >= nbStgRight) {
-			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLogOfs << "StageRight (" << to_string(inStgRight) << ") must be between 0 and " << to_string(inStgRight - 1) << endl;
-			nbErrors++;
+		else {
+			if (inStgLeft != 1) {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "StageLeft (" << to_string(inStgLeft) << ") must be 1 when there is no stage-structure." << endl;
+				nbErrors++;
+			}
+			if (inStgRight != 1) {
+				BatchError(whichInputFile, lineNb, 0, " ");
+				batchLogOfs << "StageRight (" << to_string(inStgRight) << ") must be 1 when there is no stage-structure." << endl;
+				nbErrors++;
+			}
 		}
 
 		std::regex processSeq(gUsesStageStruct ?
@@ -5645,11 +5654,14 @@ bool CheckInitFile(string indir)
 	ifsInitFile >> header; if (header != "RestrictFreq") errors++;
 	ifsInitFile >> header; if (header != "FinalFreezeYear") errors++;
 	ifsInitFile >> header; if (header != "InitIndsFile") errors++;
-	ifsInitFile >> header; if (header != "InitAge") errors++;
-	for (i = 1; i < maxNbStages; i++) {
-		colheader = "PropStage" + to_string(i);
-		ifsInitFile >> header; if (header != colheader) propnerrors++;
+	if (gUsesStageStruct) {
+		ifsInitFile >> header; if (header != "InitAge") errors++;
+		for (i = 1; i < maxNbStages; i++) {
+			colheader = "PropStage" + to_string(i);
+			ifsInitFile >> header; if (header != colheader) propnerrors++;
+		}
 	}
+	
 	// report any errors in headers, and if so, terminate validation
 	if (errors > 0 || propnerrors > 0) {
 		FormatError(filetype, errors + propnerrors);
@@ -6977,6 +6989,7 @@ int ReadParameters(const Landscape* pLandscape, speciesMap_t& simSpecies)
 	int nbStg;
 	ifsParamFile >> nbStg >> dem.repType >> dem.repSeasons;
 	ifsParamFile >> dem.propMales >> dem.harem >> dem.bc >> dem.lambda;
+	dem.stageStruct = gUsesStageStruct;
 	pSpecies->setDemogr(dem);
 	if (gUsesStageStruct) pSpecies->setNbStages(nbStg);
 
