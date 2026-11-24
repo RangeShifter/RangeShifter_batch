@@ -414,6 +414,7 @@ void NeutralStatsManager::calculatePairwiseFst(set<int> const& patchList, const 
 	{
 		const auto patchA = pLandscape->findPatch(pSpecies->getID(), patchVect[i]);
 		const auto pPopA = patchA->getPop();
+		if (pPopA == nullptr) continue;
 
 		// Skip if patch A has no individuals
 		if (pPopA->sampleSize() == 0)
@@ -423,7 +424,7 @@ void NeutralStatsManager::calculatePairwiseFst(set<int> const& patchList, const 
 		{
 			const auto patchB = pLandscape->findPatch(pSpecies->getID(), patchVect[j]);
 			const auto pPopB = patchB->getPop();
-
+			if (pPopB == nullptr) continue;
 			// Skip if patch B has no individuals
 			if (pPopB->sampleSize() == 0)
 				continue;
