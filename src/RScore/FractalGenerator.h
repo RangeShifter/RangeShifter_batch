@@ -59,7 +59,7 @@ public:
 	int x_coord;
 	int y_coord;
 	float value;
-	int avail; // if 0 the patch is not available as habitat, if 1 it is
+	bool avail; // if false the patch is not available as habitat, if true it is
 private:
 };
 

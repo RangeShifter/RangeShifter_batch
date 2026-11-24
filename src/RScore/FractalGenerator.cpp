@@ -26,7 +26,7 @@
 //---------------------------------------------------------------------------
 //----- Landscape creation --------------------------------------------------
 
-fractalPatch::fractalPatch() : x_coord(0), y_coord(0), value(0.0), avail(0) {}
+fractalPatch::fractalPatch() : x_coord(0), y_coord(0), value(0.0), avail(false) {}
 
 bool compare(const fractalPatch& z, const fractalPatch& zz) //compares only the values of the cells
 {
@@ -168,7 +168,7 @@ vector<fractalPatch>& createFractalLandscape(int X, int Y, double Hurst, double 
 			patch->x_coord = x;
 			patch->y_coord = y;
 			patch->value = (float)arena[x][y];
-			patch->avail = 1;
+			patch->avail = true;
 
 			patches.push_back(*patch);
 
@@ -183,7 +183,7 @@ vector<fractalPatch>& createFractalLandscape(int X, int Y, double Hurst, double 
 	for (ii = 0; ii < Nno; ii++)
 	{
 		patches[ii].value = 0.0;
-		patches[ii].avail = 0;
+		patches[ii].avail = false;
 	}
 
 	double min = (double)patches[Nno].value;        // variables for the rescaling

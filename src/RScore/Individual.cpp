@@ -835,6 +835,8 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 	int loopsteps = 0; // new counter to prevent infinite loop added 14/8/15
 	do {
 		do {
+			bool is_within_landscape;
+			bool is_in_same_cell;
 			do {
 				// randomise the cell within the patch, provided that the individual is still in
 				// its natal cell (i.e. not waiting in the matrix)
@@ -866,13 +868,12 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 				if (path != nullptr) (path->year)++;
 #endif
 				loopsteps++;
-			} while (loopsteps < maxLoopSteps &&
-				// keep drawing if out of bounds of landscape or same cell
-				((!absorbing && pSpecies->isWithinLimits(newX, newY))
-					|| (!usefullkernel && newX == loc.x && newY == loc.y))
-				);
+				is_within_landscape = !absorbing && pSpecies->isWithinLimits(newX, newY);
+				is_in_same_cell = !usefullkernel && newX == loc.x && newY == loc.y;
+			} while (loopsteps < maxLoopSteps && (!is_within_landscape || is_in_same_cell));
+
 			if (loopsteps < maxLoopSteps) {
-				if (pSpecies->isWithinLimits(newX, newY)) { // beyond absorbing boundary
+				if (!pSpecies->isWithinLimits(newX, newY)) { // beyond absorbing boundary
 					// this cannot be reached if not absorbing?
 					pCell = nullptr;
 					pPatch = nullptr;
