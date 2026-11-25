@@ -21,9 +21,17 @@
 
 #include "Species.h"
 
-Species::Species(const species_id& sp) {
+Species::Species(const species_id& sp, const short& repro, const short& nbRepSeasons, const bool& hasStgStruct, const short& nStg, const bool& usesMovtProc, const short& movementType) :
+	repType{ repro },
+	repSeasons{ nbRepSeasons },
+	stageStruct{ hasStgStruct },
+	nStages{ nStg },
+	usesMovtProcess{ usesMovtProc },
+	moveType{ movementType }
+{
 
 	ID = sp;
+	diploid = (repro == 1 || repro == 2); // was only set in setDemogr()
 
 	// initialise demographic parameters
 	nStages = 2; // non stage-structured have 2 stages, but stage 0 (juveniles) is never used.
@@ -31,6 +39,8 @@ Species::Species(const species_id& sp) {
 	harem = 1.0;
 	bc = 1.0;
 	lambda = 1.5;
+	fecSD = -9.0; // < 0: Poisson-distributed fecundity (default)
+	maxOffspring = -9; // < 0: no upper limit (default)
 	probRep = 1.0;
 	repInterval = 0;
 	maxAge = 1000;
@@ -163,6 +173,8 @@ void Species::setDemogr(const demogrParams d) {
 	if (d.harem > 0.0) harem = d.harem;
 	if (d.bc > 0.0) bc = d.bc;
 	if (d.lambda > 0.0) lambda = d.lambda;
+	fecSD = d.fecSD;
+	maxOffspring = d.maxOffspring;
 }
 
 demogrParams Species::getDemogrParams(void) {
@@ -174,6 +186,8 @@ demogrParams Species::getDemogrParams(void) {
 	d.harem = harem;
 	d.bc = bc;
 	d.lambda = lambda;
+	d.fecSD = fecSD;
+	d.maxOffspring = maxOffspring;
 	return d;
 }
 
@@ -404,7 +418,7 @@ densDepParams Species::getDensDep() {
 }
 
 void Species::createDDwtFec(short mSize) {
-	if (mSize >= 0 && mSize < (gMaxNbStages * gMaxNbSexes)) {
+	if (mSize >= 0 && mSize <= (gMaxNbStages * gMaxNbSexes)) {
 		if (ddwtFec != nullptr) deleteDDwtFec();
 		ddwtFecDim = mSize;
 		ddwtFec = new float* [mSize];
@@ -438,7 +452,7 @@ void Species::deleteDDwtFec() {
 }
 
 void Species::createDDwtDev(short mSize) {
-	if (mSize >= 0 && mSize < (gMaxNbStages * gMaxNbSexes)) {
+	if (mSize >= 0 && mSize <= (gMaxNbStages * gMaxNbSexes)) {
 		if (ddwtDev != nullptr) deleteDDwtDev();
 		ddwtDevDim = mSize;
 		ddwtDev = new float* [mSize];
@@ -473,7 +487,7 @@ void Species::deleteDDwtDev() {
 }
 
 void Species::createDDwtSurv(short mSize) {
-	if (mSize >= 0 && mSize < (gMaxNbStages * gMaxNbSexes)) {
+	if (mSize >= 0 && mSize <= (gMaxNbStages * gMaxNbSexes)) {
 		if (ddwtSurv != nullptr) deleteDDwtSurv();
 		ddwtSurvDim = mSize;
 		ddwtSurv = new float* [mSize];
@@ -594,7 +608,10 @@ void Species::addTrait(TraitType traitType, const SpeciesTrait& trait) {
 }
 
 SpeciesTrait* Species::getSpTrait(TraitType trait) const {
-	return spTraitTable.find(trait)->second.get();
+	auto it = spTraitTable.find(trait);
+	if (it == spTraitTable.end())
+		throw runtime_error("Species trait " + to_string(trait) + " does not exist in the trait table.");
+	return it->second.get();
 }
 
 void Species::clearTraitTable() {
@@ -717,11 +734,26 @@ bool Species::useFullKernel(void) { return fullKernel; }
 void Species::setSpKernTraits(const short stg, const short sex,
 	const trfrKernelParams k, const int resol)
 {
-	if (stg >= 0 && stg < gMaxNbStages && sex >= 0 && sex < gMaxNbSexes) {
-		if (k.meanDist1 > 0.0 && k.meanDist1 >= (float)resol) meanDist1[stg][sex] = k.meanDist1;
-		if (k.meanDist2 >= (float)resol) meanDist2[stg][sex] = k.meanDist2;
-		if (k.probKern1 >= 0.0 && k.probKern1 <= 1.0) probKern1[stg][sex] = k.probKern1;
+	if (stg < 0 || stg >= gMaxNbStages || sex < 0 || sex >= gMaxNbSexes) return;
+
+	// values <= 0 (e.g. -9) mean "not set here" (evolving kernel) and are ignored;
+	// means below the resolution are allowed only with the 'use full kernel' option
+	const float minDist = fullKernel ? 0.0f : (float)resol;
+	if (k.meanDist1 > 0.0) {
+		if (k.meanDist1 < minDist)
+			throw invalid_argument("Kernel mean distance 1 (" + to_string(k.meanDist1)
+				+ ") must be >= landscape resolution (" + to_string(resol)
+				+ ") unless the full kernel is used.");
+		meanDist1[stg][sex] = k.meanDist1;
 	}
+	if (k.meanDist2 > 0.0) {
+		if (k.meanDist2 < minDist)
+			throw invalid_argument("Kernel mean distance 2 (" + to_string(k.meanDist2)
+				+ ") must be >= landscape resolution (" + to_string(resol)
+				+ ") unless the full kernel is used.");
+		meanDist2[stg][sex] = k.meanDist2;
+	}
+	if (k.probKern1 >= 0.0 && k.probKern1 <= 1.0) probKern1[stg][sex] = k.probKern1;
 }
 
 trfrKernelParams Species::getSpKernTraits(short stg, short sex) {
@@ -769,6 +801,7 @@ trfrMovtParams Species::getSpMovtTraits(void) {
 	m.pr = pr; m.prMethod = prMethod; m.memSize = memSize; m.goalType = goalType;
 	m.dp = dp; m.gb = gb; m.alphaDB = alphaDB;  m.betaDB = betaDB;
 	m.stepMort = stepMort; m.stepLength = stepLength; m.rho = rho;
+	m.straightenPath = straightenPath;
 	return m;
 }
 
@@ -809,9 +842,13 @@ void Species::setHabCost(short hab, int cost) {
 }
 
 void Species::setHabMort(short hab, double mort) {
-	if (hab >= 0 && hab < habDimTrfr) {
-		if (mort >= 0.0 && mort < 1.0) habStepMort[hab] = mort;
-	}
+	if (hab < 0 || hab >= habDimTrfr) return;
+	// a value outside [0, 1) used to be ignored silently, leaving the default 0
+	// (e.g. 1.0 for a lethal habitat became harmless); RangeShiftR validates this beforehand
+	if (mort < 0.0 || mort >= 1.0)
+		throw invalid_argument("Per-step mortality for habitat " + to_string(hab)
+			+ " (" + to_string(mort) + ") must be within [0, 1).");
+	habStepMort[hab] = mort;
 }
 
 int Species::getHabCost(short hab) {
@@ -1020,6 +1057,8 @@ demogrParams createDefaultHaploidDemogrParams() {
 	d.harem = 1.0;
 	d.bc = 1.0;
 	d.lambda = 2.0;
+	d.fecSD = -1.0; // using poisson distribution
+	d.maxOffspring = -1; // no upper limit
 	return d;
 }
 
@@ -1032,6 +1071,8 @@ demogrParams createDefaultDiploidDemogrParams() {
 	d.harem = 1.0;
 	d.bc = 1.0;
 	d.lambda = 2.0;
+	d.fecSD = -1.0; // using poisson distribution
+	d.maxOffspring = -1; // no upper limit
 	return d;
 }
 

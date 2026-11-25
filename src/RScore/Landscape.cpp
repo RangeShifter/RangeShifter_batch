@@ -995,7 +995,7 @@ void Landscape::samplePatches(Species* pSpecies) {
 	else if (samplingOption == "random_occupied" || samplingOption == "random") {
 		if (nbToSample > eligiblePatches.size())
 			nbToSample = eligiblePatches.size();
-		auto rng = pRandom->getRNG();
+		auto& rng = pRandom->getRNG();// bugfix: auto& - plain auto would copy the generator again
 		sample(eligiblePatches.begin(), eligiblePatches.end(), std::back_inserter(sampledPatches),
 			nbToSample, rng);
 	}
@@ -3135,8 +3135,8 @@ int Landscape::readDemographicScaling(vector<string> scalinglayers){
 #endif
 
             // set badfloat
-			float badDSfloat = -9.0; 
-			if (DSnodata == -9) DSfloat = -99.0;
+            float badDSfloat = -9.0; 
+			if (DSnodata == -9) badDSfloat = -99.0;
 
             // loop over landscape x+y
             for (int y = dimY - 1; y >= 0; y--) {
@@ -3204,6 +3204,7 @@ int Landscape::readDemographicScaling(vector<string> scalinglayers){
         for (int y = dimY - 1; y >= 0; y--) {
             for (int x = 0; x < dimX; x++) {
                 // extract the vector in landscape at x, y
+                if (cells[y][x] == 0) continue; // no-data cell
                 std::vector<float> localDS = landscape[y][x];
                 cells[y][x]->addchgDemoScaling(localDS); // add the vector to the cell
             }

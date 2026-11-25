@@ -63,6 +63,7 @@ envStochParams paramStoch::getStoch()
 paramSim::paramSim(const string& pathToProjDir) :
 	dir{pathToProjDir}
 {
+	batchNum = 0;
 	simulation = 0;
 	reps = years = 1;
 	batchMode = absorbing = false;
@@ -108,7 +109,6 @@ simParams paramSim::getSim() {
 	s.absorbing = absorbing;
 	s.usesStageStruct = usesStageStruct;
 #if RS_RCPP
-	s.saveVisits = saveVisits;
 	s.outStartPaths = outStartPaths;
 	s.outIntPaths = outIntPaths;
 	s.outPaths = outPaths;

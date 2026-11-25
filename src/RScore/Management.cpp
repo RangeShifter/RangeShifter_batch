@@ -148,25 +148,35 @@ void Management::translocate(int yr, Landscape* pLandscape, const speciesMap_t& 
 #if RS_RCPP
                         Rcpp::Rcout << "Population does not exist in source patch or is 0! skipping translocation event." << endl;
 #endif
-                        return;
+#ifndef NDEBUG
+    cout << "Population does not exist in source patch or is 0! skipping translocation event." << endl;
+#endif
+                        continue; // skip this event only
                     }
                     else if (s_pPop->getNbInds() == 0) {
 
 #if RS_RCPP
                         Rcpp::Rcout << "Population does not exist in source patch or is 0! skipping translocation event." << endl;
 #endif
-                        return;
-                    }
-        } 
-        else { 
-           // Cell-based version
-           Cell* pCell = pLandscape->findCell(source_it->second[e].x, source_it->second[e].y);
-           if (pCell == nullptr) {
+#ifndef NDEBUG
+    cout << "Source patch was found but NULL! skipping translocation event." << endl; // not sure if this ever happens
+#endif
+                    continue; // skip this event only
+                }
+    //
+            } else{
 #if RS_RCPP
                Rcpp::Rcout << "Cell does not belong to landscape! skipping translocation event." << endl;
 #endif
-               return;
-           }
+#ifndef NDEBUG
+    cout << "Source patch was not found in landscape! skipping translocation event." << endl;
+#endif
+                continue; // skip this event only
+            }
+       } else{
+           Cell* pCell;
+           pCell = pLandscape->findCell(source_it->second[e].x, source_it->second[e].y);
+           if (pCell != 0) {
 #if RS_RCPP
                Rcpp::Rcout << "Source cell was found" << endl;
 #endif
@@ -185,17 +195,28 @@ void Management::translocate(int yr, Landscape* pLandscape, const speciesMap_t& 
 #if RS_RCPP
                        Rcpp::Rcout << "Population does not exist in source cell or is 0! skipping translocation event." << endl;
 #endif
-          
-                       return;
+#ifndef NDEBUG
+    cout << "Population does not exist in source cell or is 0! skipping translocation event." << endl;
+#endif
+                       continue; // skip this event only
                    }
-                   else if (s_pPop->getNbInds() == 0) { // must be separate condition, if pPop is nullptr pPop->getNbInds() still evaluates and throws
+               } else {
+#if RS_RCPP
+                   Rcpp::Rcout << "Source cell does not exist! skipping translocation event." << endl;
+#endif
+#ifndef NDEBUG
+    cout << "Source cell does not exist! skipping translocation event." << endl;
+#endif
+
+                   continue; // skip this event only
+               }
+           } else {
 #if RS_RCPP
                        Rcpp::Rcout << "Population does not exist in source cell or is 0! skipping translocation event." << endl;
 #endif
-                       return;
-                   }
-        } // patch or cell-based 
-
+               continue; // skip this event only
+           }
+        }
        // find the target patch and check for existence
        Patch* t_patch;
        Population* t_pPop;
@@ -204,12 +225,28 @@ void Management::translocate(int yr, Landscape* pLandscape, const speciesMap_t& 
 #if RS_RCPP
                 Rcpp::Rcout << "Target patch exist." << endl;
 #endif
-                t_patch = pLandscape->findPatch(sp, target_it->second[e].x);
+#ifndef NDEBUG
+    cout << "Target patch exist." << endl;
+#endif
+                t_patch = pLandscape->findPatch(target_it->second[e].x);
+                if (t_patch->getK() <= 0.0) { // no habitat in this year (e.g. dynamic landscape)
+	                // message as for a missing target patch
+                    #if RS_RCPP
+                        Rcpp::Rcout << "Target patch was found in landscape but has K = 0! skipping translocation event." << endl;
+                    #endif
+                    #ifndef NDEBUG
+                        cout << "Target patch was found in landscape but has K = 0! skipping translocation event." << endl;
+                    #endif
+	                continue; // skip this event only
+                }
            } else{
 #if RS_RCPP
                Rcpp::Rcout << "Target patch was not found in landscape! skipping translocation event." << endl;
 #endif
-               return;
+#ifndef NDEBUG
+    cout << "Target patch was not found in landscape! skipping translocation event." << endl;
+#endif
+               continue; // skip this event only
            }
        } else {
            Cell* pCell;
@@ -221,17 +258,33 @@ void Management::translocate(int yr, Landscape* pLandscape, const speciesMap_t& 
                Patch *t_ppatch = pCell->getPatch(sp);
                if (t_ppatch) {
                    t_patch = t_ppatch;
+                   if (t_patch->getK() <= 0.0) { // no habitat in this year (e.g. dynamic landscape)
+                          // message as for a missing target patch
+                          #if RS_RCPP
+                            Rcpp::Rcout << "Target cell was found in landscape but has K = 0! skipping translocation event." << endl;
+                          #endif
+                          #ifndef NDEBUG
+                            cout << "Target cell was found in landscape but has K = 0! skipping translocation event." << endl;
+                          #endif
+                          continue; // skip this event only
+                     }
                } else {
 #if RS_RCPP
                    Rcpp::Rcout << "Target cell does not exist! skipping translocation event." << endl;
 #endif
-                   return;
+#ifndef NDEBUG
+    cout << "Target cell does not exist! skipping translocation event." << endl;
+#endif
+                   continue; // skip this event only
                }
            } else {
 #if RS_RCPP
                Rcpp::Rcout << "Target cell does not belong to landscape! skipping translocation event." << endl;
 #endif
-               return;
+#ifndef NDEBUG
+    cout << "Target cell does not belong to landscape! skipping translocation event." << endl;
+#endif
+               continue; // skip this event only
            }
        }
 

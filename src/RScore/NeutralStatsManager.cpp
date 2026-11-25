@@ -151,7 +151,7 @@ void NeutralStatsManager::calcAllelicDiversityMetrics(set<int> const& patchList,
 		for (int patchId : patchList) {
 			const auto patch = pLandscape->findPatch(pSpecies->getID(), patchId);
 			const auto pPop = patch->getPop();
-			if (pPop != nullptr) {
+			if (pPop != nullptr && pPop->sampleSize() > 0) {
 				for (i = 0; i < nLoci; ++i)
 					for (j = 0; j < nAlleles; ++j)
 						meanNbFixedLociPerPatch += pPop->getAlleleFrequency(i, j) == 1;
@@ -367,9 +367,11 @@ void NeutralStatsManager::calculateGlobalFst(set<int> const& patchList, const in
 			b_l *= nBar / nBarMinusOne;
 			c_l *= 0.5;
 
-			perLocusFst[l] = a_l / (a_l + b_l + c_l);
+			const double denomLocus = a_l + b_l + c_l;
+			// monomorphic locus: estimators are undefined (0/0), report 0
+			perLocusFst[l] = a_l / denomLocus; //denomLocus == 0.0 ? 0.0 : a_l / denomLocus; // add check against 0/0 for monomorphic loci
 			perLocusFis[l] = (b_l + c_l) == 0.0 ? 0.0 : b_l / (b_l + c_l);
-			perLocusFit[l] = a_l + b_l / (a_l + b_l + c_l);
+			perLocusFit[l] = (a_l + b_l) / denomLocus; // denomLocus == 0.0 ? 0.0 : (a_l + b_l) / denomLocus; // bugfix: brackets were missing + add check against 0/0 for monomorphic loci 
 
 			numFst += a_l;
 			numFis += b_l;
@@ -381,9 +383,9 @@ void NeutralStatsManager::calculateGlobalFst(set<int> const& patchList, const in
 
 		denomFit = denomFst; // same quantity
 
-		fst = numFst / denomFst; // theta hat in eq. 1 in WC 1984
+		fst = numFst / denomFst; //(denomFst == 0.0) ? 0.0 : numFst / denomFst; // theta hat in eq. 1 in WC 1984
 		fis = (denomFis == 0.0) ? 0.0 : numFis / denomFis; // f hat
-		fit = numFit / denomFit; // F hat
+		fit = numFit / denomFit; //(denomFit == 0.0) ? 0.0 : numFit / denomFit; // F hat
 	}
 	else { // zero or one sampled pops, cannot compute F-stats
 		fst = 0.0;

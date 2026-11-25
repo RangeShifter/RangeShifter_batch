@@ -844,7 +844,10 @@ bool Individual::moveKernel(Landscape* pLandscape, const bool absorbing)
 				// and the (single) kernel mean is (not much more than) the cell size, an infinite
 				// loop could otherwise result, as the individual never reaches the patch edge
 				// (in a cell-based model, this has no effect, other than as a processing overhead)
-				if (status == dispersing) {
+				// NB: only for individuals that are still in their natal patch; individuals
+				// that waited in the matrix (status 3 -> 1 in ageIncrement()) must resume
+				// dispersal from their current location
+				if (status == dispersing && pCurrCell != nullptr && pCurrCell->getPatch() == pNatalPatch) {
 					pCell = pNatalPatch->getRandomCell();
 					if (pCell != nullptr) {
 						loc = pCell->getLocn();
@@ -1565,26 +1568,12 @@ array3x3f Individual::getHabMatrix(Landscape* pLand,
 			if (x != 0 || y != 0) { // not central cell (i.e. current cell)
 				for (int x3 = xmin; x3 <= xmax; x3++) {
 					for (int y3 = ymin; y3 <= ymax; y3++) {
-						// if cell is out of bounds, treat landscape as a torus
-						// for purpose of obtaining a cost,
-						if ((currCellX + x3) < 0) 
-							x4 = currCellX + x3 + land.maxX + 1;
-						else { 
-							if ((currCellX + x3) > land.maxX)
-								x4 = currCellX + x3 - land.maxX - 1;
-							else 
-								x4 = currCellX + x3;
-						}
-						if ((currCellY + y3) < 0)
-							y4 = currCellY + y3 + land.maxY + 1;
-						else { 
-							if ((currCellY + y3) > land.maxY)
-								y4 = currCellY + y3 - land.maxY - 1;
-							else y4 = currCellY + y3;
-						}
+						// cells beyond the landscape boundary are perceived like no-data cells,
+						// whose cost depends on the absorbing option (no longer treated as a torus)
+						x4 = x + x3;
+						y4 = y + y3;
 						if (x4 < 0 || x4 > land.maxX || y4 < 0 || y4 > land.maxY) {
-							// unexpected problem - e.g. due to ridiculously large PR
-							// treat as a no-data cell
+							// beyond the landscape boundary: treat as a no-data cell
 							cost = nodatacost;
 						}
 						else {
@@ -1786,7 +1775,7 @@ void Individual::overrideGenotype(TraitType whichTrait, const map<int, vector<sh
 
 void Individual::overrideGenotype(TraitType whichTrait, const map<int, vector<unsigned char>>& newGenotype) {
 
-	if (!whichTrait == NEUTRAL) {
+	if (whichTrait != NEUTRAL) {
 		throw logic_error("Attempt to override non-neutral trait with neutral trait genotype.\n");
 	}
 	NeutralTrait* pNeutralTrait;

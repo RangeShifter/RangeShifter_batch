@@ -341,7 +341,7 @@ int RunModel(Landscape* pLandscape, int seqsim, speciesMap_t simSpecies) {
 				// Pause species which last season has been exceeded
 				pComm->disableInactiveSpecies(gen);
 
-				if (pManagement->isTranslocationYear(yr)) {
+				if (gen == 0 && pManagement->isTranslocationYear(yr)) {
 				    pManagement->translocate(yr, pLandscape, simSpecies, pComm);
 				}
 
@@ -958,6 +958,14 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 			outPar << "MAX. HAREM SIZE (h)\t" << dem.harem << endl;
 			break;
 		}
+
+		outPar << "FECUNDITY DISTRIBUTION:\t";
+		if (dem.fecSD < 0.0) outPar << "Poisson" << endl;
+		else outPar << "Normal (truncated to integer, minimum 0), SD = " << dem.fecSD << endl;
+		outPar << "MAX. NO. OF OFFSPRING PER FEMALE:\t";
+		if (dem.maxOffspring < 0) outPar << "no limit" << endl;
+		else outPar << dem.maxOffspring << endl;
+
 		outPar << "STAGE STRUCTURE:\t";
 		if (dem.stageStruct) {
 			outPar << "yes" << endl;
@@ -1577,7 +1585,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 		outPar << endl << "GENETICS:" << endl;
 		// only if genetics are simulated
 	
-		if (pSpecies->doesOutputGeneValues()) {
+		if (pSpecies->getNTraits() > 0) {
 		
 			set<TraitType> traitList = pSpecies->getTraitTypes();
 			if (pSpecies->isDiploid()) outPar << "DIPLOID" << endl; 
@@ -1591,7 +1599,7 @@ void OutParameters(Landscape* pLandscape, speciesMap_t simSpecies) {
 			outPar << "Recombination rate: " << pSpecies->getRecombinationRate() << endl;
 			outPar << "Traits modelled:  " << endl;
 			for (auto trait : traitList)
-				outPar << trait << endl;
+				outPar << to_string(trait) << endl;
 		} else {
 		    outPar << "No genetics simulated" << endl;
 		}

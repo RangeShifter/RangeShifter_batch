@@ -25,6 +25,23 @@
 #include "Population.h"
 #include "Patch.h"
 
+// Draw the number of offspring of a breeding female.
+// - fecSD < 0  : Poisson distribution with mean meanFecundity (default)
+// - fecSD >= 0 : Normal distribution with mean meanFecundity and SD fecSD;
+//                the draw is truncated towards zero (deliberately, NOT rounded)
+//                and negative values are set to 0. Note that truncation lowers
+//                the realised mean fecundity relative to meanFecundity.
+// - maxOffspring >= 0 : upper limit; larger draws are set to maxOffspring
+//                       (applies to both distributions; < 0: no limit)
+static int drawNbOffspring(double meanFecundity, float fecSD, int maxOffspring) {
+	if (meanFecundity <= 0.0) return 0;
+	int n;
+	if (fecSD < 0.0) n = pRandom->Poisson(meanFecundity);
+	else n = std::max(0, static_cast<int>(pRandom->Normal(meanFecundity, fecSD)));
+	if (maxOffspring >= 0 && n > maxOffspring) n = maxOffspring;
+	return n;
+}
+
 #include <algorithm>
 //---------------------------------------------------------------------------
 
@@ -153,7 +170,8 @@ Population::Population(Species* pSp, Patch* pPch, int ninds, int resol)
 					if (nAges > 1) {
 						double rrr = pRandom->Random();
 						int ageclass = 0;
-						while (rrr > ageProb[ageclass]) ageclass++;
+						// guard against rounding: the last cumulative value may be < 1
+						while (ageclass < nAges - 1 && rrr > ageProb[ageclass]) ageclass++;
 						age = minage + ageclass;
 					}
 					else age = minage;
@@ -529,6 +547,8 @@ void Population::reproduction(const float localK, const int resol, std::vector <
 	transferRules trfr = pSpecies->getTransferRules();
 	settleType sett = pSpecies->getSettle();
 
+	double meanFecundity;
+	float fecStdDev = dem.fecSD;
 	int nsexes = dem.repType == 0 ? 1 : 2;
 	// if sexual, must also calculate male fecundity
 	// to decide which males reproduce (those with fec > 0)
@@ -640,13 +660,13 @@ void Population::reproduction(const float localK, const int resol, std::vector <
 				if (!pInd->breedsThisSeason(sstruct))
 					continue;
 
-			exptdNbOffspring = fec[pInd->getStats().stage][0];
-			nbOffspring = exptdNbOffspring <= 0.0 ? 0 : pRandom->Poisson(exptdNbOffspring);
+			meanFecundity = fec[pInd->getStats().stage][0];
+			nbOffspring = drawNbOffspring(meanFecundity, fecStdDev, dem.maxOffspring);
 			pCell = pPatch->getRandomCell();
 
 			for (int j = 0; j < nbOffspring; j++) {
 
-				newJuv = new Individual(pSpecies, pCell, pPatch, 0, 0, 0, dem.propMales, trfr.usesMovtProc, trfr.moveType);
+				newJuv = new Individual(pSpecies, pCell, pPatch, 0, 0, 0, 0.0, trfr.usesMovtProc, trfr.moveType);
 				if (pSpecies->getNTraits() > 0)
 					newJuv->inheritTraits(pInd, resol);
 				if (!newJuv->isViable())
@@ -693,8 +713,8 @@ void Population::reproduction(const float localK, const int resol, std::vector <
 			if (dem.repType == 2)
 				if (!pRandom->Bernoulli(propBreed)) continue;
 
-			exptdNbOffspring = fec[stage][0];
-			nbOffspring = exptdNbOffspring > 0.0 ? pRandom->Poisson(exptdNbOffspring) : 0;
+			meanFecundity = fec[stage][0];
+			nbOffspring = drawNbOffspring(meanFecundity, fecStdDev, dem.maxOffspring);
 			if (nbOffspring <= 0) continue;
 
 			// Select father randomly among eligible individuals
@@ -738,6 +758,7 @@ void Population::fledge()
 }
 
 Individual* Population::sampleInd() const {
+	if (inds.empty()) return nullptr;
 	int index = pRandom->IRandom(0, static_cast<int>(inds.size() - 1));
 	return inds[index];
 }
@@ -747,12 +768,14 @@ void Population::sampleIndsWithoutReplacement(string strNbToSample, const set<in
 	if (sampledInds.size() > 0) {
 		sampledInds.clear();
 	}
-	auto rng = pRandom->getRNG();
+	auto& rng = pRandom->getRNG();// bugfix: auto& - plain auto would copy the generator again
 	vector<Individual*> stagedInds;
 
 	// Stage individuals in eligible stages
 	for (int stage : sampleStages) {
 		vector<Individual*> toAdd = getIndividualsInStage(stage);
+		// exclude individuals already doomed this season (status 6-9; removed by survival1())
+		erase_if(toAdd, [](Individual* ind) { const int st = ind->getStatus(); return st >= 6 && st != 10; });
 		stagedInds.insert(stagedInds.begin(), toAdd.begin(), toAdd.end());
 	}
 
@@ -2196,7 +2219,7 @@ std::vector <Individual*> Population::getIndsWithCharacteristics( // Select a se
         if (max_age!=-9){
             // loop over all number of individuals in cell
             for (int i = 0; i < ninds; i++) {
-                if (filteredInds[i] != NULL && inds[i]->getStats().age < max_age){// if not already NULL + age too old
+                if (filteredInds[i] != NULL && inds[i]->getStats().age > max_age){// if not already NULL + age too old; bugfix: check was inverted before 
                     if (filteredInds[i] != NULL) filteredInds[i] = NULL; // set it to NULL if not already NULL
                 }
             }
@@ -2255,7 +2278,7 @@ int Population::sampleIndividuals( // Select a set of individuals with specified
         int sex     //sex
         ){
     if(sampledInds.size() > 0)  sampledInds.clear(); // clear old vector
-    auto rng = pRandom->getRNG(); // random number for sampling from suitable individuals
+    auto& rng = pRandom->getRNG(); // random number for sampling from suitable individuals bugfix: auto& - plain auto would copy the generator again
 
     // get individuals with the characteristics
     std::vector <Individual*> filtered;

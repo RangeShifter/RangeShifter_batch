@@ -45,6 +45,7 @@ using namespace std;
 void testIndividual();
 void testNeutralStats();
 void testPopulation();
+void testBugfixes();
 
 void run_unit_tests() {
 	cout << "******* Unit test output *******" << endl;
@@ -53,6 +54,7 @@ void run_unit_tests() {
 	testIndividual();
 	testPopulation();
 	testNeutralStats();
+	testBugfixes();
 	cout << endl << "************************" << endl;
 }
 #endif // UNIT_TESTS

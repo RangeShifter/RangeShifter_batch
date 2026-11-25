@@ -80,10 +80,9 @@ void Cell::addHabIndex(short hx) {
 	else habIxx.push_back(hx);
 }
 
-void Cell::changeHabIndex(short dynLandIndex, short hx) {
-	if (dynLandIndex >= 0 && dynLandIndex < habIxx.size() && hx >= 0) 
-		habIxx[dynLandIndex] = hx;
-	else habIxx[dynLandIndex] = 0;
+void Cell::changeHabIndex(short dynLandIndex,short hx) {
+	if (dynLandIndex < 0 || dynLandIndex >= (short)habIxx.size()) return; // invalid landscape change index
+	habIxx[dynLandIndex] = hx >= 0 ? hx : 0;
 }
 
 int Cell::getHabIndex(int dynLandIndex) {
