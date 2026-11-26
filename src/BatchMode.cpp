@@ -62,7 +62,7 @@ bool gHasGenetics = true;
 
 // global parameters for translocation feature
 int gHasManagement; // ManagementFile given (translocation and/or harvesting)
-map<int, bool> gUseFullKern; // per simulation: emigration uses the full kernel (UseFullKern = 1 in any line)
+map<int, bool> gUseFullKern; // per simulation: emigration uses the full kernel (UseFullKern = 1)
 int gTranslocNextSim = -1; // next simulation number to be read from the TranslocationFile (-1 = not read yet)
 int gHarvestNextSim = -1; // next simulation number to be read from the HarvestingFile (-1 = not read yet)
 
@@ -2599,7 +2599,8 @@ int CheckEmigFile()
 		if (currentLine.isNewSim) simPostDestr = inPostDestr;
 		else if (inPostDestr != simPostDestr) {
 			BatchError(whichInputFile, lineNb, 0, " ");
-			batchLog << "PostDestructn must be the same in all lines of a simulation" << endl;
+			batchLog << "PostDestructn must be the same in all lines (stages/sexes) of simulation " << simNb
+				<< " (it may differ between simulations)" << endl;
 			nbErrors++;
 		}
 		
@@ -2627,9 +2628,16 @@ int CheckEmigFile()
 			BatchError(whichInputFile, lineNb, 1, "UseFullKern"); 
 			nbErrors++;
 		}
-		// remembered for the kernel checks in the TransferFile (mean distance below the resolution)
-		if (currentLine.isNewSim) gUseFullKern[simNb] = false;
-		if (inUseFullKern == 1) gUseFullKern[simNb] = true;
+		// UseFullKern applies to the whole population: only the first line of a simulation
+		// is used, so all lines of a simulation must have the same value; it is remembered
+		// for the kernel checks in the TransferFile (mean distance below the resolution)
+		if (currentLine.isNewSim) gUseFullKern[simNb] = (inUseFullKern == 1);
+		else if ((inUseFullKern == 1) != gUseFullKern[simNb]) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "UseFullKern must be the same in all lines (stages/sexes) of simulation " << simNb
+				<< " (it may differ between simulations)" << endl;
+			nbErrors++;
+		}
 		if (inDensDep == 1 && inUseFullKern != 0) {
 				BatchError(whichInputFile, lineNb, 0, "UseFullKern"); 
 				nbErrors++;
