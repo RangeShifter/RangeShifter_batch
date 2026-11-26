@@ -1,0 +1,2 @@
+Simulation	TranslocationFile	TranslocationYears	CatchingRate	HarvestingFile	HarvestingYears	HarvestingSuccess
+1	TranslocationFile.txt	3	1	HarvestingFile.txt	2;4	1
