@@ -3008,8 +3008,12 @@ int CheckTransferFile(string indir)
 			}
 			if (inSMType == 0)
 			{
-				if (inSMConst < 0.0 || inSMConst >= 1.0) {
+				if (inSMConst < 0.0 || inSMConst > 1.0) {
 					BatchError(whichFile, whichLine, 20, "SMconst"); errors++;
+				}
+				else if (inSMConst == 1.0) {
+					batchLog << "*** Warning in " << whichFile << " at line " << whichLine
+						<< ": SMconst = 1, every disperser dies at its first step" << endl;
 				}
 			}
 			switch (landtype) {
@@ -3019,7 +3023,7 @@ int CheckTransferFile(string indir)
 					bTransferFile >> morthab;
 					if (inSMType == 1)
 					{
-						if (morthab < 0.0 || morthab >= 1.0) {
+						if (morthab < 0.0 || morthab > 1.0) { // 1 = lethal habitat
 							colheader = "MortHab" + to_string(i + 1);
 							BatchError(whichFile, whichLine, 20, colheader); errors++;
 						}
@@ -3046,10 +3050,10 @@ int CheckTransferFile(string indir)
 				bTransferFile >> morthab >> mortmatrix;
 				bTransferFile >> costhab >> costmatrix;
 				if (inSMType) { // validate habitat-dependent mortality
-					if (morthab < 0.0 || morthab >= 1.0) {
+					if (morthab < 0.0 || morthab > 1.0) { // 1 = lethal habitat
 						BatchError(whichFile, whichLine, 20, "MortHabitat"); errors++;
 					}
-					if (mortmatrix < 0.0 || mortmatrix >= 1.0) {
+					if (mortmatrix < 0.0 || mortmatrix > 1.0) {
 						BatchError(whichFile, whichLine, 20, "MortMatrix"); errors++;
 					}
 				}
@@ -3111,14 +3115,18 @@ int CheckTransferFile(string indir)
 					BatchError(whichFile, whichLine, 1, "SMtype"); errors++;
 				}
 				if (!inSMType) {
-					if (inSMConst < 0.0 || inSMConst >= 1.0) {
+					if (inSMConst < 0.0 || inSMConst > 1.0) {
 						BatchError(whichFile, whichLine, 20, "SMconst"); errors++;
+					}
+					else if (inSMConst == 1.0) {
+						batchLog << "*** Warning in " << whichFile << " at line " << whichLine
+							<< ": SMconst = 1, every disperser dies at its first step" << endl;
 					}
 				}
 				for (int i = 0; i < maxNhab; i++) {
 					bTransferFile >> morthab;
 					if (inSMType) {
-						if (morthab < 0.0 || morthab >= 1.0) {
+						if (morthab < 0.0 || morthab > 1.0) { // 1 = lethal habitat
 							colheader = "MortHab" + to_string(i + 1);
 							BatchError(whichFile, whichLine, 20, colheader); errors++;
 						}
@@ -3130,8 +3138,12 @@ int CheckTransferFile(string indir)
 					BatchError(whichFile, whichLine, 0, " "); errors++;
 					batchLog << "SMtype must be 0 for LandType 2 or 9" << endl;
 				}
-				if (inSMConst < 0.0 || inSMType >= 1.0) {
+				if (inSMConst < 0.0 || inSMConst > 1.0) {
 					BatchError(whichFile, whichLine, 20, "SMconst"); errors++;
+				}
+				else if (inSMConst == 1.0) {
+					batchLog << "*** Warning in " << whichFile << " at line " << whichLine
+						<< ": SMconst = 1, every disperser dies at its first step" << endl;
 				}
 			}
 			break;
