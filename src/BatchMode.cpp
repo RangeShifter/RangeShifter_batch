@@ -33,7 +33,7 @@ ifstream bStageWeightsFile;
 ifstream bEmigrationFile, bTransferFile, bSettlementFile;
 ifstream bTraitsFile, bGeneticsFile;
 ifstream bInitFile, bInitIndsFile;
-ifstream bTranslocFile, bManageFile;
+ifstream bTranslocFile, bManageFile, bHarvestFile;
 ifstream bLayerFile, bFecLayerFile, bDevLayerFile, bSurvLayerFile, bSpatialDemogFile;
 
 ofstream batchLog;
@@ -45,7 +45,7 @@ ifstream ssfile, tmfile, fdfile, ddfile, sdfile, flfile, dlfile, slfile;
 ifstream emigFile, transFile, settFile, initFile, initIndsFile;
 ifstream landfile, dynLandIfs;
 ifstream ifsGenetics, ifsTraits;
-ifstream translocFile, manageFile;
+ifstream translocFile, manageFile, harvestFile;
 
 // global variables passed between parsing functions...
 // should be removed eventually, maybe share variables through members of a class
@@ -61,7 +61,9 @@ int fileNtraits; // no. of traits defined in genetic architecture file
 bool gHasGenetics = true;
 
 // global parameters for translocation feature
-int gHasTranslocation; // translocation feature
+int gHasManagement; // ManagementFile given (translocation and/or harvesting)
+int gTranslocNextSim = -1; // next simulation number to be read from the TranslocationFile (-1 = not read yet)
+int gHarvestNextSim = -1; // next simulation number to be read from the HarvestingFile (-1 = not read yet)
 
 // global parameters for spatial demography feature
 bool gHasSpatialDemography; // spatial demography feature
@@ -82,7 +84,7 @@ string parameterFile;
 string landFile;
 string name_landscape, name_patch, name_spatialdemog, name_dynland, name_sp_dist, gNameCostFile;
 string stageStructFile, transMatrix;
-string emigrationFile, transferFile, settleFile, geneticsFile, traitsFile, initialFile, managementFile, translocationFile;
+string emigrationFile, transferFile, settleFile, geneticsFile, traitsFile, initialFile, managementFile, translocationFile, harvestingFile;
 string prevInitialIndsFile = " ";
 
 const string gNbLinesStr = "No. of lines for final Simulation ";
@@ -620,10 +622,10 @@ batchfiles ParseControlAndCheckInputFiles(string pathToControlFile, string indir
 	controlFile >> paramname >> filename;
 	if (paramname == "ManagementFile" && !anyFormatError) {
 		if (filename == "NULL") {
-			gHasTranslocation = false;
+			gHasManagement = false;
 		}
 		else {
-			gHasTranslocation = true;
+			gHasManagement = true;
 		fname = indir + filename;
 		batchLog << endl << "Checking " << paramname << " " << fname << endl;
 		bManageFile.open(fname.c_str());
@@ -702,7 +704,9 @@ int CheckParameterFile()
 	float inMinR, inMaxR, inMinK, inMaxK, sum_K, min_K, max_K;
 	float inGradSteep, inGradScalingFactor, inLocalExtOpt, inShiftRate;
 	float inStochAC, inStochStD, inLocalExtProb, inPropMales, inHarem;
-	float inBc, inRmax, inK;
+	float inBc, inRmax, inK, inFecSD;
+	int inMaxOffspring;
+	string inOutputFormat;
 	int inOutStartPop, inOutStartInd, inOutStartTraitCell, inOutStartTraitRow;
 	int inOutStartConn, inOutIntRange, inOutIntOcc, inOutIntPop, inOutIntInd;
 	int inOutIntTraitCell, inOutIntTraitRow, inOutIntConn, inMapsInterval;
@@ -739,6 +743,8 @@ int CheckParameterFile()
 	bParamFile >> header; if (header != "Harem") nbErrors++;
 	bParamFile >> header; if (header != "bc") nbErrors++;
 	bParamFile >> header; if (header != "Rmax") nbErrors++;
+	bParamFile >> header; if (header != "FecSD") nbErrors++;
+	bParamFile >> header; if (header != "MaxOffspring") nbErrors++;
 	for (i = 0; i < maxNhab; i++) {
 		Kheader = "K" + to_string(i + 1);
 		bParamFile >> header; 
@@ -757,6 +763,7 @@ int CheckParameterFile()
 	bParamFile >> header; if (header != "OutIntTraitRow") nbErrors++;
 	bParamFile >> header; if (header != "OutIntConn") nbErrors++;
 	bParamFile >> header; if (header != "SMSHeatMap") nbErrors++;
+	bParamFile >> header; if (header != "OutputFormat") nbErrors++;
 	bParamFile >> header; if (header != "FixReplicateSeed") nbErrors++;
 
 	if (nbErrors > 0 || nbKerrors > 0) {
@@ -971,6 +978,14 @@ int CheckParameterFile()
 			BatchError(whichFile, whichLine, 10, "Rmax");
 			nbErrors++; 
 		}
+		// distribution of the number of offspring (all population models):
+		// FecSD < 0 = Poisson, >= 0 = normal with this SD; MaxOffspring < 0 = no limit
+		bParamFile >> inFecSD >> inMaxOffspring;
+		if (inMaxOffspring == 0) {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "MaxOffspring must be a positive integer, or negative (e.g. -9) for no limit" << endl;
+			nbErrors++;
+		}
 		sum_K = 0.0; 
 		min_K = 9999999.0; 
 		max_K = 0.0;
@@ -1093,6 +1108,19 @@ int CheckParameterFile()
 			BatchError(whichFile, whichLine, 1, "SMSHeatMap");
 			nbErrors++;
 		}
+		bParamFile >> inOutputFormat;
+		if (inOutputFormat != "txt" && inOutputFormat != "hdf5") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "OutputFormat must be txt or hdf5" << endl;
+			nbErrors++;
+		}
+#ifndef RS_HDF5
+		if (inOutputFormat == "hdf5") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "OutputFormat hdf5 is not available: RangeShifter was built without HDF5 (use cmake -DHDF5=ON)" << endl;
+			nbErrors++;
+		}
+#endif
 		bParamFile >> inFixReplicateSeed; 
 		if (inFixReplicateSeed != 0 && inFixReplicateSeed != 1) {
 			BatchError(whichFile, whichLine, 1, "FixReplicateSeed");
@@ -4337,7 +4365,7 @@ int CheckGeneticsFile(string inputDirectory) {
 	string header;
 	int simNb, prevSimNb, errCode;
 	string inChromosomeEnds, inRecombinationRate, inTraitsFile, inPatchList, inStages,
-		inOutGeneValues, inOutGenesStart, inOutGenesInterval, inOutGlobalFst, inOutPairwiseFst, inOutPerLocusFst,
+		inOutGeneValues, inOutGenesStart, inOutGenesInterval, inOutGlobalFst, inOutPairwiseFst, inOutPerLocusFst, inOutPerPatchFis,
 		inOutGlobalFstStart, inOutGlobalFstInterval, inOutPairwiseFstStart, inOutPairwiseFstInterval, inNbrPatchesToSample, inNIndsToSample;
 	int inGenomeSize;
 	int nbErrors = 0;
@@ -4362,6 +4390,7 @@ int CheckGeneticsFile(string inputDirectory) {
 	bGeneticsFile >> header; if (header != "OutputPairwiseFstStart") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputPairwiseFstInterval") nbErrors++;
 	bGeneticsFile >> header; if (header != "OutputPerLocusFst") nbErrors++;
+	bGeneticsFile >> header; if (header != "OutputPerPatchFis") nbErrors++;
 	bGeneticsFile >> header; if (header != "PatchList") nbErrors++;
 	bGeneticsFile >> header; if (header != "NbrPatchesToSample") nbErrors++;
 	bGeneticsFile >> header; if (header != "nIndividualsToSample") nbErrors++;
@@ -4391,7 +4420,7 @@ int CheckGeneticsFile(string inputDirectory) {
 		}
 
 		bGeneticsFile >> inGenomeSize >> inChromosomeEnds >> inRecombinationRate >> inOutGeneValues >> inOutGenesStart >> inOutGenesInterval >> inOutGlobalFst >>
-			inOutGlobalFstStart >> inOutGlobalFstInterval >> inOutPairwiseFst >> inOutPairwiseFstStart >> inOutPairwiseFstInterval >> inOutPerLocusFst >> inPatchList >> inNbrPatchesToSample
+			inOutGlobalFstStart >> inOutGlobalFstInterval >> inOutPairwiseFst >> inOutPairwiseFstStart >> inOutPairwiseFstInterval >> inOutPerLocusFst >> inOutPerPatchFis >> inPatchList >> inNbrPatchesToSample
 			>> inNIndsToSample >> inStages;
 
 		//// Validate parameters
@@ -4452,6 +4481,16 @@ int CheckGeneticsFile(string inputDirectory) {
 		if (inOutPerLocusFst != "TRUE" && inOutPerLocusFst != "FALSE") {
 			BatchError(whichFile, whichLine, 0, " ");
 			batchLog << "OutputPerLocusFst must be either TRUE or FALSE" << endl;
+			nbErrors++;
+		}
+		if (inOutPerPatchFis != "TRUE" && inOutPerPatchFis != "FALSE") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "OutputPerPatchFis must be either TRUE or FALSE" << endl;
+			nbErrors++;
+		}
+		else if (inOutPerPatchFis == "TRUE" && inOutGlobalFst != "TRUE") {
+			BatchError(whichFile, whichLine, 0, " ");
+			batchLog << "OutputPerPatchFis requires OutputGlobalFst to be TRUE (same output years)" << endl;
 			nbErrors++;
 		}
 
@@ -4703,41 +4742,46 @@ int CheckGeneticsFile(string inputDirectory) {
 
 //---------------------------------------------------------------------------
 int CheckManageFile(string indir){
-	// needed temporary variables
-	string header; 
-	string ftype2 = "TranslocationFile";
-	string filename;
+	// ManagementFile: one line per simulation
+	// Simulation TranslocationFile TranslocationYears CatchingRate HarvestingFile HarvestingYears HarvestingSuccess
+	// TranslocationFile / HarvestingFile NULL = no translocation / no harvesting in that simulation
+	// (the corresponding years and rate are then ignored, e.g. # and -9)
+	string header;
 	string fname;
-	int nbErrors = 0, err = 0;
+	int nbErrors = 0;
 
 	const regex patternIntList{ "^\"?([0-9]+;)*[0-9]+\"?$" }; // semicolon-separated integer list
-	bool isMatch = false;
-
-	simCheck current, prev;
 
 	string whichFile = "ManagementFile";
 
 	int whichLine = 1;
 	int simNb = -98765, prevsimNb = -98765;
-	int nSimuls = 0, nSimsTransloc = 0;
-	string yearstr;
-	double catchingRate;
+	int nSimuls = 0;
+	string translocFilename, translocYears, harvestFilename, harvestYears;
+	double catchingRate, harvestSuccess;
+	string firstTranslocFile = "", firstHarvestFile = "";
+	set<int> simsWithTransloc, simsWithHarvest;
 
 	// checking header
 	bManageFile >> header; if (header != "Simulation") nbErrors++;
 	bManageFile >> header; if (header != "TranslocationFile") nbErrors++;
 	bManageFile >> header; if (header != "TranslocationYears") nbErrors++;
 	bManageFile >> header; if (header != "CatchingRate") nbErrors++;
-	
-	
-	// Parse data lines
+	bManageFile >> header; if (header != "HarvestingFile") nbErrors++;
+	bManageFile >> header; if (header != "HarvestingYears") nbErrors++;
+	bManageFile >> header; if (header != "HarvestingSuccess") nbErrors++;
+	if (nbErrors > 0) {
+		FormatError(whichFile, nbErrors);
+		return -111;
+	}
 
+	// Parse data lines
 	bManageFile >> simNb;
 	// first simulation number must match first one in parameterFile
 	if (simNb != gFirstSimNb) {
 		BatchError(whichFile, whichLine, 111, "Simulation"); 
 		nbErrors++;
-		}
+	}
 	while (simNb != -98765) {
 		// check if simNb is in gSimNbs
 		if (!gSimNbs.contains(simNb)) {
@@ -4745,63 +4789,48 @@ int CheckManageFile(string indir){
 			batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
 			nbErrors++;
 		}
+		if (simNb != prevsimNb) nSimuls++;
 
-		// if simNb != previous simNb increase number of simulations
-		if (simNb != prevsimNb) {
-			nSimuls++;
-		}
+		bManageFile >> translocFilename >> translocYears >> catchingRate
+			>> harvestFilename >> harvestYears >> harvestSuccess;
 
-		// Parse parameters
-		
-		bManageFile >> filename;
-		bManageFile >> yearstr;
-		bManageFile >> catchingRate;
-		
-		// check translocation filename + file existence + correct format by calling CheckTranslocFile
-
-		if (filename == "NULL") {
-			batchLog << "*** " << ftype2 << " is compulsory is you want to simulate translocation." << endl;
-			nbErrors++;
-		}
-		else {
-			fname = indir + filename;
-			batchLog << "Checking " << ftype2 << " " << fname << endl;
-			bTranslocFile.open(fname.c_str());
-			if (bTranslocFile.is_open()) {
-				nSimsTransloc = CheckTranslocFile();
-
-				if (nSimsTransloc < 0) {
-				        nbErrors++;
-				    }
-				    else {
-				        if (nSimsTransloc != gSimNbs.size()) {
-				            SimulnCountError(filename);
-				        }
-				        else translocationFile = fname;
-				    }
-
-				bTranslocFile.close();
+		// translocation
+		if (translocFilename != "NULL") {
+			if (firstTranslocFile == "") firstTranslocFile = translocFilename;
+			else if (translocFilename != firstTranslocFile) {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "All simulations must use the same TranslocationFile (one file for all simulations)." << endl;
+				nbErrors++;
 			}
-			else {
-				OpenError(ftype2, fname); nbErrors++;
-				}
-			if (bTranslocFile.is_open()) bTranslocFile.close();
-			bTranslocFile.clear();
+			simsWithTransloc.insert(simNb);
+			if (!regex_search(translocYears, patternIntList)) {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "TranslocationYears must be a semicolon-separated list of integers." << endl;
+				nbErrors++;
 			}
-		
-		// check  yearstr
-		// Check if it is a semicolon-separated list of integers
-		isMatch = regex_search(yearstr, patternIntList);
-		if (!isMatch) {
-			BatchError(whichFile, whichLine, 0, " ");
-			batchLog << "Translocation years must be a semicolon-separated list of integers." << endl;
-			nbErrors++;
+			if (catchingRate <= 0 || catchingRate > 1) {
+				BatchError(whichFile, whichLine, 20, "CatchingRate");
+				nbErrors++;
+			}
 		}
-		
-		// check catchingRate : double value > 0 but < 1
-		if (catchingRate <= 0 || catchingRate > 1) {
-			BatchError(whichFile, whichLine, 20, "CatchingRate");
-			nbErrors++;
+		// harvesting
+		if (harvestFilename != "NULL") {
+			if (firstHarvestFile == "") firstHarvestFile = harvestFilename;
+			else if (harvestFilename != firstHarvestFile) {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "All simulations must use the same HarvestingFile (one file for all simulations)." << endl;
+				nbErrors++;
+			}
+			simsWithHarvest.insert(simNb);
+			if (!regex_search(harvestYears, patternIntList)) {
+				BatchError(whichFile, whichLine, 0, " ");
+				batchLog << "HarvestingYears must be a semicolon-separated list of integers." << endl;
+				nbErrors++;
+			}
+			if (harvestSuccess < 0 || harvestSuccess > 1) {
+				BatchError(whichFile, whichLine, 20, "HarvestingSuccess");
+				nbErrors++;
+			}
 		}
 
 		// read next simulation
@@ -4812,19 +4841,50 @@ int CheckManageFile(string indir){
 		if (bManageFile.eof()) simNb = -98765;
 	} // end of while loop
 
-	// check for correct number of lines for previous simulation
-
 	if (!bManageFile.eof()) {
 		EOFerror(whichFile);
 		nbErrors++;
 	}
 
-	if (nbErrors > 0) return -111;
-	else return nSimuls;
+	// check the translocation and harvesting files once
+	if (firstTranslocFile != "") {
+		string ftype2 = "TranslocationFile";
+		fname = indir + firstTranslocFile;
+		batchLog << "Checking " << ftype2 << " " << fname << endl;
+		bTranslocFile.open(fname.c_str());
+		if (bTranslocFile.is_open()) {
+			if (CheckTranslocFile(simsWithTransloc) < 0) nbErrors++;
+			else translocationFile = fname;
+			bTranslocFile.close();
+		}
+		else {
+			OpenError(ftype2, fname); nbErrors++;
+		}
+		bTranslocFile.clear();
+	}
+	if (firstHarvestFile != "") {
+		string ftype2 = "HarvestingFile";
+		fname = indir + firstHarvestFile;
+		batchLog << "Checking " << ftype2 << " " << fname << endl;
+		bHarvestFile.open(fname.c_str());
+		if (bHarvestFile.is_open()) {
+			if (CheckHarvestFile(simsWithHarvest) < 0) nbErrors++;
+			else harvestingFile = fname;
+			bHarvestFile.close();
+		}
+		else {
+			OpenError(ftype2, fname); nbErrors++;
+		}
+		bHarvestFile.clear();
 	}
 
+	if (nbErrors > 0) return -111;
+	else return nSimuls;
+}
+
 //---------------------------------------------------------------------------
-int CheckTranslocFile(){
+int CheckTranslocFile(const set<int>& simsWithTransloc){
+	// simsWithTransloc: simulations whose ManagementFile line names this file
 	string header;
 	int errors = 0;
 
@@ -4860,19 +4920,20 @@ int CheckTranslocFile(){
 
 	bTranslocFile >> simNumber; // several lines can contain the same simulation number
 
-	// first simulation number must match first one in parameterFile
-	if (simNumber != gFirstSimNb) {
-		BatchError(file, line, 111, "Simulation");
-		errors++;
-	}
 
 	while (simNumber != -98765) {
-			// check if simNb is in gSimNbs
-			if (!gSimNbs.contains(simNumber)) {
+			// simulation must have a TranslocationFile in the ManagementFile; ascending order
+			if (!simsWithTransloc.contains(simNumber)) {
 				BatchError(file, line, 0, " ");
-				batchLog << "Simulation number doesn't match those in ParametersFile" << endl;
+				batchLog << "Simulation " << simNumber << " has no TranslocationFile in the ManagementFile" << endl;
 				errors++;
 			}
+			if (simNumber < prevsimNumber) {
+				BatchError(file, line, 0, " ");
+				batchLog << "Simulation numbers must be in ascending order." << endl;
+				errors++;
+			}
+			if (simNumber != prevsimNumber) prevYear = -98765; // years are ordered within a simulation
 
 			// if simNb != previous simNb increase number of simulations
 			if (simNumber != prevsimNumber) {
@@ -5082,10 +5143,168 @@ int CheckTranslocFile(){
 		errors++;
 	}
 
+	if (nSims != (int)simsWithTransloc.size()) {
+		BatchError(file, -999, 0, " ");
+		batchLog << "Each simulation with a TranslocationFile in the ManagementFile must have at least one line in it." << endl;
+		errors++;
+	}
+
 	if (errors > 0) return -111;
 	else return nSims;
 
 	
+}
+
+//---------------------------------------------------------------------------
+// HarvestingFile: one line per harvesting event
+// Simulation Year Location Threshold NbHarvest MinAge MaxAge Stage Sex
+// Location = patch ID (patch-based model) or X;Y (cell-based model)
+// Threshold = min. population size for the event to be applied (-9 = none)
+int CheckHarvestFile(const set<int>& simsWithHarvest){
+	string header;
+	int errors = 0;
+	string file = "HarvestingFile";
+
+	int line = 1;
+	int simNumber = -98765, prevsimNumber = -98765;
+	int nSims = 0;
+	int Year, prevYear = -98765;
+	string locStr;
+	int threshold, nbHarvest, minAge, maxAge, stage, sex;
+
+	const regex pattern2Int{ "^\"?([0-9]+);([0-9]+)\"?$" }; // semicolon-separated integers
+	const regex patternInt{ "^\"?([0-9]+)\"?$" }; // single integer
+	smatch match;
+
+	// Check header line
+	bHarvestFile >> header; if (header != "Simulation") errors++;
+	bHarvestFile >> header; if (header != "Year") errors++;
+	bHarvestFile >> header; if (header != "Location") errors++;
+	bHarvestFile >> header; if (header != "Threshold") errors++;
+	bHarvestFile >> header; if (header != "NbHarvest") errors++;
+	bHarvestFile >> header; if (header != "MinAge") errors++;
+	bHarvestFile >> header; if (header != "MaxAge") errors++;
+	bHarvestFile >> header; if (header != "Stage") errors++;
+	bHarvestFile >> header; if (header != "Sex") errors++;
+	if (errors > 0) {
+		FormatError(file, errors);
+		return -111;
+	}
+
+	bHarvestFile >> simNumber;
+	while (simNumber != -98765) {
+		if (!simsWithHarvest.contains(simNumber)) {
+			BatchError(file, line, 0, " ");
+			batchLog << "Simulation " << simNumber << " has no HarvestingFile in the ManagementFile" << endl;
+			errors++;
+		}
+		if (simNumber < prevsimNumber) {
+			BatchError(file, line, 0, " ");
+			batchLog << "Simulation numbers must be in ascending order." << endl;
+			errors++;
+		}
+		if (simNumber != prevsimNumber) {
+			nSims++;
+			prevYear = -98765;
+		}
+
+		bHarvestFile >> Year >> locStr >> threshold >> nbHarvest >> minAge >> maxAge >> stage >> sex;
+
+		if (Year < 0) {
+			BatchError(file, line, 19, "Year");
+			errors++;
+		}
+		if (Year < prevYear) {
+			BatchError(file, line, 0, " ");
+			batchLog << "Harvesting years must be in ascending order." << endl;
+			errors++;
+		}
+		if (Year > prevYear) prevYear = Year;
+
+		if (patchmodel) {
+			if (!std::regex_match(locStr, match, patternInt) || std::stoi(match[1]) <= 0) {
+				BatchError(file, line, 0, " ");
+				batchLog << "Location must be a patch ID (positive integer) in a patch-based model." << endl;
+				errors++;
+			}
+		}
+		else {
+			if (!std::regex_match(locStr, match, pattern2Int)) {
+				BatchError(file, line, 0, " ");
+				batchLog << "Location must be X;Y (two non-negative integers) in a cell-based model." << endl;
+				errors++;
+			}
+		}
+		if (threshold <= 0 && threshold != -9) {
+			BatchError(file, line, 0, " ");
+			batchLog << "Threshold must be a positive integer or -9 (no threshold)." << endl;
+			errors++;
+		}
+		if (nbHarvest <= 0) {
+			BatchError(file, line, 10, "NbHarvest");
+			errors++;
+		}
+		if (stagestruct) {
+			if (minAge < 0 && minAge != -9) {
+				BatchError(file, line, 0, " ");
+				batchLog << "MinAge must be >= 0 or -9." << endl;
+				errors++;
+			}
+			if (maxAge < 0 && maxAge != -9) {
+				BatchError(file, line, 0, " ");
+				batchLog << "MaxAge must be >= 0 or -9." << endl;
+				errors++;
+			}
+			if (maxAge >= 0 && minAge >= 0 && maxAge < minAge) {
+				BatchError(file, line, 0, " ");
+				batchLog << "MaxAge must not be smaller than MinAge." << endl;
+				errors++;
+			}
+			if ((stage < 0 && stage != -9) || stage >= stages) {
+				BatchError(file, line, 0, " ");
+				batchLog << "Stage must be -9 or between 0 and the number of stages - 1." << endl;
+				errors++;
+			}
+		}
+		else {
+			if (minAge != -9 || maxAge != -9 || stage != -9) {
+				BatchError(file, line, 0, " ");
+				batchLog << "MinAge, MaxAge and Stage must be -9 for a non-stage-structured model." << endl;
+				errors++;
+			}
+		}
+		if (gNbSexesDisp == 2) { // sexual model (simple or complex)
+			if (sex != -9 && sex != 0 && sex != 1) {
+				BatchError(file, line, 0, " ");
+				batchLog << "Sex must be -9, 0 or 1." << endl;
+				errors++;
+			}
+		}
+		else if (sex != -9) {
+			BatchError(file, line, 0, " ");
+			batchLog << "Sex must be -9 for asexual models." << endl;
+			errors++;
+		}
+
+		line++;
+		prevsimNumber = simNumber;
+		simNumber = -98765;
+		bHarvestFile >> simNumber;
+		if (bHarvestFile.eof()) simNumber = -98765;
+	}
+
+	if (!bHarvestFile.eof()) {
+		EOFerror(file);
+		errors++;
+	}
+	if (nSims != (int)simsWithHarvest.size()) {
+		BatchError(file, -999, 0, " ");
+		batchLog << "Each simulation with a HarvestingFile in the ManagementFile must have at least one line in it." << endl;
+		errors++;
+	}
+
+	if (errors > 0) return -111;
+	else return nSims;
 }
 
 //---------------------------------------------------------------------------
@@ -5941,8 +6160,9 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		outputPairwiseFstStart = parameters[11] == "#" ? 0 : stoi(parameters[11]);
 		outputPairwiseFstInterval = parameters[12] == "#" ? 0 : stoi(parameters[12]);
 		outputPerLocusFst = (parameters[13] == "TRUE");
+		const bool outputPerPatchFis = (parameters[14] == "TRUE");
 
-		string inPatches = parameters[14];
+		string inPatches = parameters[15];
 		string patchSamplingOption;
 		int nPatchesToSample = 0;
 		if (inPatches != "all" && inPatches != "random" && inPatches != "random_occupied") {
@@ -5955,24 +6175,25 @@ int ReadGeneticsFile(ifstream& ifs, Landscape* pLandscape) {
 		else {
 			patchSamplingOption = inPatches;
 			if (inPatches == "random" || inPatches == "random_occupied")
-				nPatchesToSample = stoi(parameters[15]);
+				nPatchesToSample = stoi(parameters[16]);
 			// patchList remains empty, filled when patches are sampled every gen
 		}
-		const string strNbInds = parameters[16];
+		const string strNbInds = parameters[17];
 		const int nbStages = pSpecies->getStageParams().nStages;
-		parameters[17].erase(
-			remove(parameters[17].begin(), parameters[17].end(), '\r'),
-			parameters[17].end() // bye windows line breaks
+		parameters[18].erase(
+			remove(parameters[18].begin(), parameters[18].end(), '\r'),
+			parameters[18].end() // bye windows line breaks
 		);
 
 		set<int> stagesToSampleFrom;
-		if (parameters[17] != "#")
-			stagesToSampleFrom = stringToStages(parameters[17], nbStages);
+		if (parameters[18] != "#")
+			stagesToSampleFrom = stringToStages(parameters[18], nbStages);
 
 		pSpecies->setGeneticParameters(chrEnds, genomeSize, recombinationRate,
 			patchList, strNbInds, stagesToSampleFrom, nPatchesToSample);
 		paramsSim->setGeneticSim(patchSamplingOption, outputGeneValues, outputGenesStart, outputGenesInterval, outputPairwiseFst, outputGlobalFst, outputGlobalFstStart, outputGlobalFstInterval,
 			outputPairwiseFstStart, outputPairwiseFstInterval, outputPerLocusFst);
+		paramsSim->setOutputPerPatchFis(outputPerPatchFis);
 	}
 	else {
 		throw runtime_error("GeneticsFile is not open.");
@@ -6339,7 +6560,7 @@ int ReadParameters(Landscape* pLandscape)
 	float k, grad_inc, opt_y, f, optEXT, shift_rate;
 	bool shifting;
 	string inAbsorbing, inShifting, inEnvStoch, inEnvStochType, inLocalExt,
-		inSaveMaps, inHeatMaps, inDrawLoaded, inFixRepSeed;
+		inSaveMaps, inHeatMaps, inDrawLoaded, inFixRepSeed, inOutputFormat;
 
 	parameters >> sim.simulation >> sim.reps >> sim.years;
 	parameters >> inAbsorbing;
@@ -6383,6 +6604,7 @@ int ReadParameters(Landscape* pLandscape)
 
 	// Demographic parameters
 	parameters >> dem.propMales >> dem.harem >> dem.bc >> dem.lambda;
+	parameters >> dem.fecSD >> dem.maxOffspring; // distribution of the number of offspring
 	pSpecies->setDemogr(dem);
 
 	// Artificial landscape
@@ -6440,6 +6662,8 @@ int ReadParameters(Landscape* pLandscape)
 
 	parameters >> inHeatMaps;
 	sim.saveVisits = inHeatMaps == "1";
+	parameters >> inOutputFormat;
+	sim.outputFormat = (inOutputFormat == "hdf5") ? 1 : 0; // Pop, Inds and geneValues outputs
 	parameters >> inFixRepSeed;
 	sim.fixReplicateSeed = inFixRepSeed == "1";
 
@@ -7548,67 +7772,63 @@ int ReadInitIndsFile(int option, Landscape* pLandscape, string indsfile) {
 //---------------------------------------------------------------------------
 int ReadManageFile(Landscape* pLandscape)
 {
-	// Just to make sure - but for the management file, I don't think it is needed
 	int error = 0;
-	// create new Management - is that needed??
-	if(pManagement != NULL)
+	if (pManagement != NULL)
 		delete pManagement;
 	pManagement = new Management;
-	// get landscape parameter (to distinguish between patch and cell model)
-	landParams paramsLand = pLandscape->getLandParams();
-	// get demographic parameter (to distinguish between sexual and asexual reproduction, and stage structured or not)
-	demogrParams dem = pSpecies->getDemogrParams();
-	// get simulation parameter (to get the number of years)
 	simParams sim = paramsSim->getSim();
 
-	// get default values
 	managementParams m = pManagement->getManagementParams();
 	translocationParams t = pManagement->getTranslocationParams();
+	harvestingParams h = pManagement->getHarvestingParams();
 
 	int simNb;
-	double catching_rate; 
-	string translocYears;
-	string translocation_file; 
+	double catching_rate, harvesting_success;
+	string translocation_file, translocYears, harvesting_file, harvestYears;
 
-	// read from management file:
-	// first line: simNb, translocation_file, translocation_years, catching_rate
-	manageFile >> simNb >> translocation_file >> translocYears >> catching_rate;
+	// one line per simulation:
+	// simNb, translocation file, translocation years, catching rate, harvesting file, harvesting years, harvesting success
+	manageFile >> simNb >> translocation_file >> translocYears >> catching_rate
+		>> harvesting_file >> harvestYears >> harvesting_success;
 
-	// transform translocYears given as semicolon separated list of integers to vector of integers
-	std::stringstream ss(translocYears);
-	int i;
-	while (ss >> i)
-	{
-		// check if the year is within the simulated years
-		if (i >0 && i <= sim.years){
-	                if(std::find(t.translocation_years.begin(), t.translocation_years.end(), i) == t.translocation_years.end()) {
-	                    t.translocation_years.push_back(i);
-		if (ss.peek() == ';')
-			ss.ignore();
-	                }else{
-	        			throw logic_error("Translocation years should not be duplicated.");
-	        			error++;
-	                }
-		} else {
-			throw logic_error("Translocation years must be between 0 and the simulated years.");
-			error++;
+	// semicolon-separated list of years -> ascending vector without duplicates; years run from 0 to Years - 1
+	auto parseYears = [&sim](const string& yearstr, const string& what) {
+		vector<int> years;
+		std::stringstream ss(yearstr);
+		int yr;
+		while (ss >> yr) {
+			if (yr < 0 || yr >= sim.years)
+				throw logic_error(what + " years must be between 0 and the number of simulated years - 1.");
+			if (std::find(years.begin(), years.end(), yr) != years.end())
+				throw logic_error(what + " years should not be duplicated.");
+			years.push_back(yr);
+			if (ss.peek() == ';') ss.ignore();
 		}
-		}
-	
-	// activate translocation if Translocation File is given!
-	if(t.translocation_years[0] > 0) m.translocation = true;
-	if (catching_rate > 0) t.catching_rate = catching_rate;
+		std::sort(years.begin(), years.end());
+		return years;
+	};
 
-	// set and update the management parameters
+	m.translocation = translocation_file != "NULL";
+	if (m.translocation) {
+		t.translocation_years = parseYears(translocYears, "Translocation");
+		t.catching_rate = catching_rate;
+	}
+	m.harvesting = harvesting_file != "NULL";
+	if (m.harvesting) {
+		h.harvesting_years = parseYears(harvestYears, "Harvesting");
+		h.harvesting_success = harvesting_success;
+	}
+
 	pManagement->setManagementParams(m);
 	pManagement->setTranslocationParams(t);
+	pManagement->setHarvestingParams(h);
 
-	// now read translocation setting for this simNb
-	error = error + ReadTranslocationFile(pLandscape, simNb);
-
+	// read the events of this simulation
+	if (m.translocation) error += ReadTranslocationFile(pLandscape, simNb);
+	if (m.harvesting) error += ReadHarvestingFile(pLandscape, simNb);
 
 	return error;
-	}
+}
 
 //---------------------------------------------------------------------------
 int ReadTranslocationFile(Landscape* pLandscape, int currsim)
@@ -7635,7 +7855,12 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim)
 	translocationParams t = pManagement->getTranslocationParams();
 
 	// read from Translocation file:
-	if (currsim == gFirstSimNb) translocFile >> simulationNb; // only in the first simulation, read the simulation number
+	// the simulation number of the next line has already been read (or not yet, at the start);
+	// simulations without translocation have no lines in the file
+	if (gTranslocNextSim == -1) {
+		if (!(translocFile >> gTranslocNextSim)) gTranslocNextSim = -98765;
+	}
+	simulationNb = gTranslocNextSim;
 	// parse all parameters for the current simulation number
 	while (simulationNb == currsim){
 		translocFile >> Year >> sourceStr >> targetStr >> nbCatch >> minAge >> maxAge >> Stage >> Sex;
@@ -7660,11 +7885,11 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim)
 		if(paramsLand.patchModel){ // if patch model, the x is the patch ID
 			// only if patch ID exists? otherwise exit?
 			int sourceID = stoi(sourceStr);
-			if(sourceID <= pLandscape->patchCount() && sourceID > 0){ // not sure if I can run this check here
+			if(sourceID > 0 && pLandscape->existsPatch(sourceID)){ // patch IDs need not be contiguous
 				s.x = sourceID;
 				s.y = -9;
 			} else{
-				throw logic_error("Source patch ID must be between 1 and the highest patchID.");
+				throw logic_error("Source patch ID does not exist in the landscape.");
 				errorTransloc++;
 			}
 
@@ -7694,11 +7919,11 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim)
 		if(paramsLand.patchModel){ // if patch model, the x is the patch ID
 			int targetID = stoi(targetStr);
 			// only if patch ID exists? otherwise exit?
-			if(targetID <= pLandscape->patchCount() && targetID > 0){
+			if(targetID > 0 && pLandscape->existsPatch(targetID)){ // patch IDs need not be contiguous
 				s.x = targetID;
 				s.y = -9;
 			} else{
-				throw logic_error("Target patch ID must be between 1 and the highest patchID.");
+				throw logic_error("Target patch ID does not exist in the landscape.");
 				errorTransloc++;
 			}
 		} else {
@@ -7749,13 +7974,10 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim)
 			t.sex[Year].push_back(-9);
 		}
 
-		// if not end of file, read next simulation number
-		if(!translocFile.eof()){
-			translocFile >> simulationNb;
-		} else{
-			simulationNb = -1;
-		}
+		// read next simulation number (end of file: none)
+		if (!(translocFile >> simulationNb)) simulationNb = -98765;
 	};
+	gTranslocNextSim = simulationNb;
 
 	// final check whether user provided translocation parameter for each translocation year:
 	// the keys of source map must match the translocation years
@@ -7859,6 +8081,72 @@ int ReadTranslocationFile(Landscape* pLandscape, int currsim)
 	        pManagement->setTranslocationParams(t);
 
 	    return errorTransloc;
+}
+
+//---------------------------------------------------------------------------
+int ReadHarvestingFile(Landscape* pLandscape, int currsim)
+{
+	landParams paramsLand = pLandscape->getLandParams();
+	demogrParams dem = pSpecies->getDemogrParams();
+	harvestingParams h = pManagement->getHarvestingParams();
+
+	int Year, threshold, nbHarvest, minAge, maxAge, stage, sex;
+	string locStr;
+
+	// the simulation number of the next line has already been read (or not yet, at the start);
+	// simulations without harvesting have no lines in the file
+	if (gHarvestNextSim == -1) {
+		if (!(harvestFile >> gHarvestNextSim)) gHarvestNextSim = -98765;
+	}
+	int simulationNb = gHarvestNextSim;
+	while (simulationNb == currsim) {
+		harvestFile >> Year >> locStr >> threshold >> nbHarvest >> minAge >> maxAge >> stage >> sex;
+
+		if (h.harvestLoc.find(Year) == h.harvestLoc.end()) {
+			h.harvestLoc[Year] = vector<locn>();
+			h.harvestThres[Year] = vector<int>();
+			h.harvestNb[Year] = vector<int>();
+			h.harvestMin_age[Year] = vector<int>();
+			h.harvestMax_age[Year] = vector<int>();
+			h.harvestStage[Year] = vector<int>();
+			h.harvestSex[Year] = vector<int>();
+		}
+
+		locn loc;
+		if (paramsLand.patchModel) { // x is the patch ID
+			int patchID = stoi(locStr);
+			if (patchID <= 0 || !pLandscape->existsPatch(patchID))
+				throw logic_error("Harvesting: patch " + locStr + " does not exist in the landscape.");
+			loc.x = patchID; loc.y = -9;
+		}
+		else {
+			std::stringstream ss(locStr);
+			ss >> loc.x;
+			if (ss.peek() == ';') ss.ignore();
+			ss >> loc.y;
+			if (!pLandscape->checkDataCell(loc.x, loc.y))
+				throw logic_error("Harvesting: cell " + locStr + " is not a landscape cell.");
+		}
+		h.harvestLoc[Year].push_back(loc);
+		h.harvestThres[Year].push_back(threshold);
+		h.harvestNb[Year].push_back(nbHarvest);
+		h.harvestMin_age[Year].push_back(dem.stageStruct ? minAge : -9);
+		h.harvestMax_age[Year].push_back(dem.stageStruct ? maxAge : -9);
+		h.harvestStage[Year].push_back(dem.stageStruct ? stage : -9);
+		h.harvestSex[Year].push_back(dem.repType != 0 ? sex : -9);
+
+		if (!(harvestFile >> simulationNb)) simulationNb = -98765;
+	}
+	gHarvestNextSim = simulationNb;
+
+	// harvesting events must be given for exactly the harvesting years of the ManagementFile
+	vector<int> keys;
+	for (const auto& [yr, locs] : h.harvestLoc) keys.push_back(yr);
+	if (keys != h.harvesting_years)
+		throw logic_error("You must provide harvesting events for each harvesting year given in the ManagementFile (and only for these).");
+
+	pManagement->setHarvestingParams(h);
+	return 0;
 }
 
 //---------------------------------------------------------------------------
@@ -8004,11 +8292,18 @@ void RunBatch(int nSimuls, int nLandscapes)
 				flushHeaders(ifsTraits);
 			}
 
-			if (gHasTranslocation) {
+			if (gHasManagement) {
 				manageFile.open(managementFile.c_str());
 				flushHeaders(manageFile);
-				translocFile.open(translocationFile.c_str());
-				flushHeaders(translocFile);
+				gTranslocNextSim = gHarvestNextSim = -1;
+				if (translocationFile != "") {
+					translocFile.open(translocationFile.c_str());
+					flushHeaders(translocFile);
+				}
+				if (harvestingFile != "") {
+					harvestFile.open(harvestingFile.c_str());
+					flushHeaders(harvestFile);
+				}
 			}
 
 			// nSimuls is the total number of lines (simulations) in
@@ -8055,7 +8350,7 @@ void RunBatch(int nSimuls, int nLandscapes)
 					}
 				}
 				
-				if (gHasTranslocation) {
+				if (gHasManagement) {
 					read_error = ReadManageFile(pLandscape);
 					if (read_error) {
 						params_ok = false;
@@ -8104,11 +8399,13 @@ void RunBatch(int nSimuls, int nLandscapes)
 				ifsTraits.clear();
 			}
 
-			if (gHasTranslocation) {
+			if (gHasManagement) {
 				manageFile.close();
 				manageFile.clear();
-				translocFile.close();
+				if (translocFile.is_open()) translocFile.close();
 				translocFile.clear();
+				if (harvestFile.is_open()) harvestFile.close();
+				harvestFile.clear();
 			}
 
 			if (pLandscape != nullptr)
