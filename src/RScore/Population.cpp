@@ -1218,7 +1218,11 @@ bool Population::isMatePresent(Cell* pCell, short othersex)
 
 			pNewPopn = pPatch->getPop();
 			if (pNewPopn != nullptr) {
-				for (int stg = 0; stg < nStages; stg++) {
+				const demogrParams dem = pSpecies->getDemogrParams();
+				// count members of other sex already resident in the patch; in stage-structured
+				// models juveniles (stage 0) cannot breed and therefore do not count as mates
+				// not clear, whether only reproductive stages should be counted
+				for (int stg = dem.stageStruct ? 1 : 0; stg < nStages; stg++) {
 					if (pNewPopn->nInds[stg][othersex] > 0)
 						return true; // one is enough
 				}
