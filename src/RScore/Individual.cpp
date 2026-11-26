@@ -775,7 +775,7 @@ settleTraits Individual::getIndSettTraits(void) {
 
 
 void Individual::setStatus(short s) {
-	if (s >= 0 && s <= 11) status = s;
+	if (s >= 0 && s <= 12) status = s;
 }
 
 void Individual::setToDevelop(void) {
@@ -829,6 +829,7 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool 
 	trfrKernelParams kern;
 	Cell* pCell;
 	Patch* pPatch;
+	nbKernelJumps++;
 	locn loc = pCurrCell->getLocn();
 
 	landData land = pLandscape->getLandData();
@@ -968,7 +969,7 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool 
 		if (pCell == 0) { // beyond absorbing boundary or in no-data cell
 			// only if absorbing=true and out of bounddaries
 			pCurrCell = 0;
-			status = 6;
+			status = 12; // absorbed
 			dispersing = 0;
 		}
 		else {
@@ -983,8 +984,9 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool 
 				dispersing = 0;
 				// can wait in matrix if population is stage structured ...
 				if (pSpecies->stageStructured()) {
-					// ... and wait option is applied ...
-					if (sett.wait) { // ... it is
+					// ... and wait option is applied, and the maximum number of jumps
+					// (MaxSteps) has not been reached ...
+					if (sett.wait && nbKernelJumps < pSpecies->getSteps(stage, sex).maxSteps) { // ... it is
 						status = 3; // waiting
 					}
 					else // ... it is not
@@ -1001,7 +1003,9 @@ int Individual::moveKernel(Landscape* pLandscape, Species* pSpecies, const bool 
 
 	// apply dispersal-related mortality, which may be distance-dependent
 	dist *= (float)land.resol; // re-scale distance moved to landscape scale
-	if (status < 7 || status == 10) {
+	// (also for absorbed individuals, as before status 12 existed: only those that
+	// survive the transfer are counted as absorbed)
+	if (status < 7 || status == 10 || status == 12) {
 		double dispmort;
 		trfrMortParams mort = pSpecies->getMortParams();
 		if (trfr.distMort) {
@@ -1089,8 +1093,8 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 			if (move.dist < 0.0) {
 				// either INTERNAL ERROR CONDITION - INDIVIDUAL IS IN NO-DATA SQUARE
 				// or individual has crossed absorbing boundary ...
-				// ... individual dies
-				status = 6;
+				// ... individual dies (absorbed if it left the landscape)
+				status = (absorbing && pCurrCell == 0) ? 12 : 6;
 				dispersing = 0;
 			}
 			else {
@@ -1156,7 +1160,7 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 			pCRW.prevdrn = (float)angle;
 			pCRW.xc = (float)xcnew; pCRW.yc = (float)ycnew;
 			if (absorbed) { // beyond absorbing boundary or in no-data square
-				status = 6;
+				status = 12; // absorbed
 				dispersing = 0;
 				pCurrCell = 0;
 			}
@@ -1186,7 +1190,7 @@ int Individual::moveStep(Landscape* pLandscape, Species* pSpecies,
 				}
 			}
 		}
-		if (status != 2 && status != 6) { // suitable patch not found, not already dead
+		if (status != 2 && status != 6 && status != 12) { // suitable patch not found, not already dead or absorbed
 			if (path->year >= settsteps.maxStepsYr) {
 				status = 3; // waits until next year
 			}
@@ -1696,7 +1700,9 @@ void Individual::outMovePath(const int year)
 	locn loc, prev_loc;
 
 	//if (pPatch != pNatalPatch) {
-	loc = pCurrCell->getLocn();
+	// absorbed individuals have no current cell: location -1, as in the individuals output
+	if (pCurrCell != nullptr) loc = pCurrCell->getLocn();
+	else loc.x = loc.y = -1;
 #ifdef _OPENMP
 	const std::lock_guard<std::mutex> lock(outMovePaths_mutex);
 #endif
@@ -1717,7 +1723,7 @@ void Individual::outMovePath(const int year)
 			<< '\n';
 	}
 	// if not anymore dispersing...
-	if (status > 1 && status <= 11) {
+	if (status > 1 && status <= 12) {
 		prev_loc = pPrevCell->getLocn();
 		// record only if this is the first step as non-disperser
 		if (path->pathoutput) {

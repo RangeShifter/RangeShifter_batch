@@ -22,7 +22,7 @@
 
  /*------------------------------------------------------------------------------
 
- RangeShifter v2.0 Individual
+ RangeShifter v3.1 Individual
 
  Implements the Individual class
 
@@ -305,6 +305,7 @@ public:
 	int getId(void);
 	sex_t getSex(void);
 	int getStatus(void);
+	int getNbKernelJumps(void) const { return nbKernelJumps; }
 	float getGeneticFitness(void);
 	bool isViable() const;
 	indStats getStats(void);
@@ -407,15 +408,17 @@ private:
 		// 4 = completed settlement
 		// 5 = completed settlement in a suitable neighbouring cell
 		// 6 = died during transfer by failing to find a suitable patch
-		//	(includes exceeding maximum number of steps or crossing
-		//	absorbing boundary)
+		//	(includes exceeding maximum number of steps)
 		// 7 = died during transfer by constant, step-dependent,
 		//	habitat-dependent or distance-dependent mortality
 		// 8 = failed to survive annual (demographic) mortality
 		// 9 = exceeded maximum age
 		// 10 = translocated to a different patch (e.g. for assisted colonisation)
 		// 11 = harvested (e.g. to regulate population size or for hunting)
+		// 12 = absorbed: left the landscape across an absorbing boundary (or into a
+		//	no-data cell when boundaries are absorbing) during transfer
 	short fallow; // reproductive seasons since last reproduction
+	int nbKernelJumps = 0; // number of dispersal-kernel jumps made so far (limited by MaxSteps)
 	bool isDeveloping;
 	Cell* pPrevCell;	// pointer to previous Cell
 	Cell* pCurrCell;	// pointer to current Cell

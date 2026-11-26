@@ -930,7 +930,7 @@ void OutParameters(Landscape* pLandscape)
 		name = paramsSim->getDir(2) + "Sim" + to_string(sim.simulation) + "_Parameters.txt";
 	outPar.open(name.c_str());
 
-	outPar << "RangeShifter 3.0 ";
+	outPar << "RangeShifter 3.1 ";
 
 	outPar << endl;
 
@@ -1749,6 +1749,12 @@ void OutParameters(Landscape* pLandscape)
 				outPar << matereq;
 				if (srules.findMate) outPar << "yes" << endl;
 				else outPar << "no" << endl;
+				if (srules.wait) {
+					settleSteps ssteps = pSpecies->getSteps(i, sx);
+					outPar << "MAX. NO. OF KERNEL JUMPS:\t";
+					if (ssteps.maxSteps == 99999999) outPar << "not applied" << endl;
+					else outPar << ssteps.maxSteps << endl;
+				}
 			}
 		}
 	}
