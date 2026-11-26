@@ -3184,6 +3184,7 @@ int CheckSettleFile()
 	{ // dispersal kernel
 		bSettlementFile >> header; if (header != "SettleType") nbErrors++;
 		bSettlementFile >> header; if (header != "FindMate") nbErrors++;
+		bSettlementFile >> header; if (header != "MaxSteps") nbErrors++; // max. no. of kernel jumps (wait option)
 	}
 	else { // movement method
 		bSettlementFile >> header; if (header != "DensDep") nbErrors++;
@@ -3225,7 +3226,7 @@ int CheckSettleFile()
 		if (gTransferType == 0)
 		{ // dispersal kernel
 			// read and validate columns relating to stage and sex-dependency (NB no IIV here)
-			bSettlementFile >> inStageDep >> inSexDep >> inStage >> inSex >> inSettleType >> inFindMate;
+			bSettlementFile >> inStageDep >> inSexDep >> inStage >> inSex >> inSettleType >> inFindMate >> inMaxSteps;
 			current = CheckStageSex(whichFile, whichLine, simNb, prev, inStageDep, inSexDep, inStage, inSex, 0, true, false);
 			if (current.isNewSim) nbSims++;
 			nbErrors += current.errors;
@@ -3236,6 +3237,9 @@ int CheckSettleFile()
 			if (!stagestruct && (inSettleType == 1 || inSettleType == 3)) {
 				BatchError(whichFile, whichLine, 0, " "); nbErrors++;
 				batchLog << "Invalid SettleType for a non-stage-structured population" << endl;
+			}
+			if (inMaxSteps < 0) { // 0 = no limit on the number of kernel jumps
+				BatchError(whichFile, whichLine, 19, "MaxSteps"); nbErrors++;
 			}
 			if (gNbSexesDisp > 1) {
 				if (inFindMate < 0 || inFindMate > 1) {
@@ -7175,7 +7179,7 @@ int ReadSettlement()
 	settleRules srules;
 	settleSteps ssteps;
 	settleTraits settleDD;
-	int sexSettle = 0, inSettleType = 0, inDensDep, inIndVar, inFindMate;
+	int sexSettle = 0, inSettleType = 0, inDensDep, inIndVar, inFindMate, inKernelMaxSteps = 0;
 
 	isFirstline = true;
 
@@ -7188,7 +7192,7 @@ int ReadSettlement()
 		settFile >> simNb >> inStageDep >> inSexDep >> inStage >> inSex;
 		if (!trfr.usesMovtProc)
 		{ // dispersal kernel
-			settFile >> inSettleType >> inFindMate;
+			settFile >> inSettleType >> inFindMate >> inKernelMaxSteps;
 		}
 		else {
 			settFile >> inDensDep >> inIndVar >> inFindMate;
@@ -7319,7 +7323,10 @@ int ReadSettlement()
 					break;
 				}
 			srules.findMate = mustFindMate;
+			// MaxSteps: maximum number of kernel jumps of waiting individuals (0 = not applied)
+			ssteps.minSteps = 0; ssteps.maxStepsYr = 0; ssteps.maxSteps = inKernelMaxSteps;
 			pSpecies->setSettRules(stageToSet, sexToSet, srules);
+			pSpecies->setSteps(stageToSet, sexToSet, ssteps);
 
 			// Set the remaining sex and stages, if applicable
 			// e.g. if not stage-dep but has stage-struct, must set other stages
@@ -7328,14 +7335,17 @@ int ReadSettlement()
 				if (!sett.sexDep) {
 					for (int stg = 1; stg < sstruct.nStages; stg++) {
 						pSpecies->setSettRules(stg, 0, srules);
+						pSpecies->setSteps(stg, 0, ssteps);
 						if (hasMales) { // model is sexual - also set parameters for males
 							pSpecies->setSettRules(stg, 1, srules);
+							pSpecies->setSteps(stg, 1, ssteps);
 						}
 					}
 				}
 				else {
 					for (int stg = 1; stg < sstruct.nStages; stg++) {
 						pSpecies->setSettRules(stg, sexToSet, srules);
+						pSpecies->setSteps(stg, sexToSet, ssteps);
 					}
 				}
 				}
@@ -7343,11 +7353,13 @@ int ReadSettlement()
 				// Must set males
 				if (!sett.stgDep) {
 					pSpecies->setSettRules(0, 1, srules);
+					pSpecies->setSteps(0, 1, ssteps);
 					// males of other stages already set above
 					// actually stage 0 males too?
 					}
 				else {
 					pSpecies->setSettRules(stageToSet, 1, srules);
+					pSpecies->setSteps(stageToSet, 1, ssteps);
 				}
 				}
 		} // end of dispersal kernel
