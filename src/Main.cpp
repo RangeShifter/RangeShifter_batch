@@ -21,7 +21,7 @@
  
 /*------------------------------------------------------------------------------
 
- RangeShifter v3.0 Main
+ RangeShifter v3.1 Main
 
 Entry level function for BATCH MODE version
 
