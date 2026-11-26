@@ -2525,6 +2525,7 @@ int CheckEmigFile()
 	string header;
 	int simNb;
 	int inDensDep, inPostDestr, inUseFullKern, inStgDep, inSexDep, inIndVar, inEmigStg, inStage, inSex;
+	int simPostDestr = -1; // PostDestructn of the first line of the current simulation
 	bool isDensDep, isIndVar;
 	float inEP, inD0, inAlpha, inBeta;
 	int nbErrors = 0;
@@ -2590,6 +2591,14 @@ int CheckEmigFile()
 
 		if (inPostDestr != 0 && inPostDestr != 1) {
 			BatchError(whichInputFile, lineNb, 1, "PostDestructn");
+			nbErrors++;
+		}
+		// PostDestructn applies to the whole population: only the first line of a
+		// simulation is used, so all lines of a simulation must have the same value
+		if (currentLine.isNewSim) simPostDestr = inPostDestr;
+		else if (inPostDestr != simPostDestr) {
+			BatchError(whichInputFile, lineNb, 0, " ");
+			batchLog << "PostDestructn must be the same in all lines of a simulation" << endl;
 			nbErrors++;
 		}
 		
