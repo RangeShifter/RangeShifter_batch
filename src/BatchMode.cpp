@@ -62,6 +62,7 @@ bool gHasGenetics = true;
 
 // global parameters for translocation feature
 int gHasManagement; // ManagementFile given (translocation and/or harvesting)
+map<int, bool> gUseFullKern; // per simulation: emigration uses the full kernel (UseFullKern = 1 in any line)
 int gTranslocNextSim = -1; // next simulation number to be read from the TranslocationFile (-1 = not read yet)
 int gHarvestNextSim = -1; // next simulation number to be read from the HarvestingFile (-1 = not read yet)
 
@@ -2626,6 +2627,9 @@ int CheckEmigFile()
 			BatchError(whichInputFile, lineNb, 1, "UseFullKern"); 
 			nbErrors++;
 		}
+		// remembered for the kernel checks in the TransferFile (mean distance below the resolution)
+		if (currentLine.isNewSim) gUseFullKern[simNb] = false;
+		if (inUseFullKern == 1) gUseFullKern[simNb] = true;
 		if (inDensDep == 1 && inUseFullKern != 0) {
 				BatchError(whichInputFile, lineNb, 0, "UseFullKern"); 
 				nbErrors++;
@@ -2935,15 +2939,17 @@ int CheckTransferFile(string indir)
 				}
 			}
 			else {
-				if (meanDistI < resolution) {
-					// NOTE - should also check whether emigration prob is constant and equal to 1
-					//but checks across diffferent input files are not yet implemented
+				// a mean distance below the resolution is allowed only with the full kernel
+				// (UseFullKern = 1 in the EmigrationFile), as in RScore and RangeShiftR
+				const bool fullKern = gUseFullKern.contains(simNb) && gUseFullKern.at(simNb);
+				if (meanDistI <= 0.0 || (meanDistI < resolution && !fullKern)) {
 					BatchError(whichFile, whichLine, 2, "meanDistI", "Resolution"); errors++;
+					if (meanDistI > 0.0) batchLog << "(a smaller mean distance requires UseFullKern = 1 in the EmigrationFile)" << endl;
 				}
 				if (inKernelType != 0) {
-					if (meanDistII < resolution) {
-						// NOTE - DITTO
+					if (meanDistII <= 0.0 || (meanDistII < resolution && !fullKern)) {
 						BatchError(whichFile, whichLine, 2, "meanDistII", "Resolution"); errors++;
+						if (meanDistII > 0.0) batchLog << "(a smaller mean distance requires UseFullKern = 1 in the EmigrationFile)" << endl;
 					}
 					if (ProbKernelI <= 0.0 || ProbKernelI >= 1.0) {
 						BatchError(whichFile, whichLine, 20, "ProbKernelI"); errors++;
@@ -7148,6 +7154,20 @@ int ReadEmigration()
 }
 
 //---------------------------------------------------------------------------
+// Set habitat-dependent step mortality; RScore rejects values outside [0, 1]
+// with an exception: report it instead of aborting the whole batch
+bool setHabMortChecked(short hab, double mort) {
+	try {
+		pSpecies->setHabMort(hab, mort);
+	}
+	catch (const std::invalid_argument& e) {
+		cout << endl << "TransferFile: " << e.what() << endl;
+		return false;
+	}
+	return true;
+}
+
+//---------------------------------------------------------------------------
 int ReadTransferFile(Landscape* pLandscape)
 {
 	int error = 0;
@@ -7164,7 +7184,7 @@ int ReadTransferFile(Landscape* pLandscape)
 		break; // end of negative exponential dispersal kernel
 
 	case 1: // SMS
-		ReadTransferSMS(trfr, paramsLand);
+		error = ReadTransferSMS(trfr, paramsLand);
 		break; // end of SMS
 
 	case 2: // CRW
@@ -7228,6 +7248,9 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 				errorCode = 403;
 		}
 
+		// RScore rejects invalid kernel means (exception); the values have already been read,
+		// so report the error and keep reading the file in step
+		try {
 		switch (sexKernels) {
 
 			case 0: // no sex / stage dependence
@@ -7272,6 +7295,11 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 			pSpecies->setSpKernTraits(inStage, inSex, kernParams, paramsLand.resol);
 				break;
 			} // end of switch (sexkernels)
+		}
+		catch (const std::invalid_argument& e) {
+			cout << endl << "TransferFile, simulation " << simNb << ": " << e.what() << endl;
+			errorCode = 406;
+		}
 
 			// mortality
 		if (inStage == 0 && inSex == 0) {
@@ -7288,7 +7316,8 @@ int ReadTransferKernels(transferRules trfr, const landParams& paramsLand) {
 	return errorCode;
 }
 
-void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
+int ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
+	int error = 0;
 
 	int inIndVar, inSMType, inAlphaDB, inBetaDB, inStraightenPath, simNb;
 	float inHabMort, flushHabMort, inMortHabitat, inMortMatrix;
@@ -7314,7 +7343,7 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 					for (int i = 0; i < paramsLand.nHabMax; i++)
 					{
 					transFile >> inHabMort;
-					pSpecies->setHabMort(i, inHabMort);
+					if (!setHabMortChecked(i, inHabMort)) error = 435;
 					}
 				}
 				else { // constant step mortality
@@ -7328,8 +7357,8 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 			{ // habitat-dependent step mortality
 				// values are for habitat (hab=1) then for matrix (hab=0)
 			transFile >> inMortHabitat >> inMortMatrix;
-			pSpecies->setHabMort(1, inMortHabitat);
-			pSpecies->setHabMort(0, inMortMatrix);
+			if (!setHabMortChecked(1, inMortHabitat)) error = 435;
+			if (!setHabMortChecked(0, inMortMatrix)) error = 435;
 			}
 			else { // constant step mortality
 			transFile >> flushHabMort >> flushHabMort;
@@ -7366,6 +7395,7 @@ void ReadTransferSMS(transferRules trfr, const landParams& paramsLand) {
 		}
 	pSpecies->setTrfrRules(trfr);
 	pSpecies->setSpMovtTraits(move);
+	return error;
 }
 
 int ReadTransferCRW(transferRules trfr, const landParams& paramsLand) {
@@ -7397,7 +7427,7 @@ int ReadTransferCRW(transferRules trfr, const landParams& paramsLand) {
 			{ // habitat-dependent step mortality
 				for (int i = 0; i < paramsLand.nHabMax; i++) {
 				transFile >> inHabMort;
-				pSpecies->setHabMort(i, inHabMort);
+				if (!setHabMortChecked(i, inHabMort)) error = 435;
 				}
 			}
 			else { // constant step mortality

@@ -206,7 +206,7 @@ int ReadDemogLayers(int);
 int ReadEmigration();
 int ReadTransferFile(Landscape*);
 int ReadTransferKernels(transferRules, const landParams&);
-void ReadTransferSMS(transferRules, const landParams&);
+int ReadTransferSMS(transferRules, const landParams&);
 int ReadTransferCRW(transferRules, const landParams&);
 int ReadSettlement();
 int ReadInitialisation(Landscape*);
